@@ -1,0 +1,1 @@
+runhaskell Setup.lhs haddock --hyperlink-source
