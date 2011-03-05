@@ -8,14 +8,29 @@ import System.FilePath ((</>))
 import Text.StringTemplate
 import Text.StringTemplate.Helpers
 
+import CType
+import Util
+import Templates
+import Function
 
-scriptBaseDir = "/home/wavewave/nfs/workspace/HROOT-generate" 
-templateDir   = scriptBaseDir </> "template"
-workingDir    = scriptBaseDir </> "working"
 
-definition = "definition.cpp"
-function   = "function.cpp" 
-funcbody   = "functionbody.cpp"
+sampleargs = [ (CT CTString Const, "a") 
+             , (CT CTInt NoConst, "b") ] 
+sampleargsStr = argsToString sampleargs
+
+
+void = Void 
+
+sampleclass1 = Class "TNamed" [ Function Void    "SetTitle"        [cstring "name"] 
+                              , Function Void    "SaveAs"          [cstring "filename", cstring "option"] 
+                              , Function double_ "GetParameter"    [int     "idx" ] 
+                              ]
+
+sampleclass2 = Class "TObject" [ Function cstring_ "GetName" [] 
+                               , Function void     "Draw"    [cstring "option"] ]
+
+
+classes = [ sampleclass1, sampleclass2 ]
 
 
 main :: IO () 
@@ -26,17 +41,17 @@ main = do
   templates <- directoryGroup templateDir 
   
   let str1 = renderTemplateGroup templates [ ("classname", "TTest") ] 
-                                           definition 
-      str3 = renderTemplateGroup templates [ ("funcname", "tester" ) 
-                                           , ("args", "merong") ] 
-                                           funcbody
+                                           definitionTemplate
       str2 = renderTemplateGroup templates [ ("returntype" , "rettype")
                                            , ("funcname" , "tester")
-                                           , ("argtypes" , "merong" ) 
+                                           , ("args" , sampleargsStr ) 
                                            , ("funcbody" , str3 ) ] 
-                                           function  
-    
-  putStrLn str1 
-  putStrLn str2 
-  
+                                           functionTemplate  
+      str3 = renderTemplateGroup templates [ ("funcname", "tester" ) 
+                                           , ("args", sampleargsStr) ] 
+                                           funcbodyTemplate
+             
+
+  putStrLn $ mkDeclHeader templates classes
+
   

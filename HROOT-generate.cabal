@@ -18,15 +18,11 @@ Executable HROOT-generate
   Build-Depends: base>4, mtl>2, filepath>1, directory, process, HStringTemplate, HStringTemplateHelpers
 
 
---Library
---  hs-source-dirs: src
---  Exposed-Modules: 
---                   XSec,
---                   Banner,
---                   ParseDouble,
---                   PythiaLog, 
---                   Tester.XSecTester, 
---                   Tester.XSecTester.Common, 
---                   Tester.XSecTester.Parton, 
---                   Tester.XSecTester.Proton
+Library
+  hs-source-dirs: src
+  Exposed-Modules: 
+                   CType
+                   Util
+                   Templates
+                   Function
 		 
