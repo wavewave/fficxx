@@ -31,4 +31,4 @@ main = do
   hline
   putStrLn $ mkFFIClasses root_concrete_classes
   hline
-  putStrLn $ hsClassType (head root_concrete_classes)
+  putStrLn $ mkHighLevelClasses root_concrete_classes
