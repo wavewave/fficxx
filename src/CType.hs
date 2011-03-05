@@ -17,6 +17,7 @@ int_     = CT CTInt    NoConst
 cdouble_ = CT CTDouble Const
 double_  = CT CTDouble NoConst
 bool_    = CT CTBool   NoConst 
+void_ = Void 
 
 
 cstring var = (cstring_ , var)
