@@ -22,16 +22,18 @@ sampleargsStr = argsToString sampleargs
 
 void = Void 
 
-sampleclass1 = Class "TNamed" [ Function Void    "SetTitle"        [cstring "name"] 
-                              , Function Void    "SaveAs"          [cstring "filename", cstring "option"] 
-                              , Function double_ "GetParameter"    [int     "idx" ] 
-                              ]
+tNamed = Class "TNamed" [tObject] 
+                [ Function Void    "SetTitle"        [cstring "name"] 
+                , Function Void    "SaveAs"          [cstring "filename", cstring "option"] 
+                , Function double_ "GetParameter"    [int     "idx" ] 
+                ]
 
-sampleclass2 = Class "TObject" [ Function cstring_ "GetName" [] 
-                               , Function void     "Draw"    [cstring "option"] ]
+tObject = Class "TObject" [] 
+                 [ Function cstring_ "GetName" [] 
+                 , Function void     "Draw"    [cstring "option"] ]
 
 
-classes = [ sampleclass1, sampleclass2 ]
+classes = [ tObject, tNamed ]
 
 
 main :: IO () 
@@ -47,6 +49,7 @@ main = do
   
   putStrLn $ mkDefMain templates classes
     
+  putStrLn $ mkDaugtherMap classes 
                               
   
   
