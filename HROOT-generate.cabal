@@ -1,5 +1,5 @@
 Name:		HROOT-generate
-Version:	0.0
+Version:	0.0.2.0
 Synopsis:	automatic HROOT binding generation
 Description: 	automatic HROOT binding generation 
 License: 	GPL-3
@@ -25,4 +25,5 @@ Library
                    Util
                    Templates
                    Function
+                   Class
 		 

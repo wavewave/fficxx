@@ -7,7 +7,7 @@ data CPPTypes = CPTClass String
 data IsConst = Const | NoConst
 
 data Types = Void 
-           | Type 
+           | SelfType
            | CT  CTypes IsConst 
            | CPT CPPTypes IsConst
 

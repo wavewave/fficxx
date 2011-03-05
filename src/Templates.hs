@@ -10,7 +10,9 @@ declarationTemplate = "declaration.h"
 declbodyTemplate    = "declbody.h"
 funcdeclTemplate    = "funcdecl.h" 
 
-
+classDefTemplate   = "classdef.cpp"
 definitionTemplate = "definition.cpp"
 functionTemplate   = "function.cpp" 
 funcbodyTemplate   = "functionbody.cpp"
+
+headerFileName = "HROOT.h"

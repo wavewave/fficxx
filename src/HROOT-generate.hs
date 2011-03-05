@@ -12,6 +12,7 @@ import CType
 import Util
 import Templates
 import Function
+import Class
 
 
 sampleargs = [ (CT CTString Const, "a") 
@@ -40,18 +41,12 @@ main = do
   
   templates <- directoryGroup templateDir 
   
-  let str1 = renderTemplateGroup templates [ ("classname", "TTest") ] 
-                                           definitionTemplate
-      str2 = renderTemplateGroup templates [ ("returntype" , "rettype")
-                                           , ("funcname" , "tester")
-                                           , ("args" , sampleargsStr ) 
-                                           , ("funcbody" , str3 ) ] 
-                                           functionTemplate  
-      str3 = renderTemplateGroup templates [ ("funcname", "tester" ) 
-                                           , ("args", sampleargsStr) ] 
-                                           funcbodyTemplate
-             
-
   putStrLn $ mkDeclHeader templates classes
 
+  putStrLn $ "--------"
+  
+  putStrLn $ mkDefMain templates classes
+    
+                              
+  
   

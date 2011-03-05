@@ -6,9 +6,10 @@ conn st x y = x ++ st ++ y
 
 connspace = conn " " 
 conncomma =  conn "," 
-connbslash = conn "\\\n"
+connBSlash = conn "\\\n"
 connSemicolonBSlash = conn "; \\\n"
 connRet = conn "\n"
+connRet2 = conn "\n\n"
 
 intercalateWith  f mapper x 
   | not (null x) = (foldl1 (\x y -> x `f` y) . (map mapper)) x  
