@@ -14,7 +14,7 @@ import Templates
 
 data Class = Class { 
     class_name :: String, 
-    class_parents :: [String],
+    class_parents :: [Class],
     class_funcs :: [Function]
   } 
 
@@ -33,9 +33,9 @@ mkDaughterMap :: [Class] -> DaughterMap
 mkDaughterMap = foldl mkDaughterMapWorker M.empty  
   where mkDaughterMapWorker m c = let ps = class_parents c 
                                   in  foldl (addmeToYourDaughterList c) m ps 
-        addmeToYourDaughterList c m p = let f Nothing = [c]
-                                            f (Just xs)  = c : xs    
-                                        in  alter f p m
+        addmeToYourDaughterList c m p = let f Nothing = Just [c]
+                                            f (Just cs)  = Just (c:cs)    
+                                        in  M.alter f p m
        
 -- Class Declaration and Definition
 

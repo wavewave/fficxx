@@ -23,6 +23,7 @@ ctypToStr ctyp isconst =
         CTString -> "char *"
         CTInt    -> "int " 
         CTDouble -> "double" 
+        CTBool   -> "bool"
   in case isconst of 
         Const   -> "const" `connspace` typword 
         NoConst -> typword 
