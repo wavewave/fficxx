@@ -32,7 +32,7 @@ main = do
   
   hline
     
-  putStrLn $ show $ mkDaughterMap classes 
+  putStrLn $ ( mkDaughterDef . mkDaughterMap) classes 
                               
   
   

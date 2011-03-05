@@ -90,3 +90,15 @@ mkDefMain templates classes =
       cppBody = classesToDefs templates classes
   in  def
 
+mkDaughterDef :: DaughterMap -> String 
+mkDaughterDef m = 
+  let lst = M.toList m 
+      f (x,ys) = let strx = map toUpper (class_name x) 
+                 in  concatMap (\y ->"ROOT_"++strx++"_DEFINITION(" ++ class_name y ++ ")\n") ys
+  in  concatMap f lst
+
+
+
+ 
+    
+  
