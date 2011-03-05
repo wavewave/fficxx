@@ -7,7 +7,7 @@ import Text.StringTemplate.Helpers
 
 import qualified Data.Map as M
 
-
+import CType
 import Util
 import Function
 import Templates
@@ -97,8 +97,32 @@ mkDaughterDef m =
                  in  concatMap (\y ->"ROOT_"++strx++"_DEFINITION(" ++ class_name y ++ ")\n") ys
   in  concatMap f lst
 
+----
+
+hsClassName :: Class 
+               -> (String, String)  -- ^ High-level, 'Raw'-level
+hsClassName c = 
+  let cname = class_name c
+  in (cname, "Raw" ++ cname) 
 
 
- 
-    
-  
+hsFuncTyp :: Class -> Function -> String
+hsFuncTyp c f = let args = func_args f 
+                    ret  = func_ret  f 
+                in  self ++ " -> " ++ concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
+                    
+  where (hcname,rcname) = hsClassName c
+        self = "(Ptr " ++ rcname ++ ")" 
+
+        hsargtype (CT ctype _) = hsCTypeName ctype
+        hsargtype (CPT x _) = hsCppTypeName x 
+        hsargtype SelfType = self 
+        
+        hsrettype Void = "IO ()"
+        hsrettype SelfType = "IO " ++ self
+        hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
+        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x 
+        
+hscFuncName :: Class -> Function -> String         
+hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (func_name f)
+        

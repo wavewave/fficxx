@@ -28,3 +28,12 @@ double  var = (double_  , var)
 bool    var = (bool_    , var)
 
 cppclass name =  CPT (CPTClass name) NoConst
+
+hsCTypeName :: CTypes -> String 
+hsCTypeName CTString = "CString" 
+hsCTypeName CTInt    = "CInt"
+hsCTypeName CTDouble = "CDouble"
+hsCTypeName CTBool   = "CInt"
+
+hsCppTypeName (CPTClass name) =  "(Ptr Raw"++name++")"  
+

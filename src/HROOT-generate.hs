@@ -5,7 +5,7 @@ import System.Directory
 import System.Process
 import System.FilePath ((</>))
 
-import Text.StringTemplate
+import Text.StringTemplate hiding (render)
 import Text.StringTemplate.Helpers
 
 import CType
@@ -14,6 +14,7 @@ import Templates
 import Function
 import Class
 import ROOT
+import FFI 
 
 hline = putStrLn "--------------------------------------------------------"
 
@@ -21,18 +22,13 @@ main :: IO ()
 main = do 
   putStrLn "Automatic HROOT binding generation" 
   setCurrentDirectory scriptBaseDir
-  
   templates <- directoryGroup templateDir 
-  
-  putStrLn $ mkDeclHeader templates classes
-
+  putStrLn $ mkDeclHeader templates root_all_classes
   hline
-  
-  putStrLn $ mkDefMain templates classes
-  
+  putStrLn $ mkDefMain templates root_all_classes
   hline
-    
-  putStrLn $ ( mkDaughterDef . mkDaughterMap) classes 
-                              
-  
-  
+  putStrLn $ ( mkDaughterDef . mkDaughterMap) root_all_classes 
+  hline
+  putStrLn $ mkFFIClasses root_concrete_classes
+  hline
+  putStrLn $ hsClassType (head root_concrete_classes)

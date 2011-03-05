@@ -2,6 +2,12 @@ module Util where
 
 import CType 
 
+import Data.Char 
+import Text.StringTemplate.Helpers
+
+toUppers = map toUpper
+toLowers = map toLower
+
 conn st x y = x ++ st ++ y  
 
 connspace = conn " " 
@@ -10,6 +16,8 @@ connBSlash = conn "\\\n"
 connSemicolonBSlash = conn "; \\\n"
 connRet = conn "\n"
 connRet2 = conn "\n\n"
+connArrow = conn " -> " 
+
 
 intercalateWith  f mapper x 
   | not (null x) = (foldl1 (\x y -> x `f` y) . (map mapper)) x  
@@ -27,3 +35,6 @@ ctypToStr ctyp isconst =
   in case isconst of 
         Const   -> "const" `connspace` typword 
         NoConst -> typword 
+        
+        
+render = flip render1 
