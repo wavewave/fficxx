@@ -126,3 +126,10 @@ hsFuncTyp c f = let args = func_args f
 hscFuncName :: Class -> Function -> String         
 hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (func_name f)
         
+hsFuncName :: Function -> String 
+hsFuncName f = let (x:xs) = func_name f 
+               in (toLower x) : xs
+                  
+hsFuncXformer :: Function -> String 
+hsFuncXformer func = let len = length (func_args func) 
+                     in "xform" ++ show len

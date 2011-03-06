@@ -27,8 +27,13 @@ main = do
   hline
   putStrLn $ mkDefMain templates root_all_classes
   hline
-  putStrLn $ ( mkDaughterDef . mkDaughterMap) root_all_classes 
+  let dmap = mkDaughterMap root_concrete_classes  
+  putStrLn $ ( mkDaughterDef . mkDaughterMap) root_concrete_classes 
   hline
   putStrLn $ mkFFIClasses root_concrete_classes
   hline
-  putStrLn $ mkHighLevelClasses root_concrete_classes
+  putStrLn $ mkRawClasses root_concrete_classes
+  hline 
+  putStrLn $ mkClassInstances dmap 
+  hline
+--  putStrLn $ mkClassDeclarations root_abstract_classes
