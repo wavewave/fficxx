@@ -10,13 +10,17 @@ import CType
 import Util
 import Templates
 
+data ExportType = NoExport | FullName | Alias String    
+                deriving Eq 
+                  
 
 type Args = [(Types,String)]
 
 data Function = Function { 
     func_ret  :: Types,
     func_name :: String,
-    func_args :: Args 
+    func_args :: Args,  
+    func_export :: ExportType
   }
 
 argToString :: (Types,String) -> String 

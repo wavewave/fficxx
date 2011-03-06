@@ -206,6 +206,28 @@ isNewFunc :: Function -> Bool
 isNewFunc func = func_name func == "New"
        
 
+isExportFunc :: Function -> Bool 
+isExportFunc func = func_export func /= NoExport 
+
+
+hsClassMethodExport :: Class    -- ^ only concrete class
+                       -> String 
+hsClassMethodExport c 
+  | (not.null) exportFuncs  =                        
+    let expFuncName f = case func_export f of 
+                               FullName -> firstLower (class_name c) ++ func_name f   
+                               Alias str -> str   
+        header f = (expFuncName f) ++ " :: " ++ argstr f
+        body f  = (expFuncName f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
+        argstr func = intercalateWith connArrow id $ [class_name c]  
+                                                     ++ map (ctypeToHsType c.fst) (func_args func)
+                                                     ++ ["IO " ++ (ctypeToHsType c.func_ret) func ] 
+    in  intercalateWith connRet (\f -> header f ++ "\n" ++ body f) exportFuncs
+  | otherwise = ""   
+ where exportFuncs = filter isExportFunc (class_funcs c)
+
+                       
+
 classToHsDefNew :: Class         -- ^ only concrete class 
                     -> String 
 classToHsDefNew c = 

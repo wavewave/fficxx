@@ -74,7 +74,9 @@ mkClassHs templates aclass cclass =
   where dmap = mkDaughterMap cclass
         classBodyStr = classesToHsDecls aclass `connRet2`
                        mkClassInstances dmap `connRet2`
-                       classesToHsDefNews cclass 
+                       classesToHsDefNews cclass `connRet2`
+                       intercalateWith connRet hsClassMethodExport cclass 
+                       
                        
                        
                        

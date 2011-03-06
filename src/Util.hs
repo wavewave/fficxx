@@ -8,6 +8,11 @@ import Text.StringTemplate.Helpers
 toUppers = map toUpper
 toLowers = map toLower
 
+
+firstLower :: String -> String 
+firstLower [] = [] 
+firstLower (x:xs) = (toLower x) : xs 
+
 conn st x y = x ++ st ++ y  
 
 connspace = conn " " 
