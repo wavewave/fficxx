@@ -7,6 +7,8 @@ module HROOT.Type where
 import Foreign.C            
 import Foreign.Ptr
 import Foreign.ForeignPtr
+import Foreign.Marshal.Array
+
 
 import System.IO.Unsafe
 
@@ -25,6 +27,10 @@ instance Castable Int CInt where
 instance Castable Double CDouble where
   cast = realToFrac
   uncast = realToFrac 
+
+instance Castable [Double] (Ptr CDouble) where
+  cast xs = unsafePerformIO (newArray (map realToFrac xs))
+  uncast c_xs = undefined 
 
 instance Castable String CString where
   cast x = unsafePerformIO (newCString x)
@@ -60,6 +66,36 @@ xform3 f a x1 x2 x3 = f (cast a) (cast x1) (cast x2) (cast x3) >>= return . unca
 xform4 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4, Castable y cy) 
        => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> IO cy) -> a -> x1 -> x2 -> x3 -> x4 -> IO y
 xform4 f a x1 x2 x3 x4 = f (cast a) (cast x1) (cast x2) (cast x3) (cast x4) >>= return . uncast 
+
+xform5 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+           Castable x5 cx5, Castable y cy) 
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> IO cy) -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> IO y
+xform5 f a x1 x2 x3 x4 x5 = f (cast a) (cast x1) (cast x2) (cast x3) (cast x4) (cast x5) >>= return . uncast 
+
+xform6 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+           Castable x5 cx5, Castable x6 cx6, Castable y cy) 
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> IO cy) 
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> IO y
+xform6 f a x1 x2 x3 x4 x5 x6 = 
+  f (cast a) (cast x1) (cast x2) (cast x3) (cast x4) (cast x5) (cast x6) 
+  >>= return . uncast 
+
+xform7 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+           Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable y cy) 
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> IO cy) 
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> IO y
+xform7 f a x1 x2 x3 x4 x5 x6 x7 = 
+  f (cast a) (cast x1) (cast x2) (cast x3) (cast x4) (cast x5) (cast x6) (cast x7)
+  >>= return . uncast 
+
+xform8 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+           Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable y cy) 
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> IO cy) 
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> IO y
+xform8 f a x1 x2 x3 x4 x5 x6 x7 x8 = 
+  f (cast a) (cast x1) (cast x2) (cast x3) (cast x4) (cast x5) (cast x6) (cast x7) (cast x8)
+  >>= return . uncast 
+
 
 
 class FPtr a where

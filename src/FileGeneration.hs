@@ -29,7 +29,7 @@ mkDeclHeader templates aclass cclass =
       declDefStr    = classesToDeclsDef (aclass ++ cclass) 
       typeDeclStr    = classesToTypeDecls cclass
       dmap = mkDaughterMap cclass     
-      classDeclsStr  = classesToClassDecls dmap
+      classDeclsStr  = classesToClassDecls dmap `connRet2` classesSelfDecls root_concrete_classes       
 
       declBodyStr = declDefStr `connRet2` typeDeclStr `connRet2` classDeclsStr 
       
@@ -73,7 +73,8 @@ mkClassHs templates aclass cclass =
                       "Class.hs"
   where dmap = mkDaughterMap cclass
         classBodyStr = classesToHsDecls aclass `connRet2`
-                       mkClassInstances dmap
+                       mkClassInstances dmap `connRet2`
+                       classesToHsDefNews cclass 
                        
                        
                        

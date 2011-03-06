@@ -69,7 +69,7 @@ tF1      = Class "TF1" [tObject, tNamed, tFormula]
            ]
 
 tGraph   = Class "TGraph" [tObject, tNamed, tAttLine, tAttFill ] 
-           [ Function self_ "New" [int "n", double "x", double "y"]
+           [ Function self_ "New" [int "n", doublep "x", doublep "y"]
            ]
 
 tAxis    = Class "TAxis" [tObject, tNamed, tAttAxis ] []

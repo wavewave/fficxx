@@ -28,8 +28,9 @@ main = do
   
   putStrLn "header file generation"
   withFile (workingDir </> headerFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkDeclHeader templates root_abstract_classes root_concrete_classes)
-  
+    \h -> do 
+      hPutStrLn h (mkDeclHeader templates root_abstract_classes root_concrete_classes)
+      
   let dmap = mkDaughterMap root_concrete_classes  
 
   putStrLn "cpp file generation" 
@@ -37,7 +38,9 @@ main = do
     \h -> do 
       hPutStrLn h (mkDefMain templates root_all_classes)
       hPutStrLn h ( ( mkDaughterDef . mkDaughterMap) root_concrete_classes )
-  
+      hPutStrLn h ( classesSelfDefs root_concrete_classes) 
+      
+      
   putStrLn "hsc file generation" 
   withFile (workingDir </> hscFileName) WriteMode $ 
     \h -> hPutStrLn h (mkFunctionHsc templates root_concrete_classes) 

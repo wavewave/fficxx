@@ -24,15 +24,24 @@ rawToHighInstanceCastable =  "instance Castable $highname$ (Ptr $rawname$) where
 
 
 hsFFIClassFunc :: Class -> Function -> String 
-hsFFIClassFunc c f = render ffistub  
-                            [ ("headerfilename",headerFileName) 
-                            , ("classname",class_name c)
-                            , ("funcname", func_name f)
-                            , ("hsfuncname",hscFuncName c f)
-                            , ("hsargs", hsFuncTyp c f) ] 
+hsFFIClassFunc c f = if isNewFunc f 
+                     then render ffistub 
+                                 [ ("headerfilename",headerFileName) 
+                                 , ("classname",class_name c)
+                                 , ("funcname", func_name f)
+                                 , ("hsfuncname",hscFuncName c f)
+                                 , ("hsargs", hsFuncTypNoSelf c f) ] 
+
+                                  
+                     else render ffistub  
+                                 [ ("headerfilename",headerFileName) 
+                                 , ("classname",class_name c)
+                                 , ("funcname", func_name f)
+                                 , ("hsfuncname",hscFuncName c f)
+                                 , ("hsargs", hsFuncTyp c f) ] 
 
 hsFFIClass :: Class -> String 
-hsFFIClass c = let allfns = concatMap class_funcs (class_parents c) 
+hsFFIClass c = let allfns = concatMap class_funcs (c : class_parents c) 
                in  intercalateWith connRet (hsFFIClassFunc c) allfns  
 
 mkFFIClasses :: [Class] -> String 

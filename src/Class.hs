@@ -37,6 +37,16 @@ mkDaughterMap = foldl mkDaughterMapWorker M.empty
                                             f (Just cs)  = Just (c:cs)    
                                         in  M.alter f p m
        
+ctypeToHsType :: Class -> Types -> String
+ctypeToHsType c Void = "()" 
+ctypeToHsType c SelfType = class_name c
+ctypeToHsType c (CT CTString _) = "String"
+ctypeToHsType c (CT CTInt _) = "Int" 
+ctypeToHsType c (CT CTDouble _) = "Double"
+ctypeToHsType c (CT CTBool _ ) = "Int"
+ctypeToHsType c (CT CTDoubleStar _) = "[Double]"
+ctypeToHsType c (CPT (CPTClass name) _) = name
+
 -- Class Declaration and Definition
 
 
@@ -68,6 +78,25 @@ classesToClassDecls  m =
       f (x,ys) = let strx = map toUpper (class_name x) 
                  in  concatMap (\y ->"ROOT_"++strx++"_DECLARATION(" ++ class_name y ++ ");\n") ys
   in  concatMap f lst
+
+classSelfDecl :: Class -> String
+classSelfDecl c = let tmpl = "ROOT_$capitalclassname$_DECLARATION($classname$);" 
+                  in  render tmpl [ ("capitalclassname", toUppers (class_name c))
+                                  , ("classname", class_name c) 
+                                  ] 
+
+classesSelfDecls :: [Class] -> String 
+classesSelfDecls = intercalateWith connRet classSelfDecl 
+
+
+classSelfDef :: Class -> String
+classSelfDef c = let tmpl = "ROOT_$capitalclassname$_DEFINITION($classname$)" 
+                  in  render tmpl [ ("capitalclassname", toUppers (class_name c))
+                                  , ("classname", class_name c) 
+                                  ] 
+
+classesSelfDefs :: [Class] -> String 
+classesSelfDefs = intercalateWith connRet classSelfDef 
 
 
 -----
@@ -109,6 +138,24 @@ hsFuncTyp c f = let args = func_args f
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
         hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x 
         
+hsFuncTypNoSelf :: Class -> Function -> String
+hsFuncTypNoSelf c f = let args = func_args f 
+                          ret  = func_ret  f 
+                      in  intercalateWith connArrow id $ map (hsargtype . fst) args ++ [hsrettype ret]  
+                          
+  where (hcname,rcname) = hsClassName c
+        self = "(Ptr " ++ rcname ++ ")" 
+
+        hsargtype (CT ctype _) = hsCTypeName ctype
+        hsargtype (CPT x _) = hsCppTypeName x 
+        hsargtype SelfType = self 
+        
+        hsrettype Void = "IO ()"
+        hsrettype SelfType = "IO " ++ self
+        hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
+        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x 
+
+
 hscFuncName :: Class -> Function -> String         
 hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (func_name f)
         
@@ -120,6 +167,10 @@ hsFuncXformer :: Function -> String
 hsFuncXformer func = let len = length (func_args func) 
                      in "xform" ++ show len
                         
+hsFuncXformerNew :: Function -> String 
+hsFuncXformerNew func = let len = length (func_args func) 
+                        in "xform" ++ show (len - 1)
+
                         
                         
 ----------                        
@@ -139,14 +190,37 @@ classToHsDecl c | length (class_funcs c) > 0 =
                              ] 
       argstr func = intercalateWith connArrow id $
                                     [ "a" ] 
-                                    ++ map (ctypeToHsType.fst) (func_args func)
-                                    ++ ["IO " ++ (ctypeToHsType.func_ret) func ]
+                                    ++ map (ctypeToHsType c.fst) (func_args func)
+                                    ++ ["IO " ++ (ctypeToHsType c.func_ret) func ]
       bodylines = map bodyline (class_funcs c) 
   in  intercalateWith connRet id (header : bodylines) 
 
-hsArgs :: Args -> String
-hsArgs = intercalateWith connArrow (ctypeToHsType . fst) 
+hsArgs :: Class -> Args -> String
+hsArgs c = intercalateWith connArrow (ctypeToHsType c. fst) 
 
 
 classesToHsDecls :: [Class] -> String 
 classesToHsDecls = intercalateWith connRet2 classToHsDecl 
+
+isNewFunc :: Function -> Bool 
+isNewFunc func = func_name func == "New"
+       
+
+classToHsDefNew :: Class         -- ^ only concrete class 
+                    -> String 
+classToHsDefNew c = 
+  if null newfuncs 
+  then ""
+  else let newfunc = head newfuncs
+           newlinehead = "new" ++ class_name c ++ " :: " ++ argstr newfunc 
+           newlinebody = "new" ++ class_name c ++ " = " ++ hsFuncXformerNew newfunc ++ " " ++ hscFuncName c newfunc 
+           argstr func = intercalateWith connArrow id $
+                                               map (ctypeToHsType c.fst) (func_args func)
+                                               ++ ["IO " ++ (ctypeToHsType c.func_ret) func ]
+           newline = newlinehead ++ "\n" ++ newlinebody 
+       in newline
+  where newfuncs = filter isNewFunc (class_funcs c)  
+
+classesToHsDefNews :: [Class]    -- ^ only concrete class 
+                      -> String 
+classesToHsDefNews = intercalateWith connRet2 classToHsDefNew 
