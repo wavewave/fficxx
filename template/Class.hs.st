@@ -1,4 +1,7 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses, 
+             FlexibleInstances, TypeSynonymInstances, UndecidableInstances, 
+             EmptyDataDecls #-}
+
 
 module HROOT.Class where
 
@@ -9,5 +12,6 @@ import Foreign.ForeignPtr
 import System.IO.Unsafe
 
 import HROOT.Type
+import HROOT.Function
 
 $classBody$

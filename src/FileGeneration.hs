@@ -23,10 +23,12 @@ mkFunctionHsc templates classes =
                       , ("hsFunctionBody", mkFFIClasses classes) ]  
                       "Function.hsc" 
                      
-mkTypeHs :: STGroup String -> String                      
-mkTypeHs templates = 
-  renderTemplateGroup templates ([ ] :: [ (String,String) ]) "Type.hs" 
-        
+mkTypeHs :: STGroup String -> [Class] -> String                      
+mkTypeHs templates cclass = 
+  renderTemplateGroup templates [ ("typeBody", typebody) ]  "Type.hs" 
+  where typebody = mkRawClasses cclass 
+  
+  
 mkClassHs :: STGroup String -> [Class] -> [Class] -> String
 mkClassHs templates aclass cclass = 
   renderTemplateGroup templates 
@@ -34,7 +36,6 @@ mkClassHs templates aclass cclass =
                       "Class.hs"
   where dmap = mkDaughterMap cclass
         classBodyStr = classesToHsDecls aclass `connRet2`
-                       mkRawClasses cclass `connRet2`
                        mkClassInstances dmap
                        
                        

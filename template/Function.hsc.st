@@ -5,7 +5,7 @@ module HROOT.Function where
 import Foreign.C            
 import Foreign.Ptr
 
-import HROOT.Class
+import HROOT.Type
 
 #include "$headerFileName$"
 

@@ -37,3 +37,11 @@ hsCTypeName CTBool   = "CInt"
 
 hsCppTypeName (CPTClass name) =  "(Ptr Raw"++name++")"  
 
+ctypeToHsType :: Types -> String
+ctypeToHsType Void = "()" 
+ctypeToHsType SelfType = "a"
+ctypeToHsType (CT CTString _) = "String"
+ctypeToHsType (CT CTInt _) = "Int" 
+ctypeToHsType (CT CTDouble _) = "Double"
+ctypeToHsType (CT CTBool _ ) = "Bool"
+ctypeToHsType (CPT (CPTClass name) _) = name

@@ -5,6 +5,10 @@ import System.FilePath ((</>))
 scriptBaseDir = "/home/wavewave/nfs/prog/HROOT-generate" 
 templateDir   = scriptBaseDir </> "template"
 workingDir    = scriptBaseDir </> "working"
+installBaseDir = "/home/wavewave/nfs/prog/HROOT"
+srcDir       = installBaseDir </> "src" </> "HROOT"
+csrcDir       = installBaseDir </> "csrc" 
+
 
 declarationTemplate = "declaration.h"
 declbodyTemplate    = "declbody.h"

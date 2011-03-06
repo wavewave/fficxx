@@ -18,6 +18,8 @@ rawToHighDecl = "data $rawname$\nnewtype $highname$ = $highname$ (ForeignPtr $ra
 
 rawToHighInstance = "instance FPtr $highname$ where\n   type Raw $highname$ = $rawname$\n   get_fptr ($highname$ fptr) = fptr\n   cast_fptr_to_obj = $highname$"
 
+rawToHighInstanceCastable =  "instance Castable $highname$ (Ptr $rawname$) where\n  cast = unsafeForeignPtrToPtr.get_fptr\n  uncast x = cast_fptr_to_obj (unsafePerformIO (newForeignPtr_ x))"
+
 
 
 
@@ -38,16 +40,17 @@ mkFFIClasses = intercalateWith connRet2 hsFFIClass
 
 
 hsClassType :: Class -> String 
-hsClassType c = let decl = render rawToHighDecl     [ ("rawname",rawname), ("highname",highname) ]
-                    inst = render rawToHighInstance [ ("rawname",rawname), ("highname",highname) ]
-                in  decl `connRet` inst 
+hsClassType c = let decl = render rawToHighDecl tmplName
+                    inst1 = render rawToHighInstance tmplName
+                    inst2 = render rawToHighInstanceCastable tmplName
+                in  decl `connRet` inst1 `connRet` inst2
   where (highname,rawname) = hsClassName c
+        tmplName = [("rawname",rawname),("highname",highname)] 
             
 mkRawClasses :: [Class] -> String 
 mkRawClasses = intercalateWith connRet2 hsClassType
 
-classInstanceStr = "instance $parent$ $daughter$ where" 
-
+-- classInstanceHeader = "instance $parent$ $daughter$ where" 
 
 hsClassInstance :: Class -> Class -> String 
 hsClassInstance parent child = 

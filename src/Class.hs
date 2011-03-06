@@ -140,18 +140,27 @@ hsFuncXformer func = let len = length (func_args func)
 
 hsClassDeclHeaderTmpl = "class $classname$ a where"
 
-hsClassDeclFuncTmpl = "    $funcname$ :: a -> $args$ "
+hsClassDeclFuncTmpl = "    $funcname$ :: $args$ "
 
+  
 classToHsDecl :: Class -> String 
 classToHsDecl c | length (class_funcs c) <= 0 = ""
 classToHsDecl c | length (class_funcs c) > 0 =  
   let header = render hsClassDeclHeaderTmpl [ ("classname", class_name c ) ] 
       bodyline func = render hsClassDeclFuncTmpl 
-                             [ ("funcname", func_name func) 
-                             , ("args" , "IO ()" ) 
+                             [ ("funcname", hsFuncName func) 
+                             , ("args" , argstr func ) 
                              ] 
+      argstr func = intercalateWith connArrow id $
+                                    [ "a" ] 
+                                    ++ map (ctypeToHsType.fst) (func_args func)
+                                    ++ ["IO " ++ (ctypeToHsType.func_ret) func ]
       bodylines = map bodyline (class_funcs c) 
   in  intercalateWith connRet id (header : bodylines) 
+
+hsArgs :: Args -> String
+hsArgs = intercalateWith connArrow (ctypeToHsType . fst) 
+
 
 classesToHsDecls :: [Class] -> String 
 classesToHsDecls = intercalateWith connRet2 classToHsDecl 

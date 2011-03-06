@@ -44,12 +44,21 @@ main = do
       
   putStrLn "Type.hs file generation" 
   withFile (workingDir </> typeHsFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkTypeHs templates)
+    \h -> hPutStrLn h (mkTypeHs templates root_concrete_classes )
   
   
   putStrLn "Class.hs file generation"
   withFile (workingDir </> hsFileName) WriteMode $ 
     \h -> hPutStrLn h (mkClassHs templates root_abstract_classes root_concrete_classes)
+
+  copyFile (workingDir </> headerFileName) ( csrcDir </> headerFileName) 
+  copyFile (workingDir </> cppFileName) ( csrcDir </> cppFileName) 
+  
+  copyFile (workingDir </> hscFileName) ( srcDir </> hscFileName) 
+  copyFile (workingDir </> typeHsFileName) ( srcDir </> typeHsFileName) 
+  copyFile (workingDir </> hsFileName) ( srcDir </> hsFileName) 
+  
+
 
 --  putStrLn $  classesToHsDecls root_abstract_classes 
 

@@ -60,8 +60,8 @@ tGraph   = Class "TGraph" [tObject, tNamed, tAttLine, tAttFill ] []
 
 tAxis    = Class "TAxis" [tObject, tNamed, tAttAxis ] [] 
 
-root_abstract_classes = [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWBox, tAttAxis, tAttHaveAxis ] 
+root_abstract_classes = [tObject, tNamed, tFormula ] -- [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWBox, tAttAxis, tAttHaveAxis ] 
 
-root_concrete_classes = [ tH1F, tH2F, tHStack, tCanvas, tF1, tGraph, tAxis ]
+root_concrete_classes = [tF1] -- [ tH1F, tH2F, tHStack, tCanvas, tF1, tGraph, tAxis ]
 
-root_all_classes = root_abstract_classes ++ root_concrete_classes
+root_all_classes = root_abstract_classes ++ root_concrete_classes 
