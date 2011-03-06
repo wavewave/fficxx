@@ -10,12 +10,12 @@ srcDir       = installBaseDir </> "src" </> "HROOT"
 csrcDir       = installBaseDir </> "csrc" 
 
 
-declarationTemplate = "declaration.h"
+declarationTemplate = "HROOT.h"
 declbodyTemplate    = "declbody.h"
 funcdeclTemplate    = "funcdecl.h" 
 
+definitionTemplate = "HROOT.cpp"
 classDefTemplate   = "classdef.cpp"
-definitionTemplate = "definition.cpp"
 functionTemplate   = "function.cpp" 
 funcbodyTemplate   = "functionbody.cpp"
 

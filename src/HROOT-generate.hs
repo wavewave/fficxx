@@ -28,7 +28,7 @@ main = do
   
   putStrLn "header file generation"
   withFile (workingDir </> headerFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkDeclHeader templates root_all_classes)
+    \h -> hPutStrLn h (mkDeclHeader templates root_abstract_classes root_concrete_classes)
   
   let dmap = mkDaughterMap root_concrete_classes  
 

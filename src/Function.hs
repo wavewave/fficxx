@@ -2,7 +2,7 @@ module Function where
 
 -- import Data.Char
 
-import Text.StringTemplate
+import Text.StringTemplate hiding (render)
 import Text.StringTemplate.Helpers
 
 
@@ -21,9 +21,13 @@ data Function = Function {
 
 argToString :: (Types,String) -> String 
 argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname 
+argToString (SelfType, varname) = "Type ## _p " ++ varname
+
 
 argsToString :: Args -> String 
-argsToString = intercalateWith conncomma argToString 
+argsToString args = 
+  let args' = (SelfType, "p") : args 
+  in  intercalateWith conncomma argToString args'
 
 argToCallString (_,varname) = varname
 
@@ -38,24 +42,25 @@ rettypeToString (CPT (CPTClass str) _) = str ++ "_p"
 
 -- Function Declaration and Definition
 
-funcToDecl :: STGroup String -> Function -> String 
-funcToDecl templates func =  
-  renderTemplateGroup templates 
-                      [ ("returntype", rettypeToString (func_ret func))  
-                      , ("funcname", func_name func)
-                      , ("args", argsToString (func_args func)) ] 
-                      funcdeclTemplate
+funcToDecl :: Function -> String 
+funcToDecl func =  
+  let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
+  in  render tmpl [ ("returntype", rettypeToString (func_ret func))  
+                  , ("funcname", func_name func)
+                  , ("args", argsToString (func_args func)) ] 
+              
 
-funcsToDecls :: STGroup String -> [Function] -> String 
-funcsToDecls templates = intercalateWith connSemicolonBSlash (funcToDecl templates)
+funcsToDecls :: [Function] -> String 
+funcsToDecls = intercalateWith connSemicolonBSlash funcToDecl
 
 
-funcToDef :: STGroup String -> Function -> String
-funcToDef templates func = 
-  let declstr = funcToDecl templates func
+funcToDef :: Function -> String
+funcToDef func = 
+  let declstr = funcToDecl func
       callstr = "to_nonconst<Type,Type ## _t>(p)->" 
-                ++ (func_name func) 
+                ++ (func_name func) ++ "("
                 ++ argsToCallString (func_args func)   
+                ++ ")"
       returnstr = case (func_ret func) of          
         Void -> callstr ++ ";"
         SelfType -> "return to_nonconst<Type ## _, Type>((Type *)" ++ callstr ++ ") ;"
@@ -64,8 +69,8 @@ funcToDef templates func =
                                   ++">(("++str++"*)"++callstr++");"
   in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
 
-funcsToDefs :: STGroup String -> [Function] -> String
-funcsToDefs templates = intercalateWith connBSlash (funcToDef templates)
+funcsToDefs :: [Function] -> String
+funcsToDefs = intercalateWith connBSlash funcToDef
 
 
  

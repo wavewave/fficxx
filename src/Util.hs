@@ -11,7 +11,7 @@ toLowers = map toLower
 conn st x y = x ++ st ++ y  
 
 connspace = conn " " 
-conncomma =  conn "," 
+conncomma =  conn ", " 
 connBSlash = conn "\\\n"
 connSemicolonBSlash = conn "; \\\n"
 connRet = conn "\n"
