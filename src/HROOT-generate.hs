@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Main where
 
 import System.IO
@@ -15,13 +17,14 @@ import Function
 import Class
 import ROOT
 import FFI 
+import FileGeneration
 
 hline = putStrLn "--------------------------------------------------------"
 
 main :: IO () 
 main = do 
   putStrLn "Automatic HROOT binding generation" 
-  templates <- directoryGroup templateDir 
+  (templates :: STGroup String) <- directoryGroup templateDir 
   
   putStrLn "header file generation"
   withFile (workingDir </> headerFileName) WriteMode $ 
@@ -37,11 +40,17 @@ main = do
   
   putStrLn "hsc file generation" 
   withFile (workingDir </> hscFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkFFIClasses root_concrete_classes)
+    \h -> hPutStrLn h (mkFunctionHsc templates root_concrete_classes) 
+      
+  putStrLn "Type.hs file generation" 
+  withFile (workingDir </> typeHsFileName) WriteMode $ 
+    \h -> hPutStrLn h (mkTypeHs templates)
   
-  putStrLn "hs file generation"
+  
+  putStrLn "Class.hs file generation"
   withFile (workingDir </> hsFileName) WriteMode $ 
-    \h -> do
-      hPutStrLn h (mkRawClasses root_concrete_classes)
-      hPutStrLn h (mkClassInstances dmap)
---  putStrLn $ mkClassDeclarations root_abstract_classes
+    \h -> hPutStrLn h (mkClassHs templates root_abstract_classes root_concrete_classes)
+
+--  putStrLn $  classesToHsDecls root_abstract_classes 
+
+  return ()

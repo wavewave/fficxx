@@ -12,6 +12,6 @@ typedef Type ## _t const* const_ ## Type ## _p
 
 $declarationbody$
 
-#ifdef
+#ifdef __cplusplus
 }
 #endif

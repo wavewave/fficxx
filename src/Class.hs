@@ -2,7 +2,7 @@ module Class where
 
 import Data.Char
 
-import Text.StringTemplate
+import Text.StringTemplate hiding (render)
 import Text.StringTemplate.Helpers
 
 import qualified Data.Map as M
@@ -133,3 +133,25 @@ hsFuncName f = let (x:xs) = func_name f
 hsFuncXformer :: Function -> String 
 hsFuncXformer func = let len = length (func_args func) 
                      in "xform" ++ show len
+                        
+                        
+                        
+----------                        
+
+hsClassDeclHeaderTmpl = "class $classname$ a where"
+
+hsClassDeclFuncTmpl = "    $funcname$ :: a -> $args$ "
+
+classToHsDecl :: Class -> String 
+classToHsDecl c | length (class_funcs c) <= 0 = ""
+classToHsDecl c | length (class_funcs c) > 0 =  
+  let header = render hsClassDeclHeaderTmpl [ ("classname", class_name c ) ] 
+      bodyline func = render hsClassDeclFuncTmpl 
+                             [ ("funcname", func_name func) 
+                             , ("args" , "IO ()" ) 
+                             ] 
+      bodylines = map bodyline (class_funcs c) 
+  in  intercalateWith connRet id (header : bodylines) 
+
+classesToHsDecls :: [Class] -> String 
+classesToHsDecls = intercalateWith connRet2 classToHsDecl 

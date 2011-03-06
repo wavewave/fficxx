@@ -2,7 +2,7 @@ module Templates where
 
 import System.FilePath ((</>))
 
-scriptBaseDir = "/home/wavewave/nfs/workspace/HROOT-generate" 
+scriptBaseDir = "/home/wavewave/nfs/prog/HROOT-generate" 
 templateDir   = scriptBaseDir </> "template"
 workingDir    = scriptBaseDir </> "working"
 
@@ -19,3 +19,4 @@ headerFileName = "HROOT.h"
 cppFileName = "HROOT.cpp" 
 hscFileName = "Function.hsc"
 hsFileName  = "Class.hs"
+typeHsFileName = "Type.hs"

@@ -28,4 +28,5 @@ Library
                    Class
                    ROOT
                    FFI
+                   FileGeneration
 		 
