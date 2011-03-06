@@ -21,19 +21,27 @@ hline = putStrLn "--------------------------------------------------------"
 main :: IO () 
 main = do 
   putStrLn "Automatic HROOT binding generation" 
-  setCurrentDirectory scriptBaseDir
   templates <- directoryGroup templateDir 
-  putStrLn $ mkDeclHeader templates root_all_classes
-  hline
-  putStrLn $ mkDefMain templates root_all_classes
-  hline
+  
+  putStrLn "header file generation"
+  withFile (workingDir </> headerFileName) WriteMode $ 
+    \h -> hPutStrLn h (mkDeclHeader templates root_all_classes)
+  
   let dmap = mkDaughterMap root_concrete_classes  
-  putStrLn $ ( mkDaughterDef . mkDaughterMap) root_concrete_classes 
-  hline
-  putStrLn $ mkFFIClasses root_concrete_classes
-  hline
-  putStrLn $ mkRawClasses root_concrete_classes
-  hline 
-  putStrLn $ mkClassInstances dmap 
-  hline
+
+  putStrLn "cpp file generation" 
+  withFile (workingDir </> cppFileName) WriteMode $ 
+    \h -> do 
+      hPutStrLn h (mkDefMain templates root_all_classes)
+      hPutStrLn h ( ( mkDaughterDef . mkDaughterMap) root_concrete_classes )
+  
+  putStrLn "hsc file generation" 
+  withFile (workingDir </> hscFileName) WriteMode $ 
+    \h -> hPutStrLn h (mkFFIClasses root_concrete_classes)
+  
+  putStrLn "hs file generation"
+  withFile (workingDir </> hsFileName) WriteMode $ 
+    \h -> do
+      hPutStrLn h (mkRawClasses root_concrete_classes)
+      hPutStrLn h (mkClassInstances dmap)
 --  putStrLn $ mkClassDeclarations root_abstract_classes

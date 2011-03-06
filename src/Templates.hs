@@ -16,3 +16,6 @@ functionTemplate   = "function.cpp"
 funcbodyTemplate   = "functionbody.cpp"
 
 headerFileName = "HROOT.h"
+cppFileName = "HROOT.cpp" 
+hscFileName = "Function.hsc"
+hsFileName  = "Class.hs"
