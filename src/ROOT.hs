@@ -45,23 +45,38 @@ tAttHaveAxis = Class "TAttHaveAxis" []
                  , Function (cppclass "TAxis") "GetZaxis" [] 
                  ] 
 
+self_ = SelfType
 
-tH1F     = Class "TH1F" [tObject, tNamed, tAttLine, tAttFill, tAttHaveAxis] [] 
+tH1F     = Class "TH1F" [tObject, tNamed, tAttLine, tAttFill, tAttHaveAxis] 
+           [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"] 
+           ] 
 
-tH2F     = Class "TH2F" [tObject, tNamed ] []
+tH2F     = Class "TH2F" [tObject, tNamed ] 
+           [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"
+                                  ,int "nbinsy", double "ylow", double "yup"]
+           ]
 
-tHStack  = Class "THStack" [tObject, tNamed ] [] 
+tHStack  = Class "THStack" [tObject, tNamed ] 
+           [ Function self_ "New" [cstring "name",cstring "title"] 
+           ] 
 
-tCanvas  = Class "TCanvas" [tObject, tNamed ] [] 
+tCanvas  = Class "TCanvas" [tObject, tNamed ] 
+           [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"]
+           ] 
 
-tF1      = Class "TF1" [tObject, tNamed, tFormula] []
+tF1      = Class "TF1" [tObject, tNamed, tFormula] 
+           [ Function self_ "New" [cstring "name",cstring "formula",double "xmin",double "xmax"]
+           ]
 
-tGraph   = Class "TGraph" [tObject, tNamed, tAttLine, tAttFill ] []
+tGraph   = Class "TGraph" [tObject, tNamed, tAttLine, tAttFill ] 
+           [ Function self_ "New" [int "n", double "x", double "y"]
+           ]
 
-tAxis    = Class "TAxis" [tObject, tNamed, tAttAxis ] [] 
+tAxis    = Class "TAxis" [tObject, tNamed, tAttAxis ] []
+ 
 
-root_abstract_classes = [tObject, tNamed, tFormula ] -- [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWBox, tAttAxis, tAttHaveAxis ] 
+root_abstract_classes = [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWBox, tAttAxis, tAttHaveAxis ] 
 
-root_concrete_classes = [tF1] -- [ tH1F, tH2F, tHStack, tCanvas, tF1, tGraph, tAxis ]
+root_concrete_classes = [ tH1F, tH2F, tHStack, tCanvas, tF1, tGraph, tAxis ]
 
 root_all_classes = root_abstract_classes ++ root_concrete_classes 

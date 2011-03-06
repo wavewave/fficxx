@@ -43,5 +43,5 @@ ctypeToHsType SelfType = "a"
 ctypeToHsType (CT CTString _) = "String"
 ctypeToHsType (CT CTInt _) = "Int" 
 ctypeToHsType (CT CTDouble _) = "Double"
-ctypeToHsType (CT CTBool _ ) = "Bool"
+ctypeToHsType (CT CTBool _ ) = "Int"
 ctypeToHsType (CPT (CPTClass name) _) = name
