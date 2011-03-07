@@ -26,6 +26,7 @@ tAttLine = Class "TAttLine" []
 
 tAttFill = Class "TAttFill" [] 
                  [ Function void_   "SetFillColor"    [int "color" ] NoExport
+                 , Function void_   "SetFillStyle"    [int "style" ] NoExport 
                  ]
 
 tWBox    = Class "TWBox" [] 
@@ -53,7 +54,7 @@ tH1F     = Class "TH1F" [tObject, tNamed, tAttLine, tAttFill, tAttHaveAxis]
            , Function int_  "Fill" [double "x"] (Alias "fill1")
            ] 
 
-tH2F     = Class "TH2F" [tObject, tNamed ] 
+tH2F     = Class "TH2F" [tObject, tNamed, tAttLine, tAttFill, tAttHaveAxis  ] 
            [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"
                                   ,int "nbinsy", double "ylow", double "yup"] NoExport
            , Function int_  "Fill" [double "x", double "y"] (Alias "fill2") 
@@ -63,7 +64,7 @@ tHStack  = Class "THStack" [tObject, tNamed ]
            [ Function self_ "New" [cstring "name",cstring "title"]  NoExport
            ] 
 
-tCanvas  = Class "TCanvas" [tObject, tNamed ] 
+tCanvas  = Class "TCanvas" [tObject, tNamed, tAttFill, tWBox  ] 
            [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"] NoExport
            ] 
 
@@ -90,13 +91,14 @@ tAttText = Class "TAttText" []
            , Function void_ "SetTextSize"  [double "tsize"] NoExport 
            ]  
 
-tLatex   = Class "TLatex" [tObject, tNamed, tText, tAttText] 
-           [ Function self_ "DrawLatex" [double "x", double "y", cstring "text"] (Alias "drawLatex")
+tLatex   = Class "TLatex" [tObject, tNamed, tAttText] 
+           [ Function self_ "New"       [double "x", double "y", cstring "text"] NoExport 
+           , Function self_ "DrawLatex" [double "x", double "y", cstring "text"] (Alias "drawLatex")
            ]
 
 
-root_abstract_classes = [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWBox, tAttAxis, tAttHaveAxis ] 
+root_abstract_classes = [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWBox, tAttAxis, tAttHaveAxis, tAttText ] 
 
-root_concrete_classes = [ tH1F, tH2F, tHStack, tCanvas, tF1, tGraph, tAxis ]
+root_concrete_classes = [ tH1F, tH2F, tHStack, tCanvas, tF1, tGraph, tAxis, tLine, tLatex ]
 
 root_all_classes = root_abstract_classes ++ root_concrete_classes 

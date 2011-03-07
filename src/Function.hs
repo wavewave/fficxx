@@ -75,7 +75,7 @@ funcToDef func | func_name func /= "New" =
                 ++ ")"
       returnstr = case (func_ret func) of          
         Void -> callstr ++ ";"
-        SelfType -> "return to_nonconst<Type ## _, Type>((Type *)" ++ callstr ++ ") ;"
+        SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
         (CT ctyp isconst) -> "return "++callstr++";" 
         (CPT (CPTClass str) _) -> "return to_nonconst<"++str++"_t,"++str
                                   ++">(("++str++"*)"++callstr++");"
