@@ -1,3 +1,4 @@
 cabal install --enable-documentation 
-cabal haddock --hyperlink-source 
+cabal haddock --hyperlink-source
 cabal install
+runhaskell versioncheck.hs
