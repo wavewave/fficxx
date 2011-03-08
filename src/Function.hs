@@ -23,6 +23,15 @@ data Function = Function {
     func_export :: ExportType
   }
 
+
+isNewFunc :: Function -> Bool 
+isNewFunc func = func_name func == "New"
+       
+
+isExportFunc :: Function -> Bool 
+isExportFunc func = func_export func /= NoExport 
+
+
 argToString :: (Types,String) -> String 
 argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname 
 argToString (SelfType, varname) = "Type ## _p " ++ varname

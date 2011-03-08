@@ -27,6 +27,8 @@ Library
                    Function
                    Class
                    ROOT
+                   CppCode
                    FFI
+                   HsCode
                    FileGeneration
 		 

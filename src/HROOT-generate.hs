@@ -15,8 +15,13 @@ import Util
 import Templates
 import Function
 import Class
-import ROOT
+import CppCode
 import FFI 
+import HsCode
+
+
+import ROOT
+
 import FileGeneration
 
 hline = putStrLn "--------------------------------------------------------"
