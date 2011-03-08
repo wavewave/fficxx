@@ -10,6 +10,48 @@ import Function
 import Class
 import Templates
 
+
+----------------
+
+rawToHighDecl = "data $rawname$\nnewtype $highname$ = $highname$ (ForeignPtr $rawname$) deriving (Eq, Ord, Show)"
+
+rawToHighInstance = "instance FPtr $highname$ where\n   type Raw $highname$ = $rawname$\n   get_fptr ($highname$ fptr) = fptr\n   cast_fptr_to_obj = $highname$"
+
+rawToHighInstanceCastable =  "instance Castable $highname$ (Ptr $rawname$) where\n  cast = unsafeForeignPtrToPtr.get_fptr\n  uncast x = cast_fptr_to_obj (unsafePerformIO (newForeignPtr_ x))"
+
+
+hsClassType :: Class -> String 
+hsClassType c = let decl = render rawToHighDecl tmplName
+                    inst1 = render rawToHighInstance tmplName
+                    inst2 = render rawToHighInstanceCastable tmplName
+                in  decl `connRet` inst1 `connRet` inst2
+  where (highname,rawname) = hsClassName c
+        tmplName = [("rawname",rawname),("highname",highname)] 
+            
+mkRawClasses :: [Class] -> String 
+mkRawClasses = intercalateWith connRet2 hsClassType
+
+
+-----------------------------
+-- classInstanceHeader = "instance $parent$ $daughter$ where" 
+
+hsClassInstance :: Class -> Class -> String 
+hsClassInstance parent child  = 
+  let headline = "instance " ++ typeclassName parent ++ " " ++ class_name child ++ " where" 
+      defline func = "  " ++ hsFuncName func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
+      deflines = map defline (class_funcs parent) 
+  in  intercalateWith connRet id (headline : deflines) 
+   
+mkClassInstances :: DaughterMap -> String 
+mkClassInstances m = 
+  let lst = M.toList m 
+      f (x,ys) = intercalateWith connRet (hsClassInstance x) ys
+  in  intercalateWith connRet2 f lst
+      
+      
+-- hsClassDeclaration :: Class -> String
+-- hsClassDeclaration c = undefined
+  
 ----------                        
 
 hsClassDeclHeaderTmpl = "class $classname$ a where"
@@ -20,7 +62,7 @@ hsClassDeclFuncTmpl = "    $funcname$ :: $args$ "
 classToHsDecl :: Class -> String 
 classToHsDecl c | length (class_funcs c) <= 0 = ""
 classToHsDecl c | length (class_funcs c) > 0 =  
-  let header = render hsClassDeclHeaderTmpl [ ("classname", class_name c ) ] 
+  let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) ] 
       bodyline func = render hsClassDeclFuncTmpl 
                              [ ("funcname", hsFuncName func) 
                              , ("args" , argstr func ) 
