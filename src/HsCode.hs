@@ -32,6 +32,36 @@ mkRawClasses :: [Class] -> String
 mkRawClasses = intercalateWith connRet2 hsClassType
 
 
+
+hsClassDeclHeaderTmpl = "class $classname$ a where"
+
+hsClassDeclFuncTmpl = "    $funcname$ :: $args$ "
+
+  
+classToHsDecl :: Class -> String 
+classToHsDecl c | length (class_funcs c) <= 0 = ""
+classToHsDecl c | length (class_funcs c) > 0 =  
+  let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) ] 
+      bodyline func = render hsClassDeclFuncTmpl 
+                                    [ ("funcname", hsFuncName func) 
+                                    , ("args" , argstr func ) 
+                                    ] 
+      argstr func = intercalateWith connArrow id $
+                                    [ "a" ] 
+                                    ++ map (ctypeToHsType c.fst) (func_args func)
+                                    ++ ["IO " ++ (ctypeToHsType c.func_ret) func ]
+      bodylines = map bodyline . filter (\x -> (not.isNewFunc) x && (not.isExportFunc) x) 
+                      $ (class_funcs c) 
+  in  intercalateWith connRet id (header : bodylines) 
+
+hsArgs :: Class -> Args -> String
+hsArgs c = intercalateWith connArrow (ctypeToHsType c. fst) 
+
+
+classesToHsDecls :: [Class] -> String 
+classesToHsDecls = intercalateWith connRet2 classToHsDecl 
+
+
 -----------------------------
 -- classInstanceHeader = "instance $parent$ $daughter$ where" 
 
@@ -54,32 +84,7 @@ mkClassInstances m =
   
 ----------                        
 
-hsClassDeclHeaderTmpl = "class $classname$ a where"
 
-hsClassDeclFuncTmpl = "    $funcname$ :: $args$ "
-
-  
-classToHsDecl :: Class -> String 
-classToHsDecl c | length (class_funcs c) <= 0 = ""
-classToHsDecl c | length (class_funcs c) > 0 =  
-  let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) ] 
-      bodyline func = render hsClassDeclFuncTmpl 
-                             [ ("funcname", hsFuncName func) 
-                             , ("args" , argstr func ) 
-                             ] 
-      argstr func = intercalateWith connArrow id $
-                                    [ "a" ] 
-                                    ++ map (ctypeToHsType c.fst) (func_args func)
-                                    ++ ["IO " ++ (ctypeToHsType c.func_ret) func ]
-      bodylines = map bodyline (class_funcs c) 
-  in  intercalateWith connRet id (header : bodylines) 
-
-hsArgs :: Class -> Args -> String
-hsArgs c = intercalateWith connArrow (ctypeToHsType c. fst) 
-
-
-classesToHsDecls :: [Class] -> String 
-classesToHsDecls = intercalateWith connRet2 classToHsDecl 
 
 
 hsClassMethodExport :: Class    -- ^ only concrete class

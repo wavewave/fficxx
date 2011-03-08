@@ -25,15 +25,15 @@ import ROOT
 
 ---- Header and Cpp file
 
-mkDeclHeader :: STGroup String -> [Class] -> [Class] -> String 
-mkDeclHeader templates aclass cclass = 
+mkDeclHeader :: STGroup String -> [Class] -> String --  -> [Class] -> [Class] -> String 
+mkDeclHeader templates classes = 
   let decl        = renderTemplateGroup templates 
                                         [ ("declarationbody", declBodyStr ) ] 
                                         declarationTemplate
-      declDefStr    = classesToDeclsDef (aclass ++ cclass) 
-      typeDeclStr    = classesToTypeDecls cclass
-      dmap = mkDaughterMap cclass     
-      classDeclsStr  = classesToClassDecls dmap `connRet2` classesSelfDecls root_concrete_classes       
+      declDefStr    = classesToDeclsDef  classes 
+      typeDeclStr    = classesToTypeDecls classes 
+      dmap = mkDaughterMap classes
+      classDeclsStr  = classesToClassDecls dmap `connRet2` classesSelfDecls classes
 
       declBodyStr = declDefStr `connRet2` typeDeclStr `connRet2` classDeclsStr 
       
@@ -65,21 +65,21 @@ mkFunctionHsc templates classes =
                       "Function.hsc" 
                      
 mkTypeHs :: STGroup String -> [Class] -> String                      
-mkTypeHs templates cclass = 
+mkTypeHs templates classes = 
   renderTemplateGroup templates [ ("typeBody", typebody) ]  "Type.hs" 
-  where typebody = mkRawClasses cclass 
+  where typebody = mkRawClasses classes 
   
   
-mkClassHs :: STGroup String -> [Class] -> [Class] -> String
-mkClassHs templates aclass cclass = 
+mkClassHs :: STGroup String -> [Class] -> String
+mkClassHs templates classes = 
   renderTemplateGroup templates 
                       [ ("classBody", classBodyStr ) ]
                       "Class.hs"
-  where dmap = mkDaughterMap cclass
-        classBodyStr = classesToHsDecls aclass `connRet2`
+  where dmap = mkDaughterMap classes
+        classBodyStr = classesToHsDecls classes `connRet2`
                        mkClassInstances dmap `connRet2`
-                       classesToHsDefNews cclass `connRet2`
-                       intercalateWith connRet hsClassMethodExport cclass 
+                       classesToHsDefNews classes `connRet2`
+                       intercalateWith connRet hsClassMethodExport classes 
                        
                        
                        

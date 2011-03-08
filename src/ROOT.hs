@@ -29,7 +29,7 @@ tAttFill = Class "TAttFill" []
                  , Function void_   "SetFillStyle"    [int "style" ] NoExport 
                  ]
 
-tWBox    = Class "TWBox" [] 
+tWbox    = Class "TWbox" [] 
                  [ Function void_   "SetBorderMode"   [int "bordermode" ] NoExport
                  ] 
 
@@ -41,7 +41,7 @@ tAttAxis = Class "TAttAxis" []
                  , Function void_   "SetNdivisions"   [int "n", bool "optim" ] NoExport
                  ] 
  
-tAttHaveAxis = Class "TAttHaveAxis" [] 
+tH1      = Class "TH1" [tObject, tNamed, tAttLine, tAttFill ] 
                  [ Function (cppclass "TAxis") "GetXaxis" [] NoExport
                  , Function (cppclass "TAxis") "GetYaxis" [] NoExport
                  , Function (cppclass "TAxis") "GetZaxis" [] NoExport
@@ -49,12 +49,12 @@ tAttHaveAxis = Class "TAttHaveAxis" []
 
 self_ = SelfType
 
-tH1F     = Class "TH1F" [tObject, tNamed, tAttLine, tAttFill, tAttHaveAxis] 
+tH1F     = Class "TH1F" [tObject, tNamed, tAttLine, tAttFill, tH1] 
            [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"] NoExport
            , Function int_  "Fill" [double "x"] (Alias "fill1")
            ] 
 
-tH2F     = Class "TH2F" [tObject, tNamed, tAttLine, tAttFill, tAttHaveAxis  ] 
+tH2F     = Class "TH2F" [tObject, tNamed, tAttLine, tAttFill, tH1  ] 
            [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"
                                   ,int "nbinsy", double "ylow", double "yup"] NoExport
            , Function int_  "Fill" [double "x", double "y"] (Alias "fill2") 
@@ -64,7 +64,7 @@ tHStack  = Class "THStack" [tObject, tNamed ]
            [ Function self_ "New" [cstring "name",cstring "title"]  NoExport
            ] 
 
-tCanvas  = Class "TCanvas" [tObject, tNamed, tAttFill, tWBox  ] 
+tCanvas  = Class "TCanvas" [tObject, tNamed, tAttFill, tWbox  ] 
            [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"] NoExport
            ] 
 
@@ -97,8 +97,6 @@ tLatex   = Class "TLatex" [tObject, tNamed, tAttText]
            ]
 
 
-root_abstract_classes = [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWBox, tAttAxis, tAttHaveAxis, tAttText ] 
-
-root_concrete_classes = [ tH1F, tH2F, tHStack, tCanvas, tF1, tGraph, tAxis, tLine, tLatex ]
-
-root_all_classes = root_abstract_classes ++ root_concrete_classes 
+root_all_classes = [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWbox, tAttAxis
+                   , tAttText, tH1F, tH2F, tHStack, tCanvas, tF1, tGraph
+                   , tAxis, tLine, tLatex, tH1 ]

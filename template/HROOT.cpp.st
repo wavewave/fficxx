@@ -15,7 +15,7 @@
 #include "TNamed.h"
 #include "TAttLine.h"
 #include "TAttAxis.h"
-
+#include "TH1.h"
 #include "TCanvas.h"
 #include "TGraph.h"
 #include "TLorentzVector.h"
@@ -24,6 +24,7 @@
 #include "TAxis.h"
 
 #include "TLine.h"
+#include "TWbox.h"
 
 using namespace std;
 

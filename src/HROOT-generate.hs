@@ -34,30 +34,30 @@ main = do
   putStrLn "header file generation"
   withFile (workingDir </> headerFileName) WriteMode $ 
     \h -> do 
-      hPutStrLn h (mkDeclHeader templates root_abstract_classes root_concrete_classes)
+      hPutStrLn h (mkDeclHeader templates root_all_classes)
       
-  let dmap = mkDaughterMap root_concrete_classes  
+  let dmap = mkDaughterMap root_all_classes  
 
   putStrLn "cpp file generation" 
   withFile (workingDir </> cppFileName) WriteMode $ 
     \h -> do 
       hPutStrLn h (mkDefMain templates root_all_classes)
-      hPutStrLn h ( ( mkDaughterDef . mkDaughterMap) root_concrete_classes )
-      hPutStrLn h ( classesSelfDefs root_concrete_classes) 
+      hPutStrLn h ( ( mkDaughterDef . mkDaughterMap) root_all_classes )
+      hPutStrLn h ( classesSelfDefs root_all_classes) 
       
       
   putStrLn "hsc file generation" 
   withFile (workingDir </> hscFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkFunctionHsc templates root_concrete_classes) 
+    \h -> hPutStrLn h (mkFunctionHsc templates root_all_classes) 
       
   putStrLn "Type.hs file generation" 
   withFile (workingDir </> typeHsFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkTypeHs templates root_concrete_classes )
+    \h -> hPutStrLn h (mkTypeHs templates root_all_classes )
   
   
   putStrLn "Class.hs file generation"
   withFile (workingDir </> hsFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkClassHs templates root_abstract_classes root_concrete_classes)
+    \h -> hPutStrLn h (mkClassHs templates root_all_classes)
 
   copyFile (workingDir </> headerFileName) ( csrcDir </> headerFileName) 
   copyFile (workingDir </> cppFileName) ( csrcDir </> cppFileName) 
