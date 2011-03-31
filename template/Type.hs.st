@@ -36,11 +36,9 @@ instance Castable String CString where
   cast x = unsafePerformIO (newCString x)
   uncast x = unsafePerformIO (peekCString x) 
 
-{-  
 instance (FPtr a, Ptr (Raw a) ~ ptrrawa) => Castable a ptrrawa where
   cast = unsafeForeignPtrToPtr.get_fptr
   uncast x = cast_fptr_to_obj (unsafePerformIO (newForeignPtr_ x)) 
--}
 
 instance (Castable a a', Castable b b') => Castable (a->b) (a'->b') where
   cast f = cast . f . uncast
