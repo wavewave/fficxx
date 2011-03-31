@@ -47,11 +47,12 @@ main = do
   withFile (workingDir </> hsFileName) WriteMode $ 
     \h -> hPutStrLn h (mkClassHs templates root_all_classes)
 
+{-
   copyFile (workingDir </> headerFileName) ( csrcDir </> headerFileName) 
   copyFile (workingDir </> cppFileName) ( csrcDir </> cppFileName) 
   
   copyFile (workingDir </> hscFileName) ( srcDir </> hscFileName) 
   copyFile (workingDir </> typeHsFileName) ( srcDir </> typeHsFileName) 
-  copyFile (workingDir </> hsFileName) ( srcDir </> hsFileName) 
+  copyFile (workingDir </> hsFileName) ( srcDir </> hsFileName)  -}
   
   return ()

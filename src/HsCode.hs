@@ -2,10 +2,12 @@ module HsCode where
 
 import qualified Data.Map as M
 
+import CType
 import Util
 import Function
 import Class
 
+import Control.Monad.State
 ----------------
 
 rawToHighDecl :: String
@@ -14,14 +16,16 @@ rawToHighDecl = "data $rawname$\nnewtype $highname$ = $highname$ (ForeignPtr $ra
 rawToHighInstance :: String
 rawToHighInstance = "instance FPtr $highname$ where\n   type Raw $highname$ = $rawname$\n   get_fptr ($highname$ fptr) = fptr\n   cast_fptr_to_obj = $highname$"
 
+{-
 rawToHighInstanceCastable :: String
 rawToHighInstanceCastable =  "instance Castable $highname$ (Ptr $rawname$) where\n  cast = unsafeForeignPtrToPtr.get_fptr\n  uncast x = cast_fptr_to_obj (unsafePerformIO (newForeignPtr_ x))"
+-} 
 
 hsClassType :: Class -> String 
 hsClassType c = let decl = render rawToHighDecl tmplName
                     inst1 = render rawToHighInstance tmplName
-                    inst2 = render rawToHighInstanceCastable tmplName
-                in  decl `connRet` inst1 `connRet` inst2
+               --      inst2 = render rawToHighInstanceCastable tmplName
+                in  decl `connRet` inst1 {- `connRet` inst2 -}
   where (highname,rawname) = hsClassName c
         tmplName = [("rawname",rawname),("highname",highname)] 
             
@@ -35,18 +39,42 @@ hsClassDeclHeaderTmpl = "class $classname$ a where"
 hsClassDeclFuncTmpl :: String
 hsClassDeclFuncTmpl = "    $funcname$ :: $args$ "
 
-                        
+
+mkHsFuncArgType :: Class -> Args -> ([String],[String]) 
+mkHsFuncArgType c lst = 
+  let  (args,state) = runState (mapM mkFuncArgTypeWorker lst) ([],0)
+  in   (args,fst state)
+  where mkFuncArgTypeWorker (typ,var) = 
+          case typ of                  
+            SelfType -> return "a"
+            CT _ _   -> return $ ctypeToHsType c typ 
+            CPT (CPTClass cname) _ -> do 
+              (prefix,n) <- get 
+              let classname = 'I' : cname
+                  newname = 'c' : show n
+                  newprefix = classname ++ " " ++ newname    
+              put (newprefix:prefix,n+1)
+              return newname
+           
+      
+      
 classToHsDecl :: Class -> String 
 classToHsDecl c | length (class_funcs c) <= 0 = ""
 classToHsDecl c | length (class_funcs c) > 0 =  
   let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) ] 
       bodyline func = render hsClassDeclFuncTmpl 
                                     [ ("funcname", hsFuncName func) 
-                                    , ("args" , argstr func ) 
+                                    , ("args" , prefixstr func ++ argstr func ) 
                                     ] 
+      prefixstr func =  
+        let prefixlst = (snd . mkHsFuncArgType c . func_args) func
+        in  if null prefixlst
+              then "" 
+              else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
       argstr func = intercalateWith connArrow id $
                                     [ "a" ] 
-                                    ++ map (ctypeToHsType c.fst) (func_args func)
+                                    ++ fst (mkHsFuncArgType c (func_args func))
+                                    {- ++ map (ctypeToHsType c.fst) (func_args func) -}
                                     ++ ["IO " ++ (ctypeToHsType c.func_ret) func ]
       bodylines = map bodyline . filter (\x -> (not.isNewFunc) x && (not.isExportFunc) x) 
                       $ (class_funcs c) 
