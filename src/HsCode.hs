@@ -102,7 +102,7 @@ hsClassInstance parent child  =
 mkClassInstances :: DaughterMap -> String 
 mkClassInstances m = 
   let lst = M.toList m 
-      f (x,ys) = intercalateWith connRet (hsClassInstance x) ys
+      f (x,ys) = intercalateWith connRet (hsClassInstance x) (x:ys)
   in  intercalateWith connRet2 f lst
       
       
