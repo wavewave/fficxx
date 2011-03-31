@@ -6,9 +6,14 @@ import Text.Parsec.Combinator
 import System.FilePath ((</>))
 import System.Posix.Files 
 
---import System.Directory
+import System.Directory
 --import System.Process
 
+isCabal :: String -> Bool 
+isCabal str 
+  | length str > 6 = let ext = reverse . take 6 . reverse $ str in ext == ".cabal" 
+  | otherwise = False
+                
 cabalName :: Parser String 
 cabalName = do 
   manyTill anyChar (try (string "Name:"))
@@ -29,23 +34,36 @@ nameVersion = do
   
 main = do 
   putStrLn "version check"
-  str <- readFile "HROOT-generate.cabal" 
+  currdir <- getDirectoryContents "."
+  let cabalfile = head $ filter isCabal currdir
+  str <- readFile cabalfile 
   let Right (name,version) = parse nameVersion "" str
       filename = name ++ "-" ++ version
       linkbase = "/home/wavewave/nfs/doc/prog" 
-      docbase  = "/home/wavewave/nfs/haddock"
+      docbase  = "/home/wavewave/nfs/usr/share/doc"
       linkpath = linkbase </> name 
       origpath = docbase </> filename
   
   putStrLn $ "ln -s " ++ origpath ++ " " ++ linkpath
   
+  test <- getDirectoryContents linkbase  
   
+  if elem name test 
+    then do 
+      putStrLn "removing link"
+      removeLink linkpath  
+    else do 
+      putStrLn "doesn't exist" 
+      return () 
+{-  putStrLn $ show test
   b <- fileExist linkpath 
   if b 
      then do 
        putStrLn $ "removing link" 
        removeLink linkpath 
-     else return ()
+     else do
+       putStrLn $ "doesn't exist"
+       return () -}
  {-  readProcess "ln" ["-s", origpath, linkpath] "" -} 
   createSymbolicLink origpath linkpath
     

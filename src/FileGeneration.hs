@@ -1,58 +1,51 @@
 module FileGeneration where
 
-import System.IO
-import System.Directory
-import System.Process
-import System.FilePath ((</>))
-
 import Text.StringTemplate hiding (render)
 import Text.StringTemplate.Helpers
 
 import Data.Char
 import qualified Data.Map as M
 
-import CType
 import Util
 import Templates
-import Function
 import Class
 import CppCode
 import FFI 
 import HsCode
 
-import ROOT
-
-
 ---- Header and Cpp file
 
-mkDeclHeader :: STGroup String -> [Class] -> String --  -> [Class] -> [Class] -> String 
+mkDeclHeader :: STGroup String -> [Class] -> String 
 mkDeclHeader templates classes = 
-  let decl        = renderTemplateGroup templates 
-                                        [ ("declarationbody", declBodyStr ) ] 
-                                        declarationTemplate
-      declDefStr    = classesToDeclsDef  classes 
+  let declDefStr    = classesToDeclsDef  classes 
       typeDeclStr    = classesToTypeDecls classes 
       dmap = mkDaughterMap classes
-      classDeclsStr  = classesToClassDecls dmap `connRet2` classesSelfDecls classes
+      classDeclsStr  = classesToClassDecls dmap 
+                       `connRet2` classesSelfDecls classes
+      declBodyStr = declDefStr 
+                    `connRet2` typeDeclStr 
+                    `connRet2` classDeclsStr 
+  in  renderTemplateGroup 
+        templates 
+        [ ("declarationbody", declBodyStr ) ] 
+        declarationTemplate
 
-      declBodyStr = declDefStr `connRet2` typeDeclStr `connRet2` classDeclsStr 
-      
-  in  decl
-      
 mkDefMain :: STGroup String -> [Class] -> String 
 mkDefMain templates classes =
-  let def        = renderTemplateGroup templates 
-                                        [ ("headerfilename", headerFileName ) 
-                                        , ("cppbody"       , cppBody ) ] 
-                                        definitionTemplate
-      cppBody = classesToDefs classes
-  in  def
+  let cppBody = classesToDefs classes
+  in  renderTemplateGroup 
+        templates 
+        [ ("headerfilename", headerFileName ) 
+        , ("cppbody"       , cppBody ) ] 
+        definitionTemplate
 
 mkDaughterDef :: DaughterMap -> String 
 mkDaughterDef m = 
   let lst = M.toList m 
-      f (x,ys) = let strx = map toUpper (class_name x) 
-                 in  concatMap (\y ->"ROOT_"++strx++"_DEFINITION(" ++ class_name y ++ ")\n") ys
+      f (x,ys) = 
+        let strx = map toUpper (class_name x) 
+        in  (flip concatMap) ys $ \y ->"ROOT_"++strx++"_DEFINITION(" 
+                                       ++ class_name y ++ ")\n" 
   in  concatMap f lst
 
 

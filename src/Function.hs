@@ -2,13 +2,8 @@ module Function where
 
 -- import Data.Char
 
-import Text.StringTemplate hiding (render)
-import Text.StringTemplate.Helpers
-
-
 import CType
 import Util
-import Templates
 
 data ExportType = NoExport | FullName | Alias String    
                 deriving Eq 
@@ -35,6 +30,9 @@ isExportFunc func = func_export func /= NoExport
 argToString :: (Types,String) -> String 
 argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname 
 argToString (SelfType, varname) = "Type ## _p " ++ varname
+argToString (CPT (CPTClass cname) isconst, varname) = case isconst of 
+  Const   -> "const_" ++ cname ++ "_p " ++ varname 
+  NoConst -> cname ++ "_p " ++ varname
 
 
 argsToString :: Args -> String 
@@ -45,6 +43,10 @@ argsToString args =
 argsToStringNoSelf :: Args -> String 
 argsToStringNoSelf = intercalateWith conncomma argToString 
 
+
+argToCallString :: (Types,String) -> String
+argToCallString (CPT (CPTClass str) _,varname) = 
+  "to_nonconst<"++str++","++str++"_t>("++varname++")"
 argToCallString (_,varname) = varname
 
 argsToCallString :: Args -> String
@@ -85,7 +87,7 @@ funcToDef func | func_name func /= "New" =
       returnstr = case (func_ret func) of          
         Void -> callstr ++ ";"
         SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
-        (CT ctyp isconst) -> "return "++callstr++";" 
+        (CT _ctyp _isconst) -> "return "++callstr++";" 
         (CPT (CPTClass str) _) -> "return to_nonconst<"++str++"_t,"++str
                                   ++">(("++str++"*)"++callstr++");"
   in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 

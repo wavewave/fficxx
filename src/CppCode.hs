@@ -1,15 +1,12 @@
 module CppCode where
 
 import Data.Char 
-import Text.StringTemplate hiding (render)
 
 import qualified Data.Map as M
 
-import CType
 import Util
 import Function
 import Class
-import Templates
 
 -- Class Declaration and Definition
 
@@ -32,6 +29,8 @@ classToTypeDecl :: Class -> String
 classToTypeDecl c = let tmpl = "ROOT_TYPE_DECLARATION($classname$);" 
                     in  render tmpl [ ("classname", class_name c) ] 
 
+
+classesToTypeDecls :: [Class] -> String
 classesToTypeDecls = intercalateWith connRet (classToTypeDecl ) 
 
 -----
@@ -73,6 +72,7 @@ classToDef aclass =
       funcDefStr = funcsToDefs (class_funcs aclass)
   in  defBodyStr 
       
+classesToDefs :: [Class] -> String
 classesToDefs = intercalateWith connRet2 classToDef
 
   

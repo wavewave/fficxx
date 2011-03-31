@@ -1,24 +1,21 @@
 module HsCode where
 
-import Text.StringTemplate hiding (render)
-
 import qualified Data.Map as M
 
-import CType
 import Util
 import Function
 import Class
-import Templates
-
 
 ----------------
 
+rawToHighDecl :: String
 rawToHighDecl = "data $rawname$\nnewtype $highname$ = $highname$ (ForeignPtr $rawname$) deriving (Eq, Ord, Show)"
 
+rawToHighInstance :: String
 rawToHighInstance = "instance FPtr $highname$ where\n   type Raw $highname$ = $rawname$\n   get_fptr ($highname$ fptr) = fptr\n   cast_fptr_to_obj = $highname$"
 
+rawToHighInstanceCastable :: String
 rawToHighInstanceCastable =  "instance Castable $highname$ (Ptr $rawname$) where\n  cast = unsafeForeignPtrToPtr.get_fptr\n  uncast x = cast_fptr_to_obj (unsafePerformIO (newForeignPtr_ x))"
-
 
 hsClassType :: Class -> String 
 hsClassType c = let decl = render rawToHighDecl tmplName
@@ -32,12 +29,13 @@ mkRawClasses :: [Class] -> String
 mkRawClasses = intercalateWith connRet2 hsClassType
 
 
-
+hsClassDeclHeaderTmpl :: String
 hsClassDeclHeaderTmpl = "class $classname$ a where"
 
+hsClassDeclFuncTmpl :: String
 hsClassDeclFuncTmpl = "    $funcname$ :: $args$ "
 
-  
+                        
 classToHsDecl :: Class -> String 
 classToHsDecl c | length (class_funcs c) <= 0 = ""
 classToHsDecl c | length (class_funcs c) > 0 =  

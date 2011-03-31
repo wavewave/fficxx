@@ -2,15 +2,11 @@ module Class where
 
 import Data.Char
 
-import Text.StringTemplate hiding (render)
-import Text.StringTemplate.Helpers
-
 import qualified Data.Map as M
 
 import CType
 import Util
 import Function
-import Templates
 
 data Class = Class { 
     class_name :: String, 
@@ -38,16 +34,16 @@ mkDaughterMap = foldl mkDaughterMapWorker M.empty
                                         in  M.alter f p m
        
 ctypeToHsType :: Class -> Types -> String
-ctypeToHsType c Void = "()" 
+ctypeToHsType _c Void = "()" 
 ctypeToHsType c SelfType = class_name c
-ctypeToHsType c (CT CTString _) = "String"
-ctypeToHsType c (CT CTInt _) = "Int" 
-ctypeToHsType c (CT CTDouble _) = "Double"
-ctypeToHsType c (CT CTBool _ ) = "Int"
-ctypeToHsType c (CT CTDoubleStar _) = "[Double]"
-ctypeToHsType c (CPT (CPTClass name) _) = name
+ctypeToHsType _c (CT CTString _) = "String"
+ctypeToHsType _c (CT CTInt _) = "Int" 
+ctypeToHsType _c (CT CTDouble _) = "Double"
+ctypeToHsType _c (CT CTBool _ ) = "Int"
+ctypeToHsType _c (CT CTDoubleStar _) = "[Double]"
+ctypeToHsType _c (CPT (CPTClass name) _) = name
 
--- 
+
 typeclassName :: Class -> String
 typeclassName c = 'I' : class_name c
 
@@ -64,7 +60,7 @@ hsFuncTyp c f = let args = func_args f
                     ret  = func_ret  f 
                 in  self ++ " -> " ++ concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
                     
-  where (hcname,rcname) = hsClassName c
+  where (_hcname,rcname) = hsClassName c
         self = "(Ptr " ++ rcname ++ ")" 
 
         hsargtype (CT ctype _) = hsCTypeName ctype
@@ -81,7 +77,7 @@ hsFuncTypNoSelf c f = let args = func_args f
                           ret  = func_ret  f 
                       in  intercalateWith connArrow id $ map (hsargtype . fst) args ++ [hsrettype ret]  
                           
-  where (hcname,rcname) = hsClassName c
+  where (_hcname,rcname) = hsClassName c
         self = "(Ptr " ++ rcname ++ ")" 
 
         hsargtype (CT ctype _) = hsCTypeName ctype

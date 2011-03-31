@@ -1,17 +1,12 @@
 module FFI where
 
-import Data.Char
-
-import qualified Data.Map as M
 
 import Util 
 import Function
 import Class
 import Templates
 
-import Text.StringTemplate hiding (render)
-import Text.StringTemplate.Helpers
-
+ffistub :: String
 ffistub = "foreign import ccall \"$headerfilename$ $classname$_$funcname$\" $hsfuncname$ \n  :: $hsargs$"
 
 
