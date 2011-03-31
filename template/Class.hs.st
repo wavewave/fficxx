@@ -1,6 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses, 
              FlexibleInstances, TypeSynonymInstances, UndecidableInstances, 
-             EmptyDataDecls #-}
+             EmptyDataDecls, IncoherentInstances #-}
 
 
 module HROOT.Class where
