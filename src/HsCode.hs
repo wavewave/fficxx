@@ -111,8 +111,24 @@ mkClassInstances m =
   
 ----------                        
 
+hsInterfaceCastableInstanceTmpl :: String 
+hsInterfaceCastableInstanceTmpl = 
+  "instance ($interfaceName$ a, FPtr a) => Castable a (Ptr $rawClassName$) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
 
 
+hsInterfaceCastableInstance :: Class -> String 
+hsInterfaceCastableInstance c = 
+  let iname = typeclassName c
+      (_,rname) = hsClassName c
+  in  render hsInterfaceCastableInstanceTmpl 
+             [("interfaceName",iname),("rawClassName",rname)]
+
+mkInterfaceCastableInstance :: [Class] -> String 
+mkInterfaceCastableInstance = 
+  intercalateWith connRet2 hsInterfaceCastableInstance 
+
+
+----------
 
 hsClassMethodExport :: Class    -- ^ only concrete class
                        -> String 
