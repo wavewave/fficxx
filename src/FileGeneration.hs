@@ -70,7 +70,7 @@ mkClassHs templates classes =
                       "Class.hs"
   where dmap = mkDaughterMap classes
         classBodyStr = classesToHsDecls classes `connRet2`
-                       mkInterfaceCastableInstance classes `connRet2`
+                       mkInterfaceCastableInstance (M.keys dmap) `connRet2`
                        mkClassInstances dmap `connRet2`
                        classesToHsDefNews classes `connRet2`
                        intercalateWith connRet hsClassMethodExport classes 

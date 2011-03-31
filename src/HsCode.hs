@@ -50,9 +50,9 @@ mkHsFuncArgType c lst =
             CT _ _   -> return $ ctypeToHsType c typ 
             CPT (CPTClass cname) _ -> do 
               (prefix,n) <- get 
-              let classname = 'I' : cname
+              let iname = typeclassName c
                   newname = 'c' : show n
-                  newprefix1 = classname ++ " " ++ newname    
+                  newprefix1 = iname ++ " " ++ newname    
                   newprefix2 = "FPtr " ++ newname
               put (newprefix1:newprefix2:prefix,n+1)
               return newname
