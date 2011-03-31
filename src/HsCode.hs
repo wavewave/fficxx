@@ -52,8 +52,9 @@ mkHsFuncArgType c lst =
               (prefix,n) <- get 
               let classname = 'I' : cname
                   newname = 'c' : show n
-                  newprefix = classname ++ " " ++ newname    
-              put (newprefix:prefix,n+1)
+                  newprefix1 = classname ++ " " ++ newname    
+                  newprefix2 = "FPtr " ++ newname
+              put (newprefix1:newprefix2:prefix,n+1)
               return newname
            
       
