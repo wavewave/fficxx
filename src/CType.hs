@@ -1,6 +1,6 @@
 module CType where
 
-data CTypes = CTString | CTInt | CTDouble | CTBool | CTDoubleStar
+data CTypes = CTString | CTInt | CTDouble | CTBool | CTDoubleStar | CTVoidStar | CTIntStar | CTCharStarStar
 
 data CPPTypes = CPTClass String 
 
@@ -38,6 +38,18 @@ bool_    = CT CTBool   NoConst
 void_ :: Types
 void_ = Void 
 
+voidp_ :: Types 
+voidp_ = CT CTVoidStar NoConst
+
+intp_ :: Types 
+intp_ = CT CTIntStar NoConst
+
+charpp_ :: Types
+charpp_ = CT CTCharStarStar NoConst
+
+voidp :: String -> (Types,String) 
+voidp var = (voidp_ , var)
+
 cstring :: String -> (Types,String)
 cstring var = (cstring_ , var)
 
@@ -59,6 +71,12 @@ doublep var = (doublep_ , var)
 bool :: String -> (Types,String)
 bool    var = (bool_    , var)
 
+intp :: String -> (Types, String) 
+intp var = (intp_ , var)
+
+charpp :: String -> (Types, String)
+charpp var = (charpp_, var)
+
 cppclass :: String -> Types
 cppclass name =  CPT (CPTClass name) NoConst
 
@@ -68,6 +86,11 @@ hsCTypeName CTInt    = "CInt"
 hsCTypeName CTDouble = "CDouble"
 hsCTypeName CTDoubleStar = "(Ptr CDouble)"
 hsCTypeName CTBool   = "CInt"
+hsCTypeName CTVoidStar = "(Ptr ())"
+hsCTypeName CTIntStar = "(Ptr CInt)"
+hsCTypeName CTCharStarStar = "(Ptr (CString))"
+
+
 
 hsCppTypeName :: CPPTypes -> String
 hsCppTypeName (CPTClass name) =  "(Ptr Raw"++name++")"  

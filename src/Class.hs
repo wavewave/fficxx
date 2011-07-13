@@ -41,6 +41,9 @@ ctypeToHsType _c (CT CTInt _) = "Int"
 ctypeToHsType _c (CT CTDouble _) = "Double"
 ctypeToHsType _c (CT CTBool _ ) = "Int"
 ctypeToHsType _c (CT CTDoubleStar _) = "[Double]"
+ctypeToHsType _c (CT CTVoidStar _) = "(Ptr ())"
+ctypeToHsType _c (CT CTIntStar _) = "[Int]" 
+ctypeToHsType _c (CT CTCharStarStar _) = "[String]"
 ctypeToHsType _c (CPT (CPTClass name) _) = name
 
 

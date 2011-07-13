@@ -112,7 +112,13 @@ tLatex   = Class "TLatex" [tObject, tNamed, tAttText]
            , Function self_ "DrawLatex" [double "x", double "y", cstring "text"] (Alias "drawLatex")
            ]
 
+tApplication :: Class
+tApplication = Class "TApplication" [tObject] 
+               [ Function self_ "New"    [ cstring "appClassName", intp "argc", charpp "argv"  ] NoExport 
+               , Function void_ "Run"    [] NoExport  
+               ]
+
 root_all_classes :: [Class]
 root_all_classes = [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWbox, tAttAxis
                    , tAttText, tH1F, tH2F, tHStack, tCanvas, tF1, tGraph
-                   , tAxis, tLine, tLatex, tH1 ]
+                   , tAxis, tLine, tLatex, tH1, tApplication ]

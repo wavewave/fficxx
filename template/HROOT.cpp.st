@@ -26,6 +26,8 @@
 #include "TLine.h"
 #include "TWbox.h"
 
+#include "TApplication.h"
+
 using namespace std;
 
 

@@ -60,8 +60,8 @@ mkHsFuncArgType c lst =
       
       
 classToHsDecl :: Class -> String 
-classToHsDecl c | length (class_funcs c) <= 0 = ""
-classToHsDecl c | length (class_funcs c) > 0 =  
+-- classToHsDecl c | length (class_funcs c) <= 0 = ""
+classToHsDecl c {- | length (class_funcs c) > 0 -} =  
   let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) ] 
       bodyline func = render hsClassDeclFuncTmpl 
                                     [ ("funcname", hsFuncName func) 
@@ -75,9 +75,8 @@ classToHsDecl c | length (class_funcs c) > 0 =
       argstr func = intercalateWith connArrow id $
                                     [ "a" ] 
                                     ++ fst (mkHsFuncArgType c (func_args func))
-                                    {- ++ map (ctypeToHsType c.fst) (func_args func) -}
                                     ++ ["IO " ++ (ctypeToHsType c.func_ret) func ]
-      bodylines = map bodyline . filter (\x -> (not.isNewFunc) x && (not.isExportFunc) x) 
+      bodylines = map bodyline . virtualFuncs -- filter (\x -> (not.isNewFunc) x && (not.isExportFunc) x) 
                       $ (class_funcs c) 
   in  intercalateWith connRet id (header : bodylines) 
 
@@ -89,6 +88,9 @@ classesToHsDecls :: [Class] -> String
 classesToHsDecls = intercalateWith connRet2 classToHsDecl 
 
 
+virtualFuncs = filter (\x -> (not.isNewFunc) x && (not.isExportFunc) x)
+
+
 -----------------------------
 -- classInstanceHeader = "instance $parent$ $daughter$ where" 
 
@@ -96,13 +98,14 @@ hsClassInstance :: Class -> Class -> String
 hsClassInstance parent child  = 
   let headline = "instance " ++ typeclassName parent ++ " " ++ class_name child ++ " where" 
       defline func = "  " ++ hsFuncName func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
-      deflines = map defline (class_funcs parent) 
+      deflines = (map defline) . virtualFuncs . class_funcs $ parent 
   in  intercalateWith connRet id (headline : deflines) 
    
-mkClassInstances :: DaughterMap -> String 
-mkClassInstances m = 
-  let lst = M.toList m 
-      f (x,ys) = intercalateWith connRet (hsClassInstance x) (x:ys)
+mkClassInstances :: [Class] -> DaughterMap -> String 
+mkClassInstances cs m = 
+  let selflst = map (\x->(x,[x])) cs 
+      lst = selflst ++ M.toList m  
+      f (x,ys) = intercalateWith connRet (hsClassInstance x) ys
   in  intercalateWith connRet2 f lst
       
       

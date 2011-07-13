@@ -32,9 +32,18 @@ instance Castable [Double] (Ptr CDouble) where
   cast xs = unsafePerformIO (newArray (map realToFrac xs))
   uncast c_xs = undefined 
 
+instance Castable [Int] (Ptr CInt) where
+  cast xs = unsafePerformIO (newArray (map fromIntegral xs))
+  uncast c_xs = undefined 
+
 instance Castable String CString where
   cast x = unsafePerformIO (newCString x)
   uncast x = unsafePerformIO (peekCString x) 
+
+instance Castable [String] (Ptr CString) where
+  cast xs = unsafePerformIO (mapM  newCString xs >>= newArray)
+  uncast c_xs = undefined
+
 
 instance (FPtr a, Ptr (Raw a) ~ ptrrawa) => Castable a ptrrawa where
   cast = unsafeForeignPtrToPtr.get_fptr

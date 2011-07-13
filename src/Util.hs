@@ -59,6 +59,9 @@ ctypToStr ctyp isconst =
         CTDouble -> "double" 
         CTBool   -> "int"              -- Currently available solution
         CTDoubleStar -> "double *"
+        CTVoidStar -> "void *"
+        CTIntStar -> "int *"
+        CTCharStarStar -> "char **"
   in case isconst of 
         Const   -> "const" `connspace` typword 
         NoConst -> typword 
