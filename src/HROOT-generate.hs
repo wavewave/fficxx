@@ -3,11 +3,14 @@
 module Main where
 
 import System.IO
+import System.Environment 
 import System.Directory
 import System.FilePath ((</>))
 
 import Text.StringTemplate hiding (render)
 
+import Control.Applicative 
+import Control.Monad.Identity
 
 import Templates
 import Class
@@ -15,11 +18,40 @@ import CppCode
 import ROOT
 import FileGeneration
 
+import Text.Parsec
+import HEP.Parser.Config
+
+import Paths_HROOT_generate
+
+data HROOTConfig = HROOTConfig { 
+  hrootConfig_scriptBaseDir :: FilePath, 
+  hrootConfig_workingDir :: FilePath, 
+  hrootConfig_installBaseDir :: FilePath
+} deriving Show
+
+hrootconfigParse :: ParsecT String () Identity HROOTConfig 
+hrootconfigParse = 
+  oneGroupFieldInput "HROOTconf" $ 
+    HROOTConfig <$> (oneFieldInput "scriptbase")
+                <*> (oneFieldInput "workingdir")
+                <*> (oneFieldInput "installbase")
+
 main :: IO () 
 main = do 
   putStrLn "Automatic HROOT binding generation" 
+  homedir <- getEnv "HOME"
+  str <- readFile (homedir </> ".HROOT")
+  let config = case (parse hrootconfigParse "" str) of 
+                 Left msg -> error (show msg)
+                 Right ans -> ans
+    
+
+  templateDir <- getDataDir >>= return . (</> "template")
   (templates :: STGroup String) <- directoryGroup templateDir 
   
+  let workingDir = hrootConfig_workingDir config 
+      ibase = hrootConfig_installBaseDir config
+
   putStrLn "header file generation"
   withFile (workingDir </> headerFileName) WriteMode $ 
     \h -> do 
@@ -47,11 +79,11 @@ main = do
   withFile (workingDir </> hsFileName) WriteMode $ 
     \h -> hPutStrLn h (mkClassHs templates root_all_classes)
 
-  copyFile (workingDir </> headerFileName) ( csrcDir </> headerFileName) 
-  copyFile (workingDir </> cppFileName) ( csrcDir </> cppFileName) 
+  copyFile (workingDir </> headerFileName) ( csrcDir ibase </> headerFileName) 
+  copyFile (workingDir </> cppFileName) ( csrcDir ibase </> cppFileName) 
   
-  copyFile (workingDir </> hscFileName) ( srcDir </> hscFileName) 
-  copyFile (workingDir </> typeHsFileName) ( srcDir </> typeHsFileName) 
-  copyFile (workingDir </> hsFileName) ( srcDir </> hsFileName)  
+  copyFile (workingDir </> hscFileName) ( srcDir ibase </> hscFileName) 
+  copyFile (workingDir </> typeHsFileName) ( srcDir ibase </> typeHsFileName) 
+  copyFile (workingDir </> hsFileName) ( srcDir ibase </> hsFileName)  
   
   return ()

@@ -2,8 +2,9 @@ module Templates where
 
 import System.FilePath ((</>))
 
+{- 
 scriptBaseDir :: FilePath
-scriptBaseDir = "../HROOT-generate" 
+scriptBaseDir = "/home/wavewave/nfs/prog/HROOT-generate" 
 
 templateDir :: FilePath
 templateDir   = scriptBaseDir </> "template"
@@ -12,13 +13,13 @@ workingDir :: FilePath
 workingDir    = scriptBaseDir </> "working"
 
 installBaseDir :: FilePath
-installBaseDir = "../HROOT"
+installBaseDir = "/home/wavewave/nfs/prog/HROOT"
 
-srcDir :: FilePath
-srcDir       = installBaseDir </> "src" </> "HROOT"
+srcDir :: FilePath -> FilePath
+srcDir installbasedir = installbasedir </> "src" </> "HROOT"
 
-csrcDir :: FilePath
-csrcDir       = installBaseDir </> "csrc" 
+csrcDir :: FilePath -> FilePath
+csrcDir installbasedir = installbasedir </> "csrc" 
 
 declarationTemplate :: String
 declarationTemplate = "HROOT.h"
