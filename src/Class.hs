@@ -7,6 +7,7 @@ import qualified Data.Map as M
 import CType
 import Util
 import Function
+import Data.List 
 
 data Class = Class { 
     class_name :: String, 
@@ -25,9 +26,15 @@ instance Ord Class where
 
 type DaughterMap = M.Map Class [Class] 
 
+class_allparents :: Class -> [Class] 
+class_allparents c = let ps = class_parents c
+                     in  if null ps 
+                           then []
+                           else nub (ps ++ (concatMap class_allparents ps))
+
 mkDaughterMap :: [Class] -> DaughterMap 
 mkDaughterMap = foldl mkDaughterMapWorker M.empty  
-  where mkDaughterMapWorker m c = let ps = class_parents c 
+  where mkDaughterMapWorker m c = let ps = class_allparents c 
                                   in  foldl (addmeToYourDaughterList c) m ps 
         addmeToYourDaughterList c m p = let f Nothing = Just [c]
                                             f (Just cs)  = Just (c:cs)    
@@ -94,10 +101,10 @@ hsFuncTypNoSelf c f = let args = func_args f
 
 
 hscFuncName :: Class -> Function -> String         
-hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (func_name f)
+hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (aliasedFuncName f)
         
 hsFuncName :: Function -> String 
-hsFuncName f = let (x:xs) = func_name f 
+hsFuncName f = let (x:xs) = aliasedFuncName f 
                in (toLower x) : xs
                   
 hsFuncXformer :: Function -> String 

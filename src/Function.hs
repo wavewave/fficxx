@@ -5,7 +5,7 @@ module Function where
 import CType
 import Util
 
-data ExportType = NoExport | FullName | Alias String    
+data MethodType = Ordinary | Constructor | NonVirtual String | Alias String    
                 deriving Eq 
                   
 
@@ -15,16 +15,26 @@ data Function = Function {
     func_ret  :: Types,
     func_name :: String,
     func_args :: Args,  
-    func_export :: ExportType
+    func_type :: MethodType
   }
 
+aliasedFuncName :: Function -> String 
+aliasedFuncName func = let origname = func_name func 
+                       in case func_type func of
+                            Alias str -> str
+                            NonVirtual str -> str
+                            _ -> origname     
 
 isNewFunc :: Function -> Bool 
-isNewFunc func = func_name func == "New"
+isNewFunc func = case func_type func of
+                   Constructor -> True 
+                   _ -> False 
        
+isVirtualFunc :: Function -> Bool 
+isVirtualFunc func = case func_type func of 
+                            NonVirtual _ -> False 
+                            _ -> True 
 
-isExportFunc :: Function -> Bool 
-isExportFunc func = func_export func /= NoExport 
 
 
 argToString :: (Types,String) -> String 
@@ -64,12 +74,12 @@ funcToDecl :: Function -> String
 funcToDecl func | func_name func /= "New" =  
   let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
   in  render tmpl [ ("returntype", rettypeToString (func_ret func))  
-                  , ("funcname", func_name func)
+                  , ("funcname", aliasedFuncName func) -- func_name func)
                   , ("args", argsToString (func_args func)) ] 
                 | func_name func == "New" = 
   let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
   in  render tmpl [ ("returntype", rettypeToString (func_ret func))  
-                  , ("funcname", func_name func)
+                  , ("funcname",  aliasedFuncName func) -- func_name func)
                   , ("args", argsToStringNoSelf (func_args func)) ] 
   
 

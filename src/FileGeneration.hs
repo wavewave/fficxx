@@ -73,7 +73,7 @@ mkClassHs templates classes =
                        mkInterfaceCastableInstance classes {- (M.keys dmap) -} `connRet2`
                        mkClassInstances classes dmap `connRet2`
                        classesToHsDefNews classes `connRet2`
-                       intercalateWith connRet hsClassMethodExport classes 
+                       intercalateWith connRet hsClassMethodNonVirtual classes 
                        
                        
                        

@@ -6,136 +6,142 @@ import Class
 
 tObject :: Class
 tObject = Class "TObject" [] 
-                 [ Function cstring_ "GetName" [] NoExport
-                 , Function void_    "Draw"    [cstring "option"] NoExport
-                 , Function int_     "Write"   [cstring "name", int "option", int "bufsize" ] NoExport
+                 [ Function cstring_ "GetName" [] Ordinary
+                 , Function void_    "Draw"    [cstring "option"] Ordinary
+                 , Function int_     "Write"   [cstring "name", int "option", int "bufsize" ] Ordinary
                  ]
 
 
 tNamed :: Class
 tNamed = Class "TNamed" [tObject] 
-                [ Function void_   "SetTitle"        [cstring "name"] NoExport 
-                , Function void_   "SaveAs"          [cstring "filename", cstring "option"] NoExport
+                [ Function void_   "SetTitle"        [cstring "name"] Ordinary 
+                , Function void_   "SaveAs"          [cstring "filename", cstring "option"] Ordinary
                 ]
 
 
 tFormula :: Class
 tFormula = Class "TFormula" [] 
-                 [ Function double_ "GetParameter"    [int "idx" ] NoExport
-                 , Function void_   "SetParameter"    [int "idx" , double "value"] NoExport
+                 [ Function double_ "GetParameter"    [int "idx" ] Ordinary
+                 , Function void_   "SetParameter"    [int "idx" , double "value"] Ordinary
                  ]
 
 tAttLine :: Class
 tAttLine = Class "TAttLine" [] 
-                 [ Function void_   "SetLineColor"    [int "color" ] NoExport
+                 [ Function void_   "SetLineColor"    [int "color" ] Ordinary
                  ] 
 
 tAttFill :: Class
 tAttFill = Class "TAttFill" [] 
-                 [ Function void_   "SetFillColor"    [int "color" ] NoExport
-                 , Function void_   "SetFillStyle"    [int "style" ] NoExport 
+                 [ Function void_   "SetFillColor"    [int "color" ] Ordinary
+                 , Function void_   "SetFillStyle"    [int "style" ] Ordinary 
                  ]
 
 tWbox :: Class
 tWbox    = Class "TWbox" [] 
-                 [ Function void_   "SetBorderMode"   [int "bordermode" ] NoExport
+                 [ Function void_   "SetBorderMode"   [int "bordermode" ] Ordinary
                  ] 
 
 tAttAxis :: Class
 tAttAxis = Class "TAttAxis" [] 
-                 [ Function void_   "SetLabelColor"   [int    "color" ] NoExport
-                 , Function void_   "SetLabelSize"    [double "size"  ] NoExport
-                 , Function void_   "SetTickLength"   [double "length" ] NoExport
-                 , Function void_   "SetTitleOffset"  [double "offset" ] NoExport
-                 , Function void_   "SetNdivisions"   [int "n", bool "optim" ] NoExport
+                 [ Function void_   "SetLabelColor"   [int    "color" ] Ordinary
+                 , Function void_   "SetLabelSize"    [double "size"  ] Ordinary
+                 , Function void_   "SetTickLength"   [double "length" ] Ordinary
+                 , Function void_   "SetTitleOffset"  [double "offset" ] Ordinary
+                 , Function void_   "SetNdivisions"   [int "n", bool "optim" ] Ordinary
                  ] 
  
 tH1 :: Class
-tH1      = Class "TH1" [tObject, tNamed, tAttLine, tAttFill ] 
-                 [ Function (cppclass "TAxis") "GetXaxis" [] NoExport
-                 , Function (cppclass "TAxis") "GetYaxis" [] NoExport
-                 , Function (cppclass "TAxis") "GetZaxis" [] NoExport
-                 , Function void_ "Add" [ (CPT (CPTClass "TH1") NoConst, "h1"), double "c1" ] NoExport 
+tH1      = Class "TH1" [tNamed, tAttLine, tAttFill] -- [tObject, tNamed, tAttLine, tAttFill ] 
+                 [ Function (cppclass "TAxis") "GetXaxis" [] Ordinary
+                 , Function (cppclass "TAxis") "GetYaxis" [] Ordinary
+                 , Function (cppclass "TAxis") "GetZaxis" [] Ordinary
+                 , Function void_ "Add" [ (CPT (CPTClass "TH1") NoConst, "h1"), double "c1" ] Ordinary 
+                 , Function int_  "Fill" [double "x"] (Alias "fill1")
                  ] 
 
 tH1F :: Class
-tH1F     = Class "TH1F" [tObject, tNamed, tAttLine, tAttFill, tH1] 
-           [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"] NoExport
-           , Function int_  "Fill" [double "x"] (Alias "fill1")
+tH1F     = Class "TH1F" [tH1] -- [tObject, tNamed, tAttLine, tAttFill, tH1] 
+           [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"] Constructor
            ] 
            
+tH2 :: Class 
+tH2 = Class "TH2" [tH1] 
+      [ Function int_ "Fill" [double "x", double "y"] (Alias "fill2") 
+      ]
+
 tH2F :: Class
-tH2F     = Class "TH2F" [tObject, tNamed, tAttLine, tAttFill, tH1  ] 
+tH2F     = Class "TH2F" [tH1] -- [tObject, tNamed, tAttLine, tAttFill, tH1  ] 
            [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"
-                                  ,int "nbinsy", double "ylow", double "yup"] NoExport
-           , Function int_  "Fill" [double "x", double "y"] (Alias "fill2") 
+                                  ,int "nbinsy", double "ylow", double "yup"] Constructor
            ]
 
 tHStack :: Class
-tHStack  = Class "THStack" [tObject, tNamed ] 
-           [ Function self_ "New" [cstring "name",cstring "title"]  NoExport
+tHStack  = Class "THStack" [tNamed] -- [tObject, tNamed ] 
+           [ Function self_ "New" [cstring "name",cstring "title"]  Constructor
            ] 
 
 tCanvas :: Class
 tCanvas  = Class "TCanvas" [tObject, tNamed, tAttFill, tWbox  ] 
-           [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"] NoExport
+           [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"] Constructor
            ] 
 
 tF1 :: Class
-tF1      = Class "TF1" [tObject, tNamed, tFormula] 
-           [ Function self_ "New" [cstring "name",cstring "formula",double "xmin",double "xmax"] NoExport
+tF1      = Class "TF1" [tFormula, tAttLine, tAttFill] -- [tObject, tNamed, tFormula] 
+           [ Function self_ "New" [cstring "name",cstring "formula",double "xmin",double "xmax"] Constructor
            ]
 
 tGraph :: Class
-tGraph   = Class "TGraph" [tObject, tNamed, tAttLine, tAttFill ] 
-           [ Function self_ "New" [int "n", doublep "x", doublep "y"] NoExport
+tGraph   = Class "TGraph" [tNamed, tAttLine, tAttFill] -- [tObject, tNamed, tAttLine, tAttFill ] 
+           [ Function self_ "New" [int "n", doublep "x", doublep "y"] Constructor
            ]
 
 tAxis :: Class
-tAxis    = Class "TAxis" [tObject, tNamed, tAttAxis ] []
+tAxis    = Class "TAxis" [tNamed, tAttAxis] -- [tObject, tNamed, tAttAxis ] 
+           []
  
 tLine :: Class
 tLine    = Class "TLine" [tObject, tAttLine] 
-           [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2" ] NoExport
+           [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2" ] Ordinary
            ]            
            
 tText :: Class
-tText    = Class "TText" [tObject, tNamed, tAttText] [] 
+tText    = Class "TText" [tNamed, tAttText] -- [tObject, tNamed, tAttText] 
+           [] 
 
 tAttText :: Class
 tAttText = Class "TAttText" [] 
-           [ Function void_ "SetTextColor" [int "tcolor"] NoExport 
-           , Function void_ "SetTextAlign" [int "align"] NoExport 
-           , Function void_ "SetTextSize"  [double "tsize"] NoExport 
+           [ Function void_ "SetTextColor" [int "tcolor"] Ordinary 
+           , Function void_ "SetTextAlign" [int "align"] Ordinary 
+           , Function void_ "SetTextSize"  [double "tsize"] Ordinary 
            ]  
 
 tLatex :: Class
-tLatex   = Class "TLatex" [tObject, tNamed, tAttText] 
-           [ Function self_ "New"       [double "x", double "y", cstring "text"] NoExport 
-           , Function self_ "DrawLatex" [double "x", double "y", cstring "text"] (Alias "drawLatex")
+tLatex   = Class "TLatex" [tText, tAttLine] -- [tObject, tNamed, tAttText] 
+           [ Function self_ "New"       [double "x", double "y", cstring "text"] Constructor
+           , Function self_ "DrawLatex" [double "x", double "y", cstring "text"] (NonVirtual "drawLatex")
            ]
 
 tApplication :: Class
 tApplication = Class "TApplication" [tObject] 
-               [ Function self_ "New"    [ cstring "appClassName", intp "argc", charpp "argv"  ] NoExport 
-               , Function void_ "Run"    [] NoExport  
+               [ Function self_ "New"    [ cstring "appClassName", intp "argc", charpp "argv"  ] Constructor
+               , Function void_ "Run"    [] Ordinary  
                ]
 
 tDirectory :: Class
-tDirectory = Class "TDirectory" [tObject, tNamed]
-             [ Function void_ "Close"    [ cstring "option" ] NoExport ]
+tDirectory = Class "TDirectory" [tNamed] -- [tObject, tNamed]
+             [ Function void_ "Close"    [ cstring "option" ] Ordinary ]
 
 tDirectoryFile :: Class
-tDirectoryFile = Class "TDirectoryFile" [tObject, tNamed, tDirectory] 
+tDirectoryFile = Class "TDirectoryFile" [tDirectory] -- [tObject, tNamed, tDirectory] 
                  []
 
 tFile :: Class
-tFile = Class "TFile" [tObject, tNamed, tDirectory, tDirectoryFile] 
-        [ Function self_ "New" [cstring "fname", cstring "option", cstring "ftitle", int "compress" ] NoExport 
+tFile = Class "TFile" [tDirectoryFile] -- [tObject, tNamed, tDirectory, tDirectoryFile] 
+        [ Function self_ "New" [cstring "fname", cstring "option", cstring "ftitle", int "compress" ] Constructor
         ]
 
 root_all_classes :: [Class]
 root_all_classes = [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWbox, tAttAxis
                    , tAttText, tH1F, tH2F, tHStack, tCanvas, tF1, tGraph
-                   , tAxis, tLine, tLatex, tH1, tApplication
+                   , tAxis, tLine, tLatex, tH1, tH2, tApplication, tText
                    , tDirectory, tDirectoryFile, tFile ]

@@ -56,8 +56,6 @@ main = do
   withFile (workingDir </> headerFileName) WriteMode $ 
     \h -> do 
       hPutStrLn h (mkDeclHeader templates root_all_classes)
-      
-  -- let dmap = mkDaughterMap root_all_classes  
 
   putStrLn "cpp file generation" 
   withFile (workingDir </> cppFileName) WriteMode $ 

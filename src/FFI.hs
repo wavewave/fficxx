@@ -18,7 +18,7 @@ hsFFIClassFunc c f = if isNewFunc f
                      then render ffistub 
                                  [ ("headerfilename",headerFileName) 
                                  , ("classname",class_name c)
-                                 , ("funcname", func_name f)
+                                 , ("funcname", aliasedFuncName f)
                                  , ("hsfuncname",hscFuncName c f)
                                  , ("hsargs", hsFuncTypNoSelf c f) ] 
 
@@ -26,12 +26,12 @@ hsFFIClassFunc c f = if isNewFunc f
                      else render ffistub  
                                  [ ("headerfilename",headerFileName) 
                                  , ("classname",class_name c)
-                                 , ("funcname", func_name f)
+                                 , ("funcname", aliasedFuncName f)
                                  , ("hsfuncname",hscFuncName c f)
                                  , ("hsargs", hsFuncTyp c f) ] 
 
 hsFFIClass :: Class -> String 
-hsFFIClass c = let allfns = concatMap class_funcs (c : class_parents c) 
+hsFFIClass c = let allfns = concatMap class_funcs (c : class_allparents c) 
                in  intercalateWith connRet (hsFFIClassFunc c) allfns  
 
 mkFFIClasses :: [Class] -> String 
