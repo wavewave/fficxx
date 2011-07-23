@@ -51,18 +51,18 @@ tAttAxis = Class "TAttAxis" []
                  ] 
  
 tH1 :: Class
-tH1      = Class "TH1" [tNamed, tAttLine, tAttFill] -- [tObject, tNamed, tAttLine, tAttFill ] 
-                 [ Function (cppclass "TAxis") "GetXaxis" [] Ordinary
-                 , Function (cppclass "TAxis") "GetYaxis" [] Ordinary
-                 , Function (cppclass "TAxis") "GetZaxis" [] Ordinary
-                 , Function void_ "Add" [ (CPT (CPTClass "TH1") NoConst, "h1"), double "c1" ] Ordinary 
-                 , Function int_  "Fill" [double "x"] (Alias "fill1")
-                 ] 
+tH1 = Class "TH1" [tNamed, tAttLine, tAttFill] 
+      [ Function (cppclass "TAxis") "GetXaxis" [] Ordinary
+      , Function (cppclass "TAxis") "GetYaxis" [] Ordinary
+      , Function (cppclass "TAxis") "GetZaxis" [] Ordinary
+      , Function void_ "Add" [ (CPT (CPTClass "TH1") NoConst, "h1"), double "c1" ] Ordinary 
+      , Function int_  "Fill" [double "x"] (Alias "fill1")
+      ] 
 
 tH1F :: Class
-tH1F     = Class "TH1F" [tH1] -- [tObject, tNamed, tAttLine, tAttFill, tH1] 
-           [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"] Constructor
-           ] 
+tH1F = Class "TH1F" [tH1] 
+       [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"] Constructor
+       ] 
            
 tH2 :: Class 
 tH2 = Class "TH2" [tH1] 
@@ -70,43 +70,43 @@ tH2 = Class "TH2" [tH1]
       ]
 
 tH2F :: Class
-tH2F     = Class "TH2F" [tH1] -- [tObject, tNamed, tAttLine, tAttFill, tH1  ] 
-           [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"
-                                  ,int "nbinsy", double "ylow", double "yup"] Constructor
-           ]
+tH2F = Class "TH2F" [tH1] 
+       [ Function self_ "New" [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"
+                              ,int "nbinsy", double "ylow", double "yup"] Constructor
+       ]
 
 tHStack :: Class
-tHStack  = Class "THStack" [tNamed] -- [tObject, tNamed ] 
-           [ Function self_ "New" [cstring "name",cstring "title"]  Constructor
-           ] 
+tHStack = Class "THStack" [tNamed] 
+          [ Function self_ "New" [cstring "name",cstring "title"]  Constructor
+          ] 
 
 tCanvas :: Class
-tCanvas  = Class "TCanvas" [tObject, tNamed, tAttFill, tWbox  ] 
-           [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"] Constructor
-           ] 
+tCanvas = Class "TCanvas" [tObject, tNamed, tAttFill, tWbox  ] 
+          [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"] Constructor
+          ] 
 
 tF1 :: Class
-tF1      = Class "TF1" [tFormula, tAttLine, tAttFill] -- [tObject, tNamed, tFormula] 
-           [ Function self_ "New" [cstring "name",cstring "formula",double "xmin",double "xmax"] Constructor
-           ]
+tF1 = Class "TF1" [tFormula, tAttLine, tAttFill] 
+      [ Function self_ "New" [cstring "name",cstring "formula",double "xmin",double "xmax"] Constructor
+      ]
 
 tGraph :: Class
-tGraph   = Class "TGraph" [tNamed, tAttLine, tAttFill] -- [tObject, tNamed, tAttLine, tAttFill ] 
-           [ Function self_ "New" [int "n", doublep "x", doublep "y"] Constructor
-           ]
+tGraph = Class "TGraph" [tNamed, tAttLine, tAttFill] 
+         [ Function self_ "New" [int "n", doublep "x", doublep "y"] Constructor
+         ]
 
 tAxis :: Class
-tAxis    = Class "TAxis" [tNamed, tAttAxis] -- [tObject, tNamed, tAttAxis ] 
-           []
+tAxis = Class "TAxis" [tNamed, tAttAxis] 
+        []
  
 tLine :: Class
-tLine    = Class "TLine" [tObject, tAttLine] 
-           [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2" ] Ordinary
-           ]            
+tLine = Class "TLine" [tObject, tAttLine] 
+        [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2" ] Ordinary
+        ]            
            
 tText :: Class
-tText    = Class "TText" [tNamed, tAttText] -- [tObject, tNamed, tAttText] 
-           [] 
+tText = Class "TText" [tNamed, tAttText]
+        [] 
 
 tAttText :: Class
 tAttText = Class "TAttText" [] 
@@ -116,10 +116,10 @@ tAttText = Class "TAttText" []
            ]  
 
 tLatex :: Class
-tLatex   = Class "TLatex" [tText, tAttLine] -- [tObject, tNamed, tAttText] 
-           [ Function self_ "New"       [double "x", double "y", cstring "text"] Constructor
-           , Function self_ "DrawLatex" [double "x", double "y", cstring "text"] (NonVirtual "drawLatex")
-           ]
+tLatex = Class "TLatex" [tText, tAttLine] 
+         [ Function self_ "New"       [double "x", double "y", cstring "text"] Constructor
+         , Function self_ "DrawLatex" [double "x", double "y", cstring "text"] (NonVirtual "drawLatex")
+         ]
 
 tApplication :: Class
 tApplication = Class "TApplication" [tObject] 
@@ -128,15 +128,15 @@ tApplication = Class "TApplication" [tObject]
                ]
 
 tDirectory :: Class
-tDirectory = Class "TDirectory" [tNamed] -- [tObject, tNamed]
+tDirectory = Class "TDirectory" [tNamed] 
              [ Function void_ "Close"    [ cstring "option" ] Ordinary ]
 
 tDirectoryFile :: Class
-tDirectoryFile = Class "TDirectoryFile" [tDirectory] -- [tObject, tNamed, tDirectory] 
+tDirectoryFile = Class "TDirectoryFile" [tDirectory] 
                  []
 
 tFile :: Class
-tFile = Class "TFile" [tDirectoryFile] -- [tObject, tNamed, tDirectory, tDirectoryFile] 
+tFile = Class "TFile" [tDirectoryFile] 
         [ Function self_ "New" [cstring "fname", cstring "option", cstring "ftitle", int "compress" ] Constructor
         ]
 
