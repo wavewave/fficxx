@@ -6,35 +6,40 @@ import HROOT.Generate.Class
 
 tObject :: Class
 tObject = Class "TObject" [] 
-                 [ Function cstring_ "GetName" [] Ordinary
-                 , Function void_    "Draw"    [cstring "option"] Ordinary
-                 , Function int_     "Write"   [cstring "name", int "option", int "bufsize" ] Ordinary
-                 ]
+          [ Function cstring_ "GetName" [] Ordinary
+          , Function void_    "Draw"    [cstring "option"] Ordinary
+          , Function void_   "SaveAs"          [cstring "filename", cstring "option"] Ordinary
+          , Function int_     "Write"   [cstring "name", int "option", int "bufsize" ] Ordinary
+          ]
 
 
 tNamed :: Class
 tNamed = Class "TNamed" [tObject] 
-                [ Function void_   "SetTitle"        [cstring "name"] Ordinary 
-                , Function void_   "SaveAs"          [cstring "filename", cstring "option"] Ordinary
-                ]
+         [ Function void_   "SetTitle"        [cstring "name"] Ordinary 
+         ]
 
 
 tFormula :: Class
 tFormula = Class "TFormula" [] 
-                 [ Function double_ "GetParameter"    [int "idx" ] Ordinary
-                 , Function void_   "SetParameter"    [int "idx" , double "value"] Ordinary
-                 ]
+           [ Function double_ "GetParameter"    [int "idx" ] Ordinary
+           , Function void_   "SetParameter"    [int "idx" , double "value"] Ordinary
+           ]
 
 tAttLine :: Class
 tAttLine = Class "TAttLine" [] 
-                 [ Function void_   "SetLineColor"    [int "color" ] Ordinary
-                 ] 
+           [ Function void_   "SetLineColor"    [int "color" ] Ordinary
+           ] 
 
 tAttFill :: Class
 tAttFill = Class "TAttFill" [] 
-                 [ Function void_   "SetFillColor"    [int "color" ] Ordinary
-                 , Function void_   "SetFillStyle"    [int "style" ] Ordinary 
-                 ]
+           [ Function void_   "SetFillColor"    [int "color" ] Ordinary
+           , Function void_   "SetFillStyle"    [int "style" ] Ordinary 
+           ]
+
+tAttMarker :: Class
+tAttMarker = Class "TAttMarker" [] 
+             [ ]  
+
 
 tWbox :: Class
 tWbox    = Class "TWbox" [] 
@@ -51,7 +56,7 @@ tAttAxis = Class "TAttAxis" []
                  ] 
  
 tH1 :: Class
-tH1 = Class "TH1" [tNamed, tAttLine, tAttFill] 
+tH1 = Class "TH1" [tNamed, tAttLine, tAttFill, tAttMarker] 
       [ Function (cppclass "TAxis") "GetXaxis" [] Ordinary
       , Function (cppclass "TAxis") "GetYaxis" [] Ordinary
       , Function (cppclass "TAxis") "GetZaxis" [] Ordinary
@@ -80,8 +85,23 @@ tHStack = Class "THStack" [tNamed]
           [ Function self_ "New" [cstring "name",cstring "title"]  Constructor
           ] 
 
+
+tAttPad :: Class
+tAttPad = Class "TAttPad" []
+          []
+
+tVirtualPad :: Class
+tVirtualPad = Class "TVirtualPad" [tObject, tAttLine, tAttFill, tAttPad]
+              [] 
+
+tPad :: Class 
+tPad = Class "TPad" [tVirtualPad] 
+       []
+ 
+
+
 tCanvas :: Class
-tCanvas = Class "TCanvas" [tObject, tNamed, tAttFill, tWbox  ] 
+tCanvas = Class "TCanvas" [tPad] 
           [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"] Constructor
           ] 
 
@@ -91,7 +111,7 @@ tF1 = Class "TF1" [tFormula, tAttLine, tAttFill]
       ]
 
 tGraph :: Class
-tGraph = Class "TGraph" [tNamed, tAttLine, tAttFill] 
+tGraph = Class "TGraph" [tNamed, tAttLine, tAttFill, tAttMarker] 
          [ Function self_ "New" [int "n", doublep "x", doublep "y"] Constructor
          ]
 
@@ -144,4 +164,16 @@ root_all_classes :: [Class]
 root_all_classes = [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWbox, tAttAxis
                    , tAttText, tH1F, tH2F, tHStack, tCanvas, tF1, tGraph
                    , tAxis, tLine, tLatex, tH1, tH2, tApplication, tText
-                   , tDirectory, tDirectoryFile, tFile ]
+                   , tDirectory, tDirectoryFile, tFile
+                   , tAttMarker, tAttPad
+                   , tVirtualPad, tPad ]
+
+
+
+
+
+
+
+
+
+
