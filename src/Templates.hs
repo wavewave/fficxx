@@ -2,6 +2,20 @@ module Templates where
 
 import System.FilePath ((</>))
 
+{- 
+scriptBaseDir :: FilePath
+scriptBaseDir = "/home/wavewave/nfs/prog/HROOT-generate" 
+
+templateDir :: FilePath
+templateDir   = scriptBaseDir </> "template"
+
+workingDir :: FilePath
+workingDir    = scriptBaseDir </> "working"
+
+installBaseDir :: FilePath
+installBaseDir = "/home/leverett/prog/HROOT"
+-}
+
 srcDir :: FilePath -> FilePath
 srcDir installbasedir = installbasedir </> "src" </> "HROOT"
 

@@ -4,17 +4,20 @@ import CType
 import Function
 import Class
 
+tObject :: Class
+tObject = Class "TObject" [] 
+                 [ Function cstring_ "GetName" [] NoExport
+                 , Function void_    "Draw"    [cstring "option"] NoExport
+                 , Function int_     "Write"   [cstring "name", int "option", int "bufsize" ] NoExport
+                 ]
+
+
 tNamed :: Class
 tNamed = Class "TNamed" [tObject] 
                 [ Function void_   "SetTitle"        [cstring "name"] NoExport 
                 , Function void_   "SaveAs"          [cstring "filename", cstring "option"] NoExport
                 ]
 
-tObject :: Class
-tObject = Class "TObject" [] 
-                 [ Function cstring_ "GetName" [] NoExport
-                 , Function void_    "Draw"    [cstring "option"] NoExport
-                 ]
 
 tFormula :: Class
 tFormula = Class "TFormula" [] 
@@ -118,7 +121,21 @@ tApplication = Class "TApplication" [tObject]
                , Function void_ "Run"    [] NoExport  
                ]
 
+tDirectory :: Class
+tDirectory = Class "TDirectory" [tObject, tNamed]
+             [ Function void_ "Close"    [ cstring "option" ] NoExport ]
+
+tDirectoryFile :: Class
+tDirectoryFile = Class "TDirectoryFile" [tObject, tNamed, tDirectory] 
+                 []
+
+tFile :: Class
+tFile = Class "TFile" [tObject, tNamed, tDirectory, tDirectoryFile] 
+        [ Function self_ "New" [cstring "fname", cstring "option", cstring "ftitle", int "compress" ] NoExport 
+        ]
+
 root_all_classes :: [Class]
 root_all_classes = [ tObject, tNamed, tFormula, tAttLine, tAttFill, tWbox, tAttAxis
                    , tAttText, tH1F, tH2F, tHStack, tCanvas, tF1, tGraph
-                   , tAxis, tLine, tLatex, tH1, tApplication ]
+                   , tAxis, tLine, tLatex, tH1, tApplication
+                   , tDirectory, tDirectoryFile, tFile ]
