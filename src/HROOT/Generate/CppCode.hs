@@ -1,12 +1,12 @@
-module CppCode where
+module HROOT.Generate.CppCode where
 
 import Data.Char 
 
 import qualified Data.Map as M
 
-import Util
-import Function
-import Class
+import HROOT.Generate.Util
+import HROOT.Generate.Function
+import HROOT.Generate.Class
 
 -- Class Declaration and Definition
 

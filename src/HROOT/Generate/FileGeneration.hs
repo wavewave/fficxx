@@ -1,4 +1,4 @@
-module FileGeneration where
+module HROOT.Generate.FileGeneration where
 
 import Text.StringTemplate hiding (render)
 import Text.StringTemplate.Helpers
@@ -6,12 +6,12 @@ import Text.StringTemplate.Helpers
 import Data.Char
 import qualified Data.Map as M
 
-import Util
-import Templates
-import Class
-import CppCode
-import FFI 
-import HsCode
+import HROOT.Generate.Util
+import HROOT.Generate.Templates
+import HROOT.Generate.Class
+import HROOT.Generate.CppCode
+import HROOT.Generate.FFI 
+import HROOT.Generate.HsCode
 
 ---- Header and Cpp file
 

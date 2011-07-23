@@ -1,9 +1,9 @@
-module Function where
+module HROOT.Generate.Function where
 
 -- import Data.Char
 
-import CType
-import Util
+import HROOT.Generate.CType
+import HROOT.Generate.Util
 
 data MethodType = Ordinary | Constructor | NonVirtual String | Alias String    
                 deriving Eq 
@@ -43,7 +43,7 @@ argToString (SelfType, varname) = "Type ## _p " ++ varname
 argToString (CPT (CPTClass cname) isconst, varname) = case isconst of 
   Const   -> "const_" ++ cname ++ "_p " ++ varname 
   NoConst -> cname ++ "_p " ++ varname
-
+argToString _ = error "undefined argToString"
 
 argsToString :: Args -> String 
 argsToString args = 
@@ -71,14 +71,15 @@ rettypeToString (CPT (CPTClass str) _) = str ++ "_p"
 -- Function Declaration and Definition
 
 funcToDecl :: Function -> String 
-funcToDecl func | func_name func /= "New" =  
-  let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
-  in  render tmpl [ ("returntype", rettypeToString (func_ret func))  
-                  , ("funcname", aliasedFuncName func) -- func_name func)
-                  , ("args", argsToString (func_args func)) ] 
-                | func_name func == "New" = 
-  let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
-  in  render tmpl [ ("returntype", rettypeToString (func_ret func))  
+funcToDecl func 
+  | func_name func /= "New" =  
+    let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
+    in  render tmpl [ ("returntype", rettypeToString (func_ret func))  
+                    , ("funcname", aliasedFuncName func) -- func_name func)
+                    , ("args", argsToString (func_args func)) ] 
+  | otherwise = 
+    let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
+    in  render tmpl [ ("returntype", rettypeToString (func_ret func))  
                   , ("funcname",  aliasedFuncName func) -- func_name func)
                   , ("args", argsToStringNoSelf (func_args func)) ] 
   
@@ -88,26 +89,25 @@ funcsToDecls = intercalateWith connSemicolonBSlash funcToDecl
 
 
 funcToDef :: Function -> String
-funcToDef func | func_name func /= "New" = 
-  let declstr = funcToDecl func
-      callstr = "to_nonconst<Type,Type ## _t>(p)->" 
-                ++ (func_name func) ++ "("
-                ++ argsToCallString (func_args func)   
-                ++ ")"
-      returnstr = case (func_ret func) of          
-        Void -> callstr ++ ";"
-        SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
-        (CT _ctyp _isconst) -> "return "++callstr++";" 
-        (CPT (CPTClass str) _) -> "return to_nonconst<"++str++"_t,"++str
-                                  ++">(("++str++"*)"++callstr++");"
-  in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
-funcToDef func | func_name func == "New" = 
-  let declstr = funcToDecl func
-      callstr = "(" ++ argsToCallString (func_args func) ++ ")"
-      returnstr = "Type * newp = new Type " ++ callstr ++ "; \\\nreturn to_nonconst<Type ## _t, Type >(newp);"
-  in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
-
-
+funcToDef func 
+  | func_name func /= "New" = 
+    let declstr = funcToDecl func
+        callstr = "to_nonconst<Type,Type ## _t>(p)->" 
+                  ++ (func_name func) ++ "("
+                  ++ argsToCallString (func_args func)   
+                  ++ ")"
+        returnstr = case (func_ret func) of          
+          Void -> callstr ++ ";"
+          SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
+          (CT _ctyp _isconst) -> "return "++callstr++";" 
+          (CPT (CPTClass str) _) -> "return to_nonconst<"++str++"_t,"++str
+                                    ++">(("++str++"*)"++callstr++");"
+    in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
+  | otherwise = 
+    let declstr = funcToDecl func
+        callstr = "(" ++ argsToCallString (func_args func) ++ ")"
+        returnstr = "Type * newp = new Type " ++ callstr ++ "; \\\nreturn to_nonconst<Type ## _t, Type >(newp);"
+    in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
 
 funcsToDefs :: [Function] -> String
 funcsToDefs = intercalateWith connBSlash funcToDef

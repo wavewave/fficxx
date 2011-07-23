@@ -1,8 +1,8 @@
-module ROOT where
+module HROOT.Generate.ROOT where
 
-import CType
-import Function
-import Class
+import HROOT.Generate.CType
+import HROOT.Generate.Function
+import HROOT.Generate.Class
 
 tObject :: Class
 tObject = Class "TObject" [] 

@@ -12,11 +12,11 @@ import Text.StringTemplate hiding (render)
 import Control.Applicative 
 import Control.Monad.Identity
 
-import Templates
-import Class
-import CppCode
-import ROOT
-import FileGeneration
+import HROOT.Generate.Templates
+import HROOT.Generate.Class
+import HROOT.Generate.CppCode
+import HROOT.Generate.ROOT
+import HROOT.Generate.FileGeneration
 
 import Text.Parsec
 import HEP.Parser.Config

@@ -1,8 +1,8 @@
 Name:		HROOT-generate
-Version:	0.2.2.0
+Version:	0.2.3.0
 Synopsis:	automatic HROOT binding generation
 Description: 	automatic HROOT binding generation 
-License: 	GPL-3
+License: 	LGPL-2.1
 License-file:	LICENSE
 Author:		Ian-Woo Kim
 Maintainer: 	Ian-Woo Kim <ianwookim@gmail.com>
@@ -29,14 +29,14 @@ Library
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, HStringTemplate, HStringTemplateHelpersIW
   Exposed-Modules: 
-                   CType
-                   Util
-                   Templates
-                   Function
-                   Class
-                   ROOT
-                   CppCode
-                   FFI
-                   HsCode
-                   FileGeneration
+                   HROOT.Generate.CType
+                   HROOT.Generate.Util
+                   HROOT.Generate.Templates
+                   HROOT.Generate.Function
+                   HROOT.Generate.Class
+                   HROOT.Generate.ROOT
+                   HROOT.Generate.CppCode
+                   HROOT.Generate.FFI
+                   HROOT.Generate.HsCode
+                   HROOT.Generate.FileGeneration
 		 

@@ -1,15 +1,19 @@
-module CType where
+module HROOT.Generate.CType where
 
 data CTypes = CTString | CTInt | CTDouble | CTBool | CTDoubleStar | CTVoidStar | CTIntStar | CTCharStarStar
+            deriving Show 
 
 data CPPTypes = CPTClass String 
+              deriving Show
 
 data IsConst = Const | NoConst
+             deriving Show
 
 data Types = Void 
            | SelfType
            | CT  CTypes IsConst 
            | CPT CPPTypes IsConst
+           deriving Show
 
 self_ :: Types 
 self_ = SelfType

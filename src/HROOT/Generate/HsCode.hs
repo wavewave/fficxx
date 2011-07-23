@@ -1,11 +1,11 @@
-module HsCode where
+module HROOT.Generate.HsCode where
 
 import qualified Data.Map as M
 
-import CType
-import Util
-import Function
-import Class
+import HROOT.Generate.CType
+import HROOT.Generate.Util
+import HROOT.Generate.Function
+import HROOT.Generate.Class
 
 import Control.Applicative 
 import Control.Monad.State
@@ -38,13 +38,13 @@ hsClassDeclFuncTmpl = "    $funcname$ :: $args$ "
 
 mkHsFuncArgType :: Class -> Args -> ([String],[String]) 
 mkHsFuncArgType c lst = 
-  let  (args,state) = runState (mapM mkFuncArgTypeWorker lst) ([],0)
-  in   (args,fst state)
-  where mkFuncArgTypeWorker (typ,var) = 
+  let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
+  in   (args,fst st)
+  where mkFuncArgTypeWorker (typ,_var) = 
           case typ of                  
             SelfType -> return "a"
             CT _ _   -> return $ ctypeToHsType c typ 
-            CPT (CPTClass cname) _ -> do 
+            CPT (CPTClass _cname) _ -> do 
               (prefix,n) <- get 
               let iname = typeclassName c
                   newname = 'c' : show n
@@ -52,6 +52,7 @@ mkHsFuncArgType c lst =
                   newprefix2 = "FPtr " ++ newname
               put (newprefix1:newprefix2:prefix,n+1)
               return newname
+            _ -> error ("No such c type : " ++ show typ)  
       
 classToHsDecl :: Class -> String 
 classToHsDecl c =  
@@ -80,12 +81,9 @@ hsArgs c = intercalateWith connArrow (ctypeToHsType c. fst)
 classesToHsDecls :: [Class] -> String 
 classesToHsDecls = intercalateWith connRet2 classToHsDecl 
 
-
+virtualFuncs :: [Function] -> [Function] 
 virtualFuncs = filter ((&&) <$> isVirtualFunc <*> (not.isNewFunc))
 
-
------------------------------
--- classInstanceHeader = "instance $parent$ $daughter$ where" 
 
 hsClassInstance :: Class -> Class -> String 
 hsClassInstance parent child  = 
@@ -130,10 +128,11 @@ hsClassMethodNonVirtual :: Class    -- ^ only concrete class
                        -> String 
 hsClassMethodNonVirtual c 
   | (not.null) nonvirtualFuncs  =                        
-    let expFuncName f = case func_type f of 
+    let nonvirtualFuncName f = case func_type f of 
                                NonVirtual str -> str
-        header f = (expFuncName f) ++ " :: " ++ argstr f
-        body f  = (expFuncName f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
+                               _ -> error "not virtual func"
+        header f = (nonvirtualFuncName f) ++ " :: " ++ argstr f
+        body f  = (nonvirtualFuncName f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
         argstr func = intercalateWith connArrow id $ [class_name c]  
                                                      ++ map (ctypeToHsType c.fst) (func_args func)
                                                      ++ ["IO " ++ (ctypeToHsType c.func_ret) func ] 

@@ -1,12 +1,12 @@
-module Class where
+module HROOT.Generate.Class where
 
 import Data.Char
 
 import qualified Data.Map as M
 
-import CType
-import Util
-import Function
+import HROOT.Generate.CType
+import HROOT.Generate.Util
+import HROOT.Generate.Function
 import Data.List 
 
 data Class = Class { 
@@ -76,6 +76,7 @@ hsFuncTyp c f = let args = func_args f
         hsargtype (CT ctype _) = hsCTypeName ctype
         hsargtype (CPT x _) = hsCppTypeName x 
         hsargtype SelfType = self 
+        hsargtype _ = error "undefined hsargtype"
         
         hsrettype Void = "IO ()"
         hsrettype SelfType = "IO " ++ self
@@ -93,6 +94,7 @@ hsFuncTypNoSelf c f = let args = func_args f
         hsargtype (CT ctype _) = hsCTypeName ctype
         hsargtype (CPT x _) = hsCppTypeName x 
         hsargtype SelfType = self 
+        hsargtype _ = error "undefined hsargtype"
         
         hsrettype Void = "IO ()"
         hsrettype SelfType = "IO " ++ self
