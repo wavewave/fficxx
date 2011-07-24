@@ -25,26 +25,9 @@ tFormula = Class "TFormula" []
            , Function void_   "SetParameter"    [int "idx" , double "value"] Ordinary
            ]
 
-tAttLine :: Class
-tAttLine = Class "TAttLine" [] 
-           [ Function void_   "SetLineColor"    [int "color" ] Ordinary
-           ] 
-
-tAttFill :: Class
-tAttFill = Class "TAttFill" [] 
-           [ Function void_   "SetFillColor"    [int "color" ] Ordinary
-           , Function void_   "SetFillStyle"    [int "style" ] Ordinary 
-           ]
-
-tAttMarker :: Class
-tAttMarker = Class "TAttMarker" [] 
-             [ ]  
-
-
-tWbox :: Class
-tWbox    = Class "TWbox" [] 
-                 [ Function void_   "SetBorderMode"   [int "bordermode" ] Ordinary
-                 ] 
+tAtt3D :: Class
+tAtt3D = Class "TAtt3D" []
+         []
 
 tAttAxis :: Class
 tAttAxis = Class "TAttAxis" [] 
@@ -54,17 +37,55 @@ tAttAxis = Class "TAttAxis" []
                  , Function void_   "SetTitleOffset"  [double "offset" ] Ordinary
                  , Function void_   "SetNdivisions"   [int "n", bool "optim" ] Ordinary
                  ] 
- 
+
+tAttBBox :: Class 
+tAttBBox = Class "TAttBBox" [] 
+           []
+
+tAttCanvas :: Class
+tAttCanvas = Class "TAttCanvas" [] 
+             []
+
+tAttFill :: Class
+tAttFill = Class "TAttFill" [] 
+           [ Function void_   "SetFillColor"    [int "color" ] Ordinary
+           , Function void_   "SetFillStyle"    [int "style" ] Ordinary 
+           ]
+tAttImage :: Class
+tAttImage = Class "TAttImage" [] 
+            []
+
+
+tAttLine :: Class
+tAttLine = Class "TAttLine" [] 
+           [ Function void_   "SetLineColor"    [int "color" ] Ordinary
+           ] 
+
+tAttMarker :: Class
+tAttMarker = Class "TAttMarker" [] 
+             [ ]  
+
+tAttPad :: Class
+tAttPad = Class "TAttPad" []
+          []
+
+tAttParticle :: Class
+tAttParticle = Class "TAttParticle" [tNamed]
+               [] 
+
+tAttText :: Class
+tAttText = Class "TAttText" [] 
+           [ Function void_ "SetTextColor" [int "tcolor"] Ordinary 
+           , Function void_ "SetTextAlign" [int "align"] Ordinary 
+           , Function void_ "SetTextSize"  [double "tsize"] Ordinary 
+           ]  
+
 
 tHStack :: Class
 tHStack = Class "THStack" [tNamed] 
           [ Function self_ "New" [cstring "name",cstring "title"]  Constructor
           ] 
 
-
-tAttPad :: Class
-tAttPad = Class "TAttPad" []
-          []
 
 
 tF1 :: Class
@@ -77,25 +98,146 @@ tGraph = Class "TGraph" [tNamed, tAttLine, tAttFill, tAttMarker]
          [ Function self_ "New" [int "n", doublep "x", doublep "y"] Constructor
          ]
 
+tGraphAsymmErrors :: Class
+tGraphAsymmErrors = Class "TGraphAsymmErrors" [tGraph]
+                    []
+
+tCutG :: Class
+tCutG = Class "TCutG" [tGraph]
+        []
+
+tGraphBentErrors :: Class
+tGraphBentErrors = Class "TGraphBentErrors" [tGraph]
+                   []
+
+tGraphErrors :: Class
+tGraphErrors = Class "TGraphErrors" [tGraph]
+               []
+
+tGraphPolar :: Class
+tGraphPolar = Class "TGraphPolar" [tGraphErrors]
+              []
+
+tGraphQQ :: Class
+tGraphQQ = Class "TGraphQQ" [tGraph]
+           []
+
+tEllipse :: Class
+tEllipse = Class "TEllipse" [tObject, tAttLine, tAttFill]
+           []
+
+tArc :: Class 
+tArc = Class "TArc" [tEllipse]
+       []
+
+tCrown :: Class
+tCrown = Class "TCrown" [tEllipse]
+         []
+
+tLine :: Class
+tLine = Class "TLine" [tObject, tAttLine] 
+        [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2" ] Constructor
+        ]            
+
+tArrow :: Class
+tArrow = Class "TArrow" [tLine, tAttFill]
+         []
+
+tGaxis :: Class 
+tGaxis = Class "TGaxis" [tLine, tAttText]
+         []
+
+tShape :: Class 
+tShape = Class "TShape" [tNamed, tAttLine, tAttFill, tAtt3D]
+         []
+
+tBRIK :: Class
+tBRIK = Class "TBRIK" [tShape]
+        []
+ 
+tTUBE :: Class
+tTUBE = Class "TTUBE" [tShape]
+        []
+
+tPCON :: Class
+tPCON = Class "TPCON" [tShape]
+        []
+
+tPolyLineShape :: Class
+tPolyLineShape = Class "TPolyLineShape" [tShape, tAttMarker]
+                 []
+
+tSPHE :: Class
+tSPHE = Class "TSPHE" [tShape]
+        []
+
+tXTRU :: Class
+tXTRU = Class "TXTRU" [tShape]
+        []
+
+tBox :: Class 
+tBox = Class "TBox" [tObject, tAttLine, tAttFill] 
+       [] 
+
+tPave :: Class
+tPave = Class "TPave" [tBox]
+        []
+
+tPaveText :: Class
+tPaveText = Class "TPaveText" [tPave, tAttText]
+            []
+
+tDiamond :: Class
+tDiamond = Class "TDiamond" [tPaveText] 
+           []
+
+tPaveStats :: Class 
+tPaveStats = Class "TPaveStats" [tPaveText]
+             []
+
+tPavesText :: Class
+tPavesText = Class "TPavesText" [tPaveText]
+             []
+
+tLegend :: Class 
+tLegend = Class "TLegend" [tPave, tAttText]
+          []
+
+tPaletteAxis :: Class
+tPaletteAxis = Class "TPaletteAxis" [tPave]
+               []
+
+tPaveLabel :: Class
+tPaveLabel = Class "TPaveLabel" [tPave, tAttText]
+             []
+
+tPaveClass :: Class
+tPaveClass = Class "TPaveClass" [tPaveLabel]
+             []
+
+
+tWbox :: Class
+tWbox = Class "TWbox" [tBox] 
+        [ Function void_   "SetBorderMode"   [short "bordermode" ] Ordinary
+        ] 
+
+tFrame :: Class 
+tFrame = Class "TFrame" [tWbox]
+         []
+
+tSliderBox :: Class
+tSliderBox = Class "TSliderBox" [tWbox]
+             []
+
 tAxis :: Class
 tAxis = Class "TAxis" [tNamed, tAttAxis] 
         []
  
-tLine :: Class
-tLine = Class "TLine" [tObject, tAttLine] 
-        [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2" ] Ordinary
-        ]            
            
 tText :: Class
 tText = Class "TText" [tNamed, tAttText]
         [] 
 
-tAttText :: Class
-tAttText = Class "TAttText" [] 
-           [ Function void_ "SetTextColor" [int "tcolor"] Ordinary 
-           , Function void_ "SetTextAlign" [int "align"] Ordinary 
-           , Function void_ "SetTextSize"  [double "tsize"] Ordinary 
-           ]  
 
 tLatex :: Class
 tLatex = Class "TLatex" [tText, tAttLine] 
@@ -134,9 +276,6 @@ tTreePlayer = Class "TTreePlayer" [tVirtualTreePlayer]
               []
                  
 
-tAtt3D :: Class
-tAtt3D = Class "TAtt3D" []
-         []
 
 
 tArray :: Class
@@ -271,7 +410,8 @@ tQObject = Class "TQObject" []
 
 tVirtualPad :: Class
 tVirtualPad = Class "TVirtualPad" [tObject, tAttLine, tAttFill, tAttPad, tQObject]
-              [] 
+              [ Function (cppclass "TFrame") "GetFrame" [] Ordinary
+              ] 
 
 tPad :: Class 
 tPad = Class "TPad" [tVirtualPad] 
@@ -310,16 +450,34 @@ tSlider = Class "TSlider" [tPad]
 tApplication :: Class
 tApplication = Class "TApplication" [tObject, tQObject] 
                [ Function self_ "New"    [ cstring "appClassName", intp "argc", charpp "argv"  ] Constructor
-               , Function void_ "Run"    [] Ordinary  
+               , Function void_ "Run"    [ bool "retrn"] Ordinary  
                ]
+
+tRint :: Class
+tRint = Class "TRint" [tApplication]
+        [ Function self_ "New"    [ cstring "appClassName", intp "argc", charpp "argv"  ] Constructor ] 
+
+
+
+
 
 
 root_all_classes :: [Class]
 root_all_classes = 
   [ tObject, tNamed, tFormula
-  , tAttLine, tAttFill, tAttAxis, tAttText, tAtt3D, tAttMarker
-  , tAttPad
-  , tHStack, tF1, tGraph
+  , tAtt3D, tAttAxis, tAttBBox, tAttCanvas, tAttFill, tAttImage, tAttLine
+  , tAttMarker, tAttPad, tAttParticle, tAttText
+
+  , tHStack, tF1
+  , tGraph, tGraphAsymmErrors, tCutG, tGraphBentErrors, tGraphErrors, tGraphPolar
+  , tGraphQQ
+  , tEllipse, tArc, tCrown
+  , tLine, tArrow, tGaxis
+  , tShape, tBRIK, tTUBE, tPCON, tPolyLineShape, tSPHE, tXTRU
+  , tBox, tPave, tPaveText, tDiamond, tPaveStats, tPavesText, tLegend
+  , tPaletteAxis, tPaveLabel, tPaveClass, tWbox, tFrame, tSliderBox
+
+ 
   , tAxis, tLatex, tText
   , tDirectory, tDirectoryFile, tFile
   , tTree, tBranch, tVirtualTreePlayer, tTreePlayer
@@ -333,9 +491,7 @@ root_all_classes =
   , tVirtualPad, tPad, tButton, tGroupButton, tCanvas
   , tDialogCanvas, tInspectCanvas
   , tEvePad, tSlider
-  , tApplication
-  , tLine
--- , tWbox, tLine , tApplication, 
+  , tApplication, tRint
   ]
 
 

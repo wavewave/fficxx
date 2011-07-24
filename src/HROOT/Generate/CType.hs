@@ -27,6 +27,9 @@ cint_    = CT CTInt    Const
 int_ :: Types 
 int_     = CT CTInt    NoConst
 
+short_ :: Types
+short_ = int_
+
 cdouble_ :: Types
 cdouble_ = CT CTDouble Const
 
@@ -62,6 +65,9 @@ cint    var = (cint_    , var)
 
 int :: String -> (Types,String)
 int     var = (int_     , var)
+
+short :: String -> (Types,String)
+short = int
 
 cdouble :: String -> (Types,String)
 cdouble var = (cdouble_ , var)

@@ -11,11 +11,57 @@
 #include "THStack.h"
 
 #include "TNamed.h"
-#include "TAttLine.h"
-#include "TAttAxis.h"
 
+#include "TAtt3D.h"
+#include "TAttAxis.h"
+#include "TAttBBox.h"
+#include "TAttCanvas.h"
+#include "TAttFill.h"
+#include "TAttImage.h"
+#include "TAttLine.h"
+#include "TAttMarker.h"
+#include "TAttPad.h"
+#include "TAttParticle.h"
+#include "TAttText.h"
 
 #include "TGraph.h"
+#include "TGraphAsymmErrors.h"
+#include "TCutG.h"
+#include "TGraphBentErrors.h"
+#include "TGraphErrors.h"
+#include "TGraphPolar.h"
+#include "TGraphQQ.h"
+
+#include "TEllipse.h"
+#include "TArc.h"
+#include "TCrown.h"
+#include "TLine.h"
+#include "TArrow.h"
+#include "TGaxis.h"
+#include "TShape.h"
+#include "TBRIK.h"
+#include "TTUBE.h"
+#include "TPCON.h"
+#include "TPolyLineShape.h"
+#include "TSPHE.h"
+#include "TXTRU.h"
+#include "TBox.h"
+#include "TPave.h"
+#include "TPaveText.h"
+#include "TDiamond.h"
+#include "TPaveStats.h"
+#include "TPavesText.h"
+#include "TLegend.h"
+#include "TPaletteAxis.h"
+#include "TPaveLabel.h"
+#include "TPaveClass.h"
+#include "TWbox.h"
+#include "TFrame.h"
+#include "TSliderBox.h"
+
+
+
+
 #include "TLorentzVector.h"
 #include "TStyle.h" 
 #include "TF1.h"
@@ -70,6 +116,7 @@
 
 #include "TTreePlayer.h"
 #include "TApplication.h"
+#include "TRint.h"
 
 using namespace std;
 
