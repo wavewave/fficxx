@@ -1,12 +1,12 @@
 module HROOT.Generate.Function where
 
--- import Data.Char
+import Control.Applicative hiding (Const)
 
 import HROOT.Generate.CType
 import HROOT.Generate.Util
 
 data MethodType = Ordinary | Constructor | NonVirtual String | Alias String    
-                deriving Eq 
+                deriving (Show,Eq) 
                   
 
 type Args = [(Types,String)]
@@ -16,7 +16,7 @@ data Function = Function {
     func_name :: String,
     func_args :: Args,  
     func_type :: MethodType
-  }
+  } deriving Show
 
 aliasedFuncName :: Function -> String 
 aliasedFuncName func = let origname = func_name func 
@@ -31,11 +31,20 @@ isNewFunc func = case func_type func of
                    _ -> False 
        
 isVirtualFunc :: Function -> Bool 
-isVirtualFunc func = case func_type func of 
+isVirtualFunc func = case func_type func of
+                            Constructor  -> False 
                             NonVirtual _ -> False 
                             _ -> True 
 
+virtualFuncs :: [Function] -> [Function] 
+virtualFuncs = filter isVirtualFunc 
 
+constructorFuncs :: [Function] -> [Function]
+constructorFuncs = filter isNewFunc
+
+nonVirtualNotNewFuncs :: [Function] -> [Function]
+nonVirtualNotNewFuncs = 
+  filter ((&&) <$> (not.isVirtualFunc) <*> (not.isNewFunc))
 
 argToString :: (Types,String) -> String 
 argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname 

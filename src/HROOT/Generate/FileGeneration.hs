@@ -13,18 +13,30 @@ import HROOT.Generate.CppCode
 import HROOT.Generate.FFI 
 import HROOT.Generate.HsCode
 
+---- common function for daughter
+
+mkDaughterDef :: ((Class,[Class]) -> String) -> DaughterMap -> String 
+mkDaughterDef f m = 
+  let lst = M.toList m 
+  in  concatMap f lst 
+
 ---- Header and Cpp file
 
 mkDeclHeader :: STGroup String -> [Class] -> String 
 mkDeclHeader templates classes = 
-  let declDefStr    = classesToDeclsDef  classes 
-      typeDeclStr    = classesToTypeDecls classes 
-      dmap = mkDaughterMap classes
-      classDeclsStr  = classesToClassDecls dmap 
-                       `connRet2` classesSelfDecls classes
-      declBodyStr = declDefStr 
-                    `connRet2` typeDeclStr 
-                    `connRet2` classDeclsStr 
+  let declDefStr     = classesCppDeclsVirtual classes 
+                       `connRet2`
+                       classesCppDeclsNonVirtual classes 
+      typeDeclStr    = classesCppTypeDecls classes 
+      dsmap           = mkDaughterSelfMap classes
+      classDeclsStr  = mkDaughterDef classCppDeclsInstancesVirtual dsmap
+                       `connRet2` 
+                       classesCppDeclsInstancesNonVirtual classes
+      declBodyStr    = declDefStr 
+                       `connRet2` 
+                       typeDeclStr 
+                       `connRet2` 
+                       classDeclsStr 
   in  renderTemplateGroup 
         templates 
         [ ("declarationbody", declBodyStr ) ] 
@@ -32,23 +44,20 @@ mkDeclHeader templates classes =
 
 mkDefMain :: STGroup String -> [Class] -> String 
 mkDefMain templates classes =
-  let cppBody = classesToDefs classes
+  let dsmap    = mkDaughterSelfMap classes
+      cppBody = classesCppDefsVirtual classes
+                `connRet2`
+                classesCppDefsNonVirtual classes
+                `connRet2`
+                mkDaughterDef classCppDefInstancesVirtual dsmap
+                `connRet2` 
+                classesCppDefsInstancesNonVirtual classes
+
   in  renderTemplateGroup 
         templates 
         [ ("headerfilename", headerFileName ) 
         , ("cppbody"       , cppBody ) ] 
         definitionTemplate
-
-mkDaughterDef :: DaughterMap -> String 
-mkDaughterDef m = 
-  let lst = M.toList m 
-      f (x,ys) = 
-        let strx = map toUpper (class_name x) 
-        in  (flip concatMap) ys $ \y ->"ROOT_"++strx++"_DEFINITION(" 
-                                       ++ class_name y ++ ")\n" 
-  in  concatMap f lst
-
-
 
 mkFunctionHsc :: STGroup String -> [Class] -> String 
 mkFunctionHsc templates classes = 
@@ -69,10 +78,14 @@ mkClassHs templates classes =
                       [ ("classBody", classBodyStr ) ]
                       "Class.hs"
   where dmap = mkDaughterMap classes
-        classBodyStr = classesToHsDecls classes `connRet2`
-                       mkInterfaceCastableInstance classes {- (M.keys dmap) -} `connRet2`
-                       mkClassInstances classes dmap `connRet2`
-                       classesToHsDefNews classes `connRet2`
+        classBodyStr = classesToHsDecls classes 
+                       `connRet2`
+                       mkInterfaceCastableInstance classes 
+                       `connRet2`
+                       mkClassInstances classes dmap 
+                       `connRet2`
+                       classesToHsDefNews classes 
+                       `connRet2`
                        intercalateWith connRet hsClassMethodNonVirtual classes 
                        
                        

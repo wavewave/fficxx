@@ -103,11 +103,6 @@ tLatex = Class "TLatex" [tText, tAttLine]
          , Function self_ "DrawLatex" [double "x", double "y", cstring "text"] (NonVirtual "drawLatex")
          ]
 
-tApplication :: Class
-tApplication = Class "TApplication" [tObject] 
-               [ Function self_ "New"    [ cstring "appClassName", intp "argc", charpp "argv"  ] Constructor
-               , Function void_ "Run"    [] Ordinary  
-               ]
 
 tDirectory :: Class
 tDirectory = Class "TDirectory" [tNamed] 
@@ -312,14 +307,20 @@ tSlider = Class "TSlider" [tPad]
           []
 
 
+tApplication :: Class
+tApplication = Class "TApplication" [tObject] 
+               [ Function self_ "New"    [ cstring "appClassName", intp "argc", charpp "argv"  ] Constructor
+               , Function void_ "Run"    [] Ordinary  
+               ]
+
+
 root_all_classes :: [Class]
 root_all_classes = 
   [ tObject, tNamed, tFormula
-  , tWbox
   , tAttLine, tAttFill, tAttAxis, tAttText, tAtt3D, tAttMarker
   , tAttPad
   , tHStack, tF1, tGraph
-  , tAxis, tLine, tLatex, tApplication, tText
+  , tAxis, tLatex, tText
   , tDirectory, tDirectoryFile, tFile
   , tTree, tBranch, tVirtualTreePlayer, tTreePlayer
   , tArray, tArrayC, tArrayD, tArrayF, tArrayI, tArrayL, tArrayL64
@@ -332,6 +333,8 @@ root_all_classes =
   , tVirtualPad, tPad, tButton, tGroupButton, tCanvas
 --  , tDialogCanvas, tInspectCanvas
   , tEvePad, tSlider
+  , tApplication
+-- , tWbox, tLine , tApplication, 
   ]
 
 

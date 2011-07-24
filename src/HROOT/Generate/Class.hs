@@ -32,6 +32,9 @@ class_allparents c = let ps = class_parents c
                            then []
                            else nub (ps ++ (concatMap class_allparents ps))
 
+
+-- | Daughter map not including itself
+
 mkDaughterMap :: [Class] -> DaughterMap 
 mkDaughterMap = foldl mkDaughterMapWorker M.empty  
   where mkDaughterMapWorker m c = let ps = class_allparents c 
@@ -39,6 +42,17 @@ mkDaughterMap = foldl mkDaughterMapWorker M.empty
         addmeToYourDaughterList c m p = let f Nothing = Just [c]
                                             f (Just cs)  = Just (c:cs)    
                                         in  M.alter f p m
+
+-- | Daughter Map including itself as a daughter
+
+mkDaughterSelfMap :: [Class] -> DaughterMap
+mkDaughterSelfMap = foldl worker M.empty  
+  where worker m c = let ps = c : class_allparents c 
+                     in  foldl (addToList c) m ps 
+        addToList c m p = let f Nothing = Just [c]
+                              f (Just cs)  = Just (c:cs)    
+                          in  M.alter f p m
+
        
 ctypeToHsType :: Class -> Types -> String
 ctypeToHsType _c Void = "()" 

@@ -7,7 +7,6 @@ import HROOT.Generate.Util
 import HROOT.Generate.Function
 import HROOT.Generate.Class
 
-import Control.Applicative 
 import Control.Monad.State
 ----------------
 
@@ -81,10 +80,6 @@ hsArgs c = intercalateWith connArrow (ctypeToHsType c. fst)
 classesToHsDecls :: [Class] -> String 
 classesToHsDecls = intercalateWith connRet2 classToHsDecl 
 
-virtualFuncs :: [Function] -> [Function] 
-virtualFuncs = filter ((&&) <$> isVirtualFunc <*> (not.isNewFunc))
-
-
 hsClassInstance :: Class -> Class -> String 
 hsClassInstance parent child  = 
   let headline = "instance " ++ typeclassName parent ++ " " ++ class_name child ++ " where" 
@@ -130,7 +125,7 @@ hsClassMethodNonVirtual c
   | (not.null) nonvirtualFuncs  =                        
     let nonvirtualFuncName f = case func_type f of 
                                NonVirtual str -> str
-                               _ -> error "not virtual func"
+                               _ -> error ("not virtual func : " ++ show f)
         header f = (nonvirtualFuncName f) ++ " :: " ++ argstr f
         body f  = (nonvirtualFuncName f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
         argstr func = intercalateWith connArrow id $ [class_name c]  
@@ -138,7 +133,9 @@ hsClassMethodNonVirtual c
                                                      ++ ["IO " ++ (ctypeToHsType c.func_ret) func ] 
     in  intercalateWith connRet (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
   | otherwise = ""   
- where nonvirtualFuncs = filter (not . isVirtualFunc) (class_funcs c)
+ where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
+
+-- filter (not . isVirtualFunc) (class_funcs c)
 
                        
 

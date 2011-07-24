@@ -61,8 +61,8 @@ main = do
   withFile (workingDir </> cppFileName) WriteMode $ 
     \h -> do 
       hPutStrLn h (mkDefMain templates root_all_classes)
-      hPutStrLn h ( ( mkDaughterDef . mkDaughterMap) root_all_classes )
-      hPutStrLn h ( classesSelfDefs root_all_classes) 
+--      hPutStrLn h ( ( mkDaughterDef . mkDaughterMap) root_all_classes )
+--       hPutStrLn h ( classesSelfDefs root_all_classes) 
       
   putStrLn "hsc file generation" 
   withFile (workingDir </> hscFileName) WriteMode $ 
