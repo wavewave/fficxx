@@ -66,20 +66,6 @@ tAttPad :: Class
 tAttPad = Class "TAttPad" []
           []
 
-tVirtualPad :: Class
-tVirtualPad = Class "TVirtualPad" [tObject, tAttLine, tAttFill, tAttPad]
-              [] 
-
-tPad :: Class 
-tPad = Class "TPad" [tVirtualPad] 
-       []
- 
-
-
-tCanvas :: Class
-tCanvas = Class "TCanvas" [tPad] 
-          [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"] Constructor
-          ] 
 
 tF1 :: Class
 tF1 = Class "TF1" [tFormula, tAttLine, tAttFill] 
@@ -284,16 +270,57 @@ tH3S = Class "TH3S" [tH3, tArrayS]
        []
 
 
+tQObject :: Class
+tQObject = Class "TQObject" [] 
+           []
+
+tVirtualPad :: Class
+tVirtualPad = Class "TVirtualPad" [tObject, tAttLine, tAttFill, tAttPad, tQObject]
+              [] 
+
+tPad :: Class 
+tPad = Class "TPad" [tVirtualPad] 
+       []
+ 
+tButton :: Class
+tButton = Class "TButton" [tPad, tAttText]
+          []
+
+tGroupButton :: Class
+tGroupButton = Class "TGroupButton" [tButton]
+               []
+
+tCanvas :: Class
+tCanvas = Class "TCanvas" [tPad] 
+          [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"] Constructor
+          ] 
+
+{- tDialogCanvas :: Class
+tDialogCanvas = Class "TDialogCanvas" [tCanvas, tAttText]
+                 []
+
+tInspectCanvas :: Class
+tInspectCanvas = Class "TInspectCanvas" [tCanvas, tAttText]
+                 [] -}
+
+tEvePad :: Class
+tEvePad = Class "TEvePad" [tPad]
+          []
+
+tSlider :: Class 
+tSlider = Class "TSlider" [tPad]
+          []
+
+
 root_all_classes :: [Class]
 root_all_classes = 
   [ tObject, tNamed, tFormula
   , tWbox
   , tAttLine, tAttFill, tAttAxis, tAttText, tAtt3D, tAttMarker
   , tAttPad
-  , tHStack, tCanvas, tF1, tGraph
+  , tHStack, tF1, tGraph
   , tAxis, tLine, tLatex, tApplication, tText
   , tDirectory, tDirectoryFile, tFile
-  , tVirtualPad, tPad
   , tTree, tBranch, tVirtualTreePlayer, tTreePlayer
   , tArray, tArrayC, tArrayD, tArrayF, tArrayI, tArrayL, tArrayL64
   , tArrayS
@@ -301,6 +328,10 @@ root_all_classes =
   , tH1C, tH1D, tH1F, tH1I, tH1S
   , tH2C, tH2D, tH2F, tH2I, tH2Poly, tH2S 
   , tH3C, tH3D, tH3F, tH3I, tH3S  
+  , tQObject
+  , tVirtualPad, tPad, tButton, tGroupButton, tCanvas
+--  , tDialogCanvas, tInspectCanvas
+  , tEvePad, tSlider
   ]
 
 

@@ -14,7 +14,7 @@
 #include "TAttLine.h"
 #include "TAttAxis.h"
 
-#include "TCanvas.h"
+
 #include "TGraph.h"
 #include "TLorentzVector.h"
 #include "TStyle.h" 
@@ -54,6 +54,19 @@
 #include "TH3F.h"
 #include "TH3I.h"
 #include "TH3S.h"
+
+#include "TQObject.h"
+#include "TVirtualPad.h"
+#include "TPad.h"
+#include "TButton.h"
+#include "TGroupButton.h"
+#include "TCanvas.h"
+#include "TDialogCanvas.h"
+#include "TInspectCanvas.h"
+#include "TEvePad.h"
+#include "TSlider.h"
+
+
 
 #include "TTreePlayer.h"
 #include "TApplication.h"
