@@ -290,13 +290,13 @@ tCanvas = Class "TCanvas" [tPad]
           [ Function self_ "New" [cstring "name",cstring "title",int "ww",int "wh"] Constructor
           ] 
 
-{- tDialogCanvas :: Class
+tDialogCanvas :: Class
 tDialogCanvas = Class "TDialogCanvas" [tCanvas, tAttText]
                  []
 
 tInspectCanvas :: Class
 tInspectCanvas = Class "TInspectCanvas" [tCanvas, tAttText]
-                 [] -}
+                 [] 
 
 tEvePad :: Class
 tEvePad = Class "TEvePad" [tPad]
@@ -308,7 +308,7 @@ tSlider = Class "TSlider" [tPad]
 
 
 tApplication :: Class
-tApplication = Class "TApplication" [tObject] 
+tApplication = Class "TApplication" [tObject, tQObject] 
                [ Function self_ "New"    [ cstring "appClassName", intp "argc", charpp "argv"  ] Constructor
                , Function void_ "Run"    [] Ordinary  
                ]
@@ -331,9 +331,10 @@ root_all_classes =
   , tH3C, tH3D, tH3F, tH3I, tH3S  
   , tQObject
   , tVirtualPad, tPad, tButton, tGroupButton, tCanvas
---  , tDialogCanvas, tInspectCanvas
+  , tDialogCanvas, tInspectCanvas
   , tEvePad, tSlider
   , tApplication
+  , tLine
 -- , tWbox, tLine , tApplication, 
   ]
 
