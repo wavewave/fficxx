@@ -109,176 +109,255 @@ tGraph = Class "TGraph" [tNamed, tAttLine, tAttFill, tAttMarker]
          ]
 
 tGraphAsymmErrors :: Class
-tGraphAsymmErrors = Class "TGraphAsymmErrors" [tGraph]
-                    []
+tGraphAsymmErrors = 
+  Class "TGraphAsymmErrors" [tGraph]
+  [ Function self_ "New" [int "n", doublep "x", doublep "y", doublep "exl", doublep "exh", doublep "eyl", doublep "eyh" ] Constructor 
+  ]
 
 tCutG :: Class
-tCutG = Class "TCutG" [tGraph]
-        []
+tCutG = 
+  Class "TCutG" [tGraph]
+  [ Function self_ "New" [cstring "name", int "n", doublep "x", doublep "y"] Constructor
+  ]
 
 tGraphBentErrors :: Class
-tGraphBentErrors = Class "TGraphBentErrors" [tGraph]
-                   []
+tGraphBentErrors = 
+  Class "TGraphBentErrors" [tGraph]
+  [ Function self_ "New" [int "n", doublep "x", doublep "y", doublep "exl", doublep "exh", doublep "eyl", doublep "eyh", doublep "exld", doublep "exhd", doublep "eyld", doublep "eyhd"] Constructor
+  ]
 
 tGraphErrors :: Class
-tGraphErrors = Class "TGraphErrors" [tGraph]
-               []
+tGraphErrors = 
+  Class "TGraphErrors" [tGraph]
+  [ Function self_ "New" [int "n", doublep "x", doublep "y", doublep "ex", doublep "ey"] Constructor
+  ]
 
 tGraphPolar :: Class
-tGraphPolar = Class "TGraphPolar" [tGraphErrors]
-              []
+tGraphPolar = 
+  Class "TGraphPolar" [tGraphErrors]
+  [ Function self_ "New" [int "n", doublep "x", doublep "y", doublep "ex", doublep "ey"] Constructor
+  ]
 
 tGraphQQ :: Class
-tGraphQQ = Class "TGraphQQ" [tGraph]
-           []
+tGraphQQ = 
+  Class "TGraphQQ" [tGraph]
+  [ Function self_ "New" [int "nx", doublep "x", int "ny", doublep "y"] Constructor
+  ]
 
 tEllipse :: Class
-tEllipse = Class "TEllipse" [tObject, tAttLine, tAttFill]
-           []
+tEllipse = 
+  Class "TEllipse" [tObject, tAttLine, tAttFill]
+  [ Function self_ "New" [double "x1", double "y1", double "r1", double "r2", double "phimin", double "phimax", double "theta" ] Constructor
+  ]
 
 tArc :: Class 
-tArc = Class "TArc" [tEllipse]
-       []
+tArc = 
+  Class "TArc" [tEllipse]
+  [ Function self_ "New" [double "x1", double "y1", double "radius", double "phimin", double "phimax" ] Constructor
+  ]
 
 tCrown :: Class
-tCrown = Class "TCrown" [tEllipse]
-         []
+tCrown = 
+  Class "TCrown" [tEllipse]
+  [ Function self_ "New" [double "x1", double "y1", double "radin", double "radout", double "phimin", double "phimax"] Constructor
+  ]
 
 tLine :: Class
-tLine = Class "TLine" [tObject, tAttLine] 
-        [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2" ] Constructor
-        ]            
+tLine = 
+  Class "TLine" [tObject, tAttLine] 
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2" ] Constructor
+  ]            
 
 tArrow :: Class
-tArrow = Class "TArrow" [tLine, tAttFill]
-         []
+tArrow = 
+  Class "TArrow" [tLine, tAttFill]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", float "arrowsize", cstring "option" ] Constructor
+  ]
 
 tGaxis :: Class 
-tGaxis = Class "TGaxis" [tLine, tAttText]
-         []
+tGaxis = 
+  Class "TGaxis" [tLine, tAttText]
+  [ Function self_ "New" [double "xmin", double "ymin", double "xmax", double "ymax", double "wmin", double "wmax", int "ndiv", cstring "chopt", double "gridlength" ] Constructor
+  ]
 
 tShape :: Class 
-tShape = Class "TShape" [tNamed, tAttLine, tAttFill, tAtt3D]
-         []
+tShape = 
+  Class "TShape" [tNamed, tAttLine, tAttFill, tAtt3D]
+  [ Function self_ "New" [cstring "name", cstring "title", cstring "material" ] Constructor 
+  ]
 
 tBRIK :: Class
-tBRIK = Class "TBRIK" [tShape]
-        []
+tBRIK = 
+  Class "TBRIK" [tShape]
+  [ Function self_ "New" [cstring "name", cstring "title", cstring "material", float "dx", float "dy", float "dz" ] Constructor
+  ]
  
 tTUBE :: Class
-tTUBE = Class "TTUBE" [tShape]
-        []
+tTUBE = 
+  Class "TTUBE" [tShape]
+  [ Function self_ "New" [cstring "name", cstring "title", cstring "material", float "rmin", float "rmax", float "dz", float "aspect"]  Constructor
+  ]
 
 tPCON :: Class
-tPCON = Class "TPCON" [tShape]
-        []
+tPCON = 
+  Class "TPCON" [tShape]
+  [ Function self_ "New" [cstring "name", cstring "title", cstring "material", float "phi1", float "dphi1", int "nz"] Constructor
+  ]
 
 tPolyLineShape :: Class
 tPolyLineShape = Class "TPolyLineShape" [tShape, tAttMarker]
                  []
 
 tSPHE :: Class
-tSPHE = Class "TSPHE" [tShape]
-        []
+tSPHE = 
+  Class "TSPHE" [tShape]
+  [ Function self_ "New" [cstring "name", cstring "title", cstring "material", float "rmin", float "rmax", float "themin", float "themax", float "phimin", float "phimax" ] Constructor
+  ]
 
 tXTRU :: Class
-tXTRU = Class "TXTRU" [tShape]
-        []
+tXTRU = 
+  Class "TXTRU" [tShape]
+  [ Function self_ "New" [cstring "name", cstring "title", cstring "material", int "nyx", int "nz" ] Constructor
+  ]
 
 tBox :: Class 
-tBox = Class "TBox" [tObject, tAttLine, tAttFill] 
-       [] 
+tBox = 
+  Class "TBox" [tObject, tAttLine, tAttFill] 
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2"] Constructor 
+  ] 
 
 tPave :: Class
-tPave = Class "TPave" [tBox]
-        []
+tPave = 
+  Class "TPave" [tBox]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", int "bordersize", cstring "br"] Constructor
+  ]
 
 tPaveText :: Class
-tPaveText = Class "TPaveText" [tPave, tAttText]
-            []
+tPaveText = 
+  Class "TPaveText" [tPave, tAttText]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", cstring "br"] Constructor
+  ]
 
 tDiamond :: Class
-tDiamond = Class "TDiamond" [tPaveText] 
-           []
+tDiamond = 
+  Class "TDiamond" [tPaveText] 
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2"] Constructor
+  ]
 
 tPaveStats :: Class 
-tPaveStats = Class "TPaveStats" [tPaveText]
-             []
+tPaveStats = 
+  Class "TPaveStats" [tPaveText]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", cstring "br"] Constructor
+  ]
 
 tPavesText :: Class
-tPavesText = Class "TPavesText" [tPaveText]
-             []
+tPavesText = 
+  Class "TPavesText" [tPaveText]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", int "npaves", cstring "br"] Constructor
+  ]
 
 tLegend :: Class 
-tLegend = Class "TLegend" [tPave, tAttText]
-          []
+tLegend = 
+  Class "TLegend" [tPave, tAttText]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", cstring "header", cstring "option"] Constructor
+  ]
 
 tPaletteAxis :: Class
-tPaletteAxis = Class "TPaletteAxis" [tPave]
-               []
+tPaletteAxis = 
+  Class "TPaletteAxis" [tPave]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", (CPT (CPTClass "TH1") NoConst, "h") ] Constructor
+  ]
 
 tPaveLabel :: Class
-tPaveLabel = Class "TPaveLabel" [tPave, tAttText]
-             []
+tPaveLabel = 
+  Class "TPaveLabel" [tPave, tAttText]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", cstring "label", cstring "option"] Constructor 
+  ]
 
 tPaveClass :: Class
-tPaveClass = Class "TPaveClass" [tPaveLabel]
-             []
-
+tPaveClass = 
+  Class "TPaveClass" [tPaveLabel]
+  [ ]
 
 tWbox :: Class
-tWbox = Class "TWbox" [tBox] 
-        [ Function void_   "SetBorderMode"   [short "bordermode" ] Ordinary
-        ] 
+tWbox = 
+  Class "TWbox" [tBox] 
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", short "color", short "bordersize", short "bordermode"] Constructor 
+  , Function void_ "SetBorderMode"   [short "bordermode" ] Ordinary
+  ] 
 
 tFrame :: Class 
-tFrame = Class "TFrame" [tWbox]
-         []
+tFrame = 
+  Class "TFrame" [tWbox]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2"] Constructor
+  ]
 
 tSliderBox :: Class
-tSliderBox = Class "TSliderBox" [tWbox]
-             []
+tSliderBox = 
+  Class "TSliderBox" [tWbox]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", short "color", short "bordersize", short "bordermode"] Constructor
+  ]
 
 
 tTree :: Class 
-tTree = Class "TTree" [tNamed, tAttLine, tAttFill, tAttMarker]
-        []
+tTree = 
+  Class "TTree" [tNamed, tAttLine, tAttFill, tAttMarker]
+  [ Function self_ "New" [cstring "name", cstring "title", int "splitlevel"] Constructor
+  ]
 
 tChain :: Class
-tChain = Class "TChain" [tTree]
-         []
+tChain = 
+  Class "TChain" [tTree]
+  [ Function self_ "New" [cstring "name", cstring "title"] Constructor
+  ]
 
 tProofChain :: Class
-tProofChain = Class "TProofChain" [tChain]
-              []
+tProofChain = 
+  Class "TProofChain" [tChain]
+  [ Function self_ "New" [ (CPT (CPTClass "TChain") NoConst, "chain"), bool "gettreeheader"] Constructor
+  ]
 
 tHbookTree :: Class 
-tHbookTree = Class "THbookTree" [tTree]
-             []
+tHbookTree = 
+  Class "THbookTree" [tTree]
+  [ Function self_ "New" [cstring "name", int "id"] Constructor
+  ]
 
 tNtuple :: Class
-tNtuple = Class "TNtuple" [tTree]
-          []
+tNtuple = 
+  Class "TNtuple" [tTree]
+  [ Function self_ "New" [cstring "name", cstring "title", cstring "varlist", int "bufsize"] Constructor
+  ]
 
 tNtupleD :: Class
-tNtupleD = Class "TNtupleD" [tTree]
-           []
+tNtupleD = 
+  Class "TNtupleD" [tTree]
+  [ Function self_ "New" [cstring "name", cstring "title", cstring "varlist", int "bufsize"] Constructor
+  ]
 
 tTreeSQL :: Class
-tTreeSQL = Class "TTreeSQL" [tTree]
-           []
+tTreeSQL = 
+  Class "TTreeSQL" [tTree]
+  [
+  ]
 
 tPolyLine :: Class 
-tPolyLine = Class "TPolyLine" [tObject, tAttLine, tAttFill]
-            []
+tPolyLine = 
+  Class "TPolyLine" [tObject, tAttLine, tAttFill]
+  [ Function self_ "New" [int "n", doublep "x", doublep "y", cstring "option"] Constructor
+  ]
 
 tCurlyLine :: Class 
-tCurlyLine = Class "TCurlyLine" [tPolyLine]
-             []
+tCurlyLine = 
+  Class "TCurlyLine" [tPolyLine]
+  [ Function self_ "New" [double "x1", double "y1", double "x2", double "y2", double "wl", double "amp"] Constructor
+  ]
 
 tCurlyArc :: Class 
-tCurlyArc = Class "TCurlyArc" [tCurlyLine]
-            []
+tCurlyArc = 
+  Class "TCurlyArc" [tCurlyLine]
+  [ Function self_ "New" [double "x1", double "y1", double "rad", double "phimin", double "phimax", double "wl", double "amp"] Constructor
+  ]
 
 tEfficiency :: Class 
 tEfficiency = Class "TEfficiency" [tNamed, tAttLine, tAttFill, tAttMarker]
@@ -466,6 +545,7 @@ tQObject = Class "TQObject" []
 tVirtualPad :: Class
 tVirtualPad = Class "TVirtualPad" [tObject, tAttLine, tAttFill, tAttPad, tQObject]
               [ Function (cppclass "TFrame") "GetFrame" [] Ordinary
+              , Function void_ "Range" [double "x1", double "y1", double "x2", double "y2"] Ordinary
               ] 
 
 tPad :: Class 
@@ -530,8 +610,12 @@ root_all_classes =
   , tLine, tArrow, tGaxis
   , tShape, tBRIK, tTUBE, tPCON, tPolyLineShape, tSPHE, tXTRU
   , tBox, tPave, tPaveText, tDiamond, tPaveStats, tPavesText, tLegend
-  , tPaletteAxis, tPaveLabel, tPaveClass, tWbox, tFrame, tSliderBox
-  , tTree, tChain, tProofChain, tHbookTree, tNtuple, tNtupleD, tTreeSQL
+  -- , tPaletteAxis
+  , tPaveLabel, tPaveClass, tWbox, tFrame, tSliderBox
+  , tTree, tChain
+  -- , tProofChain
+  -- , tHbookTree
+  , tNtuple, tNtupleD, tTreeSQL
   , tPolyLine, tCurlyLine, tCurlyArc, tEfficiency
   , tAxis, tLatex, tText
   , tDirectory, tDirectoryFile, tFile

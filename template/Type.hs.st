@@ -106,6 +106,23 @@ xform8 f a x1 x2 x3 x4 x5 x6 x7 x8 =
   f (cast a) (cast x1) (cast x2) (cast x3) (cast x4) (cast x5) (cast x6) (cast x7) (cast x8)
   >>= return . uncast 
 
+xform9 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+           Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9, 
+           Castable y cy) 
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> IO cy) 
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> IO y
+xform9 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 = 
+  f (cast a) (cast x1) (cast x2) (cast x3) (cast x4) (cast x5) (cast x6) (cast x7) (cast x8) (cast x9)
+  >>= return . uncast 
+
+xform10 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,  
+            Castable x10 cx10, Castable y cy) 
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> cx10 -> IO cy) 
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> x10 -> IO y
+xform10 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 = 
+  f (cast a) (cast x1) (cast x2) (cast x3) (cast x4) (cast x5) (cast x6) (cast x7) (cast x8) (cast x9) (cast x10) >>= return . uncast 
+
 
 
 class FPtr a where
