@@ -6,22 +6,25 @@ import HROOT.Generate.Class
 
 tObject :: Class
 tObject = Class "TObject" [] 
-          [ Function cstring_ "GetName" [] Ordinary
+          [ Function self_    "New" [] Constructor 
+          , Function cstring_ "GetName" [] Ordinary
           , Function void_    "Draw"    [cstring "option"] Ordinary
-          , Function void_   "SaveAs"          [cstring "filename", cstring "option"] Ordinary
+          , Function void_    "SaveAs"  [cstring "filename", cstring "option"] Ordinary
           , Function int_     "Write"   [cstring "name", int "option", int "bufsize" ] Ordinary
           ]
 
 
 tNamed :: Class
 tNamed = Class "TNamed" [tObject] 
-         [ Function void_   "SetTitle"        [cstring "name"] Ordinary 
+         [ Function self_  "New" [cstring "name", cstring "title"] Constructor
+         , Function void_  "SetTitle"        [cstring "name"] Ordinary 
          ]
 
 
 tFormula :: Class
 tFormula = Class "TFormula" [] 
-           [ Function double_ "GetParameter"    [int "idx" ] Ordinary
+           [ Function self_ "New" [cstring "name", cstring "formula"] Constructor
+           , Function double_ "GetParameter"    [int "idx" ] Ordinary
            , Function void_   "SetParameter"    [int "idx" , double "value"] Ordinary
            ]
 
@@ -31,7 +34,8 @@ tAtt3D = Class "TAtt3D" []
 
 tAttAxis :: Class
 tAttAxis = Class "TAttAxis" [] 
-                 [ Function void_   "SetLabelColor"   [int    "color" ] Ordinary
+                 [ Function self_ "New" [] Constructor
+                 , Function void_   "SetLabelColor"   [int    "color" ] Ordinary
                  , Function void_   "SetLabelSize"    [double "size"  ] Ordinary
                  , Function void_   "SetTickLength"   [double "length" ] Ordinary
                  , Function void_   "SetTitleOffset"  [double "offset" ] Ordinary
@@ -44,11 +48,13 @@ tAttBBox = Class "TAttBBox" []
 
 tAttCanvas :: Class
 tAttCanvas = Class "TAttCanvas" [] 
-             []
+             [ Function self_ "New" [] Constructor 
+             ]
 
 tAttFill :: Class
 tAttFill = Class "TAttFill" [] 
-           [ Function void_   "SetFillColor"    [int "color" ] Ordinary
+           [ Function self_ "New" [short "fcolor", short "fstyle"] Constructor
+           , Function void_   "SetFillColor"    [int "color" ] Ordinary
            , Function void_   "SetFillStyle"    [int "style" ] Ordinary 
            ]
 tAttImage :: Class
@@ -58,16 +64,19 @@ tAttImage = Class "TAttImage" []
 
 tAttLine :: Class
 tAttLine = Class "TAttLine" [] 
-           [ Function void_   "SetLineColor"    [int "color" ] Ordinary
+           [ Function self_ "New" [short "lcolor", short "lstyle", short "lwidth"] Constructor
+           , Function void_   "SetLineColor"    [int "color" ] Ordinary
            ] 
 
 tAttMarker :: Class
 tAttMarker = Class "TAttMarker" [] 
-             [ ]  
+             [ Function self_ "New" [short "color", short "style", short "msize"] Constructor
+             ]  
 
 tAttPad :: Class
 tAttPad = Class "TAttPad" []
-          []
+          [ Function self_ "New" [] Constructor
+          ]
 
 tAttParticle :: Class
 tAttParticle = Class "TAttParticle" [tNamed]
@@ -75,7 +84,8 @@ tAttParticle = Class "TAttParticle" [tNamed]
 
 tAttText :: Class
 tAttText = Class "TAttText" [] 
-           [ Function void_ "SetTextColor" [int "tcolor"] Ordinary 
+           [ Function self_ "New" [int "align", float "angle", short "color", short "font", float "tsize" ] Constructor
+           , Function void_ "SetTextColor" [int "tcolor"] Ordinary 
            , Function void_ "SetTextAlign" [int "align"] Ordinary 
            , Function void_ "SetTextSize"  [double "tsize"] Ordinary 
            ]  
@@ -229,6 +239,54 @@ tSliderBox :: Class
 tSliderBox = Class "TSliderBox" [tWbox]
              []
 
+
+tTree :: Class 
+tTree = Class "TTree" [tNamed, tAttLine, tAttFill, tAttMarker]
+        []
+
+tChain :: Class
+tChain = Class "TChain" [tTree]
+         []
+
+tProofChain :: Class
+tProofChain = Class "TProofChain" [tChain]
+              []
+
+tHbookTree :: Class 
+tHbookTree = Class "THbookTree" [tTree]
+             []
+
+tNtuple :: Class
+tNtuple = Class "TNtuple" [tTree]
+          []
+
+tNtupleD :: Class
+tNtupleD = Class "TNtupleD" [tTree]
+           []
+
+tTreeSQL :: Class
+tTreeSQL = Class "TTreeSQL" [tTree]
+           []
+
+tPolyLine :: Class 
+tPolyLine = Class "TPolyLine" [tObject, tAttLine, tAttFill]
+            []
+
+tCurlyLine :: Class 
+tCurlyLine = Class "TCurlyLine" [tPolyLine]
+             []
+
+tCurlyArc :: Class 
+tCurlyArc = Class "TCurlyArc" [tCurlyLine]
+            []
+
+tEfficiency :: Class 
+tEfficiency = Class "TEfficiency" [tNamed, tAttLine, tAttFill, tAttMarker]
+              []
+
+
+
+
 tAxis :: Class
 tAxis = Class "TAxis" [tNamed, tAttAxis] 
         []
@@ -259,9 +317,6 @@ tFile = Class "TFile" [tDirectoryFile]
         [ Function self_ "New" [cstring "fname", cstring "option", cstring "ftitle", int "compress" ] Constructor
         ]
 
-tTree :: Class 
-tTree = Class "TTree" [tNamed, tAttLine, tAttFill, tAttMarker]
-        []
 
 tBranch :: Class
 tBranch = Class "TBranch" [tNamed, tAttFill]
@@ -476,11 +531,11 @@ root_all_classes =
   , tShape, tBRIK, tTUBE, tPCON, tPolyLineShape, tSPHE, tXTRU
   , tBox, tPave, tPaveText, tDiamond, tPaveStats, tPavesText, tLegend
   , tPaletteAxis, tPaveLabel, tPaveClass, tWbox, tFrame, tSliderBox
-
- 
+  , tTree, tChain, tProofChain, tHbookTree, tNtuple, tNtupleD, tTreeSQL
+  , tPolyLine, tCurlyLine, tCurlyArc, tEfficiency
   , tAxis, tLatex, tText
   , tDirectory, tDirectoryFile, tFile
-  , tTree, tBranch, tVirtualTreePlayer, tTreePlayer
+  , tBranch, tVirtualTreePlayer, tTreePlayer
   , tArray, tArrayC, tArrayD, tArrayF, tArrayI, tArrayL, tArrayL64
   , tArrayS
   , tH1, tH2, tH3

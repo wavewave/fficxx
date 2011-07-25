@@ -129,7 +129,9 @@ hsFuncXformer func = let len = length (func_args func)
                         
 hsFuncXformerNew :: Function -> String 
 hsFuncXformerNew func = let len = length (func_args func) 
-                        in "xform" ++ show (len - 1)
+                        in if len > 0
+                             then "xform" ++ show (len - 1)
+                             else "xformnull" 
 
                         
                         

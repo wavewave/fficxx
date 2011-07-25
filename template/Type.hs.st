@@ -54,6 +54,9 @@ instance (Castable a a', Castable b b') => Castable (a->b) (a'->b') where
   uncast f = uncast . f . cast 
 
 
+xformnull :: (Castable a ca) => (IO ca) -> IO a
+xformnull f = f >>= return . uncast
+
 xform0 :: (Castable a ca, Castable y cy) 
        => (ca -> IO cy) -> a -> IO y
 xform0 f a = f (cast a) >>= return . uncast 

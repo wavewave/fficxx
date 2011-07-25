@@ -58,8 +58,17 @@
 #include "TWbox.h"
 #include "TFrame.h"
 #include "TSliderBox.h"
+#include "TChain.h"
+#include "TProofChain.h"
+#include "THbookTree.h"
+#include "TNtuple.h"
+#include "TNtupleD.h"
+#include "TTreeSQL.h"
 
-
+#include "TPolyLine.h"
+#include "TCurlyLine.h"
+#include "TCurlyArc.h"
+#include "TEfficiency.h"
 
 
 #include "TLorentzVector.h"

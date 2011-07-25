@@ -39,6 +39,9 @@ double_  = CT CTDouble NoConst
 doublep_ :: Types
 doublep_ = CT CTDoubleStar NoConst
 
+float_ :: Types
+float_ = double_
+
 bool_ :: Types 
 bool_    = CT CTBool   NoConst 
 
@@ -77,6 +80,9 @@ double  var = (double_  , var)
 
 doublep :: String -> (Types,String)
 doublep var = (doublep_ , var)
+
+float :: String -> (Types,String)
+float = double
 
 bool :: String -> (Types,String)
 bool    var = (bool_    , var)
