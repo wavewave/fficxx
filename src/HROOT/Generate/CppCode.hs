@@ -7,6 +7,8 @@ import qualified Data.Map as M
 import HROOT.Generate.Util
 import HROOT.Generate.Function
 import HROOT.Generate.Class
+import HROOT.Generate.FuncDef
+
 
 -- Class Declaration and Definition
 
@@ -30,7 +32,7 @@ classCppDeclVirtual aclass =
   let tmpl = "#undef ROOT_$classname$_DECLARATIONVIRT\\\n#define ROOT_$classname$_DECLARATIONVIRT(Type) \\\\\\\n$funcdecl$" 
       declBodyStr = render tmpl [ ("classname", map toUpper (class_name aclass) ) 
                                  , ("funcdecl" , funcDeclStr ) ] 
-      funcDeclStr = funcsToDecls . virtualFuncs . class_funcs $ aclass
+      funcDeclStr = (funcsToDecls aclass) . virtualFuncs . class_funcs $ aclass
   in  declBodyStr 
       
 classesCppDeclsVirtual :: [Class] -> String 
@@ -43,8 +45,8 @@ classCppDeclNonVirtual c =
   let tmpl = "#undef ROOT_$classname$_DECLARATIONNONVIRT\\\n#define ROOT_$classname$_DECLARATIONNONVIRT(Type) \\\\\\\n$funcdecl$" 
       declBodyStr = render tmpl [ ("classname", map toUpper (class_name c) ) 
                                  , ("funcdecl" , funcDeclStr ) ] 
-      funcDeclStr = funcsToDecls . filter (not.isVirtualFunc) 
-                                 . class_funcs $ c
+      funcDeclStr = (funcsToDecls c) . filter (not.isVirtualFunc) 
+                                     . class_funcs $ c
   in  declBodyStr 
 
 
@@ -79,7 +81,7 @@ classCppDefVirtual aclass =
   let tmpl = "#undef ROOT_$classname$_DEFINITIONVIRT\\\n#define ROOT_$classname$_DEFINITIONVIRT(Type)\\\\\\\n$funcdef$" 
       defBodyStr = render tmpl [ ("classname", map toUpper (class_name aclass) ) 
                                , ("funcdef" , funcDefStr ) ] 
-      funcDefStr = funcsToDefs . virtualFuncs . class_funcs $ aclass
+      funcDefStr = (funcsToDefs aclass) . virtualFuncs . class_funcs $ aclass
   in  defBodyStr 
       
 classesCppDefsVirtual :: [Class] -> String
@@ -92,8 +94,8 @@ classCppDefNonVirtual aclass =
   let tmpl = "#undef ROOT_$classname$_DEFINITIONNONVIRT\\\n#define ROOT_$classname$_DEFINITIONNONVIRT(Type)\\\\\\\n$funcdef$" 
       defBodyStr = render tmpl [ ("classname", map toUpper (class_name aclass) ) 
                                , ("funcdef" , funcDefStr ) ] 
-      funcDefStr = funcsToDefs . filter (not.isVirtualFunc) 
-                               . class_funcs $ aclass
+      funcDefStr = (funcsToDefs aclass) . filter (not.isVirtualFunc) 
+                                        . class_funcs $ aclass
   in  defBodyStr 
       
 classesCppDefsNonVirtual :: [Class] -> String

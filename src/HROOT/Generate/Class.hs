@@ -80,8 +80,8 @@ hsClassName c =
 
 
 hsFuncTyp :: Class -> Function -> String
-hsFuncTyp c f = let args = func_args f 
-                    ret  = func_ret  f 
+hsFuncTyp c f = let args = genericFuncArgs f 
+                    ret  = genericFuncRet c f 
                 in  self ++ " -> " ++ concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
                     
   where (_hcname,rcname) = hsClassName c
@@ -98,8 +98,8 @@ hsFuncTyp c f = let args = func_args f
         hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x 
         
 hsFuncTypNoSelf :: Class -> Function -> String
-hsFuncTypNoSelf c f = let args = func_args f 
-                          ret  = func_ret  f 
+hsFuncTypNoSelf c f = let args = genericFuncArgs f 
+                          ret  = genericFuncRet c f 
                       in  intercalateWith connArrow id $ map (hsargtype . fst) args ++ [hsrettype ret]  
                           
   where (_hcname,rcname) = hsClassName c
@@ -117,21 +117,50 @@ hsFuncTypNoSelf c f = let args = func_args f
 
 
 hscFuncName :: Class -> Function -> String         
-hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (aliasedFuncName f)
+hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (aliasedFuncName c f)
         
-hsFuncName :: Function -> String 
-hsFuncName f = let (x:xs) = aliasedFuncName f 
-               in (toLower x) : xs
+hsFuncName :: Class -> Function -> String 
+hsFuncName c f = let (x:xs) = aliasedFuncName c f 
+                 in (toLower x) : xs
                   
 hsFuncXformer :: Function -> String 
-hsFuncXformer func = let len = length (func_args func) 
+hsFuncXformer func = let len = length (genericFuncArgs func) 
                      in "xform" ++ show len
                         
 hsFuncXformerNew :: Function -> String 
-hsFuncXformerNew func = let len = length (func_args func) 
+hsFuncXformerNew func = let len = length (genericFuncArgs func) 
                         in if len > 0
                              then "xform" ++ show (len - 1)
                              else "xformnull" 
 
+
+genericFuncRet :: Class -> Function -> Types 
+genericFuncRet c f = 
+  case f of                        
+    Constructor _ -> self_ 
+    Virtual t _ _ -> t 
+    NonVirtual t _ _ -> t
+    AliasVirtual t _ _ _ -> t
+    Destructor -> void_
+
+genericFuncArgs :: Function -> Args 
+genericFuncArgs Destructor = []
+genericFuncArgs f = func_args f
                         
-                        
+aliasedFuncName :: Class -> Function -> String 
+aliasedFuncName c f = 
+  case f of 
+    Constructor _ -> constructorName c   
+    Virtual _ str _ -> str 
+    NonVirtual _ str _ -> nonvirtualName c str 
+    AliasVirtual _ _  _ alias -> alias 
+    Destructor -> destructorName c 
+
+constructorName :: Class -> String
+constructorName c = "new" ++ (class_name c) 
+ 
+nonvirtualName :: Class -> String -> String
+nonvirtualName c str = firstLower (class_name c) ++ str 
+
+destructorName :: Class -> String 
+destructorName c = "delete" ++ firstLower (class_name c)

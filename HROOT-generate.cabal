@@ -1,5 +1,5 @@
 Name:		HROOT-generate
-Version:	0.2.4.0
+Version:	0.3.0.0
 Synopsis:	automatic HROOT binding generation
 Description: 	automatic HROOT binding generation 
 License: 	LGPL-2.1
@@ -20,7 +20,8 @@ Executable HROOT-generate
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
                  HStringTemplate, HStringTemplateHelpersIW, 
-                 parsec, configparser
+                 parsec, configparser, 
+                 cmdargs
 
 
 Library
@@ -33,10 +34,12 @@ Library
                    HROOT.Generate.Util
                    HROOT.Generate.Templates
                    HROOT.Generate.Function
+                   HROOT.Generate.FuncDef
                    HROOT.Generate.Class
                    HROOT.Generate.ROOT
                    HROOT.Generate.CppCode
                    HROOT.Generate.FFI
                    HROOT.Generate.HsCode
                    HROOT.Generate.FileGeneration
-		 
+                   HROOT.Generate.CommandType
+

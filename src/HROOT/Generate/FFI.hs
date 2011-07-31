@@ -15,13 +15,13 @@ hsFFIClassFunc c f = if isNewFunc f
                      then render ffistub 
                                  [ ("headerfilename",headerFileName) 
                                  , ("classname",class_name c)
-                                 , ("funcname", aliasedFuncName f)
+                                 , ("funcname", aliasedFuncName c f)
                                  , ("hsfuncname",hscFuncName c f)
                                  , ("hsargs", hsFuncTypNoSelf c f) ] 
                      else render ffistub  
                                  [ ("headerfilename",headerFileName) 
                                  , ("classname",class_name c)
-                                 , ("funcname", aliasedFuncName f)
+                                 , ("funcname", aliasedFuncName c f)
                                  , ("hsfuncname",hscFuncName c f)
                                  , ("hsargs", hsFuncTyp c f) ] 
 

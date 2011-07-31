@@ -6,6 +6,7 @@ import HROOT.Generate.CType
 import HROOT.Generate.Util
 import HROOT.Generate.Function
 import HROOT.Generate.Class
+import HROOT.Generate.FuncDef
 
 import Control.Monad.State
 ----------------
@@ -57,18 +58,18 @@ classToHsDecl :: Class -> String
 classToHsDecl c =  
   let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) ] 
       bodyline func = render hsClassDeclFuncTmpl 
-                                    [ ("funcname", hsFuncName func) 
+                                    [ ("funcname", hsFuncName c func) 
                                     , ("args" , prefixstr func ++ argstr func ) 
                                     ] 
       prefixstr func =  
-        let prefixlst = (snd . mkHsFuncArgType c . func_args) func
+        let prefixlst = (snd . mkHsFuncArgType c . genericFuncArgs) func
         in  if null prefixlst
               then "" 
               else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
       argstr func = intercalateWith connArrow id $
-                                    [ "a" ] 
-                                    ++ fst (mkHsFuncArgType c (func_args func))
-                                    ++ ["IO " ++ (ctypeToHsType c.func_ret) func ]
+                      [ "a" ] 
+                      ++ fst (mkHsFuncArgType c (genericFuncArgs func))
+                      ++ ["IO " ++ (ctypeToHsType c . genericFuncRet c) func ]
       bodylines = map bodyline . virtualFuncs 
                       $ (class_funcs c) 
   in  intercalateWith connRet id (header : bodylines) 
@@ -83,7 +84,7 @@ classesToHsDecls = intercalateWith connRet2 classToHsDecl
 hsClassInstance :: Class -> Class -> String 
 hsClassInstance parent child  = 
   let headline = "instance " ++ typeclassName parent ++ " " ++ class_name child ++ " where" 
-      defline func = "  " ++ hsFuncName func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
+      defline func = "  " ++ hsFuncName child func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
       deflines = (map defline) . virtualFuncs . class_funcs $ parent 
   in  intercalateWith connRet id (headline : deflines) 
    
@@ -123,14 +124,12 @@ hsClassMethodNonVirtual :: Class    -- ^ only concrete class
                        -> String 
 hsClassMethodNonVirtual c 
   | (not.null) nonvirtualFuncs  =                        
-    let nonvirtualFuncName f = case func_type f of 
-                               NonVirtual str -> str
-                               _ -> error ("not virtual func : " ++ show f)
-        header f = (nonvirtualFuncName f) ++ " :: " ++ argstr f
-        body f  = (nonvirtualFuncName f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
-        argstr func = intercalateWith connArrow id $ [class_name c]  
-                                                     ++ map (ctypeToHsType c.fst) (func_args func)
-                                                     ++ ["IO " ++ (ctypeToHsType c.func_ret) func ] 
+    let header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
+        body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
+        argstr func = intercalateWith connArrow id $ 
+                        [class_name c]  
+                        ++ map (ctypeToHsType c.fst) (genericFuncArgs func)
+                        ++ ["IO " ++ (ctypeToHsType c . genericFuncRet c) func] 
     in  intercalateWith connRet (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
   | otherwise = ""   
  where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
@@ -148,8 +147,8 @@ classToHsDefNew c =
            newlinehead = "new" ++ class_name c ++ " :: " ++ argstr newfunc 
            newlinebody = "new" ++ class_name c ++ " = " ++ hsFuncXformerNew newfunc ++ " " ++ hscFuncName c newfunc 
            argstr func = intercalateWith connArrow id $
-                                               map (ctypeToHsType c.fst) (func_args func)
-                                               ++ ["IO " ++ (ctypeToHsType c.func_ret) func ]
+                           map (ctypeToHsType c.fst) (genericFuncArgs func)
+                           ++ ["IO " ++ (ctypeToHsType c . genericFuncRet c) func]
            newline = newlinehead ++ "\n" ++ newlinebody 
        in newline
   where newfuncs = filter isNewFunc (class_funcs c)  

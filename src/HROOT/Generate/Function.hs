@@ -5,36 +5,32 @@ import Control.Applicative hiding (Const)
 import HROOT.Generate.CType
 import HROOT.Generate.Util
 
-data MethodType = Ordinary | Constructor | NonVirtual String | Alias String    
-                deriving (Show,Eq) 
-                  
-
 type Args = [(Types,String)]
 
-data Function = Function { 
-    func_ret  :: Types,
-    func_name :: String,
-    func_args :: Args,  
-    func_type :: MethodType
-  } deriving Show
+data Function = Constructor { func_args :: Args } 
+              | Virtual { func_ret :: Types
+                        , func_name :: String
+                        , func_args :: Args } 
+              | NonVirtual { func_ret :: Types 
+                           , func_name :: String
+                           , func_args :: Args }
+              | AliasVirtual { func_ret :: Types 
+                             , func_name :: String
+                             , func_args :: Args 
+                             , func_alias :: String }
+              | Destructor  
+              deriving Show
 
-aliasedFuncName :: Function -> String 
-aliasedFuncName func = let origname = func_name func 
-                       in case func_type func of
-                            Alias str -> str
-                            NonVirtual str -> str
-                            _ -> origname     
 
+  
 isNewFunc :: Function -> Bool 
-isNewFunc func = case func_type func of
-                   Constructor -> True 
-                   _ -> False 
+isNewFunc (Constructor _ ) = True 
+isNewFunc _ = False
        
 isVirtualFunc :: Function -> Bool 
-isVirtualFunc func = case func_type func of
-                            Constructor  -> False 
-                            NonVirtual _ -> False 
-                            _ -> True 
+isVirtualFunc (Virtual _ _ _) = True 
+isVirtualFunc (AliasVirtual _ _ _ _) = True 
+isVirtualFunc _ = False 
 
 virtualFuncs :: [Function] -> [Function] 
 virtualFuncs = filter isVirtualFunc 
@@ -77,49 +73,3 @@ rettypeToString Void = "void"
 rettypeToString SelfType = "Type ## _p"
 rettypeToString (CPT (CPTClass str) _) = str ++ "_p"
 
--- Function Declaration and Definition
-
-funcToDecl :: Function -> String 
-funcToDecl func 
-  | func_name func /= "New" =  
-    let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
-    in  render tmpl [ ("returntype", rettypeToString (func_ret func))  
-                    , ("funcname", aliasedFuncName func) -- func_name func)
-                    , ("args", argsToString (func_args func)) ] 
-  | otherwise = 
-    let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
-    in  render tmpl [ ("returntype", rettypeToString (func_ret func))  
-                  , ("funcname",  aliasedFuncName func) -- func_name func)
-                  , ("args", argsToStringNoSelf (func_args func)) ] 
-  
-
-funcsToDecls :: [Function] -> String 
-funcsToDecls = intercalateWith connSemicolonBSlash funcToDecl
-
-
-funcToDef :: Function -> String
-funcToDef func 
-  | func_name func /= "New" = 
-    let declstr = funcToDecl func
-        callstr = "to_nonconst<Type,Type ## _t>(p)->" 
-                  ++ (func_name func) ++ "("
-                  ++ argsToCallString (func_args func)   
-                  ++ ")"
-        returnstr = case (func_ret func) of          
-          Void -> callstr ++ ";"
-          SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
-          (CT _ctyp _isconst) -> "return "++callstr++";" 
-          (CPT (CPTClass str) _) -> "return to_nonconst<"++str++"_t,"++str
-                                    ++">(("++str++"*)"++callstr++");"
-    in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
-  | otherwise = 
-    let declstr = funcToDecl func
-        callstr = "(" ++ argsToCallString (func_args func) ++ ")"
-        returnstr = "Type * newp = new Type " ++ callstr ++ "; \\\nreturn to_nonconst<Type ## _t, Type >(newp);"
-    in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
-
-funcsToDefs :: [Function] -> String
-funcsToDefs = intercalateWith connBSlash funcToDef
-
-
- 

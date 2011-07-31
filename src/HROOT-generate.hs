@@ -6,6 +6,7 @@ import System.IO
 import System.Environment 
 import System.Directory
 import System.FilePath ((</>))
+import System.Console.CmdArgs
 
 import Text.StringTemplate hiding (render)
 
@@ -17,6 +18,8 @@ import HROOT.Generate.Class
 import HROOT.Generate.CppCode
 import HROOT.Generate.ROOT
 import HROOT.Generate.FileGeneration
+
+import HROOT.Generate.CommandType 
 
 import Text.Parsec
 import HEP.Parser.Config
@@ -36,11 +39,19 @@ hrootconfigParse =
                 <*> (oneFieldInput "workingdir")
                 <*> (oneFieldInput "installbase")
 
+
 main :: IO () 
 main = do 
+  param <- cmdArgs mode
+  putStrLn $ show param 
+  commandLineProcess param 
+
+commandLineProcess :: HROOT_Generate -> IO () 
+commandLineProcess (Generate conf) = do 
   putStrLn "Automatic HROOT binding generation" 
-  homedir <- getEnv "HOME"
-  str <- readFile (homedir </> ".HROOT")
+--  homedir <- getEnv "HOME"
+--  str <- readFile (homedir </> ".HROOT")
+  str <- readFile conf 
   let config = case (parse hrootconfigParse "" str) of 
                  Left msg -> error (show msg)
                  Right ans -> ans
