@@ -156,6 +156,14 @@ aliasedFuncName c f =
     AliasVirtual _ _  _ alias -> alias 
     Destructor -> destructorName c 
 
+cppFuncName :: Class -> Function -> String 
+cppFuncName c f =   case f of 
+    Constructor _ -> "new"
+    Virtual _ _  _ -> func_name f 
+    NonVirtual _ _ _ -> func_name f  
+    AliasVirtual _ _  _ _ -> func_name f 
+    Destructor -> "delete"
+
 constructorName :: Class -> String
 constructorName c = "new" ++ (class_name c) 
  

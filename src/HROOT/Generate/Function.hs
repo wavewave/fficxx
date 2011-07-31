@@ -26,6 +26,10 @@ data Function = Constructor { func_args :: Args }
 isNewFunc :: Function -> Bool 
 isNewFunc (Constructor _ ) = True 
 isNewFunc _ = False
+
+isDeleteFunc :: Function -> Bool 
+isDeleteFunc Destructor = True 
+isDeleteFunc _ = False
        
 isVirtualFunc :: Function -> Bool 
 isVirtualFunc (Virtual _ _ _) = True 
