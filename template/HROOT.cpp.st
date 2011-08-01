@@ -42,7 +42,7 @@
 #include "TBRIK.h"
 #include "TTUBE.h"
 #include "TPCON.h"
-#include "TPolyLineShape.h"
+// #include "TPolyLineShape.h"
 #include "TSPHE.h"
 #include "TXTRU.h"
 #include "TBox.h"

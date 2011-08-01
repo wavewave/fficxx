@@ -12,17 +12,17 @@ import HROOT.Generate.Util
 
 funcToDecl :: Class -> Function -> String 
 funcToDecl c func 
-  | (not.isNewFunc) func =  
+  | (not.isNewFunc) func && (not.isDeleteFunc) func =  
     let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
     in  render tmpl [ ("returntype", rettypeToString (genericFuncRet c func))  
                     , ("funcname", aliasedFuncName c func) 
                     , ("args", argsToString (genericFuncArgs func)) ] 
-  | otherwise = 
+  | isNewFunc func = 
     let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
     in  render tmpl [ ("returntype", rettypeToString (genericFuncRet c func))  
                   , ("funcname",  aliasedFuncName c func) 
                   , ("args", argsToStringNoSelf (genericFuncArgs func)) ] 
-  
+  | otherwise = "" 
 
 funcsToDecls :: Class -> [Function] -> String 
 funcsToDecls c = intercalateWith connSemicolonBSlash (funcToDecl c)

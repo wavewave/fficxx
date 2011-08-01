@@ -95,10 +95,6 @@ mkClassInstances cs m =
       f (x,ys) = intercalateWith connRet (hsClassInstance x) ys
   in  intercalateWith connRet2 f lst
       
-      
--- hsClassDeclaration :: Class -> String
--- hsClassDeclaration c = undefined
-  
 ----------                        
 
 hsInterfaceCastableInstanceTmpl :: String 

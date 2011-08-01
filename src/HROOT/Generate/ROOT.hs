@@ -232,9 +232,11 @@ tPCON =
   , Destructor 
   ]
 
+{-
 tPolyLineShape :: Class
 tPolyLineShape = Class "TPolyLineShape" [tShape, tAttMarker]
                  []
+-}
 
 tSPHE :: Class
 tSPHE = 
@@ -665,7 +667,8 @@ root_all_classes =
   , tGraphQQ
   , tEllipse, tArc, tCrown
   , tLine, tArrow, tGaxis
-  , tShape, tBRIK, tTUBE, tPCON, tPolyLineShape, tSPHE, tXTRU
+  , tShape, tBRIK, tTUBE, tPCON, tSPHE, tXTRU
+  -- , tPolyLineShape
   , tBox, tPave, tPaveText, tDiamond, tPaveStats, tPavesText, tLegend
   -- , tPaletteAxis
   , tPaveLabel, tPaveClass, tWbox, tFrame, tSliderBox

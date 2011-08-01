@@ -44,7 +44,7 @@ constructorFuncs = filter isNewFunc
 
 nonVirtualNotNewFuncs :: [Function] -> [Function]
 nonVirtualNotNewFuncs = 
-  filter ((&&) <$> (not.isVirtualFunc) <*> (not.isNewFunc))
+  filter (\x -> (not.isVirtualFunc) x && (not.isNewFunc) x && (not.isDeleteFunc) x)
 
 argToString :: (Types,String) -> String 
 argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname 
