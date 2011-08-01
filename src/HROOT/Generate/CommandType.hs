@@ -8,7 +8,7 @@ data HROOT_Generate = Generate { config :: FilePath }
                     deriving (Show,Data,Typeable)
 
 generate :: HROOT_Generate
-generate = Generate { config = "test.conf" } 
+generate = Generate { config = "HROOT.conf" } 
 
 mode :: HROOT_Generate
 mode = modes [generate] 
