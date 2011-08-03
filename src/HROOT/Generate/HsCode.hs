@@ -43,9 +43,9 @@ mkHsFuncArgType c lst =
           case typ of                  
             SelfType -> return "a"
             CT _ _   -> return $ ctypeToHsType c typ 
-            CPT (CPTClass _cname) _ -> do 
+            CPT (CPTClass cname) _ -> do 
               (prefix,n) <- get 
-              let iname = typeclassName c
+              let iname = typeclassNameFromStr cname -- typeclassName c
                   newname = 'c' : show n
                   newprefix1 = iname ++ " " ++ newname    
                   newprefix2 = "FPtr " ++ newname
@@ -65,10 +65,16 @@ classToHsDecl c =
         in  if null prefixlst
               then "" 
               else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
+      rettypstr func = let rtyp = genericFuncRet func
+                       in case rtyp of 
+                            SelfType -> "a"
+                            _ -> ctypeToHsType c rtyp
+                  
       argstr func = intercalateWith connArrow id $
                       [ "a" ] 
                       ++ fst (mkHsFuncArgType c (genericFuncArgs func))
-                      ++ ["IO " ++ (ctypeToHsType c . genericFuncRet) func ]
+                      ++ ["IO " ++ rettypstr func ] 
+                          -- (ctypeToHsType c . genericFuncRet) func ]
       bodylines = map bodyline . virtualFuncs 
                       $ (class_funcs c) 
   in  intercalateWith connRet id (header : bodylines) 

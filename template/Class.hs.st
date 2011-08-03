@@ -5,7 +5,7 @@
 
 module HROOT.Class where
 
-import Foreign.C            
+-- import Foreign.C            
 import Foreign.Ptr
 import Foreign.ForeignPtr
 

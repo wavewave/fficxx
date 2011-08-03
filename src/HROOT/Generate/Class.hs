@@ -77,6 +77,8 @@ ctypeToHsType _c (CPT (CPTClass name) _) = name
 typeclassName :: Class -> String
 typeclassName c = 'I' : class_name c
 
+typeclassNameFromStr :: String -> String 
+typeclassNameFromStr = ('I':)
 
 hsClassName :: Class 
                -> (String, String)  -- ^ High-level, 'Raw'-level
