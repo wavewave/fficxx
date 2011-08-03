@@ -9,11 +9,17 @@ import HROOT.Generate.Util
 import HROOT.Generate.Function
 import Data.List 
 
-data Class = Class { 
-    class_name :: String, 
-    class_parents :: [Class],
-    class_funcs :: [Function]
-  } 
+data Class = Class { class_name :: String
+                   , class_parents :: [Class]
+                   , class_funcs :: [Function] }
+           | AbstractClass { class_name :: String
+                           , class_parents :: [Class]
+                           , class_funcs :: [Function] }
+
+
+isAbstractClass :: Class -> Bool 
+isAbstractClass (Class _ _ _) = False 
+isAbstractClass (AbstractClass _ _ _ ) = True            
 
 instance Show Class where
   show x = show (class_name x)
@@ -154,7 +160,7 @@ aliasedFuncName c f =
     Virtual _ str _ -> str 
     NonVirtual _ str _ -> nonvirtualName c str 
     AliasVirtual _ _  _ alias -> alias 
-    Destructor -> destructorName c 
+    Destructor -> destructorName  
 
 cppFuncName :: Class -> Function -> String 
 cppFuncName c f =   case f of 
@@ -162,7 +168,7 @@ cppFuncName c f =   case f of
     Virtual _ _  _ -> func_name f 
     NonVirtual _ _ _ -> func_name f  
     AliasVirtual _ _  _ _ -> func_name f 
-    Destructor -> "delete"
+    Destructor -> destructorName
 
 constructorName :: Class -> String
 constructorName c = "new" ++ (class_name c) 
@@ -170,5 +176,5 @@ constructorName c = "new" ++ (class_name c)
 nonvirtualName :: Class -> String -> String
 nonvirtualName c str = firstLower (class_name c) ++ str 
 
-destructorName :: Class -> String 
-destructorName c = "delete" ++ firstLower (class_name c)
+destructorName :: String 
+destructorName = "delete" 

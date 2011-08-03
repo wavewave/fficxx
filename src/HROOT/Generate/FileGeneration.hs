@@ -18,7 +18,8 @@ import HROOT.Generate.HsCode
 mkDaughterDef :: ((Class,[Class]) -> String) -> DaughterMap -> String 
 mkDaughterDef f m = 
   let lst = M.toList m 
-  in  concatMap f lst 
+      f' (x,xs) =  f (x,filter (not.isAbstractClass) xs) 
+  in  concatMap f' lst 
 
 ---- Header and Cpp file
 
@@ -69,7 +70,7 @@ mkFunctionHsc templates classes =
 mkTypeHs :: STGroup String -> [Class] -> String                      
 mkTypeHs templates classes = 
   renderTemplateGroup templates [ ("typeBody", typebody) ]  "Type.hs" 
-  where typebody = mkRawClasses classes 
+  where typebody = mkRawClasses (filter (not.isAbstractClass) classes)
   
   
 mkClassHs :: STGroup String -> [Class] -> String

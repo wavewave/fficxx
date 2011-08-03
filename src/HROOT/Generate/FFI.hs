@@ -11,20 +11,27 @@ ffistub = "foreign import ccall \"$headerfilename$ $classname$_$funcname$\" $hsf
 
 
 hsFFIClassFunc :: Class -> Function -> String 
-hsFFIClassFunc c f 
-  | isNewFunc f    = render ffistub 
+hsFFIClassFunc c f = if isAbstractClass c 
+                       then ""
+                       else if isNewFunc f     
+                              then render ffistub 
+                                       [ ("headerfilename",headerFileName) 
+                                       , ("classname",class_name c)
+                                       , ("funcname", aliasedFuncName c f)
+                                       , ("hsfuncname",hscFuncName c f)
+                                       , ("hsargs", hsFuncTypNoSelf c f) ] 
+                              else render ffistub 
+                                       [ ("headerfilename",headerFileName) 
+                                       , ("classname",class_name c)
+                                       , ("funcname", aliasedFuncName c f)
+                                       , ("hsfuncname",hscFuncName c f)
+                                       , ("hsargs", hsFuncTyp c f) ] 
+{-  | otherwise      = render ffistub  
                             [ ("headerfilename",headerFileName) 
                             , ("classname",class_name c)
                             , ("funcname", aliasedFuncName c f)
                             , ("hsfuncname",hscFuncName c f)
-                            , ("hsargs", hsFuncTypNoSelf c f) ] 
-  | isDeleteFunc f = "" 
-  | otherwise      = render ffistub  
-                            [ ("headerfilename",headerFileName) 
-                            , ("classname",class_name c)
-                            , ("funcname", aliasedFuncName c f)
-                            , ("hsfuncname",hscFuncName c f)
-                            , ("hsargs", hsFuncTyp c f) ] 
+                            , ("hsargs", hsFuncTyp c f) ]  -}
 
 hsFFIClass :: Class -> String 
 hsFFIClass c =

@@ -82,11 +82,13 @@ classesToHsDecls :: [Class] -> String
 classesToHsDecls = intercalateWith connRet2 classToHsDecl 
 
 hsClassInstance :: Class -> Class -> String 
-hsClassInstance parent child  = 
-  let headline = "instance " ++ typeclassName parent ++ " " ++ class_name child ++ " where" 
-      defline func = "  " ++ hsFuncName child func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
-      deflines = (map defline) . virtualFuncs . class_funcs $ parent 
-  in  intercalateWith connRet id (headline : deflines) 
+hsClassInstance parent child  
+  | (not.isAbstractClass) child = 
+    let headline = "instance " ++ typeclassName parent ++ " " ++ class_name child ++ " where" 
+        defline func = "  " ++ hsFuncName child func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
+        deflines = (map defline) . virtualFuncs . class_funcs $ parent 
+    in  intercalateWith connRet id (headline : deflines) 
+  | otherwise = ""
    
 mkClassInstances :: [Class] -> DaughterMap -> String 
 mkClassInstances cs m = 
@@ -103,11 +105,13 @@ hsInterfaceCastableInstanceTmpl =
 
 
 hsInterfaceCastableInstance :: Class -> String 
-hsInterfaceCastableInstance c = 
-  let iname = typeclassName c
-      (_,rname) = hsClassName c
-  in  render hsInterfaceCastableInstanceTmpl 
-             [("interfaceName",iname),("rawClassName",rname)]
+hsInterfaceCastableInstance c 
+  | (not.isAbstractClass) c = 
+    let iname = typeclassName c
+        (_,rname) = hsClassName c
+    in  render hsInterfaceCastableInstanceTmpl 
+               [("interfaceName",iname),("rawClassName",rname)]
+  | otherwise = "" 
 
 mkInterfaceCastableInstance :: [Class] -> String 
 mkInterfaceCastableInstance = 

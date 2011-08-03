@@ -32,7 +32,8 @@ isDeleteFunc Destructor = True
 isDeleteFunc _ = False
        
 isVirtualFunc :: Function -> Bool 
-isVirtualFunc (Virtual _ _ _) = True 
+isVirtualFunc (Destructor)           = True
+isVirtualFunc (Virtual _ _ _)        = True 
 isVirtualFunc (AliasVirtual _ _ _ _) = True 
 isVirtualFunc _ = False 
 

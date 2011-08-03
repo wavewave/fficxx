@@ -12,7 +12,7 @@ import HROOT.Generate.Util
 
 funcToDecl :: Class -> Function -> String 
 funcToDecl c func 
-  | (not.isNewFunc) func && (not.isDeleteFunc) func =  
+  | (not.isNewFunc) func =  
     let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
     in  render tmpl [ ("returntype", rettypeToString (genericFuncRet c func))  
                     , ("funcname", aliasedFuncName c func) 
@@ -20,9 +20,8 @@ funcToDecl c func
   | isNewFunc func = 
     let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
     in  render tmpl [ ("returntype", rettypeToString (genericFuncRet c func))  
-                  , ("funcname",  aliasedFuncName c func) 
-                  , ("args", argsToStringNoSelf (genericFuncArgs func)) ] 
-  | otherwise = "" 
+                    , ("funcname",  aliasedFuncName c func) 
+                    , ("args", argsToStringNoSelf (genericFuncArgs func)) ] 
 
 funcsToDecls :: Class -> [Function] -> String 
 funcsToDecls c = intercalateWith connSemicolonBSlash (funcToDecl c)
@@ -47,6 +46,11 @@ funcToDef c func
     let declstr = funcToDecl c func
         callstr = "(" ++ argsToCallString (genericFuncArgs func) ++ ")"
         returnstr = "Type * newp = new Type " ++ callstr ++ "; \\\nreturn to_nonconst<Type ## _t, Type >(newp);"
+    in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
+  | isDeleteFunc func = 
+    let declstr = funcToDecl c func
+        callstr = "( Type ## _p p )"
+        returnstr = "delete (to_nonconst<Type,Type ## _t>(p)) ; "
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | otherwise = "" 
 
