@@ -271,7 +271,7 @@ tLegend =
 tPaletteAxis :: Class
 tPaletteAxis = 
   Class "TPaletteAxis" [tPave]
-  [ Constructor [double "x1", double "y1", double "x2", double "y2", (CPT (CPTClass "TH1") NoConst, "h") ] 
+  [ Constructor [double "x1", double "y1", double "x2", double "y2", cppclass "TH1" "h" ] 
   ]
 
 tPaveLabel :: Class
@@ -320,7 +320,7 @@ tChain =
 tProofChain :: Class
 tProofChain = 
   Class "TProofChain" [tChain]
-  [ Constructor [ (CPT (CPTClass "TChain") NoConst, "chain"), bool "gettreeheader"] 
+  [ Constructor [ cppclass "TChain" "chain", bool "gettreeheader"] 
   ]
 
 tHbookTree :: Class 
@@ -452,11 +452,26 @@ tArrayS = Class "TArrayS" [tArray]
 
 tH1 :: Class
 tH1 = Class "TH1" [tNamed, tAttLine, tAttFill, tAttMarker] 
-      [ Virtual (cppclass "TAxis") "GetXaxis" [] 
-      , Virtual (cppclass "TAxis") "GetYaxis" [] 
-      , Virtual (cppclass "TAxis") "GetZaxis" [] 
-      , Virtual void_ "Add" [ (CPT (CPTClass "TH1") NoConst, "h1"), double "c1" ]  
+      [ Virtual (cppclass_ "TAxis") "GetXaxis" [] 
+      , Virtual (cppclass_ "TAxis") "GetYaxis" [] 
+      , Virtual (cppclass_ "TAxis") "GetZaxis" [] 
+      , Virtual void_ "Add" [cppclass "TH1" "h1", double "c1"]  
+      , Virtual void_ "AddBinContent" [int "bin", double "w"] 
+      , Virtual double_ "Chi2Test" [cppclassconst "TH1" "h2", cstring "option", doublep "res"] 
+      , Virtual double_ "ComputeIntegral" []
+      , Virtual void_ "DirectoryAutoAdd" [cppclass "TDirectory" "dir"]
+      , Virtual int_ "DistancetoPrimitive" [int "px", int "py"]
+      , Virtual void_ "Divide" [cppclassconst "TH1" "h1", cppclassconst "TH2" "h2", double "c1", double "c2", cstring "option"]
+      , Virtual (cppclass_ "TH1") "DrawCopy" [cstring "option"]
+      , Virtual (cppclass_ "TH1") "DrawNormalized" [cstring "option", double "norm"]
+      , Virtual void_ "DrawPanel" []
+      , Virtual int_ "BufferEmpty" [int "action"]
+      , Virtual void_ "Eval" [cppclass "TF1" "f1", cstring "option"]
+      , Virtual void_ "ExecuteEvent" [int "event", int "px", int "py"]
+      , Virtual (cppclass_ "TH1") "FFT" [cppclass "TH1" "h_output", cstring "option"] 
       , AliasVirtual int_  "Fill" [double "x"] "fill1"
+      , Virtual void_ "FillN" [int "ntimes", doublep "x", doublep "w", int "stride"]
+      , Virtual void_ "FillRandom" [cppclass "TH1" "h", int "ntimes"]
       ] 
 
 tH2 :: Class 
@@ -550,7 +565,7 @@ tQObject = Class "TQObject" [deletable]
 
 tVirtualPad :: Class
 tVirtualPad = Class "TVirtualPad" [tObject, tAttLine, tAttFill, tAttPad, tQObject]
-              [ Virtual (cppclass "TFrame") "GetFrame" [] 
+              [ Virtual (cppclass_ "TFrame") "GetFrame" [] 
               , Virtual void_ "Range" [double "x1", double "y1", double "x2", double "y2"] 
               ] 
 

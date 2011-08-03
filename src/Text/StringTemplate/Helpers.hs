@@ -27,20 +27,20 @@ module Text.StringTemplate.Helpers  (
 where
 
 import Text.StringTemplate 
-import Text.StringTemplate.Base
+-- import Text.StringTemplate.Base
 import System.Directory
 import System.FilePath
 import qualified System.IO.Strict as Strict
-import Control.Applicative
+-- import Control.Applicative
 import Data.List (find)
 import Data.Char
-import Control.Monad.Reader
+-- import Control.Monad.Reader
 import HSH (bracketCD)
 import qualified Data.Map as M
-import Text.StringTemplate.Classes
+-- import Text.StringTemplate.Classes
 import Safe
 import qualified System.FilePath.Find as Find
-import System.FilePath
+-- import System.FilePath
 {- | 
 Chooses a template from an STGroup, or errors if not found.
 
@@ -60,8 +60,10 @@ renderTemplateGroup gr attrs tmpl =
              ( toString . setManyAttribSafer attrs )
              ( getStringTemplate tmpl gr )
 
+{-
 renderTemplateGroupS :: STGroup String -> [(String, String)] -> [Char] -> String
 renderTemplateGroupS = renderTemplateGroup
+-}
 
 -- can this be done for Bytestrings? Below doesn't work, need an instance for (ToSElem B.ByteString)
 --renderTemplateGroupB :: STGroup String -> [(String, B.ByteString)] -> [Char] -> String
@@ -87,7 +89,7 @@ Groups are independent; groups from higher in the directory structure do not hav
 The top group has key \".\" (mnemonic, current directory), other groups have key names of subdirectories, including the starting ., eg \".\/templates\/path\/to/\subdir\"
 -} 
 directoryGroups' :: (FilePath -> IO a) -> FilePath -> IO (M.Map FilePath a)
-directoryGroups' f' d = bracketCD d $ do
+directoryGroups' f' d1 = bracketCD d1 $ do
                            subDirs <- findDirectories $ "." 
                            return . M.fromList =<< mapM f subDirs                               
   where 
@@ -168,14 +170,17 @@ renderTemplateDirGroup tdg dir tname attrs =
   let ts = getTemplateGroup dir tdg 
   in  renderTemplateGroup ts attrs tname
 
+setManyAttribSafer :: (ToSElem a, Stringable b) => [(String, a)] -> StringTemplate b -> StringTemplate b
 setManyAttribSafer attrs  st = 
     let mbFoundbadattr = find badTmplVarName . map fst $ attrs
     in  maybe (setManyAttrib attrs st)
               (\mbA -> newSTMP . ("setManyAttribSafer, bad template atr: "++) $ mbA)
               mbFoundbadattr
 
+{-
 (<$$>) :: (Functor f1, Functor f) => (a -> b) -> f (f1 a) -> f (f1 b)
 (<$$>) = (<$>) . (<$>)
+-}
 
 {- Check for a variable that will cause errors and heartache using HStringTemplate -}
 badTmplVarName :: String -> Bool

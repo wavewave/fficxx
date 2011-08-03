@@ -93,8 +93,14 @@ intp var = (intp_ , var)
 charpp :: String -> (Types, String)
 charpp var = (charpp_, var)
 
-cppclass :: String -> Types
-cppclass name =  CPT (CPTClass name) NoConst
+cppclass_ :: String -> Types
+cppclass_ cname =  CPT (CPTClass cname) NoConst
+
+cppclass :: String -> String -> (Types, String)
+cppclass cname vname = ( cppclass_ cname, vname)
+
+cppclassconst :: String -> String -> (Types, String) 
+cppclassconst cname vname = ( CPT (CPTClass cname) Const, vname)
 
 hsCTypeName :: CTypes -> String 
 hsCTypeName CTString = "CString" 

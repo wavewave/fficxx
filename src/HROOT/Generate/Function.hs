@@ -1,7 +1,5 @@
 module HROOT.Generate.Function where
 
-import Control.Applicative hiding (Const)
-
 import HROOT.Generate.CType
 import HROOT.Generate.Util
 

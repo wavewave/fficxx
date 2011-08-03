@@ -3,7 +3,6 @@ module HROOT.Generate.FileGeneration where
 import Text.StringTemplate hiding (render)
 import Text.StringTemplate.Helpers
 
-import Data.Char
 import qualified Data.Map as M
 
 import HROOT.Generate.Util

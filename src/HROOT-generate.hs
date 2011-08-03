@@ -3,7 +3,6 @@
 module Main where
 
 import System.IO
-import System.Environment 
 import System.Directory
 import System.FilePath ((</>))
 import System.Console.CmdArgs
@@ -14,12 +13,12 @@ import Control.Applicative
 import Control.Monad.Identity
 
 import HROOT.Generate.Templates
-import HROOT.Generate.Class
-import HROOT.Generate.CppCode
+
+
 import HROOT.Generate.ROOT
 import HROOT.Generate.FileGeneration
 
-import HROOT.Generate.CommandType 
+import HROOT.Generate.CommandType hiding (config)
 
 import Text.Parsec
 import HEP.Parser.Config

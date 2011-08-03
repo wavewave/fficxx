@@ -6,7 +6,6 @@ import HROOT.Generate.CType
 import HROOT.Generate.Util
 import HROOT.Generate.Function
 import HROOT.Generate.Class
-import HROOT.Generate.FuncDef
 
 import Control.Monad.State
 ----------------
@@ -69,7 +68,7 @@ classToHsDecl c =
       argstr func = intercalateWith connArrow id $
                       [ "a" ] 
                       ++ fst (mkHsFuncArgType c (genericFuncArgs func))
-                      ++ ["IO " ++ (ctypeToHsType c . genericFuncRet c) func ]
+                      ++ ["IO " ++ (ctypeToHsType c . genericFuncRet) func ]
       bodylines = map bodyline . virtualFuncs 
                       $ (class_funcs c) 
   in  intercalateWith connRet id (header : bodylines) 
@@ -129,7 +128,7 @@ hsClassMethodNonVirtual c
         argstr func = intercalateWith connArrow id $ 
                         [class_name c]  
                         ++ map (ctypeToHsType c.fst) (genericFuncArgs func)
-                        ++ ["IO " ++ (ctypeToHsType c . genericFuncRet c) func] 
+                        ++ ["IO " ++ (ctypeToHsType c . genericFuncRet) func] 
     in  intercalateWith connRet (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
   | otherwise = ""   
  where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
@@ -148,7 +147,7 @@ classToHsDefNew c =
            newlinebody = "new" ++ class_name c ++ " = " ++ hsFuncXformerNew newfunc ++ " " ++ hscFuncName c newfunc 
            argstr func = intercalateWith connArrow id $
                            map (ctypeToHsType c.fst) (genericFuncArgs func)
-                           ++ ["IO " ++ (ctypeToHsType c . genericFuncRet c) func]
+                           ++ ["IO " ++ (ctypeToHsType c.genericFuncRet) func]
            newline = newlinehead ++ "\n" ++ newlinebody 
        in newline
   where newfuncs = filter isNewFunc (class_funcs c)  

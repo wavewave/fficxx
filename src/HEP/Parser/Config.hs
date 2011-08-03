@@ -6,6 +6,7 @@ import Text.Parsec
 yesNo :: String -> Bool 
 yesNo "Yes" = True
 yesNo "No"  = False
+yesNo _     = undefined 
 
 oneFieldInput :: String -> ParsecT String () Identity String 
 oneFieldInput fieldname = do 

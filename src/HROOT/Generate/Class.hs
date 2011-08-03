@@ -87,7 +87,7 @@ hsClassName c =
 
 hsFuncTyp :: Class -> Function -> String
 hsFuncTyp c f = let args = genericFuncArgs f 
-                    ret  = genericFuncRet c f 
+                    ret  = genericFuncRet f 
                 in  self ++ " -> " ++ concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
                     
   where (_hcname,rcname) = hsClassName c
@@ -105,7 +105,7 @@ hsFuncTyp c f = let args = genericFuncArgs f
         
 hsFuncTypNoSelf :: Class -> Function -> String
 hsFuncTypNoSelf c f = let args = genericFuncArgs f 
-                          ret  = genericFuncRet c f 
+                          ret  = genericFuncRet f 
                       in  intercalateWith connArrow id $ map (hsargtype . fst) args ++ [hsrettype ret]  
                           
   where (_hcname,rcname) = hsClassName c
@@ -140,8 +140,8 @@ hsFuncXformerNew func = let len = length (genericFuncArgs func)
                              else "xformnull" 
 
 
-genericFuncRet :: Class -> Function -> Types 
-genericFuncRet c f = 
+genericFuncRet :: Function -> Types 
+genericFuncRet f = 
   case f of                        
     Constructor _ -> self_ 
     Virtual t _ _ -> t 
@@ -162,8 +162,8 @@ aliasedFuncName c f =
     AliasVirtual _ _  _ alias -> alias 
     Destructor -> destructorName  
 
-cppFuncName :: Class -> Function -> String 
-cppFuncName c f =   case f of 
+cppFuncName :: Function -> String 
+cppFuncName f =   case f of 
     Constructor _ -> "new"
     Virtual _ _  _ -> func_name f 
     NonVirtual _ _ _ -> func_name f  
