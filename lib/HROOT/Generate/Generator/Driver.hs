@@ -70,14 +70,14 @@ mkDaughterDef f m =
 
 mkDeclHeader :: STGroup String -> [Class] -> String 
 mkDeclHeader templates classes = 
-  let declDefStr     = classesCppDeclsVirtual classes 
+  let declDefStr     = genAllCppHeaderTmplVirtual classes 
                        `connRet2`
-                       classesCppDeclsNonVirtual classes 
-      typeDeclStr    = classesCppTypeDecls classes 
+                       genAllCppHeaderTmplNonVirtual classes 
+      typeDeclStr    = genAllCppHeaderTmplType classes 
       dsmap           = mkDaughterSelfMap classes
-      classDeclsStr  = mkDaughterDef classCppDeclsInstancesVirtual dsmap
+      classDeclsStr  = mkDaughterDef genCppHeaderInstVirtual dsmap
                        `connRet2` 
-                       classesCppDeclsInstancesNonVirtual classes
+                       genAllCppHeaderInstNonVirtual classes
       declBodyStr    = declDefStr 
                        `connRet2` 
                        typeDeclStr 
@@ -91,13 +91,13 @@ mkDeclHeader templates classes =
 mkDefMain :: STGroup String -> [Class] -> String 
 mkDefMain templates classes =
   let dsmap    = mkDaughterSelfMap classes
-      cppBody = classesCppDefsVirtual classes
+      cppBody = genAllCppDefTmplVirtual classes
                 `connRet2`
-                classesCppDefsNonVirtual classes
+                genAllCppDefTmplNonVirtual classes
                 `connRet2`
-                mkDaughterDef classCppDefInstancesVirtual dsmap
+                mkDaughterDef genCppDefInstVirtual dsmap
                 `connRet2` 
-                classesCppDefsInstancesNonVirtual classes
+                genAllCppDefInstNonVirtual classes
 
   in  renderTemplateGroup 
         templates 
@@ -109,7 +109,7 @@ mkFunctionHsc :: STGroup String -> [Class] -> String
 mkFunctionHsc templates classes = 
   renderTemplateGroup templates
                       [ ("headerFileName", headerFileName)
-                      , ("hsFunctionBody", mkFFIClasses headerFileName classes) ]  
+                      , ("hsFunctionBody", genAllHsFFI headerFileName classes) ]  
                       "Function.hsc" 
                      
 mkTypeHs :: STGroup String -> [Class] -> String                      
@@ -124,15 +124,16 @@ mkClassHs templates classes =
                       [ ("classBody", classBodyStr ) ]
                       "Class.hs"
   where dmap = mkDaughterMap classes
-        classBodyStr = classesToHsDecls classes 
+        classBodyStr = genAllHsFrontDecl classes 
                        `connRet2`
-                       mkInterfaceCastableInstance classes 
+                       genAllHsFrontInstCastable classes 
                        `connRet2`
-                       mkClassInstances classes dmap 
+                       genAllHsFrontInst classes dmap 
                        `connRet2`
-                       classesToHsDefNews classes 
+                       genAllHsFrontInstNew classes 
                        `connRet2`
-                       intercalateWith connRet hsClassMethodNonVirtual classes 
+                       genAllHsFrontInstNonVirtual classes
+
                        
                        
                        

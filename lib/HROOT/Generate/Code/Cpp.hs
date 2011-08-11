@@ -16,30 +16,30 @@ import HROOT.Generate.Code.MethodDef
 
 ---- "Class Type Declaration" Instances
 
-classCppTypeDecl :: Class -> String 
-classCppTypeDecl c = let tmpl = "ROOT_TYPE_DECLARATION($classname$);" 
-                    in  render tmpl [ ("classname", class_name c) ] 
+genCppHeaderTmplType :: Class -> String 
+genCppHeaderTmplType c = let tmpl = "ROOT_TYPE_DECLARATION($classname$);" 
+                     in  render tmpl [ ("classname", class_name c) ] 
 
-classesCppTypeDecls :: [Class] -> String
-classesCppTypeDecls = intercalateWith connRet (classCppTypeDecl ) 
+genAllCppHeaderTmplType :: [Class] -> String
+genAllCppHeaderTmplType = intercalateWith connRet (genCppHeaderTmplType) 
 
 ---- "Class Declaration Virtual" Declaration 
 
-classCppDeclVirtual :: Class -> String 
-classCppDeclVirtual aclass =  
+genCppHeaderTmplVirtual :: Class -> String 
+genCppHeaderTmplVirtual aclass =  
   let tmpl = "#undef ROOT_$classname$_DECLARATIONVIRT\\\n#define ROOT_$classname$_DECLARATIONVIRT(Type) \\\\\\\n$funcdecl$" 
       declBodyStr = render tmpl [ ("classname", map toUpper (class_name aclass) ) 
                                  , ("funcdecl" , funcDeclStr ) ] 
       funcDeclStr = (funcsToDecls aclass) . virtualFuncs . class_funcs $ aclass
   in  declBodyStr 
       
-classesCppDeclsVirtual :: [Class] -> String 
-classesCppDeclsVirtual = intercalateWith connRet2 classCppDeclVirtual
+genAllCppHeaderTmplVirtual :: [Class] -> String 
+genAllCppHeaderTmplVirtual = intercalateWith connRet2 genCppHeaderTmplVirtual
 
 ---- "Class Declaration Non-Virtual" Declaration
 
-classCppDeclNonVirtual :: Class -> String
-classCppDeclNonVirtual c = 
+genCppHeaderTmplNonVirtual :: Class -> String
+genCppHeaderTmplNonVirtual c = 
   let tmpl = "#undef ROOT_$classname$_DECLARATIONNONVIRT\\\n#define ROOT_$classname$_DECLARATIONNONVIRT(Type) \\\\\\\n$funcdecl$" 
       declBodyStr = render tmpl [ ("classname", map toUpper (class_name c) ) 
                                  , ("funcdecl" , funcDeclStr ) ] 
@@ -47,25 +47,24 @@ classCppDeclNonVirtual c =
                                      . class_funcs $ c
   in  declBodyStr 
 
-
-classesCppDeclsNonVirtual :: [Class] -> String 
-classesCppDeclsNonVirtual = intercalateWith connRet classCppDeclNonVirtual
+genAllCppHeaderTmplNonVirtual :: [Class] -> String 
+genAllCppHeaderTmplNonVirtual = intercalateWith connRet genCppHeaderTmplNonVirtual
 
 ---- "Class Declaration Virtual/NonVirtual" Instances
 
-classCppDeclsInstancesVirtual :: (Class,[Class]) -> String 
-classCppDeclsInstancesVirtual (c,cs) = 
+genCppHeaderInstVirtual :: (Class,[Class]) -> String 
+genCppHeaderInstVirtual (c,cs) = 
   let strc = map toUpper (class_name c) 
   in  concatMap (\y ->"ROOT_"++strc++"_DECLARATIONVIRT(" ++ class_name y ++ ");\n") cs
 
-classCppDeclInstanceNonVirtual :: Class -> String 
-classCppDeclInstanceNonVirtual c = 
+genCppHeaderInstNonVirtual :: Class -> String 
+genCppHeaderInstNonVirtual c = 
   let strx = map toUpper (class_name c) 
   in  "ROOT_"++strx++"_DECLARATIONNONVIRT(" ++ class_name c ++ ");\n" 
 
-classesCppDeclsInstancesNonVirtual :: [Class] -> String 
-classesCppDeclsInstancesNonVirtual = 
-  intercalateWith connRet classCppDeclInstanceNonVirtual
+genAllCppHeaderInstNonVirtual :: [Class] -> String 
+genAllCppHeaderInstNonVirtual = 
+  intercalateWith connRet genCppHeaderInstNonVirtual
 
 
 ----
@@ -74,21 +73,21 @@ classesCppDeclsInstancesNonVirtual =
 
 ---- "Class Definition Virtual" Declaration
 
-classCppDefVirtual :: Class -> String 
-classCppDefVirtual aclass =  
+genCppDefTmplVirtual :: Class -> String 
+genCppDefTmplVirtual aclass =  
   let tmpl = "#undef ROOT_$classname$_DEFINITIONVIRT\\\n#define ROOT_$classname$_DEFINITIONVIRT(Type)\\\\\\\n$funcdef$" 
       defBodyStr = render tmpl [ ("classname", map toUpper (class_name aclass) ) 
                                , ("funcdef" , funcDefStr ) ] 
       funcDefStr = (funcsToDefs aclass) . virtualFuncs . class_funcs $ aclass
   in  defBodyStr 
       
-classesCppDefsVirtual :: [Class] -> String
-classesCppDefsVirtual = intercalateWith connRet2 classCppDefVirtual
+genAllCppDefTmplVirtual :: [Class] -> String
+genAllCppDefTmplVirtual = intercalateWith connRet2 genCppDefTmplVirtual
 
 ---- "Class Definition NonVirtual" Declaration
 
-classCppDefNonVirtual :: Class -> String 
-classCppDefNonVirtual aclass =  
+genCppDefTmplNonVirtual :: Class -> String 
+genCppDefTmplNonVirtual aclass =  
   let tmpl = "#undef ROOT_$classname$_DEFINITIONNONVIRT\\\n#define ROOT_$classname$_DEFINITIONNONVIRT(Type)\\\\\\\n$funcdef$" 
       defBodyStr = render tmpl [ ("classname", map toUpper (class_name aclass) ) 
                                , ("funcdef" , funcDefStr ) ] 
@@ -96,25 +95,25 @@ classCppDefNonVirtual aclass =
                                         . class_funcs $ aclass
   in  defBodyStr 
       
-classesCppDefsNonVirtual :: [Class] -> String
-classesCppDefsNonVirtual = intercalateWith connRet2 classCppDefNonVirtual
+genAllCppDefTmplNonVirtual :: [Class] -> String
+genAllCppDefTmplNonVirtual = intercalateWith connRet2 genCppDefTmplNonVirtual
 
 ---- "Class Definition Virtual/NonVirtual" Instances
 
-classCppDefInstancesVirtual :: (Class,[Class]) -> String 
-classCppDefInstancesVirtual (c,cs) = 
+genCppDefInstVirtual :: (Class,[Class]) -> String 
+genCppDefInstVirtual (c,cs) = 
   let strc = map toUpper (class_name c) 
   in  concatMap (\y ->"ROOT_"++strc++"_DEFINITIONVIRT(" ++ class_name y ++ ")\n") cs
 
-classCppDefInstanceNonVirtual :: Class -> String
-classCppDefInstanceNonVirtual c = 
+genCppDefInstNonVirtual :: Class -> String
+genCppDefInstNonVirtual c = 
   let tmpl = "ROOT_$capitalclassname$_DEFINITIONNONVIRT($classname$)" 
   in  render tmpl [ ("capitalclassname", toUppers (class_name c))
                   , ("classname", class_name c) ] 
 
-classesCppDefsInstancesNonVirtual :: [Class] -> String 
-classesCppDefsInstancesNonVirtual = 
-  intercalateWith connRet classCppDefInstanceNonVirtual
+genAllCppDefInstNonVirtual :: [Class] -> String 
+genAllCppDefInstNonVirtual = 
+  intercalateWith connRet genCppDefInstNonVirtual
 
 -----
 

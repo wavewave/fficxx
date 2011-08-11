@@ -6,6 +6,19 @@ import HROOT.Generate.Type.Method
 import HROOT.Generate.Type.Class
 -- import HROOT.Generate.Generator.Templates
 
+
+genHsFFI :: FilePath -> Class -> String 
+genHsFFI h c =
+  let allfns = concatMap (virtualFuncs . class_funcs) 
+                         (class_allparents c)
+               ++ (class_funcs c) 
+  in  intercalateWith connRet (hsFFIClassFunc h c) allfns  
+
+genAllHsFFI :: FilePath -> [Class] -> String 
+genAllHsFFI h = intercalateWith connRet2 (genHsFFI h) 
+
+--------
+
 ffistub :: String
 ffistub = "foreign import ccall \"$headerfilename$ $classname$_$funcname$\" $hsfuncname$ \n  :: $hsargs$"
 
@@ -32,15 +45,4 @@ hsFFIClassFunc headerfilename c f = if isAbstractClass c
                             , ("funcname", aliasedFuncName c f)
                             , ("hsfuncname",hscFuncName c f)
                             , ("hsargs", hsFuncTyp c f) ]  -}
-
-hsFFIClass :: FilePath -> Class -> String 
-hsFFIClass h c =
-  let allfns = concatMap (virtualFuncs . class_funcs) 
-                         (class_allparents c)
-               ++ (class_funcs c) 
-  in  intercalateWith connRet (hsFFIClassFunc h c) allfns  
-
-mkFFIClasses :: FilePath -> [Class] -> String 
-mkFFIClasses h = intercalateWith connRet2 (hsFFIClass h) 
-
 
