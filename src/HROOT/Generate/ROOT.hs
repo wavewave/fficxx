@@ -374,8 +374,12 @@ tEfficiency = Class "TEfficiency" [tNamed, tAttLine, tAttFill, tAttMarker]
 
 
 tAxis :: Class
-tAxis = Class "TAxis" [tNamed, tAttAxis] 
-        []
+tAxis = 
+  Class "TAxis" [tNamed, tAttAxis] 
+  [ Constructor [int "nbins", double "xmin", double "xmax"] 
+  -- , Virtual double_ "GetBinCenter" [int "bin"] 
+
+  ]
  
            
 tText :: Class
@@ -452,76 +456,77 @@ tArrayS = Class "TArrayS" [tArray]
           []
 
 tH1 :: Class
-tH1 = Class "TH1" [tNamed, tAttLine, tAttFill, tAttMarker] 
-      [ Virtual void_ "Add" [cppclass "TH1" "h1", double "c1"]  
-      , Virtual void_ "AddBinContent" [int "bin", double "w"] 
-      , Virtual double_ "Chi2Test" [cppclass "TH1" "h2", cstring "option", doublep "res"] 
-      , Virtual double_ "ComputeIntegral" []
-      , Virtual void_ "DirectoryAutoAdd" [cppclass "TDirectory" "dir"]
-      , Virtual int_ "DistancetoPrimitive" [int "px", int "py"]
-      , Virtual void_ "Divide" [cppclass "TH1" "h1", cppclass "TH2" "h2", double "c1", double "c2", cstring "option"]
-      , Virtual self_ "DrawCopy" [cstring "option"]
-      , Virtual (cppclass_ "TH1") "DrawNormalized" [cstring "option", double "norm"]
-      , Virtual void_ "DrawPanel" []
-      , Virtual int_ "BufferEmpty" [int "action"]
-      , Virtual void_ "Eval" [cppclass "TF1" "f1", cstring "option"]
-      , Virtual void_ "ExecuteEvent" [int "event", int "px", int "py"]
-      , Virtual (cppclass_ "TH1") "FFT" [cppclass "TH1" "h_output", cstring "option"] 
-      , AliasVirtual int_  "Fill" [double "x"] "fill1"
-      , Virtual void_ "FillN" [int "ntimes", doublep "x", doublep "w", int "stride"]
-      , Virtual void_ "FillRandom" [cppclass "TH1" "h", int "ntimes"] 
-      , Virtual int_ "FindBin" [double "x", double "y", double "z"] 
-      , Virtual int_ "FindFixBin" [double "x", double "y", double "z"]
-      , Virtual int_ "FindFirstBinAbove" [double "threshold", int "axis"] 
-      , Virtual int_ "FindLastBinAbove" [double "threshold", int "axis"]  
-      -- Fit
-      , Virtual void_ "FitPanel" [] 
-      , NonVirtual self_ "GetAsymmetry" [cppclass "TH1" "h2", double "c2", double "dc2"]
-      , NonVirtual int_ "GetBufferLength" [] 
-      , NonVirtual int_ "GetBufferSize" [] 
-      -- GetBuffer
-      -- GetDefaultBufferSize (static)
-      -- GetIntegral
-      -- GetListOfFunctions
-      , Virtual int_ "GetNdivisions" [cstring "axis"]
-      , Virtual short_ "GetAxisColor" [cstring "axis"]
-      , Virtual short_ "GetLabelColor" [cstring "axis"]
-      , Virtual short_ "GetLabelFont" [cstring "axis"]
-      , Virtual float_ "GetLabelOffset" [cstring "axis"]
-      , Virtual float_ "GetLabelSize" [cstring "axis"]
-      , Virtual short_ "GetTitleFont" [cstring "axis"]
-      , Virtual float_ "GetTitleOffset" [cstring "axis"]
-      , Virtual float_ "GetTitleSize" [cstring "axis"]
-      , Virtual float_ "GetTickLength" [cstring "axis"]
-      , Virtual float_ "GetBarOffset" []
-      , Virtual float_ "GetBarWidth" [] 
-      , Virtual int_ "GetContour" [doublep "levels"] 
-      , Virtual double_ "GetContourLevel" [int "level"] 
-      , Virtual double_ "GetContourLevelPad" [int "level"] 
-      , Virtual int_ "GetBin" [int "binx", int "biny", int "binz"]
-      -- GetBinXYZ
-      , Virtual double_ "GetBinCenter" [int "bin"]
-      , AliasVirtual double_ "GetBinContent" [int "binx"] "GetBinContent1"
-      , AliasVirtual double_ "GetBinContent" [int "binx", int "biny"] "GetBinContent2"
-      , AliasVirtual double_ "GetBinContent" [int "binx", int "biny", int "binz"] "GetBinContent3" 
-      , AliasVirtual double_ "GetBinError" [int "binx"] "GetBinError1"
-      , AliasVirtual double_ "GetBinError" [int "binx", int "biny"] "GetBinError2"
-      , AliasVirtual double_ "GetBinError" [int "binx", int "biny", int "binz"] "GetBinError3" 
-      , Virtual double_ "GetBinLowEdge" [int "bin"] 
-      , Virtual double_ "GetBinWidth" [int "bin"]
-      -- GetBinWidthContent
-      , Virtual double_ "GetCellContent" [int "binx", int "biny"] 
-      , Virtual double_ "GetCellError" [int "binx", int "biny"]
-      -- GetCenter
-      -- GetDefaultSumw2
-      , NonVirtual (cppclass_ "TDirectory") "GetDirectory" [] 
-      -- omit...
-      , NonVirtual (cppclass_ "TAxis") "GetXaxis" [] 
-      , NonVirtual (cppclass_ "TAxis") "GetYaxis" [] 
-      , NonVirtual (cppclass_ "TAxis") "GetZaxis" []
+tH1 = 
+  Class "TH1" [tNamed, tAttLine, tAttFill, tAttMarker] 
+  [ Virtual void_ "Add" [cppclass "TH1" "h1", double "c1"]  
+  , Virtual void_ "AddBinContent" [int "bin", double "w"] 
+  , Virtual double_ "Chi2Test" [cppclass "TH1" "h2", cstring "option", doublep "res"] 
+  , Virtual double_ "ComputeIntegral" []
+  , Virtual void_ "DirectoryAutoAdd" [cppclass "TDirectory" "dir"]
+  , Virtual int_ "DistancetoPrimitive" [int "px", int "py"]
+  , Virtual void_ "Divide" [cppclass "TH1" "h1", cppclass "TH2" "h2", double "c1", double "c2", cstring "option"]
+  , Virtual self_ "DrawCopy" [cstring "option"]
+  , Virtual (cppclass_ "TH1") "DrawNormalized" [cstring "option", double "norm"]
+  , Virtual void_ "DrawPanel" []
+  , Virtual int_ "BufferEmpty" [int "action"]
+  , Virtual void_ "Eval" [cppclass "TF1" "f1", cstring "option"]
+  , Virtual void_ "ExecuteEvent" [int "event", int "px", int "py"]
+  , Virtual (cppclass_ "TH1") "FFT" [cppclass "TH1" "h_output", cstring "option"] 
+  , AliasVirtual int_  "Fill" [double "x"] "fill1"
+  , Virtual void_ "FillN" [int "ntimes", doublep "x", doublep "w", int "stride"]
+  , Virtual void_ "FillRandom" [cppclass "TH1" "h", int "ntimes"] 
+  , Virtual int_ "FindBin" [double "x", double "y", double "z"] 
+  , Virtual int_ "FindFixBin" [double "x", double "y", double "z"]
+  , Virtual int_ "FindFirstBinAbove" [double "threshold", int "axis"] 
+  , Virtual int_ "FindLastBinAbove" [double "threshold", int "axis"]  
+  -- Fit
+  , Virtual void_ "FitPanel" [] 
+  , NonVirtual self_ "GetAsymmetry" [cppclass "TH1" "h2", double "c2", double "dc2"]
+  , NonVirtual int_ "GetBufferLength" [] 
+  , NonVirtual int_ "GetBufferSize" [] 
+  -- GetBuffer
+  -- GetDefaultBufferSize (static)
+  -- GetIntegral
+  -- GetListOfFunctions
+  , Virtual int_ "GetNdivisions" [cstring "axis"]
+  , Virtual short_ "GetAxisColor" [cstring "axis"]
+  , Virtual short_ "GetLabelColor" [cstring "axis"]
+  , Virtual short_ "GetLabelFont" [cstring "axis"]
+  , Virtual float_ "GetLabelOffset" [cstring "axis"]
+  , Virtual float_ "GetLabelSize" [cstring "axis"]
+  , Virtual short_ "GetTitleFont" [cstring "axis"]
+  , Virtual float_ "GetTitleOffset" [cstring "axis"]
+  , Virtual float_ "GetTitleSize" [cstring "axis"]
+  , Virtual float_ "GetTickLength" [cstring "axis"]
+  , Virtual float_ "GetBarOffset" []
+  , Virtual float_ "GetBarWidth" [] 
+  , Virtual int_ "GetContour" [doublep "levels"] 
+  , Virtual double_ "GetContourLevel" [int "level"] 
+  , Virtual double_ "GetContourLevelPad" [int "level"] 
+  , Virtual int_ "GetBin" [int "binx", int "biny", int "binz"]
+  -- GetBinXYZ
+  , Virtual double_ "GetBinCenter" [int "bin"]
+  , AliasVirtual double_ "GetBinContent" [int "binx"] "GetBinContent1"
+  , AliasVirtual double_ "GetBinContent" [int "binx", int "biny"] "GetBinContent2"
+  , AliasVirtual double_ "GetBinContent" [int "binx", int "biny", int "binz"] "GetBinContent3" 
+  , AliasVirtual double_ "GetBinError" [int "binx"] "GetBinError1"
+  , AliasVirtual double_ "GetBinError" [int "binx", int "biny"] "GetBinError2"
+  , AliasVirtual double_ "GetBinError" [int "binx", int "biny", int "binz"] "GetBinError3" 
+  , Virtual double_ "GetBinLowEdge" [int "bin"] 
+  , Virtual double_ "GetBinWidth" [int "bin"]
+  -- GetBinWidthContent
+  , Virtual double_ "GetCellContent" [int "binx", int "biny"] 
+  , Virtual double_ "GetCellError" [int "binx", int "biny"]
+  -- GetCenter
+  -- GetDefaultSumw2
+  , NonVirtual (cppclass_ "TDirectory") "GetDirectory" [] 
+  -- omit...
+  , NonVirtual (cppclass_ "TAxis") "GetXaxis" [] 
+  , NonVirtual (cppclass_ "TAxis") "GetYaxis" [] 
+  , NonVirtual (cppclass_ "TAxis") "GetZaxis" []
+               
 
-
-      ] 
+  ] 
 
 tH2 :: Class 
 tH2 = Class "TH2" [tH1] 
@@ -664,6 +669,14 @@ tRint = Class "TRint" [tApplication]
         ] 
 
 
+tRandom :: Class 
+tRandom = 
+  Class "TRandom" [tNamed]
+  [ Constructor [ int "seed" ] 
+  , Virtual double_ "Gaus" [double "mean", double "sigma"]
+  , Virtual double_ "Uniform" [double "x1", double "x2"]
+  ]       
+
 
 root_all_classes :: [Class]
 root_all_classes = 
@@ -701,6 +714,7 @@ root_all_classes =
   , tDialogCanvas, tInspectCanvas
   , tEvePad, tSlider
   , tApplication, tRint
+  , tRandom
   ]
 
 

@@ -52,6 +52,20 @@ mkHsFuncArgType c lst =
               put (newprefix1:newprefix2:prefix,n+1)
               return newname
             _ -> error ("No such c type : " ++ show typ)  
+
+mkHsFuncRetType :: Class -> Function -> (String,[String])
+mkHsFuncRetType c func = 
+  let rtyp = genericFuncRet func
+  in case rtyp of 
+    SelfType -> ("a",[])
+    CPT (CPTClass cname) _ ->  
+      let iname = typeclassNameFromStr cname -- typeclassName c
+          newname = "b"
+          newprefix1 = iname ++ " " ++ newname    
+          newprefix2 = "FPtr " ++ newname
+      in  ("b",[newprefix1,newprefix2])
+    _ -> (ctypeToHsType c rtyp,[])
+
       
 classToHsDecl :: Class -> String 
 classToHsDecl c =  
@@ -62,19 +76,15 @@ classToHsDecl c =
                                     ] 
       prefixstr func =  
         let prefixlst = (snd . mkHsFuncArgType c . genericFuncArgs) func
+                        ++ (snd . mkHsFuncRetType c ) func
         in  if null prefixlst
               then "" 
               else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
-      rettypstr func = let rtyp = genericFuncRet func
-                       in case rtyp of 
-                            SelfType -> "a"
-                            _ -> ctypeToHsType c rtyp
                   
       argstr func = intercalateWith connArrow id $
                       [ "a" ] 
                       ++ fst (mkHsFuncArgType c (genericFuncArgs func))
-                      ++ ["IO " ++ rettypstr func ] 
-                          -- (ctypeToHsType c . genericFuncRet) func ]
+                      ++ ["IO " ++ fst (mkHsFuncRetType c func)] -- rettypstr func ] 
       bodylines = map bodyline . virtualFuncs 
                       $ (class_funcs c) 
   in  intercalateWith connRet id (header : bodylines) 
