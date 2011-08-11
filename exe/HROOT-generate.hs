@@ -14,7 +14,6 @@ import Control.Monad.Identity
 
 import HROOT.Generate.ROOT
 import HROOT.Generate.Generator.Driver
-import HROOT.Generate.Generator.Templates
 import HROOT.Generate.Generator.Command hiding (config)
 
 import Text.Parsec

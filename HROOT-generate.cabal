@@ -41,7 +41,7 @@ Library
                    HROOT.Generate.Code.Cpp
                    HROOT.Generate.Code.HsFrontEnd
                    HROOT.Generate.Code.HsFFI
-                   HROOT.Generate.Generator.Templates
+--                    HROOT.Generate.Generator.Templates
                    HROOT.Generate.Generator.Command
                    HROOT.Generate.Generator.Driver
                    HROOT.Generate.Util
