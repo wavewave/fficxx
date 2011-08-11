@@ -1,6 +1,6 @@
-module HROOT.Generate.Function where
+module HROOT.Generate.Type.Method where
 
-import HROOT.Generate.CType
+import HROOT.Generate.Type.CType
 import HROOT.Generate.Util
 
 type Args = [(Types,String)]

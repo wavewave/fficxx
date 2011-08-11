@@ -1,11 +1,11 @@
-module HROOT.Generate.CppCode where
+module HROOT.Generate.Code.Cpp where
 
 import Data.Char 
 
 import HROOT.Generate.Util
-import HROOT.Generate.Function
-import HROOT.Generate.Class
-import HROOT.Generate.FuncDef
+import HROOT.Generate.Type.Method
+import HROOT.Generate.Type.Class
+import HROOT.Generate.Code.MethodDef
 
 
 -- Class Declaration and Definition

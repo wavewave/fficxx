@@ -1,10 +1,10 @@
-module HROOT.Generate.FFI where
+module HROOT.Generate.Code.HsFFI where
 
 
 import HROOT.Generate.Util 
-import HROOT.Generate.Function
-import HROOT.Generate.Class
-import HROOT.Generate.Templates
+import HROOT.Generate.Type.Method
+import HROOT.Generate.Type.Class
+import HROOT.Generate.Generator.Templates
 
 ffistub :: String
 ffistub = "foreign import ccall \"$headerfilename$ $classname$_$funcname$\" $hsfuncname$ \n  :: $hsargs$"

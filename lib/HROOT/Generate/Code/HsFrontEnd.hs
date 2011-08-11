@@ -1,11 +1,13 @@
-module HROOT.Generate.HsCode where
+module HROOT.Generate.Code.HsFrontEnd where
 
 import qualified Data.Map as M
 
-import HROOT.Generate.CType
+import HROOT.Generate.Type.CType
+import HROOT.Generate.Type.Method
+import HROOT.Generate.Type.Class
+
 import HROOT.Generate.Util
-import HROOT.Generate.Function
-import HROOT.Generate.Class
+
 
 import Control.Monad.State
 ----------------

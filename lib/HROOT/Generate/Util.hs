@@ -1,6 +1,6 @@
 module HROOT.Generate.Util where
 
-import HROOT.Generate.CType 
+import HROOT.Generate.Type.CType 
 
 import Data.Char 
 import Text.StringTemplate.Helpers

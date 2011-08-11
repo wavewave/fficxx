@@ -1,12 +1,12 @@
-module HROOT.Generate.Class where
+module HROOT.Generate.Type.Class where
 
 import Data.Char
 
 import qualified Data.Map as M
 
-import HROOT.Generate.CType
+import HROOT.Generate.Type.CType
 import HROOT.Generate.Util
-import HROOT.Generate.Function
+import HROOT.Generate.Type.Method
 import Data.List 
 
 data Class = Class { class_name :: String

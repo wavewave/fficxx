@@ -12,13 +12,10 @@ import Text.StringTemplate hiding (render)
 import Control.Applicative 
 import Control.Monad.Identity
 
-import HROOT.Generate.Templates
-
-
 import HROOT.Generate.ROOT
-import HROOT.Generate.FileGeneration
-
-import HROOT.Generate.CommandType hiding (config)
+import HROOT.Generate.Generator.Driver
+import HROOT.Generate.Generator.Templates
+import HROOT.Generate.Generator.Command hiding (config)
 
 import Text.Parsec
 import HEP.Parser.Config
@@ -48,14 +45,10 @@ main = do
 commandLineProcess :: HROOT_Generate -> IO () 
 commandLineProcess (Generate conf) = do 
   putStrLn "Automatic HROOT binding generation" 
---  homedir <- getEnv "HOME"
---  str <- readFile (homedir </> ".HROOT")
   str <- readFile conf 
   let config = case (parse hrootconfigParse "" str) of 
                  Left msg -> error (show msg)
                  Right ans -> ans
-    
-
   templateDir <- getDataDir >>= return . (</> "template")
   (templates :: STGroup String) <- directoryGroup templateDir 
   
@@ -71,8 +64,6 @@ commandLineProcess (Generate conf) = do
   withFile (workingDir </> cppFileName) WriteMode $ 
     \h -> do 
       hPutStrLn h (mkDefMain templates root_all_classes)
---      hPutStrLn h ( ( mkDaughterDef . mkDaughterMap) root_all_classes )
---       hPutStrLn h ( classesSelfDefs root_all_classes) 
       
   putStrLn "hsc file generation" 
   withFile (workingDir </> hscFileName) WriteMode $ 

@@ -1,8 +1,8 @@
 module HROOT.Generate.ROOT where
 
-import HROOT.Generate.CType
-import HROOT.Generate.Function
-import HROOT.Generate.Class
+import HROOT.Generate.Type.CType
+import HROOT.Generate.Type.Method
+import HROOT.Generate.Type.Class
 
 deletable :: Class 
 deletable = AbstractClass "Deletable" [] 

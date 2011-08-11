@@ -1,4 +1,4 @@
-module HROOT.Generate.FileGeneration where
+module HROOT.Generate.Generator.Driver where
 
 import Text.StringTemplate hiding (render)
 import Text.StringTemplate.Helpers
@@ -6,11 +6,11 @@ import Text.StringTemplate.Helpers
 import qualified Data.Map as M
 
 import HROOT.Generate.Util
-import HROOT.Generate.Templates
-import HROOT.Generate.Class
-import HROOT.Generate.CppCode
-import HROOT.Generate.FFI 
-import HROOT.Generate.HsCode
+import HROOT.Generate.Generator.Templates
+import HROOT.Generate.Type.Class
+import HROOT.Generate.Code.Cpp
+import HROOT.Generate.Code.HsFFI 
+import HROOT.Generate.Code.HsFrontEnd
 
 ---- common function for daughter
 

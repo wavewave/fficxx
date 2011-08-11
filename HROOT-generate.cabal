@@ -7,7 +7,7 @@ License-file:	LICENSE
 Author:		Ian-Woo Kim
 Maintainer: 	Ian-Woo Kim <ianwookim@gmail.com>
 Build-Type: 	Simple
-Cabal-Version:  >= 1.2
+Cabal-Version:  >= 1.8
 Data-files: template/*.h.st
             template/*.hs.st
             template/*.hsc.st
@@ -15,16 +15,16 @@ Data-files: template/*.h.st
 
 Executable HROOT-generate
   Main-is: HROOT-generate.hs
-  hs-source-dirs: src
+  hs-source-dirs: exe
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
                  HStringTemplate, HSH, safe, strict, filemanip,   
-                 parsec>3, cmdargs
+                 parsec>3, cmdargs, HROOT-generate
 
 
 Library
-  hs-source-dirs: src
+  hs-source-dirs: lib
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
@@ -33,16 +33,22 @@ Library
   Exposed-Modules: 
                    Text.StringTemplate.Helpers
                    HEP.Parser.Config
-                   HROOT.Generate.CType
+
+                   HROOT.Generate.Type.CType
+                   HROOT.Generate.Type.Class
+                   HROOT.Generate.Type.Method
+                   HROOT.Generate.Code.MethodDef
+                   HROOT.Generate.Code.Cpp
+                   HROOT.Generate.Code.HsFrontEnd
+                   HROOT.Generate.Code.HsFFI
+                   HROOT.Generate.Generator.Templates
+                   HROOT.Generate.Generator.Command
+                   HROOT.Generate.Generator.Driver
                    HROOT.Generate.Util
-                   HROOT.Generate.Templates
-                   HROOT.Generate.Function
-                   HROOT.Generate.FuncDef
-                   HROOT.Generate.Class
                    HROOT.Generate.ROOT
-                   HROOT.Generate.CppCode
-                   HROOT.Generate.FFI
-                   HROOT.Generate.HsCode
-                   HROOT.Generate.FileGeneration
-                   HROOT.Generate.CommandType
+
+
+
+
+
 

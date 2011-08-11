@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module HROOT.Generate.CommandType where
+module HROOT.Generate.Generator.Command where
 
 import System.Console.CmdArgs
 

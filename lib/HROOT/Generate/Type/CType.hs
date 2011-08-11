@@ -1,4 +1,4 @@
-module HROOT.Generate.CType where
+module HROOT.Generate.Type.CType where
 
 data CTypes = CTString | CTInt | CTDouble | CTBool | CTDoubleStar | CTVoidStar | CTIntStar | CTCharStarStar
             deriving Show 

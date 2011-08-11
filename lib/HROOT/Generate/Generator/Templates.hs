@@ -1,4 +1,4 @@
-module HROOT.Generate.Templates where
+module HROOT.Generate.Generator.Templates where
 
 import System.FilePath ((</>))
 
