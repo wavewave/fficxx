@@ -16,7 +16,7 @@ import System.FilePath
 ----- 
 
 srcDir :: FilePath -> FilePath
-srcDir installbasedir = installbasedir </> "src" </> "HROOT"
+srcDir installbasedir = installbasedir </> "src" </> "HROOT" </> "Class"
 
 csrcDir :: FilePath -> FilePath
 csrcDir installbasedir = installbasedir </> "csrc" 
@@ -49,13 +49,13 @@ cppFileName :: String
 cppFileName = "HROOT.cpp" 
 
 hscFileName :: String
-hscFileName = "Function.hsc"
+hscFileName = "FFI.hsc"
 
 hsFileName :: String
-hsFileName  = "Class.hs"
+hsFileName  = "Implementation.hs"
 
 typeHsFileName :: String
-typeHsFileName = "Type.hs"
+typeHsFileName = "Interface.hs"
 
 
 ---- common function for daughter
@@ -110,11 +110,11 @@ mkFunctionHsc templates classes =
   renderTemplateGroup templates
                       [ ("headerFileName", headerFileName)
                       , ("hsFunctionBody", genAllHsFFI headerFileName classes) ]  
-                      "Function.hsc" 
+                      "FFI.hsc" 
                      
 mkTypeHs :: STGroup String -> [Class] -> String                      
 mkTypeHs templates classes = 
-  renderTemplateGroup templates [ ("typeBody", typebody) ]  "Type.hs" 
+  renderTemplateGroup templates [ ("typeBody", typebody) ]  "Interface.hs" 
   where typebody = mkRawClasses (filter (not.isAbstractClass) classes)
   
   
@@ -122,7 +122,7 @@ mkClassHs :: STGroup String -> [Class] -> String
 mkClassHs templates classes = 
   renderTemplateGroup templates 
                       [ ("classBody", classBodyStr ) ]
-                      "Class.hs"
+                      "Implementation.hs"
   where dmap = mkDaughterMap classes
         classBodyStr = genAllHsFrontDecl classes 
                        `connRet2`

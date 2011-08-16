@@ -1,11 +1,11 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module HROOT.Function where
+module HROOT.Class.FFI where
 
 import Foreign.C            
 import Foreign.Ptr
 
-import HROOT.Type
+import HROOT.Class.Interface
 
 #include "$headerFileName$"
 

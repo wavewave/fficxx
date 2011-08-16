@@ -68,12 +68,12 @@ commandLineProcess (Generate conf) = do
   withFile (workingDir </> hscFileName) WriteMode $ 
     \h -> hPutStrLn h (mkFunctionHsc templates root_all_classes) 
       
-  putStrLn "Type.hs file generation" 
+  putStrLn "Interface.hs file generation" 
   withFile (workingDir </> typeHsFileName) WriteMode $ 
     \h -> hPutStrLn h (mkTypeHs templates root_all_classes )
   
   
-  putStrLn "Class.hs file generation"
+  putStrLn "Implementation.hs file generation"
   withFile (workingDir </> hsFileName) WriteMode $ 
     \h -> hPutStrLn h (mkClassHs templates root_all_classes)
 

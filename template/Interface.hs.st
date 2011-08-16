@@ -2,7 +2,7 @@
              FlexibleInstances, TypeSynonymInstances, UndecidableInstances, 
              EmptyDataDecls, IncoherentInstances #-}
 
-module HROOT.Type where
+module HROOT.Class.Interface where
 
 import Foreign.C            
 import Foreign.Ptr

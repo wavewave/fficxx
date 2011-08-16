@@ -3,7 +3,7 @@
              EmptyDataDecls, IncoherentInstances #-}
 
 
-module HROOT.Class where
+module HROOT.Class.Implementation where
 
 -- import Foreign.C            
 import Foreign.Ptr
@@ -11,7 +11,7 @@ import Foreign.ForeignPtr
 
 import System.IO.Unsafe
 
-import HROOT.Type
-import HROOT.Function
+import HROOT.Class.Interface
+import HROOT.Class.FFI
 
 $classBody$
