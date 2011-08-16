@@ -105,28 +105,31 @@ mkDefMain templates classes =
         , ("cppbody"       , cppBody ) ] 
         definitionTemplate
 
-mkFunctionHsc :: STGroup String -> [Class] -> String 
-mkFunctionHsc templates classes = 
+mkFFIHsc :: STGroup String -> [Class] -> String 
+mkFFIHsc templates classes = 
   renderTemplateGroup templates
                       [ ("headerFileName", headerFileName)
                       , ("hsFunctionBody", genAllHsFFI headerFileName classes) ]  
                       "FFI.hsc" 
                      
-mkTypeHs :: STGroup String -> [Class] -> String                      
-mkTypeHs templates classes = 
-  renderTemplateGroup templates [ ("typeBody", typebody) ]  "Interface.hs" 
-  where typebody = mkRawClasses (filter (not.isAbstractClass) classes)
+mkInterfaceHs :: STGroup String -> [Class] -> String                      
+mkInterfaceHs templates classes = 
+  renderTemplateGroup templates [("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
+  where ifaceBodyStr = 
+          mkRawClasses (filter (not.isAbstractClass) classes)
+          `connRet2`
+          genAllHsFrontDecl classes
   
   
-mkClassHs :: STGroup String -> [Class] -> String
-mkClassHs templates classes = 
+mkImplementationHs :: STGroup String -> [Class] -> String
+mkImplementationHs templates classes = 
   renderTemplateGroup templates 
-                      [ ("classBody", classBodyStr ) ]
+                      [ ("implBody", implBodyStr ) ]
                       "Implementation.hs"
   where dmap = mkDaughterMap classes
-        classBodyStr = genAllHsFrontDecl classes 
+        implBodyStr =  genAllHsFrontInstCastable classes 
                        `connRet2`
-                       genAllHsFrontInstCastable classes 
+                       genAllHsFrontInstExist (filter (not.isAbstractClass) classes)
                        `connRet2`
                        genAllHsFrontInst classes dmap 
                        `connRet2`

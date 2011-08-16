@@ -39,6 +39,9 @@ genHsFrontDecl c =
 genAllHsFrontDecl :: [Class] -> String 
 genAllHsFrontDecl = intercalateWith connRet2 genHsFrontDecl
 
+-------------------
+
+
 
 genHsFrontInst :: Class -> Class -> String 
 genHsFrontInst parent child  
@@ -46,16 +49,40 @@ genHsFrontInst parent child
     let headline = "instance " ++ typeclassName parent ++ " " ++ class_name child ++ " where" 
         defline func = "  " ++ hsFuncName child func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
         deflines = (map defline) . virtualFuncs . class_funcs $ parent 
+
     in  intercalateWith connRet id (headline : deflines) 
   | otherwise = ""
+        
+
    
 genAllHsFrontInst :: [Class] -> DaughterMap -> String 
 genAllHsFrontInst cs m = 
   let selflst = map (\x->(x,[x])) cs 
       lst = selflst ++ M.toList m  
       f (x,ys) = intercalateWith connRet (genHsFrontInst x) ys
-  in  intercalateWith connRet2 f lst
+  in intercalateWith connRet2 f lst
       
+---------------------
+hsClassInstExistTmpl :: String 
+hsClassInstExistTmpl = "instance FPtr (Exist $highname$) where\n  type Raw (Exist $highname$) = $rawname$\n  get_fptr ($existConstructor$ obj) = castForeignPtr (get_fptr obj)\n  cast_fptr_to_obj fptr = $existConstructor$ (cast_fptr_to_obj (fptr :: ForeignPtr $rawname$) :: $highname$)\n\ninstance Castable (Exist $highname$) (Ptr $rawname$) where\n  cast = unsafeForeignPtrToPtr . get_fptr\n  uncast = cast_fptr_to_obj . unsafePerformIO . newForeignPtr_" 
+
+genHsFrontInstExist :: Class -> String 
+genHsFrontInstExist c = render hsClassInstExistTmpl tmplName
+  where (highname,rawname) = hsClassName c
+        iname = typeclassName c 
+        ename = existConstructorName c
+        tmplName = [ ("rawname",rawname)
+                   , ("highname",highname)
+                   , ("interfacename",iname)
+                   , ("existConstructor",ename)
+                   ] 
+
+genAllHsFrontInstExist :: [Class] -> String 
+genAllHsFrontInstExist cs = intercalateWith connRet2 genHsFrontInstExist cs
+
+ 
+---------------------
+
 genHsFrontInstNew :: Class         -- ^ only concrete class 
                     -> String 
 genHsFrontInstNew c = 
@@ -116,12 +143,23 @@ rawToHighInstance :: String
 rawToHighInstance = "instance FPtr $highname$ where\n   type Raw $highname$ = $rawname$\n   get_fptr ($highname$ fptr) = fptr\n   cast_fptr_to_obj = $highname$"
 
 
+existableInstance :: String 
+existableInstance = "instance Existable $highname$ where\n  data Exist $highname$ = forall a. (FPtr a, $interfacename$ a) => $existConstructor$ a"
+
+
 hsClassType :: Class -> String 
 hsClassType c = let decl = render rawToHighDecl tmplName
                     inst1 = render rawToHighInstance tmplName
-                in  decl `connRet` inst1 
+                    exist1 = render existableInstance tmplName
+                in  decl `connRet` inst1 `connRet` exist1
   where (highname,rawname) = hsClassName c
-        tmplName = [("rawname",rawname),("highname",highname)] 
+        iname = typeclassName c 
+        ename = existConstructorName c
+        tmplName = [ ("rawname",rawname)
+                   , ("highname",highname)
+                   , ("interfacename",iname)
+                   , ("existConstructor",ename)
+                   ] 
             
 mkRawClasses :: [Class] -> String 
 mkRawClasses = intercalateWith connRet2 hsClassType
@@ -160,12 +198,12 @@ mkHsFuncRetType c func =
   let rtyp = genericFuncRet func
   in case rtyp of 
     SelfType -> ("a",[])
-    CPT (CPTClass cname) _ ->  
-      let iname = typeclassNameFromStr cname -- typeclassName c
+    CPT (CPTClass cname) _ -> ("(Exist " ++ cname ++ ")",[])
+  {-    let iname = typeclassNameFromStr cname -- typeclassName c
           newname = "b"
           newprefix1 = iname ++ " " ++ newname    
           newprefix2 = "FPtr " ++ newname
-      in  ("b",[newprefix1,newprefix2])
+      in  ("b",[newprefix1,newprefix2]) -}
     _ -> (ctypeToHsType c rtyp,[])
 
       

@@ -66,16 +66,16 @@ commandLineProcess (Generate conf) = do
       
   putStrLn "hsc file generation" 
   withFile (workingDir </> hscFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkFunctionHsc templates root_all_classes) 
+    \h -> hPutStrLn h (mkFFIHsc templates root_all_classes) 
       
   putStrLn "Interface.hs file generation" 
   withFile (workingDir </> typeHsFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkTypeHs templates root_all_classes )
+    \h -> hPutStrLn h (mkInterfaceHs templates root_all_classes )
   
   
   putStrLn "Implementation.hs file generation"
   withFile (workingDir </> hsFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkClassHs templates root_all_classes)
+    \h -> hPutStrLn h (mkImplementationHs templates root_all_classes)
 
   copyFile (workingDir </> headerFileName) ( csrcDir ibase </> headerFileName) 
   copyFile (workingDir </> cppFileName) ( csrcDir ibase </> cppFileName) 

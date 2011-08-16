@@ -14,4 +14,4 @@ import System.IO.Unsafe
 import HROOT.Class.Interface
 import HROOT.Class.FFI
 
-$classBody$
+$implBody$

@@ -86,6 +86,8 @@ hsClassName c =
   let cname = class_name c
   in (cname, "Raw" ++ cname) 
 
+existConstructorName :: Class -> String 
+existConstructorName c = 'E' : class_name c
 
 hsFuncTyp :: Class -> Function -> String
 hsFuncTyp c f = let args = genericFuncArgs f 

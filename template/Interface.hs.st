@@ -1,6 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses, 
              FlexibleInstances, TypeSynonymInstances, UndecidableInstances, 
-             EmptyDataDecls, IncoherentInstances #-}
+             EmptyDataDecls, IncoherentInstances, ExistentialQuantification #-}
 
 module HROOT.Class.Interface where
 
@@ -15,6 +15,14 @@ import System.IO.Unsafe
 class Castable a b where
   cast :: a -> b 
   uncast :: b -> a 
+
+class FPtr a where
+  type Raw a :: *
+  get_fptr :: a -> ForeignPtr (Raw a) 
+  cast_fptr_to_obj :: ForeignPtr (Raw a) -> a
+
+class Existable a where
+  data Exist a :: *  
 
 instance Castable a a where
   cast = id
@@ -43,11 +51,6 @@ instance Castable String CString where
 instance Castable [String] (Ptr CString) where
   cast xs = unsafePerformIO (mapM  newCString xs >>= newArray)
   uncast _c_xs = undefined
-
-
-instance (FPtr a, Ptr (Raw a) ~ ptrrawa) => Castable a ptrrawa where
-  cast = unsafeForeignPtrToPtr.get_fptr
-  uncast x = cast_fptr_to_obj (unsafePerformIO (newForeignPtr_ x)) 
 
 instance (Castable a a', Castable b b') => Castable (a->b) (a'->b') where
   cast f = cast . f . uncast
@@ -125,9 +128,4 @@ xform10 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 =
 
 
 
-class FPtr a where
-    type Raw a :: *
-    get_fptr :: a -> ForeignPtr (Raw a) 
-    cast_fptr_to_obj :: ForeignPtr (Raw a) -> a
-
-$typeBody$
+$ifaceBody$
