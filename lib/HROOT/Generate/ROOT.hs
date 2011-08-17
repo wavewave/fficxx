@@ -407,7 +407,9 @@ tLatex = Class "TLatex" [tText, tAttLine]
 
 tDirectory :: Class
 tDirectory = Class "TDirectory" [tNamed] 
-             [ Virtual void_ "Close"    [ cstring "option" ]  ]
+             [ Virtual void_ "Close"    [ cstring "option" ]  
+             , Virtual (cppclass_ "TObject") "Get" [ cstring "namecycle" ] 
+             ]
 
 tDirectoryFile :: Class
 tDirectoryFile = Class "TDirectoryFile" [tDirectory] 
