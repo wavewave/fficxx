@@ -8,6 +8,8 @@ import HROOT.Generate.Type.Class
 
 import HROOT.Generate.Util
 
+import Data.List
+import Data.Maybe
 
 import Control.Monad.State
 ----------------
@@ -59,7 +61,7 @@ genAllHsFrontInst :: [Class] -> DaughterMap -> String
 genAllHsFrontInst cs m = 
   let selflst = map (\x->(x,[x])) cs 
       lst = selflst ++ M.toList m  
-      f (x,ys) = intercalateWith connRet (genHsFrontInst x) ys
+      f (x,ys) = intercalateWith connRet2 (genHsFrontInst x) ys
   in intercalateWith connRet2 f lst
       
 ---------------------
@@ -84,10 +86,10 @@ genAllHsFrontInstExist cs = intercalateWith connRet2 genHsFrontInstExist cs
 ---------------------
 
 genHsFrontInstNew :: Class         -- ^ only concrete class 
-                    -> String 
+                    -> Maybe String 
 genHsFrontInstNew c = 
   if null newfuncs 
-  then ""
+  then Nothing
   else let newfunc = head newfuncs
            newlinehead = "new" ++ class_name c ++ " :: " ++ argstr newfunc 
            newlinebody = "new" ++ class_name c ++ " = " ++ hsFuncXformerNew newfunc ++ " " ++ hscFuncName c newfunc 
@@ -95,15 +97,14 @@ genHsFrontInstNew c =
                            map (ctypeToHsType c.fst) (genericFuncArgs func)
                            ++ ["IO " ++ (ctypeToHsType c.genericFuncRet) func]
            newline = newlinehead ++ "\n" ++ newlinebody 
-       in newline
+       in Just newline
   where newfuncs = filter isNewFunc (class_funcs c)  
 
 genAllHsFrontInstNew :: [Class]    -- ^ only concrete class 
                      -> String 
-genAllHsFrontInstNew = intercalateWith connRet2 genHsFrontInstNew 
-
-
-genHsFrontInstNonVirtual :: Class -> String 
+genAllHsFrontInstNew = intercalate "\n\n" . map fromJust . filter isJust . map genHsFrontInstNew 
+  
+genHsFrontInstNonVirtual :: Class -> Maybe String 
 genHsFrontInstNonVirtual c 
   | (not.null) nonvirtualFuncs  =                        
     let header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
@@ -112,12 +113,12 @@ genHsFrontInstNonVirtual c
                         [class_name c]  
                         ++ map (ctypeToHsType c.fst) (genericFuncArgs func)
                         ++ ["IO " ++ (ctypeToHsType c . genericFuncRet) func] 
-    in  intercalateWith connRet (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
-  | otherwise = ""   
+    in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
+  | otherwise = Nothing   
  where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
 
 genAllHsFrontInstNonVirtual :: [Class] -> String 
-genAllHsFrontInstNonVirtual = intercalateWith connRet genHsFrontInstNonVirtual
+genAllHsFrontInstNonVirtual = intercalate "\n\n" . map fromJust . filter isJust . map genHsFrontInstNonVirtual
 
 genHsFrontInstCastable :: Class -> String 
 genHsFrontInstCastable c 
