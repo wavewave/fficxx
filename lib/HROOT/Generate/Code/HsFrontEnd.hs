@@ -14,9 +14,20 @@ import Data.Maybe
 import Control.Monad.State
 ----------------
 
+classprefix :: Class -> String 
+classprefix c = let ps = (map typeclassName . class_parents) c
+                in  if null ps 
+                    then "" 
+                    else "(" ++ intercalate "," (map (++ " a") ps) ++ ") => "
+
+hsClassDeclHeaderTmpl :: String
+hsClassDeclHeaderTmpl = "class $constraint$$classname$ a where"
+
+
 genHsFrontDecl :: Class -> String 
 genHsFrontDecl c =  
-  let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) ] 
+  let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) 
+                                            , ("constraint", classprefix c) ] 
       bodyline func = render hsClassDeclFuncTmpl 
                                     [ ("funcname", hsFuncName c func) 
                                     , ("args" , prefixstr func ++ argstr func ) 
@@ -166,8 +177,6 @@ mkRawClasses :: [Class] -> String
 mkRawClasses = intercalateWith connRet2 hsClassType
 
 
-hsClassDeclHeaderTmpl :: String
-hsClassDeclHeaderTmpl = "class $classname$ a where"
 
 hsClassDeclFuncTmpl :: String
 hsClassDeclFuncTmpl = "    $funcname$ :: $args$ "

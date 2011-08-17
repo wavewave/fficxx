@@ -11,6 +11,8 @@
 #include "THStack.h"
 
 #include "TNamed.h"
+#include "TDictionary.h"
+#include "TClass.h"
 
 #include "TAtt3D.h"
 #include "TAttAxis.h"

@@ -15,7 +15,8 @@ tObject = Class "TObject" [deletable]
           , Virtual void_    "Draw"    [cstring "option"] 
           , Virtual (cppclass_ "TObject") "FindObject" [cstring "name"]
           , Virtual void_    "SaveAs"  [cstring "filename", cstring "option"] 
-          , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ] 
+          , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ]
+          , Virtual (cppclass_ "TClass") "IsA" [] 
           ]
 
 
@@ -23,6 +24,16 @@ tNamed :: Class
 tNamed = Class "TNamed" [tObject] 
          [ Constructor [cstring "name", cstring "title"] 
          , Virtual void_  "SetTitle"        [cstring "name"]  
+         ]
+
+tDictionary :: Class
+tDictionary = AbstractClass "TDictionary" [tNamed]
+              [
+              ]
+
+tClass :: Class
+tClass = Class "TClass" [tDictionary]
+         [
          ]
 
 
@@ -681,7 +692,8 @@ tRandom =
 root_all_classes :: [Class]
 root_all_classes = 
   [ deletable
-  , tObject, tNamed, tFormula
+  , tObject, tNamed, tDictionary, tClass
+  , tFormula
   , tAtt3D, tAttAxis, tAttBBox, tAttCanvas, tAttFill, tAttImage, tAttLine
   , tAttMarker, tAttPad, tAttParticle, tAttText
 
