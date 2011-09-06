@@ -1,5 +1,5 @@
 Name:		HROOT-generate
-Version:	0.6.1
+Version:	0.6.1.999
 Synopsis:	automatic HROOT binding generation
 Description: 	automatic HROOT binding generation 
 License: 	LGPL-2.1
@@ -15,16 +15,16 @@ Data-files: template/*.h.st
 
 Executable HROOT-generate
   Main-is: HROOT-generate.hs
-  hs-source-dirs: exe
+  hs-source-dirs: src
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
                  HStringTemplate, HSH, safe, strict, filemanip,   
-                 parsec>3, cmdargs, HROOT-generate
+                 parsec>3, cmdargs
 
 
 Library
-  hs-source-dirs: lib
+  hs-source-dirs: src
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
