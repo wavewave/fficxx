@@ -22,7 +22,6 @@ Executable HROOT-generate
                  HStringTemplate, HSH, safe, strict, filemanip,   
                  parsec>3, cmdargs, transformers, template-haskell
 
-
 Library
   hs-source-dirs: src
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
@@ -43,17 +42,10 @@ Library
                    HROOT.Generate.Code.Cpp
                    HROOT.Generate.Code.HsFrontEnd
                    HROOT.Generate.Code.HsFFI
---                    HROOT.Generate.Generator.Templates
                    HROOT.Generate.Generator.Command
                    HROOT.Generate.Generator.Driver
                    HROOT.Generate.Util
                    HROOT.Generate.QQ.Verbatim
                    HROOT.Generate.ROOT
                    HROOT.Generate.ROOTAnnotate
-
-
-
-
-
-
 
