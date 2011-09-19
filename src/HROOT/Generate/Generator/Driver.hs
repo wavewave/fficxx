@@ -1,12 +1,18 @@
 module HROOT.Generate.Generator.Driver where
 
+import Control.Monad.Trans.Reader
+
 import Text.StringTemplate hiding (render)
 import Text.StringTemplate.Helpers
 
 import qualified Data.Map as M
 
 import HROOT.Generate.Util
+
+import HROOT.Generate.Type.Annotate
 import HROOT.Generate.Type.Class
+import HROOT.Generate.Type.Module 
+
 import HROOT.Generate.Code.Cpp
 import HROOT.Generate.Code.HsFFI 
 import HROOT.Generate.Code.HsFrontEnd
@@ -112,13 +118,15 @@ mkFFIHsc templates classes =
                       , ("hsFunctionBody", genAllHsFFI headerFileName classes) ]  
                       "FFI.hsc" 
                      
-mkInterfaceHs :: STGroup String -> [Class] -> String                      
-mkInterfaceHs templates classes = 
-  renderTemplateGroup templates [("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
-  where ifaceBodyStr = 
+mkInterfaceHs :: AnnotateMap -> STGroup String -> Module -> [Class] -> String                      
+mkInterfaceHs amap templates mod classes = 
+  renderTemplateGroup templates [ ("ifaceHeader", ifaceHeaderStr) 
+                                , ("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
+  where ifaceHeaderStr = runReader (genModuleDecl mod) amap
+        ifaceBodyStr = 
           mkRawClasses (filter (not.isAbstractClass) classes)
           `connRet2`
-          genAllHsFrontDecl classes
+          runReader (genAllHsFrontDecl classes) amap 
   
   
 mkImplementationHs :: STGroup String -> [Class] -> String

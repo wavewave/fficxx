@@ -20,7 +20,7 @@ Executable HROOT-generate
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
                  HStringTemplate, HSH, safe, strict, filemanip,   
-                 parsec>3, cmdargs
+                 parsec>3, cmdargs, transformers, template-haskell
 
 
 Library
@@ -29,14 +29,16 @@ Library
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
                  HStringTemplate, HSH, safe, strict, filemanip,   
-                 parsec>3, cmdargs
+                 parsec>3, cmdargs, transformers, template-haskell
   Exposed-Modules: 
                    Text.StringTemplate.Helpers
                    HEP.Parser.Config
 
+                   HROOT.Generate.Type.Annotate
                    HROOT.Generate.Type.CType
                    HROOT.Generate.Type.Class
                    HROOT.Generate.Type.Method
+                   HROOT.Generate.Type.Module
                    HROOT.Generate.Code.MethodDef
                    HROOT.Generate.Code.Cpp
                    HROOT.Generate.Code.HsFrontEnd
@@ -45,7 +47,10 @@ Library
                    HROOT.Generate.Generator.Command
                    HROOT.Generate.Generator.Driver
                    HROOT.Generate.Util
+                   HROOT.Generate.QQ.Verbatim
                    HROOT.Generate.ROOT
+                   HROOT.Generate.ROOTAnnotate
+
 
 
 

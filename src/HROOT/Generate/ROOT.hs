@@ -3,6 +3,20 @@ module HROOT.Generate.ROOT where
 import HROOT.Generate.Type.CType
 import HROOT.Generate.Type.Method
 import HROOT.Generate.Type.Class
+import HROOT.Generate.Type.Module
+
+
+moduleInterface :: Module
+moduleInterface = Module { module_name = "HROOT.Class.Interface"
+                         , module_exports = [ "IDeletable" 
+                                            , "TObject"
+                                            , "ITObject"
+                                            , "ITNamed" 
+                                            , "TNamed" ]
+                         } 
+
+
+
 
 deletable :: Class 
 deletable = AbstractClass "Deletable" [] 
@@ -690,7 +704,9 @@ tRandom =
   , Virtual double_ "Uniform" [double "x1", double "x2"]
   ]       
 
+root_all_classes = [ deletable, tObject, tNamed, tClass, tDictionary ]
 
+{-
 root_all_classes :: [Class]
 root_all_classes = 
   [ deletable
@@ -731,7 +747,7 @@ root_all_classes =
   , tRandom
   ]
 
-
+-}
 
 
 

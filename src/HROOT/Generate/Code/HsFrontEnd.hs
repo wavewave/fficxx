@@ -5,6 +5,9 @@ import qualified Data.Map as M
 import HROOT.Generate.Type.CType
 import HROOT.Generate.Type.Method
 import HROOT.Generate.Type.Class
+import HROOT.Generate.Type.Annotate
+import HROOT.Generate.Type.Module
+
 
 import HROOT.Generate.Util
 
@@ -12,6 +15,31 @@ import Data.List
 import Data.Maybe
 
 import Control.Monad.State
+import Control.Monad.Reader
+
+
+mkComment :: String -> String
+mkComment str 
+  | (not.null) str = 
+    let str_lines = lines str 
+        commented_lines = 
+          ("-- | "++head str_lines) : map (\x->"--   "++x) (tail str_lines)
+     in unlines commented_lines 
+  | otherwise = str                
+                        
+----------------
+
+hsModuleDeclTmpl :: String 
+hsModuleDeclTmpl = "module $moduleName$ $moduleExp$ where"
+
+genModuleDecl :: Module -> Reader AnnotateMap String 
+genModuleDecl mod = do 
+  amap <- ask 
+  let modheader = render hsModuleDeclTmpl [ ("moduleName", module_name mod) 
+                                          , ("moduleExp", mkModuleExports mod) ] 
+  return (modheader)
+
+
 ----------------
 
 classprefix :: Class -> String 
@@ -21,13 +49,17 @@ classprefix c = let ps = (map typeclassName . class_parents) c
                     else "(" ++ intercalate "," (map (++ " a") ps) ++ ") => "
 
 hsClassDeclHeaderTmpl :: String
-hsClassDeclHeaderTmpl = "class $constraint$$classname$ a where"
+hsClassDeclHeaderTmpl = "$classann$\nclass $constraint$$classname$ a where"
 
+genHsFrontDecl :: Class -> Reader AnnotateMap String 
+genHsFrontDecl c = do 
+  amap <- ask  
 
-genHsFrontDecl :: Class -> String 
-genHsFrontDecl c =  
+  let cann = maybe "" id $ M.lookup (HROOTClass,class_name c) amap 
+
   let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) 
-                                            , ("constraint", classprefix c) ] 
+                                            , ("constraint", classprefix c) 
+                                            , ("classann",   mkComment cann) ] 
       bodyline func = render hsClassDeclFuncTmpl 
                                     [ ("funcname", hsFuncName c func) 
                                     , ("args" , prefixstr func ++ argstr func ) 
@@ -45,12 +77,14 @@ genHsFrontDecl c =
                       ++ ["IO " ++ fst (mkHsFuncRetType c func)]  
       bodylines = map bodyline . virtualFuncs 
                       $ (class_funcs c) 
-  in  intercalateWith connRet id (header : bodylines) 
+  return $ intercalateWith connRet id (header : bodylines) 
 
 
 
-genAllHsFrontDecl :: [Class] -> String 
-genAllHsFrontDecl = intercalateWith connRet2 genHsFrontDecl
+genAllHsFrontDecl :: [Class] -> Reader AnnotateMap String 
+genAllHsFrontDecl = intercalateWithM connRet2 genHsFrontDecl
+
+--   fmap (intercalateWith connRet2)  genHsFrontDecl
 
 -------------------
 

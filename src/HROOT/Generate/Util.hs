@@ -45,8 +45,15 @@ connArrow = conn " -> "
 
 intercalateWith :: (String-> String -> String) -> (a->String) -> [a] -> String
 intercalateWith  f mapper x 
-  | not (null x) = (foldl1 (\x1 y -> x1 `f` y) . (map mapper)) x  
+  | not (null x) = foldl1 f (map mapper x)
+-- (foldl1 (\x1 y -> x1 `f` y) . (map mapper)) x  
   | otherwise    = "" 
+
+
+intercalateWithM :: (Monad m) => (String -> String -> String) -> (a->m String) -> [a] -> m String 
+intercalateWithM f mapper x 
+  | not (null x) = do ms <- mapM mapper x
+                      return (foldl1 f ms)
 
 cvarToStr :: CTypes -> IsConst -> String -> String
 cvarToStr ctyp isconst varname = (ctypToStr ctyp isconst) `connspace` varname 

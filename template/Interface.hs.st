@@ -2,7 +2,9 @@
              FlexibleInstances, TypeSynonymInstances, UndecidableInstances, 
              EmptyDataDecls, IncoherentInstances, ExistentialQuantification #-}
 
-module HROOT.Class.Interface where
+-- module HROOT.Class.Interface where
+
+$ifaceHeader$
 
 import Foreign.C            
 import Foreign.Ptr

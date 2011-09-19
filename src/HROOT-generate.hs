@@ -13,6 +13,8 @@ import Control.Applicative
 import Control.Monad.Identity
 
 import HROOT.Generate.ROOT
+import HROOT.Generate.ROOTAnnotate
+
 import HROOT.Generate.Generator.Driver
 import HROOT.Generate.Generator.Command hiding (config)
 
@@ -70,7 +72,7 @@ commandLineProcess (Generate conf) = do
       
   putStrLn "Interface.hs file generation" 
   withFile (workingDir </> typeHsFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkInterfaceHs templates root_all_classes )
+    \h -> hPutStrLn h (mkInterfaceHs annotateMap templates moduleInterface root_all_classes )
   
   
   putStrLn "Implementation.hs file generation"
