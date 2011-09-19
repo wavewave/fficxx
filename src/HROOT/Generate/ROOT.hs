@@ -704,9 +704,9 @@ tRandom =
   , Virtual double_ "Uniform" [double "x1", double "x2"]
   ]       
 
-root_all_classes = [ deletable, tObject, tNamed, tClass, tDictionary ]
+-- root_all_classes = [ deletable, tObject, tNamed, tClass, tDictionary ]
 
-{-
+
 root_all_classes :: [Class]
 root_all_classes = 
   [ deletable
@@ -747,7 +747,7 @@ root_all_classes =
   , tRandom
   ]
 
--}
+
 
 
 
