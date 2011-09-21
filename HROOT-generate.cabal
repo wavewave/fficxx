@@ -2,7 +2,7 @@ Name:		HROOT-generate
 Version:	0.6.1.999
 Synopsis:	automatic HROOT binding generation
 Description: 	automatic HROOT binding generation 
-License: 	LGPL-2.1
+License: 	BSD3
 License-file:	LICENSE
 Author:		Ian-Woo Kim
 Maintainer: 	Ian-Woo Kim <ianwookim@gmail.com>
