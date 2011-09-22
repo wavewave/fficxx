@@ -20,6 +20,10 @@ import Text.Parsec
 import Paths_HROOT_generate
 
 import HROOT.Generate.Config
+import HROOT.Generate.Type.Class
+
+import qualified Data.Map as M
+import Data.Maybe
 
 main :: IO () 
 main = do 
@@ -71,13 +75,27 @@ commandLineProcess (Generate conf) = do
 
   putStrLn "module file generation" 
   mapM_ (mkModuleFile config templates) classModules 
- 
+
+
+  let dsmap = mkDaughterSelfMap root_all_classes
+      tObjectDaughters = filter (not.isAbstractClass) . fromJust . M.lookup tObject $ dsmap
+
+  putStrLn "Existential.hs generation"
+  withFile (workingDir </> existHsFileName) WriteMode $ 
+    \h -> hPutStrLn h . mkExistential templates $ tObjectDaughters 
+
+   -- . filter (not.isAbstractClass) $ root_all_classes
+
+
+
+
   copyFile (workingDir </> cabalFileName)  ( ibase </> cabalFileName ) 
   copyFile (workingDir </> headerFileName) ( csrcDir ibase </> headerFileName) 
   copyFile (workingDir </> cppFileName) ( csrcDir ibase </> cppFileName) 
   copyFile (workingDir </> hscFileName) ( srcDir ibase </> hscFileName) 
   copyFile (workingDir </> typeHsFileName) ( srcDir ibase </> typeHsFileName) 
   copyFile (workingDir </> hsFileName) ( srcDir ibase </> hsFileName)  
+  copyFile (workingDir </> existHsFileName) ( srcDir ibase </> existHsFileName)  
   
   mapM_ (\x->copyFile (workingDir </> x <.> "hs")  ( srcDir ibase </> x <.> "hs")) classModules
 

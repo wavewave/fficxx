@@ -277,7 +277,12 @@ hsInterfaceCastableInstanceTmpl :: String
 hsInterfaceCastableInstanceTmpl = 
   "instance ($interfaceName$ a, FPtr a) => Castable a (Ptr $rawClassName$) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
 
-
-
-
 ----------
+
+hsExistentialGADTBodyTmpl :: String 
+hsExistentialGADTBodyTmpl = "    GADT$mother$$daughter$ :: $daughter$ -> GADTType $mother$ $daughter$"
+
+
+hsExistentialCastBodyTmpl :: String
+hsExistentialCastBodyTmpl = "    \"$daughter$\" -> case obj of\n        $mother$ fptr -> let obj' = $daughter$ (castForeignPtr fptr :: ForeignPtr Raw$daughter$)\n                        in  return . EGADT$mother$ . GADT$mother$$daughter$ \\$ obj'"
+

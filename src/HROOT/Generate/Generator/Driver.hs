@@ -94,6 +94,8 @@ hsFileName  = "Implementation.hs"
 typeHsFileName :: String
 typeHsFileName = "Interface.hs"
 
+existHsFileName :: String 
+existHsFileName = "Existential.hs"
 
 ---- common function for daughter
 
@@ -226,3 +228,45 @@ mkCabalFile config templates h = do
               ]
               cabalTemplate 
   hPutStrLn h str
+
+
+-- | Generate Existential.hs file 
+
+----------
+
+mkExistentialEach :: STGroup String -> Class -> [Class] -> String 
+mkExistentialEach templates mother daughters =   
+  let makeOneDaughterGADTBody daughter = render hsExistentialGADTBodyTmpl 
+                                                [ ( "mother", class_name mother ) 
+                                                , ( "daughter", class_name daughter ) ] 
+      makeOneDaughterCastBody daughter = render hsExistentialCastBodyTmpl
+                                                [ ( "mother", class_name mother ) 
+                                                , ( "daughter", class_name daughter) ] 
+      gadtBody = intercalate "\n" (map makeOneDaughterGADTBody daughters)
+      castBody = intercalate "\n" (map makeOneDaughterCastBody daughters)
+      str = renderTemplateGroup 
+              templates 
+              [ ( "mother" , class_name mother ) 
+              , ( "GADTbody" , gadtBody ) 
+              , ( "castbody" , castBody ) ]
+              "ExistentialEach.hs" 
+  in  str
+
+----
+
+mkExistential :: STGroup String -> [Class] -> String
+mkExistential templates classes = 
+  let dsmap = mkDaughterSelfMap classes
+      makeOneMother :: Class -> String 
+      makeOneMother mother = 
+        let daughters = case M.lookup mother dsmap of 
+                             Nothing -> error "error in mkExistential"
+                             Just lst -> lst
+            str = mkExistentialEach templates mother daughters
+        in  str 
+      existEachBody = intercalateWith connRet makeOneMother classes
+      hsfilestr = renderTemplateGroup 
+                    templates 
+                    [ ( "existEachBody" , existEachBody) ]
+                  "Existential.hs" 
+  in  hsfilestr
