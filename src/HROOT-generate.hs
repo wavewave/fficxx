@@ -9,9 +9,6 @@ import System.Console.CmdArgs
 
 import Text.StringTemplate hiding (render)
 
-import Control.Applicative 
-import Control.Monad.Identity
-
 import HROOT.Generate.ROOT
 import HROOT.Generate.ROOTAnnotate
 
@@ -19,23 +16,9 @@ import HROOT.Generate.Generator.Driver
 import HROOT.Generate.Generator.Command hiding (config)
 
 import Text.Parsec
-import HEP.Parser.Config
-
 import Paths_HROOT_generate
 
-data HROOTConfig = HROOTConfig { 
-  hrootConfig_scriptBaseDir :: FilePath, 
-  hrootConfig_workingDir :: FilePath, 
-  hrootConfig_installBaseDir :: FilePath
-} deriving Show
-
-hrootconfigParse :: ParsecT String () Identity HROOTConfig 
-hrootconfigParse = 
-  oneGroupFieldInput "HROOTconf" $ 
-    HROOTConfig <$> (oneFieldInput "scriptbase")
-                <*> (oneFieldInput "workingdir")
-                <*> (oneFieldInput "installbase")
-
+import HROOT.Generate.Config
 
 main :: IO () 
 main = do 
@@ -55,6 +38,13 @@ commandLineProcess (Generate conf) = do
   
   let workingDir = hrootConfig_workingDir config 
       ibase = hrootConfig_installBaseDir config
+      cabalFileName = "HROOT.cabal"
+
+  putStrLn "cabal file generation" 
+  getHROOTVersion config
+  withFile (workingDir </> cabalFileName) WriteMode $ 
+    \h -> do 
+      mkCabalFile config templates h  
 
   putStrLn "header file generation"
   withFile (workingDir </> headerFileName) WriteMode $ 
@@ -73,15 +63,14 @@ commandLineProcess (Generate conf) = do
   putStrLn "Interface.hs file generation" 
   withFile (workingDir </> typeHsFileName) WriteMode $ 
     \h -> hPutStrLn h (mkInterfaceHs annotateMap templates moduleInterface root_all_classes )
-  
-  
+    
   putStrLn "Implementation.hs file generation"
   withFile (workingDir </> hsFileName) WriteMode $ 
     \h -> hPutStrLn h (mkImplementationHs templates root_all_classes)
-
+ 
+  copyFile (workingDir </> cabalFileName)  ( ibase </> cabalFileName ) 
   copyFile (workingDir </> headerFileName) ( csrcDir ibase </> headerFileName) 
   copyFile (workingDir </> cppFileName) ( csrcDir ibase </> cppFileName) 
-  
   copyFile (workingDir </> hscFileName) ( srcDir ibase </> hscFileName) 
   copyFile (workingDir </> typeHsFileName) ( srcDir ibase </> typeHsFileName) 
   copyFile (workingDir </> hsFileName) ( srcDir ibase </> hsFileName)  

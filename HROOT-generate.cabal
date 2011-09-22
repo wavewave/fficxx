@@ -1,5 +1,5 @@
 Name:		HROOT-generate
-Version:	0.6.1.999
+Version:	0.6.1.9999
 Synopsis:	automatic HROOT binding generation
 Description: 	automatic HROOT binding generation 
 License:        GPL-3
@@ -12,6 +12,7 @@ Data-files: template/*.h.st
             template/*.hs.st
             template/*.hsc.st
             template/*.cpp.st
+            template/HROOT.cabal.st
 
 Executable HROOT-generate
   Main-is: HROOT-generate.hs
@@ -20,7 +21,7 @@ Executable HROOT-generate
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
                  HStringTemplate, HSH, safe, strict, filemanip,   
-                 parsec>3, cmdargs, transformers, template-haskell
+                 parsec>3, cmdargs, transformers, template-haskell, Cabal 
 
 Library
   hs-source-dirs: src
@@ -28,7 +29,7 @@ Library
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
                  HStringTemplate, HSH, safe, strict, filemanip,   
-                 parsec>3, cmdargs, transformers, template-haskell
+                 parsec>3, cmdargs, transformers, template-haskell, Cabal
   Exposed-Modules: 
                    Text.StringTemplate.Helpers
                    HEP.Parser.Config

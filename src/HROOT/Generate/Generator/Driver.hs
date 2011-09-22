@@ -19,6 +19,27 @@ import HROOT.Generate.Code.HsFrontEnd
 
 import System.FilePath 
 
+import HROOT.Generate.Config
+
+import Distribution.Package
+import Distribution.PackageDescription
+import Distribution.PackageDescription.Parse
+import Distribution.Verbosity
+import Distribution.Version 
+
+import Data.List 
+import System.IO
+-----
+ 
+getHROOTVersion :: HROOTConfig -> IO String 
+getHROOTVersion conf = do 
+  let hrootgeneratecabal = hrootConfig_scriptBaseDir conf </> "HROOT-generate.cabal"
+  gdescs <- readPackageDescription normal hrootgeneratecabal
+  
+  let vnums = versionBranch . pkgVersion . package . packageDescription $ gdescs 
+  return $ intercalate "." (map show vnums)
+--  putStrLn $ "version = " ++ show vnum
+
 ----- 
 
 srcDir :: FilePath -> FilePath
@@ -26,6 +47,9 @@ srcDir installbasedir = installbasedir </> "src" </> "HROOT" </> "Class"
 
 csrcDir :: FilePath -> FilePath
 csrcDir installbasedir = installbasedir </> "csrc" 
+
+cabalTemplate :: String 
+cabalTemplate = "HROOT.cabal"
 
 declarationTemplate :: String
 declarationTemplate = "HROOT.h"
@@ -145,7 +169,16 @@ mkImplementationHs templates classes =
                        `connRet2`
                        genAllHsFrontInstNonVirtual classes
 
-                       
-                       
-                       
-                       
+-- | Generate HROOT.cabal file 
+
+mkCabalFile :: HROOTConfig -> STGroup String -> Handle -> IO () 
+mkCabalFile config templates h = do 
+  version <- getHROOTVersion config
+
+  let str = renderTemplateGroup 
+              templates 
+              [ ("version", version) ]
+              cabalTemplate 
+  hPutStrLn h str
+
+ 
