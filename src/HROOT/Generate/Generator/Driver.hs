@@ -20,6 +20,8 @@ import HROOT.Generate.Code.HsFrontEnd
 import System.FilePath 
 
 import HROOT.Generate.Config
+
+import HROOT.Generate.ROOT
 import HROOT.Generate.ROOTModule
 
 import Distribution.Package
@@ -183,7 +185,14 @@ genExposedModules emods cmods =
   in  unlines (emodstrs ++ cmodstrs) 
 
 genExportList :: String -> String 
-genExportList modname = "    " ++ modname ++ "(..)\n  , " ++ ('I' : modname) ++ "(..)"
+genExportList modname =
+  let cs = filter (\x->class_name x  == modname) root_all_classes
+  in  if null cs 
+        then error $ "no such class :" ++ modname 
+        else let c = head cs 
+             in if isAbstractClass c 
+                  then "    " ++ ('I' : modname) ++ "(..)"
+                  else "    " ++ modname ++ "(..)\n  , " ++ ('I' : modname) ++ "(..)"
 
 mkModuleFile :: HROOTConfig -> STGroup String -> String -> IO () 
 mkModuleFile config templates modname = do 
