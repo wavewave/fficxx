@@ -12,6 +12,7 @@ import HROOT.Generate.Util
 import HROOT.Generate.Type.Annotate
 import HROOT.Generate.Type.Class
 import HROOT.Generate.Type.Module 
+import HROOT.Generate.Type.Method
 
 import HROOT.Generate.Code.Cpp
 import HROOT.Generate.Code.HsFFI 
@@ -190,9 +191,13 @@ genExportList modname =
   in  if null cs 
         then error $ "no such class :" ++ modname 
         else let c = head cs 
+                 methodstr = if null . (filter isVirtualFunc) $ (class_funcs c) 
+                               then ""
+                               else "(..)"
              in if isAbstractClass c 
-                  then "    " ++ ('I' : modname) ++ "(..)"
-                  else "    " ++ modname ++ "(..)\n  , " ++ ('I' : modname) ++ "(..)"
+                  then "    " ++ ('I' : modname) ++ methodstr 
+                  else "    " ++ modname ++ "(..)\n  , " 
+                              ++ ('I' : modname) ++ methodstr
 
 mkModuleFile :: HROOTConfig -> STGroup String -> String -> IO () 
 mkModuleFile config templates modname = do 
