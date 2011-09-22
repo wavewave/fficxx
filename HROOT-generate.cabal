@@ -49,4 +49,6 @@ Library
                    HROOT.Generate.QQ.Verbatim
                    HROOT.Generate.ROOT
                    HROOT.Generate.ROOTAnnotate
+                   HROOT.Generate.ROOTModule
+
 

@@ -20,14 +20,25 @@ import Control.Monad.State
 import Control.Monad.Reader
 
 
-mkComment :: String -> String
-mkComment str 
+mkComment :: Int -> String -> String
+mkComment indent str 
+  | (not.null) str = 
+    let str_lines = lines str
+        indentspace = replicate indent ' ' 
+        commented_lines = 
+          (indentspace ++ "-- | "++head str_lines) : map (\x->indentspace ++ "--   "++x) (tail str_lines)
+     in unlines commented_lines 
+  | otherwise = str                
+
+mkPostComment :: String -> String
+mkPostComment str 
   | (not.null) str = 
     let str_lines = lines str 
         commented_lines = 
-          ("-- | "++head str_lines) : map (\x->"--   "++x) (tail str_lines)
+          ("-- ^ "++head str_lines) : map (\x->"--   "++x) (tail str_lines)
      in unlines commented_lines 
   | otherwise = str                
+
                         
 ----------------
 
@@ -56,15 +67,17 @@ hsClassDeclHeaderTmpl = "$classann$\nclass $constraint$$classname$ a where"
 genHsFrontDecl :: Class -> Reader AnnotateMap String 
 genHsFrontDecl c = do 
   amap <- ask  
-
   let cann = maybe "" id $ M.lookup (HROOTClass,class_name c) amap 
-
   let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) 
                                             , ("constraint", classprefix c) 
-                                            , ("classann",   mkComment cann) ] 
-      bodyline func = render hsClassDeclFuncTmpl 
+                                            , ("classann",   mkComment 0 cann) ] 
+      bodyline func = 
+        let fname = hsFuncName c func 
+            mann = maybe "" id $ M.lookup (HROOTMethod,fname) amap
+        in  render hsClassDeclFuncTmpl 
                                     [ ("funcname", hsFuncName c func) 
-                                    , ("args" , prefixstr func ++ argstr func ) 
+                                    , ("args" , prefixstr func ++ argstr func )
+                                    , ("funcann", mkComment 4 mann)  
                                     ] 
       prefixstr func =  
         let prefixlst = (snd . mkHsFuncArgType c . genericFuncArgs) func
@@ -89,7 +102,6 @@ genAllHsFrontDecl = intercalateWithM connRet2 genHsFrontDecl
 --   fmap (intercalateWith connRet2)  genHsFrontDecl
 
 -------------------
-
 
 
 genHsFrontInst :: Class -> Class -> String 
@@ -136,13 +148,12 @@ genHsFrontInstNew :: Class         -- ^ only concrete class
                     -> Reader AnnotateMap (Maybe String)
 genHsFrontInstNew c = do 
   amap <- ask 
-
   if null newfuncs 
     then return Nothing
     else do 
       let newfunc = head newfuncs
           cann = maybe "" id $ M.lookup (HROOTMethod, "new" ++ class_name c) amap
-          newfuncann = mkComment cann
+          newfuncann = mkComment 0 cann
           newlinehead = "new" ++ class_name c ++ " :: " ++ argstr newfunc 
           newlinebody = "new" ++ class_name c ++ " = " 
                               ++ hsFuncXformerNew newfunc ++ " " 
@@ -222,7 +233,7 @@ mkRawClasses = intercalateWith connRet2 hsClassType
 
 
 hsClassDeclFuncTmpl :: String
-hsClassDeclFuncTmpl = "    $funcname$ :: $args$ "
+hsClassDeclFuncTmpl = "$funcann$\n    $funcname$ :: $args$ "
 
 
 hsArgs :: Class -> Args -> String

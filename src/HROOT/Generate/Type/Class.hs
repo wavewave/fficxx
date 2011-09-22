@@ -17,6 +17,8 @@ data Class = Class { class_name :: String
                            , class_funcs :: [Function] }
 
 
+-- | Check abstract clas
+
 isAbstractClass :: Class -> Bool 
 isAbstractClass (Class _ _ _) = False 
 isAbstractClass (AbstractClass _ _ _ ) = True            

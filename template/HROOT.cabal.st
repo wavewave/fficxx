@@ -30,12 +30,15 @@ Library
   ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind -fno-warn-orphans
   ghc-prof-options: -caf-all -auto-all
   Build-Depends:      base>4 && < 5
-  Exposed-Modules:    HROOT
-                      HROOT.Class.Interface
-                      HROOT.Class.Implementation
-                      HROOT.Class.FFI
-                      HROOT.AddOn
-                      HROOT.AddOnFunction
+  Exposed-Modules:  
+$exposedModules$  
+
+--                      HROOT
+--                      HROOT.Class.Interface
+--                      HROOT.Class.Implementation
+--                      HROOT.Class.FFI
+--                      HROOT.AddOn
+--                      HROOT.AddOnFunction
   extra-libraries:    stdc++
   Extensions:	      ForeignFunctionInterface
   Include-dirs:       csrc

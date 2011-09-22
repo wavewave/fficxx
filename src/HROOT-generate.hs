@@ -4,13 +4,14 @@ module Main where
 
 import System.IO
 import System.Directory
-import System.FilePath ((</>))
+import System.FilePath 
 import System.Console.CmdArgs
 
 import Text.StringTemplate hiding (render)
 
 import HROOT.Generate.ROOT
 import HROOT.Generate.ROOTAnnotate
+import HROOT.Generate.ROOTModule
 
 import HROOT.Generate.Generator.Driver
 import HROOT.Generate.Generator.Command hiding (config)
@@ -67,6 +68,9 @@ commandLineProcess (Generate conf) = do
   putStrLn "Implementation.hs file generation"
   withFile (workingDir </> hsFileName) WriteMode $ 
     \h -> hPutStrLn h (mkImplementationHs annotateMap templates root_all_classes)
+
+  putStrLn "module file generation" 
+  mapM_ (mkModuleFile config templates) classModules 
  
   copyFile (workingDir </> cabalFileName)  ( ibase </> cabalFileName ) 
   copyFile (workingDir </> headerFileName) ( csrcDir ibase </> headerFileName) 
@@ -75,4 +79,6 @@ commandLineProcess (Generate conf) = do
   copyFile (workingDir </> typeHsFileName) ( srcDir ibase </> typeHsFileName) 
   copyFile (workingDir </> hsFileName) ( srcDir ibase </> hsFileName)  
   
+  mapM_ (\x->copyFile (workingDir </> x <.> "hs")  ( srcDir ibase </> x <.> "hs")) classModules
+
   return ()

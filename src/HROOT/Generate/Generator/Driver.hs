@@ -20,9 +20,10 @@ import HROOT.Generate.Code.HsFrontEnd
 import System.FilePath 
 
 import HROOT.Generate.Config
+import HROOT.Generate.ROOTModule
 
 import Distribution.Package
-import Distribution.PackageDescription
+import Distribution.PackageDescription hiding (exposedModules)
 import Distribution.PackageDescription.Parse
 import Distribution.Verbosity
 import Distribution.Version 
@@ -47,6 +48,9 @@ srcDir installbasedir = installbasedir </> "src" </> "HROOT" </> "Class"
 
 csrcDir :: FilePath -> FilePath
 csrcDir installbasedir = installbasedir </> "csrc" 
+
+moduleTemplate :: String 
+moduleTemplate = "module.hs"
 
 cabalTemplate :: String 
 cabalTemplate = "HROOT.cabal"
@@ -169,6 +173,32 @@ mkImplementationHs amap templates classes =
                        `connRet2`
                        genAllHsFrontInstNonVirtual classes
 
+-- Modules
+
+genExposedModules :: [String] -> [String] -> String
+genExposedModules emods cmods = 
+  let indentspace = replicate 23 ' ' 
+      emodstrs = map (indentspace ++) emods
+      cmodstrs = map (\x -> indentspace ++ "HROOT.Class." ++ x) cmods 
+  in  unlines (emodstrs ++ cmodstrs) 
+
+genExportList :: String -> String 
+genExportList modname = "    " ++ modname ++ "(..)\n  , " ++ ('I' : modname) ++ "(..)"
+
+mkModuleFile :: HROOTConfig -> STGroup String -> String -> IO () 
+mkModuleFile config templates modname = do 
+  let modfilename = modname <.> "hs"
+  withFile (hrootConfig_workingDir config </> modfilename) WriteMode $ 
+    \h -> do 
+      let str = renderTemplateGroup 
+                  templates 
+                  [ ("moduleName", modname) 
+                  , ("exportList", genExportList modname) 
+                  ]
+                  moduleTemplate 
+      hPutStrLn h str
+  
+
 -- | Generate HROOT.cabal file 
 
 mkCabalFile :: HROOTConfig -> STGroup String -> Handle -> IO () 
@@ -177,8 +207,8 @@ mkCabalFile config templates h = do
 
   let str = renderTemplateGroup 
               templates 
-              [ ("version", version) ]
+              [ ("version", version) 
+              , ("exposedModules", genExposedModules exposedModules classModules) 
+              ]
               cabalTemplate 
   hPutStrLn h str
-
- 
