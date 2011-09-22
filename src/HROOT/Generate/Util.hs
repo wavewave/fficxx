@@ -54,6 +54,11 @@ intercalateWithM :: (Monad m) => (String -> String -> String) -> (a->m String) -
 intercalateWithM f mapper x 
   | not (null x) = do ms <- mapM mapper x
                       return (foldl1 f ms)
+  | otherwise = return "" 
+
+-- intercalateM :: (Monad m) => String -> [String] -> m String 
+-- intercalateM str = return . foldl1 (\x y-> x ++ str ++ y)
+
 
 cvarToStr :: CTypes -> IsConst -> String -> String
 cvarToStr ctyp isconst varname = (ctypToStr ctyp isconst) `connspace` varname 

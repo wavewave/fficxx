@@ -66,7 +66,7 @@ commandLineProcess (Generate conf) = do
     
   putStrLn "Implementation.hs file generation"
   withFile (workingDir </> hsFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkImplementationHs templates root_all_classes)
+    \h -> hPutStrLn h (mkImplementationHs annotateMap templates root_all_classes)
  
   copyFile (workingDir </> cabalFileName)  ( ibase </> cabalFileName ) 
   copyFile (workingDir </> headerFileName) ( csrcDir ibase </> headerFileName) 

@@ -1,6 +1,8 @@
 module HROOT.Generate.Code.HsFrontEnd where
 
 import qualified Data.Map as M
+import Data.Maybe
+
 
 import HROOT.Generate.Type.CType
 import HROOT.Generate.Type.Method
@@ -131,23 +133,30 @@ genAllHsFrontInstExist cs = intercalateWith connRet2 genHsFrontInstExist cs
 ---------------------
 
 genHsFrontInstNew :: Class         -- ^ only concrete class 
-                    -> Maybe String 
-genHsFrontInstNew c = 
+                    -> Reader AnnotateMap (Maybe String)
+genHsFrontInstNew c = do 
+  amap <- ask 
+
   if null newfuncs 
-  then Nothing
-  else let newfunc = head newfuncs
-           newlinehead = "new" ++ class_name c ++ " :: " ++ argstr newfunc 
-           newlinebody = "new" ++ class_name c ++ " = " ++ hsFuncXformerNew newfunc ++ " " ++ hscFuncName c newfunc 
-           argstr func = intercalateWith connArrow id $
-                           map (ctypeToHsType c.fst) (genericFuncArgs func)
-                           ++ ["IO " ++ (ctypeToHsType c.genericFuncRet) func]
-           newline = newlinehead ++ "\n" ++ newlinebody 
-       in Just newline
+    then return Nothing
+    else do 
+      let newfunc = head newfuncs
+          cann = maybe "" id $ M.lookup (HROOTMethod, "new" ++ class_name c) amap
+          newfuncann = mkComment cann
+          newlinehead = "new" ++ class_name c ++ " :: " ++ argstr newfunc 
+          newlinebody = "new" ++ class_name c ++ " = " 
+                              ++ hsFuncXformerNew newfunc ++ " " 
+                              ++ hscFuncName c newfunc 
+          argstr func = intercalateWith connArrow id $
+                          map (ctypeToHsType c.fst) (genericFuncArgs func)
+                          ++ ["IO " ++ (ctypeToHsType c.genericFuncRet) func]
+          newline = newfuncann ++ "\n" ++ newlinehead ++ "\n" ++ newlinebody 
+      return (Just newline)
   where newfuncs = filter isNewFunc (class_funcs c)  
 
 genAllHsFrontInstNew :: [Class]    -- ^ only concrete class 
-                     -> String 
-genAllHsFrontInstNew = intercalate "\n\n" . map fromJust . filter isJust . map genHsFrontInstNew 
+                     -> Reader AnnotateMap String 
+genAllHsFrontInstNew = liftM (intercalate "\n\n") . liftM catMaybes . mapM genHsFrontInstNew 
   
 genHsFrontInstNonVirtual :: Class -> Maybe String 
 genHsFrontInstNonVirtual c 

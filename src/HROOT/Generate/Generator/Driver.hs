@@ -153,8 +153,8 @@ mkInterfaceHs amap templates mod classes =
           runReader (genAllHsFrontDecl classes) amap 
   
   
-mkImplementationHs :: STGroup String -> [Class] -> String
-mkImplementationHs templates classes = 
+mkImplementationHs :: AnnotateMap -> STGroup String -> [Class] -> String
+mkImplementationHs amap templates classes = 
   renderTemplateGroup templates 
                       [ ("implBody", implBodyStr ) ]
                       "Implementation.hs"
@@ -165,7 +165,7 @@ mkImplementationHs templates classes =
                        `connRet2`
                        genAllHsFrontInst classes dmap 
                        `connRet2`
-                       genAllHsFrontInstNew classes 
+                       runReader (genAllHsFrontInstNew classes) amap
                        `connRet2`
                        genAllHsFrontInstNonVirtual classes
 
