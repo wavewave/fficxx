@@ -9,6 +9,17 @@ exposedModules = [ "HROOT"
                  , "HROOT.AddOn" 
                  , "HROOT.AddOnFunction" ]
 
+classModules :: [String]
+classModules = [ "TObject"
+               , "TNamed"
+               , "TClass"
+               , "TDictionary"
+               , "TCanvas"
+               , "TAttCanvas"
+               , "TH1"
+               , "TH1F" ]
+
+{-
 classModules :: [String] 
 classModules = [ "TObject" 
                , "TNamed" 
@@ -102,3 +113,4 @@ classModules = [ "TObject"
                , "TH3C"
 
                ]
+-}

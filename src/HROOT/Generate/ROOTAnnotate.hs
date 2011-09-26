@@ -9,6 +9,10 @@ import HROOT.Generate.QQ.Verbatim
 import qualified Data.Map as M
 
 annotateMap :: AnnotateMap 
+annotateMap = M.empty 
+
+{-
+annotateMap :: AnnotateMap 
 annotateMap = M.fromList [ tNamedAnn, tNamedNewAnn, tNamedSetTitleAnn
                          , tObjectGetNameAnn, tObjectDrawAnn, tObjectFindObjectAnn
                          , tH1Ann, tH1AddAnn, tH1AddBinContentAnn, tH1Chi2TestAnn
@@ -17,7 +21,7 @@ annotateMap = M.fromList [ tNamedAnn, tNamedNewAnn, tNamedSetTitleAnn
                          , tH1DrawPanelAnn
 
                          ] 
-
+-}
 
 tNamedAnn = ((HROOTClass,"TNamed"),[verbatim|
 Class TNamed

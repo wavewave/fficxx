@@ -485,7 +485,8 @@ tArrayS = Class "TArrayS" [tArray]
 tH1 :: Class
 tH1 = 
   Class "TH1" [tNamed, tAttLine, tAttFill, tAttMarker] 
-  [ Virtual void_ "Add" [cppclass "TH1" "h1", double "c1"]  
+  [ 
+{-    Virtual void_ "Add" [cppclass "TH1" "h1", double "c1"]  
   , Virtual void_ "AddBinContent" [int "bin", double "w"] 
   , Virtual double_ "Chi2Test" [cppclass "TH1" "h2", cstring "option", doublep "res"] 
   , Virtual double_ "ComputeIntegral" []
@@ -499,7 +500,10 @@ tH1 =
   , Virtual void_ "Eval" [cppclass "TF1" "f1", cstring "option"]
   , Virtual void_ "ExecuteEvent" [int "event", int "px", int "py"]
   , Virtual (cppclass_ "TH1") "FFT" [cppclass "TH1" "h_output", cstring "option"] 
-  , AliasVirtual int_  "Fill" [double "x"] "fill1"
+
+  , -}
+    AliasVirtual int_  "Fill" [double "x"] "fill1"
+{-
   , Virtual void_ "FillN" [int "ntimes", doublep "x", doublep "w", int "stride"]
   , Virtual void_ "FillRandom" [cppclass "TH1" "h", int "ntimes"] 
   , Virtual int_ "FindBin" [double "x", double "y", double "z"] 
@@ -552,7 +556,7 @@ tH1 =
   , NonVirtual (cppclass_ "TAxis") "GetYaxis" [] 
   , NonVirtual (cppclass_ "TAxis") "GetZaxis" []
                
-
+-}
   ] 
 
 tH2 :: Class 
@@ -704,9 +708,12 @@ tRandom =
   , Virtual double_ "Uniform" [double "x1", double "x2"]
   ]       
 
--- root_all_classes = [ deletable, tObject, tNamed, tClass, tDictionary ]
+root_all_classes = [ deletable, tObject, tNamed, tClass, tDictionary 
+                   , tCanvas, tAttCanvas, tH1, tH1F, tPad, tAttLine
+                   , tAttFill, tAttMarker, tArrayF, tVirtualPad, tArray
+                   , tFrame, tAttPad, tQObject, tWbox, tBox, tRandom]
 
-
+{-
 root_all_classes :: [Class]
 root_all_classes = 
   [ deletable
@@ -746,7 +753,7 @@ root_all_classes =
   , tApplication, tRint
   , tRandom
   ]
-
+-}
 
 
 
