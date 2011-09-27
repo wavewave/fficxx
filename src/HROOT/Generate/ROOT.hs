@@ -708,12 +708,15 @@ tRandom =
   , Virtual double_ "Uniform" [double "x1", double "x2"]
   ]       
 
+{-
 root_all_classes = [ deletable, tObject, tNamed, tClass, tDictionary 
                    , tCanvas, tAttCanvas, tH1, tH1F, tPad, tAttLine
                    , tAttFill, tAttMarker, tArrayF, tVirtualPad, tArray
-                   , tFrame, tAttPad, tQObject, tWbox, tBox, tRandom]
+                   , tFrame, tAttPad, tQObject, tWbox, tBox, tRandom
+                   , tGraph]
+-}
 
-{-
+
 root_all_classes :: [Class]
 root_all_classes = 
   [ deletable
@@ -753,7 +756,7 @@ root_all_classes =
   , tApplication, tRint
   , tRandom
   ]
--}
+
 
 
 

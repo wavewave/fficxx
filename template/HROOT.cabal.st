@@ -10,7 +10,7 @@ Maintainer: 	Ian-Woo Kim <ianwookim@gmail.com>
 Category:       Graphics
 Tested-with:    GHC >= 7.0.2 && <= 7.0.3
 Build-Type: 	Custom
-cabal-version:  >=1.6
+cabal-version:  >=1.10
 Extra-source-files: CHANGES
                     Config.hs
                     csrc/HROOT.h
@@ -20,12 +20,20 @@ Extra-source-files: CHANGES
                     example/random2d.hs
                     example/random2dApp.hs
                     example/saveAsROOT.hs
+                    test/compiletest.hs
 Source-repository head
   type:     darcs
   location: http://ianwookim.org/public/repo/HROOT
 
+Test-Suite compiletest
+  default-language: Haskell2010
+  type: exitcode-stdio-1.0
+  main-is: compiletest.hs
+  build-depends: base>4, base<5, HROOT==$version$
+  hs-source-dirs: test
 
 Library
+  default-language: Haskell2010
   hs-source-dirs: src
   ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind -fno-warn-orphans
   ghc-prof-options: -caf-all -auto-all
@@ -40,7 +48,7 @@ $exposedModules$
 --                      HROOT.AddOn
 --                      HROOT.AddOnFunction
   extra-libraries:    stdc++
-  Extensions:	      ForeignFunctionInterface
+-- default-extensions:	      ForeignFunctionInterface
   Include-dirs:       csrc
   Install-includes:   HROOT.h
                       addon.h
