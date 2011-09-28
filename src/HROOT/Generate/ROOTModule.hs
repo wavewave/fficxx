@@ -112,5 +112,5 @@ classModules = [ "TObject"
                , "TH2Poly"
                , "TH2S"
                , "TH3C"
-
+               -- , "TProfile"
                ]

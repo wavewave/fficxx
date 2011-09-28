@@ -1,3 +1,15 @@
+-- |
+-- Module      : HROOT.Generate.ROOT
+-- Copyright   : (c) 2011 Ian-Woo Kim
+-- 
+-- License     : GPL-3
+-- Maintainer  : ianwookim@gmail.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- conversion data for ROOT classes 
+--
+
 module HROOT.Generate.ROOT where
 
 import HROOT.Generate.Type.CType
@@ -14,9 +26,6 @@ moduleInterface = Module { module_name = "HROOT.Class.Interface"
                                             , "ITNamed" 
                                             , "TNamed" ]
                          } 
-
-
-
 
 deletable :: Class 
 deletable = AbstractClass "Deletable" [] 
@@ -485,8 +494,7 @@ tArrayS = Class "TArrayS" [tArray]
 tH1 :: Class
 tH1 = 
   Class "TH1" [tNamed, tAttLine, tAttFill, tAttMarker] 
-  [ 
-{-    Virtual void_ "Add" [cppclass "TH1" "h1", double "c1"]  
+  [ Virtual void_ "Add" [cppclass "TH1" "h1", double "c1"]  
   , Virtual void_ "AddBinContent" [int "bin", double "w"] 
   , Virtual double_ "Chi2Test" [cppclass "TH1" "h2", cstring "option", doublep "res"] 
   , Virtual double_ "ComputeIntegral" []
@@ -501,9 +509,7 @@ tH1 =
   , Virtual void_ "ExecuteEvent" [int "event", int "px", int "py"]
   , Virtual (cppclass_ "TH1") "FFT" [cppclass "TH1" "h_output", cstring "option"] 
 
-  , -}
-    AliasVirtual int_  "Fill" [double "x"] "fill1"
-{-
+  , AliasVirtual int_  "Fill" [double "x"] "fill1"
   , Virtual void_ "FillN" [int "ntimes", doublep "x", doublep "w", int "stride"]
   , Virtual void_ "FillRandom" [cppclass "TH1" "h", int "ntimes"] 
   , Virtual int_ "FindBin" [double "x", double "y", double "z"] 
@@ -555,14 +561,18 @@ tH1 =
   , NonVirtual (cppclass_ "TAxis") "GetXaxis" [] 
   , NonVirtual (cppclass_ "TAxis") "GetYaxis" [] 
   , NonVirtual (cppclass_ "TAxis") "GetZaxis" []
-               
--}
+
   ] 
 
 tH2 :: Class 
-tH2 = Class "TH2" [tH1] 
-      [ AliasVirtual int_ "Fill" [double "x", double "y"] "fill2"
-      ]
+tH2 = 
+  Class "TH2" [tH1] 
+  [ --  NonVirtual (cppclass_ "TProfile") "ProfileX" [cstring "name", int "firstybin", int "lastybin", cstring "option" ] 
+   -- , NonVirtual (cppclass_ "TProfile") "ProfileY" [cstring "name", int "firstxbin", int "lastxbin", cstring "option" ] 
+    NonVirtual (cppclass_ "TH1D") "ProjectionX" [cstring "name", int "firstybin", int "lastybin", cstring "option" ]
+  , NonVirtual (cppclass_ "TH1D") "ProjectionY" [cstring "name", int "firstxbin", int "lastxbin", cstring "option" ] 
+  , AliasVirtual int_ "Fill" [double "x", double "y"] "fill2"
+  ]
 
 
 tH3 :: Class
@@ -601,7 +611,9 @@ tH2C = Class "TH2C" [tH2, tArrayC]
 
 tH2D :: Class 
 tH2D = Class "TH2D" [tH2, tArrayD] 
-       []
+       [ Constructor [ cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"
+                     , int "nbinsy", double "ylow", double "yup"]
+       ]
 
 tH2F :: Class
 tH2F = Class "TH2F" [tH2, tArrayF] 
@@ -709,13 +721,18 @@ tRandom =
   ]       
 
 {-
+tProfile = 
+  Class "TProfile" [tH1D] 
+  [ ] 
+-}
+
+{-
 root_all_classes = [ deletable, tObject, tNamed, tClass, tDictionary 
                    , tCanvas, tAttCanvas, tH1, tH1F, tPad, tAttLine
                    , tAttFill, tAttMarker, tArrayF, tVirtualPad, tArray
                    , tFrame, tAttPad, tQObject, tWbox, tBox, tRandom
                    , tGraph]
 -}
-
 
 root_all_classes :: [Class]
 root_all_classes = 
@@ -755,14 +772,6 @@ root_all_classes =
   , tEvePad, tSlider
   , tApplication, tRint
   , tRandom
+  --  , tProfile
   ]
-
-
-
-
-
-
-
-
-
 
