@@ -286,3 +286,27 @@ hsExistentialGADTBodyTmpl = "    GADT$mother$$daughter$ :: $daughter$ -> GADTTyp
 hsExistentialCastBodyTmpl :: String
 hsExistentialCastBodyTmpl = "    \"$daughter$\" -> case obj of\n        $mother$ fptr -> let obj' = $daughter$ (castForeignPtr fptr :: ForeignPtr Raw$daughter$)\n                        in  return . EGADT$mother$ . GADT$mother$$daughter$ \\$ obj'"
 
+-----------
+
+genHsFrontUpcastClass :: Class -> Reader AnnotateMap String
+genHsFrontUpcastClass c = do 
+  amap <- ask 
+  let (highname,rawname) = hsClassName c
+      upcaststr = render hsUpcastClassTmpl [ ("classname", highname) 
+                                           , ("ifacename", typeclassName c)
+                                           , ("rawclassname", rawname)  
+                                           , ("space", replicate (length highname+11) ' ' ) ] 
+  return upcaststr
+
+genAllHsFrontUpcastClass :: [Class] -> Reader AnnotateMap String
+genAllHsFrontUpcastClass = intercalateWithM connRet2 genHsFrontUpcastClass
+
+
+hsUpcastClassTmpl :: String 
+hsUpcastClassTmpl =  "upcast$classname$ :: (FPtr a, $ifacename$ a) => a -> $classname$\nupcast$classname$ h = let fh = get_fptr h\n$space$    fh2 :: ForeignPtr $rawclassname$ = castForeignPtr fh\n$space$in cast_fptr_to_obj fh2"
+
+
+
+
+
+

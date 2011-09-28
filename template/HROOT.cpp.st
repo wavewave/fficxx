@@ -131,6 +131,10 @@
 
 #include "TRandom.h"
 #include "TProfile.h"
+#include "TCollection.h"
+#include "TSeqCollection.h"
+#include "TObjArray.h"
+
 
 using namespace std;
 

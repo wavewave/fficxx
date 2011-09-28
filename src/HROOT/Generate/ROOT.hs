@@ -567,11 +567,33 @@ tH1 =
 tH2 :: Class 
 tH2 = 
   Class "TH2" [tH1] 
-  [ --  NonVirtual (cppclass_ "TProfile") "ProfileX" [cstring "name", int "firstybin", int "lastybin", cstring "option" ] 
-   -- , NonVirtual (cppclass_ "TProfile") "ProfileY" [cstring "name", int "firstxbin", int "lastxbin", cstring "option" ] 
-    NonVirtual (cppclass_ "TH1D") "ProjectionX" [cstring "name", int "firstybin", int "lastybin", cstring "option" ]
+  [ AliasVirtual int_ "Fill" [double "x", double "y"] "fill2"
+  , AliasVirtual void_ "FillRandom" [cppclass "TH1" "h", int "ntimes"] "fillRandom2"
+  , AliasVirtual int_  "FindFirstBinAbove" [double "threshold", int "axis"] "findFirstBinAbove2"
+  , AliasVirtual int_  "FindLastBinAbove"  [double "threshold", int "axis"] "findLastBinAbove2"
+  , Virtual void_ "FitSlicesX" [cppclass "TF1" "f1", int "firstybin", int "lastybin", int "cut", cstring "option", cppclass "TObjArray" "arr"]
+  , Virtual void_ "FitSlicesY" [cppclass "TF1" "f1", int "firstxbin", int "lastxbin", int "cut", cstring "option", cppclass "TObjArray" "arr"]
+  , Virtual double_ "GetCorrelationFactor" [int "axis1", int "axis2"]
+  , Virtual double_ "GetCovariance" [int "axis1", int "axis2"]
+  , Virtual void_ "GetStats" [doublep "stats"]
+  , Virtual double_ "Integral" [int "binx1", int "binx2", int "biny1", int "biny2", cstring "option"]
+  , Virtual double_ "Interpolate" [double "x", double "y", double "z"] 
+  , Virtual double_ "KolmogorovTest" [cppclass "TH1" "h2", cstring "option"]
+  -- , NonVirtual (cppclass_ "TProfile") "ProfileX" [cstring "name", int "firstybin", int "lastybin", cstring "option" ] 
+  -- , NonVirtual (cppclass_ "TProfile") "ProfileY" [cstring "name", int "firstxbin", int "lastxbin", cstring "option" ] 
+  , NonVirtual (cppclass_ "TH1D") "ProjectionX" [cstring "name", int "firstybin", int "lastybin", cstring "option" ]
   , NonVirtual (cppclass_ "TH1D") "ProjectionY" [cstring "name", int "firstxbin", int "lastxbin", cstring "option" ] 
-  , AliasVirtual int_ "Fill" [double "x", double "y"] "fill2"
+  , Virtual (cppclass_ "TH2") "RebinX" [int "ngroup", cstring "newname"] 
+  , Virtual (cppclass_ "TH2") "RebinY" [int "ngroup", cstring "newname"] 
+  , Virtual (cppclass_ "TH2") "Rebin2D" [int "nxgroup", int "nygroup", cstring "newname"]
+  , Virtual void_ "PutStats" [doublep "stats"]
+  , Virtual void_ "Reset" [cstring "option"]
+  , Virtual void_ "SetShowProjectionX" [int "nbins"]
+  , Virtual void_ "SetShowProjectionY" [int "nbins"]
+  , Virtual (cppclass_ "TH1") "ShowBackground" [int "niter", cstring "option"]
+  , Virtual int_  "ShowPeaks" [double "sigma", cstring "option", double "threshold"]
+  , Virtual void_ "Smooth" [int "ntimes", cstring "option"] 
+
   ]
 
 
@@ -720,6 +742,18 @@ tRandom =
   , Virtual double_ "Uniform" [double "x1", double "x2"]
   ]       
 
+tCollection :: Class
+tCollection = 
+  Class "TCollection" [tObject] []
+
+tSeqCollection :: Class
+tSeqCollection = 
+  Class "TSeqCollection" [tCollection] []
+
+tObjArray :: Class 
+tObjArray = 
+  Class "TObjArray" [tSeqCollection] []
+
 {-
 tProfile = 
   Class "TProfile" [tH1D] 
@@ -773,5 +807,6 @@ root_all_classes =
   , tApplication, tRint
   , tRandom
   --  , tProfile
+  , tCollection, tSeqCollection, tObjArray
   ]
 

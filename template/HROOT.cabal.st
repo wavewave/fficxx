@@ -25,12 +25,12 @@ Source-repository head
   type:     darcs
   location: http://ianwookim.org/public/repo/HROOT
 
-Test-Suite compiletest
-  default-language: Haskell2010
-  type: exitcode-stdio-1.0
-  main-is: compiletest.hs
-  build-depends: base>4, base<5, HROOT==$version$
-  hs-source-dirs: test
+-- Test-Suite compiletest
+--   default-language: Haskell2010
+--   type: exitcode-stdio-1.0
+--   main-is: compiletest.hs
+--   build-depends: base>4, base<5, HROOT==$version$
+--   hs-source-dirs: test
 
 Library
   default-language: Haskell2010

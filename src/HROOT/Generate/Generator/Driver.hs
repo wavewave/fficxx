@@ -160,7 +160,8 @@ mkInterfaceHs amap templates mod classes =
           mkRawClasses (filter (not.isAbstractClass) classes)
           `connRet2`
           runReader (genAllHsFrontDecl classes) amap 
-  
+          `connRet2`
+          runReader (genAllHsFrontUpcastClass (filter (not.isAbstractClass) classes)) amap  
   
 mkImplementationHs :: AnnotateMap -> STGroup String -> [Class] -> String
 mkImplementationHs amap templates classes = 
@@ -200,6 +201,7 @@ genExportList modname =
                   then "    " ++ ('I' : modname) ++ methodstr 
                   else "    " ++ modname ++ "(..)\n  , " 
                               ++ ('I' : modname) ++ methodstr
+                              ++ "\n  , upcast" ++ modname
 
 mkModuleFile :: HROOTConfig -> STGroup String -> String -> IO () 
 mkModuleFile config templates modname = do 

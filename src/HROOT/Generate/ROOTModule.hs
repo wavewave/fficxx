@@ -113,4 +113,7 @@ classModules = [ "TObject"
                , "TH2S"
                , "TH3C"
                -- , "TProfile"
+               , "TCollection"
+               , "TSeqCollection"
+               , "TObjArray"
                ]

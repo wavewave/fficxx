@@ -20,6 +20,12 @@ annotateMap = M.fromList [ tNamedAnn, tNamedNewAnn, tNamedSetTitleAnn
                          , tH1ComputeIntegralAnn, tH1DirectoryAutoAddAnn, tH1DistancetoPrimitiveAnn
                          , tH1DivideAnn, tH1DrawCopyAnn, tH1DrawNormalizedAnn
                          , tH1DrawPanelAnn
+                         , tH2FillAnn, tH2FillRandomAnn, tH2FindFirstBinAboveAnn, tH2FindLastBinAboveAnn
+                         , tH2FitSlicesXAnn, tH2FitSlicesYAnn, tH2GetCorrelationFactorAnn, tH2GetCovarianceAnn
+                         , tH2GetStatsAnn, tH2IntegralAnn, tH2InterpolateAnn, tH2KolmogorovTestAnn
+                         , tH2ProjectionXAnn, tH2ProjectionYAnn, tH2RebinXAnn, tH2RebinYAnn, tH2Rebin2DAnn
+                         , tH2PutStats, tH2Reset, tH2SetShowProjectionX, tH2SetShowProjectionY, tH2ShowBackgroundAnn
+                         , tH2ShowPeaksAnn, tH2SmoothAnn
 
                          ] 
 
@@ -110,5 +116,124 @@ tH1DrawNormalizedAnn = ((HROOTMethod, "drawNormalized"), [verbatim|
 
 tH1DrawPanelAnn = ((HROOTMethod, "drawPanel"), [verbatim|
 > void TH1::DrawPanel()
+
+|])
+
+tH2FillAnn = ((HROOTMethod, "fill2"), [verbatim|
+> Int_t    Fill(Double_t x, Double_t y);
+|])
+
+tH2FillRandomAnn = ((HROOTMethod, "fillRandom2"), [verbatim|
+> void     FillRandom(TH1 *h, Int_t ntimes=5000);
+
+|])
+
+tH2FindFirstBinAboveAnn = ((HROOTMethod, "findFirstBinAbove2"), [verbatim|
+> Int_t    FindFirstBinAbove(Double_t threshold=0, Int_t axis=1) const;
+
+|])
+
+tH2FindLastBinAboveAnn = ((HROOTMethod, "findLastBinAbove2"), [verbatim|
+> Int_t    FindLastBinAbove (Double_t threshold=0, Int_t axis=1) const;
+
+|])
+
+tH2FitSlicesXAnn = ((HROOTMethod, "fitSlicesX"), [verbatim|
+> void     FitSlicesX(TF1 *f1=0,Int_t firstybin=0, Int_t lastybin=-1, Int_t cut=0, Option_t *option="QNR", TObjArray* arr = 0); // *MENU*
+
+|])
+
+tH2FitSlicesYAnn = ((HROOTMethod, "fitSlicesY"), [verbatim|
+> void     FitSlicesY(TF1 *f1=0,Int_t firstxbin=0, Int_t lastxbin=-1, Int_t cut=0, Option_t *option="QNR", TObjArray* arr = 0); // *MENU*
+
+|])
+
+tH2GetCorrelationFactorAnn = ((HROOTMethod, "getCorrelationFactor"), [verbatim|
+> Double_t GetCorrelationFactor(Int_t axis1=1,Int_t axis2=2) const;
+
+|])
+
+tH2GetCovarianceAnn = ((HROOTMethod, "getCovariance"), [verbatim|
+> Double_t GetCovariance(Int_t axis1=1,Int_t axis2=2) const;
+
+|])
+
+tH2GetStatsAnn = ((HROOTMethod, "getStats"), [verbatim|
+> void     GetStats(Double_t *stats) const;
+
+|])
+
+tH2IntegralAnn = ((HROOTMethod, "integral"), [verbatim|
+> Double_t Integral(Int_t binx1, Int_t binx2, Int_t biny1, Int_t biny2, Option_t *option="") const;
+
+|])
+
+tH2InterpolateAnn = ((HROOTMethod, "interpolate"), [verbatim|
+> Double_t Interpolate(Double_t x, Double_t y, Double_t z);
+
+|])
+
+tH2KolmogorovTestAnn = ((HROOTMethod, "kolmogorovTest"), [verbatim|
+> Double_t KolmogorovTest(const TH1 *h2, Option_t *option="") const;
+
+|])
+
+tH2ProjectionXAnn = ((HROOTMethod, "projectionX"), [verbatim|
+> TH1D      *ProjectionX(const char *name="_px", Int_t firstybin=0, Int_t lastybin=-1, Option_t *option="") const; // *MENU*
+
+|])
+
+tH2ProjectionYAnn = ((HROOTMethod, "projectionY"), [verbatim|
+> TH1D      *ProjectionY(const char *name="_py", Int_t firstxbin=0, Int_t lastxbin=-1, Option_t *option="") const; // *MENU*
+
+|])
+
+tH2RebinXAnn = ((HROOTMethod, "rebinX"), [verbatim|
+> TH2     *RebinX(Int_t ngroup=2, const char *newname="");
+
+|])
+
+tH2RebinYAnn = ((HROOTMethod, "rebinY"), [verbatim|
+> TH2     *RebinY(Int_t ngroup=2, const char *newname="");  
+
+|])
+
+tH2Rebin2DAnn = ((HROOTMethod, "rebin2D"), [verbatim|
+> TH2     *Rebin2D(Int_t nxgroup=2, Int_t nygroup=2, const char *newname="");     
+
+|])
+
+tH2PutStats = ((HROOTMethod, "putStats"), [verbatim|
+> void     PutStats(Double_t *stats);
+
+|])
+
+tH2Reset = ((HROOTMethod, "reset"), [verbatim|
+> void     Reset(Option_t *option="");
+
+|])
+
+tH2SetShowProjectionX = ((HROOTMethod, "setShowProjectionX"), [verbatim|
+> void     SetShowProjectionX(Int_t nbins);  // *MENU*
+
+|])
+
+tH2SetShowProjectionY = ((HROOTMethod, "setShowProjectionY"), [verbatim|
+> void     SetShowProjectionY(Int_t nbins);  // *MENU*
+
+|])
+
+tH2ShowBackgroundAnn = ((HROOTMethod, "showBackground"), [verbatim|
+> TH1     *ShowBackground(Int_t niter=20, Option_t *option="same");
+
+|])
+
+tH2ShowPeaksAnn = ((HROOTMethod, "showPeaks"), [verbatim|
+> Int_t    ShowPeaks(Double_t sigma=2, Option_t *option="", Double_t threshold=0.05); // *MENU*
+
+|])
+
+tH2SmoothAnn = ((HROOTMethod, "smooth"), [verbatim|
+> void     Smooth(Int_t ntimes=1, Option_t *option=""); // *MENU*
 
 |])
