@@ -561,6 +561,25 @@ tH1 =
   , NonVirtual (cppclass_ "TAxis") "GetXaxis" [] 
   , NonVirtual (cppclass_ "TAxis") "GetYaxis" [] 
   , NonVirtual (cppclass_ "TAxis") "GetZaxis" []
+  -- omit.. 
+  , Virtual void_ "Scale" [double "c1", cstring "option"]
+  , Virtual void_ "SetAxisColor" [short "color", cstring "axis"]
+  , Virtual void_ "SetAxisRange" [double "xmin", double "xmax", cstring "axis"]
+  , Virtual void_ "SetBarOffset" [float "offset"]
+  , Virtual void_ "SetBarWidth" [float "width"]
+  , AliasVirtual void_ "SetBinContent" [int "bin", double "content"] "setBinContent1"
+  , AliasVirtual void_ "SetBinContent" [int "binx", int "biny", double "content"] "setBinContent2"
+  , AliasVirtual void_ "SetBinContent" [int "binx", int "biny", int "binz", double "content"] "setBinContent3"
+  , AliasVirtual void_ "SetBinError" [int "bin", double "error"] "setBinError1"
+  , AliasVirtual void_ "SetBinError" [int "binx", int "biny", double "error"] "setBinError2"
+  , AliasVirtual void_ "SetBinError" [int "binx", int "biny", int "binz", double "error"] "setBinError3"
+  , AliasVirtual void_ "SetBins" [int "nx", doublep "xBins"] "setBins1"
+  , AliasVirtual void_ "SetBins" [int "nx", doublep "xBins", int "ny", doublep "yBins"] "setBins2"
+  , AliasVirtual void_ "SetBins" [int "nx", doublep "xBins", int "ny", doublep "yBins", int "nz", doublep "zBins"] "setBins3"
+  -- omit.. 
+  , Virtual void_ "SetXTitle" [cstring "title"] 
+  , Virtual void_ "SetYTitle" [cstring "title"]
+  , Virtual void_ "SetZTitle" [cstring "title"]
 
   ] 
 
@@ -608,7 +627,8 @@ tH1C = Class "TH1C" [tH1, tArrayC]
  
 tH1D :: Class
 tH1D = Class "TH1D" [tH1, tArrayD]
-       []
+       [ Constructor [cstring "name",cstring "title",int "nbinsx",double "xlow",double "xup"]
+       ]
 
 tH1F :: Class
 tH1F = Class "TH1F" [tH1, tArrayF] 

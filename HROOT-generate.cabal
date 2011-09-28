@@ -1,5 +1,5 @@
 Name:		HROOT-generate
-Version:	0.6.4.1
+Version:	0.6.4.999
 Synopsis:	automatic HROOT binding generation
 Description: 	automatic HROOT binding generation 
 License:        GPL-3
@@ -33,8 +33,6 @@ Library
   Exposed-Modules: 
                    Text.StringTemplate.Helpers
                    HEP.Parser.Config
-
-                   HROOT.Generate.Type.Annotate
                    HROOT.Generate.Type.CType
                    HROOT.Generate.Type.Class
                    HROOT.Generate.Type.Method
@@ -52,3 +50,4 @@ Library
 
   Other-Modules: 
                    HROOT.Generate.QQ.Verbatim
+                   HROOT.Generate.Type.Annotate
