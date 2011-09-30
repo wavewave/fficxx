@@ -303,7 +303,15 @@ tLegend :: Class
 tLegend = 
   Class "TLegend" [tPave, tAttText]
   [ Constructor [double "x1", double "y1", double "x2", double "y2", cstring "header", cstring "option"] 
+  , Virtual (cppclass_ "TLegendEntry") "AddEntry" [cppclass "TObject" "obj", cstring "label", cstring "option"] 
   ]
+
+
+tLegendEntry :: Class
+tLegendEntry = 
+  Class "TLegendEntry" [tObject, tAttText, tAttLine, tAttFill, tAttMarker] 
+  []
+
 
 tPaletteAxis :: Class
 tPaletteAxis = 
@@ -828,7 +836,7 @@ root_all_classes =
   , tLine, tArrow, tGaxis
   , tShape, tBRIK, tTUBE, tPCON, tSPHE, tXTRU
   -- , tPolyLineShape
-  , tBox, tPave, tPaveText, tDiamond, tPaveStats, tPavesText, tLegend
+  , tBox, tPave, tPaveText, tDiamond, tPaveStats, tPavesText, tLegend, tLegendEntry
   -- , tPaletteAxis
   , tPaveLabel, tPaveClass, tWbox, tFrame, tSliderBox
   , tTree, tChain

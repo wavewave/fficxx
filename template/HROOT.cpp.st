@@ -136,6 +136,7 @@
 #include "TObjArray.h"
 #include "TList.h"
 #include "TKey.h"
+#include "TLegendEntry.h"
 
 using namespace std;
 
