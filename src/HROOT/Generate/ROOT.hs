@@ -32,15 +32,17 @@ deletable = AbstractClass "Deletable" []
           [ Destructor ]
 
 tObject :: Class
-tObject = Class "TObject" [deletable] 
-          [ Constructor [] 
-          , Virtual  cstring_ "GetName" [] 
-          , Virtual void_    "Draw"    [cstring "option"] 
-          , Virtual (cppclass_ "TObject") "FindObject" [cstring "name"]
-          , Virtual void_    "SaveAs"  [cstring "filename", cstring "option"] 
-          , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ]
-          , Virtual (cppclass_ "TClass") "IsA" [] 
-          ]
+tObject = 
+  Class "TObject" [deletable] 
+  [ Constructor [] 
+  , Virtual  cstring_ "GetName" [] 
+  , Virtual void_    "Draw"    [cstring "option"] 
+  , Virtual (cppclass_ "TObject") "FindObject" [cstring "name"]
+  , Virtual void_    "SaveAs"  [cstring "filename", cstring "option"] 
+  , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ]
+  , Virtual (cppclass_ "TClass") "IsA" [] 
+  , Virtual void_ "Print" [cstring "option"]
+  ]
 
 
 tNamed :: Class
@@ -430,13 +432,33 @@ tLatex = Class "TLatex" [tText, tAttLine]
 
 tDirectory :: Class
 tDirectory = Class "TDirectory" [tNamed] 
-             [ Virtual void_ "Close"    [ cstring "option" ]  
+             [ Virtual void_ "Append" [cppclass "TObject" "obj", bool "replace"]
+             , AliasVirtual void_ "Add" [cppclass "TObject" "obj", bool "replace"] "addD"
+             , Virtual int_ "AppendKey" [cppclass "TKey" "key" ]
+             , Virtual void_ "Close"    [ cstring "option" ] 
              , Virtual (cppclass_ "TObject") "Get" [ cstring "namecycle" ] 
              ]
 
+tKey :: Class
+tKey = Class "TKey" [tNamed]
+       [ Constructor [cstring "name", cstring "title", cppclass "TClass" "cl", int "nbytes", cppclass "TDirectory" "motherDir"]
+       ] 
+
+
+
+
 tDirectoryFile :: Class
-tDirectoryFile = Class "TDirectoryFile" [tDirectory] 
-                 []
+tDirectoryFile = 
+  Class "TDirectoryFile" [tDirectory] 
+  [ Virtual (cppclass_ "TList") "GetListOfKeys" [] 
+
+  ]
+
+tList :: Class
+tList = 
+  Class "TList" [tSeqCollection] 
+  [ 
+  ] 
 
 tFile :: Class
 tFile = Class "TFile" [tDirectoryFile] 
@@ -576,6 +598,9 @@ tH1 =
   , AliasVirtual void_ "SetBins" [int "nx", doublep "xBins"] "setBins1"
   , AliasVirtual void_ "SetBins" [int "nx", doublep "xBins", int "ny", doublep "yBins"] "setBins2"
   , AliasVirtual void_ "SetBins" [int "nx", doublep "xBins", int "ny", doublep "yBins", int "nz", doublep "zBins"] "setBins3"
+  -- omit.. 
+  , Virtual void_ "SetMaximum" [double "maximum"]
+  , Virtual void_ "SetMinimum" [double "minimum"]
   -- omit.. 
   , Virtual void_ "SetXTitle" [cstring "title"] 
   , Virtual void_ "SetYTitle" [cstring "title"]
@@ -827,6 +852,7 @@ root_all_classes =
   , tApplication, tRint
   , tRandom
   --  , tProfile
-  , tCollection, tSeqCollection, tObjArray
+  , tCollection, tSeqCollection, tObjArray, tList
+  , tKey
   ]
 

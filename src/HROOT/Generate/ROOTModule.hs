@@ -116,4 +116,6 @@ classModules = [ "TObject"
                , "TCollection"
                , "TSeqCollection"
                , "TObjArray"
+               , "TList"
+               , "TKey"
                ]
