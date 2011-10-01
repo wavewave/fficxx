@@ -41,7 +41,7 @@ tObject =
   , Virtual void_    "SaveAs"  [cstring "filename", cstring "option"] 
   , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ]
   , Virtual (cppclass_ "TClass") "IsA" [] 
-  , Virtual void_ "Print" [cstring "option"]
+  , AliasVirtual void_ "Print" [cstring "option"] "printObj"
   ]
 
 

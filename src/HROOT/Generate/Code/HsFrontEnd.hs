@@ -124,11 +124,13 @@ genAllHsFrontInst cs m =
   in intercalateWith connRet2 f lst
       
 ---------------------
-hsClassInstExistTmpl :: String 
-hsClassInstExistTmpl = "instance FPtr (Exist $highname$) where\n  type Raw (Exist $highname$) = $rawname$\n  get_fptr ($existConstructor$ obj) = castForeignPtr (get_fptr obj)\n  cast_fptr_to_obj fptr = $existConstructor$ (cast_fptr_to_obj (fptr :: ForeignPtr $rawname$) :: $highname$)\n\ninstance Castable (Exist $highname$) (Ptr $rawname$) where\n  cast = unsafeForeignPtrToPtr . get_fptr\n  uncast = cast_fptr_to_obj . unsafePerformIO . newForeignPtr_" 
 
-genHsFrontInstExist :: Class -> String 
-genHsFrontInstExist c = render hsClassInstExistTmpl tmplName
+
+hsClassInstExistCommonTmpl :: String 
+hsClassInstExistCommonTmpl = "instance FPtr (Exist $highname$) where\n  type Raw (Exist $highname$) = $rawname$\n  get_fptr ($existConstructor$ obj) = castForeignPtr (get_fptr obj)\n  cast_fptr_to_obj fptr = $existConstructor$ (cast_fptr_to_obj (fptr :: ForeignPtr $rawname$) :: $highname$)\n\ninstance Castable (Exist $highname$) (Ptr $rawname$) where\n  cast = unsafeForeignPtrToPtr . get_fptr\n  uncast = cast_fptr_to_obj . unsafePerformIO . newForeignPtr_" 
+
+genHsFrontInstExistCommon :: Class -> String 
+genHsFrontInstExistCommon c = render hsClassInstExistCommonTmpl tmplName
   where (highname,rawname) = hsClassName c
         iname = typeclassName c 
         ename = existConstructorName c
@@ -138,10 +140,49 @@ genHsFrontInstExist c = render hsClassInstExistTmpl tmplName
                    , ("existConstructor",ename)
                    ] 
 
-genAllHsFrontInstExist :: [Class] -> String 
-genAllHsFrontInstExist cs = intercalateWith connRet2 genHsFrontInstExist cs
+genAllHsFrontInstExistCommon :: [Class] -> String 
+genAllHsFrontInstExistCommon cs = intercalateWith connRet2 genHsFrontInstExistCommon cs
 
- 
+-------------------
+
+hsClassInstExistVirtualTmpl :: String 
+hsClassInstExistVirtualTmpl = "instance $Iparent$ (Exist $child$) where\n$method$"
+
+hsClassInstExistVirtualMethodNoSelfTmpl :: String 
+hsClassInstExistVirtualMethodNoSelfTmpl = "  $methodname$ ($exist$ x) = $methodname$ x"
+
+hsClassInstExistVirtualMethodSelfTmpl :: String 
+hsClassInstExistVirtualMethodSelfTmpl = "  $methodname$ ($exist$ x) $args$ = return . $exist$ =<< $methodname$ x $args$"
+
+
+genHsFrontInstExistVirtual :: Class -> Class -> String 
+genHsFrontInstExistVirtual p c = render hsClassInstExistVirtualTmpl tmplName
+  where methodstr = intercalateWith connRet (genHsFrontInstExistVirtualMethod p c)  
+                                            (virtualFuncs.class_funcs $ p)
+        tmplName = [ ("Iparent",typeclassName p)
+                   , ("child",class_name c)
+                   , ("method", methodstr )
+                   ] 
+
+genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> String 
+genHsFrontInstExistVirtualMethod p c f =
+    case f of
+      Constructor _ -> error "error in genHsFrontInstExistVirtualMethod"  
+      Destructor -> render hsClassInstExistVirtualMethodNoSelfTmpl tmplName
+      _ -> case func_ret f of
+             SelfType -> render hsClassInstExistVirtualMethodSelfTmpl (tmplName++args)
+             _ -> render hsClassInstExistVirtualMethodNoSelfTmpl tmplName
+  where tmplName = [ ("methodname", hsFuncName p f)
+                   , ("exist", existConstructorName c) ]
+        args  = [ ("args", intercalate " " (take (length (func_args f)) (map (\x -> 'a':(show x)) [1..])))]
+
+genAllHsFrontInstExistVirtual :: [Class] -> DaughterMap -> String 
+genAllHsFrontInstExistVirtual cs dmap = intercalateWith connRet2 allinstances cs
+  where allinstances c = 
+          let ps = class_allparents c
+          in  intercalateWith connRet2 (\p->genHsFrontInstExistVirtual p c) ps 
+
+
 ---------------------
 
 genHsFrontInstNew :: Class         -- ^ only concrete class 

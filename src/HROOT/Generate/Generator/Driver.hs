@@ -171,7 +171,9 @@ mkImplementationHs amap templates classes =
   where dmap = mkDaughterMap classes
         implBodyStr =  genAllHsFrontInstCastable classes 
                        `connRet2`
-                       genAllHsFrontInstExist (filter (not.isAbstractClass) classes)
+                       genAllHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
+                       `connRet2`
+                       genAllHsFrontInstExistVirtual (filter (not.isAbstractClass) classes) dmap
                        `connRet2`
                        genAllHsFrontInst classes dmap 
                        `connRet2`
