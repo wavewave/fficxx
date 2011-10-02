@@ -422,7 +422,9 @@ tAxis =
   Class "TAxis" [tNamed, tAttAxis] 
   [ Constructor [int "nbins", double "xmin", double "xmax"] 
   -- , Virtual double_ "GetBinCenter" [int "bin"] 
-
+  , Virtual void_ "SetTimeDisplay" [ int "value" ] 
+  , Virtual void_ "SetTimeFormat" [ cstring "format" ] 
+  , Virtual void_ "SetTimeOffset" [double "toffset", cstring "option"]
   ]
  
            
@@ -807,6 +809,14 @@ tObjArray :: Class
 tObjArray = 
   Class "TObjArray" [tSeqCollection] []
 
+tDatime :: Class 
+tDatime = 
+  Class "TDatime"  [deletable]
+  [ Constructor [int "year", int "month", int "day", int "hour", int "min", int "sec"] 
+  , Virtual uint_ "Convert" [bool "toGMT"]  
+  ] 
+
+
 {-
 tProfile = 
   Class "TProfile" [tH1D] 
@@ -862,5 +872,6 @@ root_all_classes =
   --  , tProfile
   , tCollection, tSeqCollection, tObjArray, tList
   , tKey
+  , tDatime 
   ]
 

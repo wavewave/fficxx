@@ -118,4 +118,5 @@ classModules = [ "TObject"
                , "TObjArray"
                , "TList"
                , "TKey"
+               , "TDatime"
                ]

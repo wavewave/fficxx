@@ -67,6 +67,7 @@ ctypeToHsType _c Void = "()"
 ctypeToHsType c SelfType = class_name c
 ctypeToHsType _c (CT CTString _) = "String"
 ctypeToHsType _c (CT CTInt _) = "Int" 
+ctypeToHsType _c (CT CTUInt _) = "Word"
 ctypeToHsType _c (CT CTDouble _) = "Double"
 ctypeToHsType _c (CT CTBool _ ) = "Int"
 ctypeToHsType _c (CT CTDoubleStar _) = "[Double]"

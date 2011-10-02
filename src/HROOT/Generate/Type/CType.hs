@@ -1,6 +1,6 @@
 module HROOT.Generate.Type.CType where
 
-data CTypes = CTString | CTInt | CTDouble | CTBool | CTDoubleStar | CTVoidStar | CTIntStar | CTCharStarStar
+data CTypes = CTString | CTInt | CTDouble | CTBool | CTDoubleStar | CTVoidStar | CTIntStar | CTCharStarStar | CTUInt
             deriving Show 
 
 data CPPTypes = CPTClass String 
@@ -26,6 +26,9 @@ cint_    = CT CTInt    Const
 
 int_ :: Types 
 int_     = CT CTInt    NoConst
+
+uint_ :: Types
+uint_ = CT CTUInt NoConst
 
 short_ :: Types
 short_ = int_
@@ -69,6 +72,9 @@ cint    var = (cint_    , var)
 int :: String -> (Types,String)
 int     var = (int_     , var)
 
+uint :: String -> (Types,String)
+uint var = (uint_ , var)
+
 short :: String -> (Types,String)
 short = int
 
@@ -105,6 +111,7 @@ cppclassconst cname vname = ( CPT (CPTClass cname) Const, vname)
 hsCTypeName :: CTypes -> String 
 hsCTypeName CTString = "CString" 
 hsCTypeName CTInt    = "CInt"
+hsCTypeName CTUInt   = "CUInt" 
 hsCTypeName CTDouble = "CDouble"
 hsCTypeName CTDoubleStar = "(Ptr CDouble)"
 hsCTypeName CTBool   = "CInt"

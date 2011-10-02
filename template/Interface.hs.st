@@ -7,6 +7,7 @@
 
 $ifaceHeader$
 
+import Data.Word
 import Foreign.C            
 import Foreign.Ptr
 import Foreign.ForeignPtr
@@ -33,6 +34,10 @@ instance Castable a a where
 
 instance Castable Int CInt where
   cast = fromIntegral 
+  uncast = fromIntegral
+
+instance Castable Word CUInt where
+  cast = fromIntegral
   uncast = fromIntegral
   
 instance Castable Double CDouble where

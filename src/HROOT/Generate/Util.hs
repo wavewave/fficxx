@@ -68,6 +68,7 @@ ctypToStr ctyp isconst =
   let typword = case ctyp of 
         CTString -> "char *"
         CTInt    -> "int " 
+        CTUInt   -> "unsigned int "
         CTDouble -> "double" 
         CTBool   -> "int"              -- Currently available solution
         CTDoubleStar -> "double *"
