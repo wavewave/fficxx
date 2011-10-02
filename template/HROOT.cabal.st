@@ -20,6 +20,8 @@ Extra-source-files: CHANGES
                     example/random2d.hs
                     example/random2dApp.hs
                     example/saveAsROOT.hs
+                    example/datetime.hs
+                    example/project1d.hs
                     test/compiletest.hs
 Source-repository head
   type:     darcs
