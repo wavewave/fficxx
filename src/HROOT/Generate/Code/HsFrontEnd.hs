@@ -125,10 +125,14 @@ genAllHsFrontInst cs m =
       
 ---------------------
 
+hsClassInstExistCommonTmpl :: String 
+hsClassInstExistCommonTmpl = "instance FPtr (Exist $highname$) where\n  type Raw (Exist $highname$) = $rawname$\n  get_fptr ($existConstructor$ obj) = castForeignPtr (get_fptr obj)\n  cast_fptr_to_obj fptr = $existConstructor$ (cast_fptr_to_obj (fptr :: ForeignPtr $rawname$) :: $highname$)" 
 
+
+{- -- old 
 hsClassInstExistCommonTmpl :: String 
 hsClassInstExistCommonTmpl = "instance FPtr (Exist $highname$) where\n  type Raw (Exist $highname$) = $rawname$\n  get_fptr ($existConstructor$ obj) = castForeignPtr (get_fptr obj)\n  cast_fptr_to_obj fptr = $existConstructor$ (cast_fptr_to_obj (fptr :: ForeignPtr $rawname$) :: $highname$)\n\ninstance Castable (Exist $highname$) (Ptr $rawname$) where\n  cast = unsafeForeignPtrToPtr . get_fptr\n  uncast = cast_fptr_to_obj . unsafePerformIO . newForeignPtr_" 
-
+-}
 genHsFrontInstExistCommon :: Class -> String 
 genHsFrontInstExistCommon c = render hsClassInstExistCommonTmpl tmplName
   where (highname,rawname) = hsClassName c
@@ -179,7 +183,7 @@ genHsFrontInstExistVirtualMethod p c f =
 genAllHsFrontInstExistVirtual :: [Class] -> DaughterMap -> String 
 genAllHsFrontInstExistVirtual cs dmap = intercalateWith connRet2 allinstances cs
   where allinstances c = 
-          let ps = class_allparents c
+          let ps = c : class_allparents c
           in  intercalateWith connRet2 (\p->genHsFrontInstExistVirtual p c) ps 
 
 

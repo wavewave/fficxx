@@ -1,7 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses, 
-             FlexibleInstances, TypeSynonymInstances, UndecidableInstances, 
-             EmptyDataDecls, IncoherentInstances, ExistentialQuantification, 
-             ScopedTypeVariables #-}
+             FlexibleInstances, TypeSynonymInstances, 
+             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}
 
 -- module HROOT.Class.Interface where
 
@@ -28,9 +27,16 @@ class FPtr a where
 class Existable a where
   data Exist a :: *  
 
+{-
+-- eliminate this for the time being to have a solution with Repl
 instance Castable a a where
   cast = id
   uncast = id
+-}
+
+instance Castable () () where
+  cast = id 
+  uncast = id 
 
 instance Castable Int CInt where
   cast = fromIntegral 
