@@ -35,13 +35,15 @@ tObject :: Class
 tObject = 
   Class "TObject" [deletable] 
   [ Constructor [] 
-  , Virtual  cstring_ "GetName" [] 
+  , Virtual int_ "DistancetoPrimitive" [int "px", int "py"]
   , Virtual void_    "Draw"    [cstring "option"] 
+  , Virtual void_ "ExecuteEvent" [int "event", int "px", int "py"]
   , Virtual (cppclass_ "TObject") "FindObject" [cstring "name"]
-  , Virtual void_    "SaveAs"  [cstring "filename", cstring "option"] 
-  , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ]
+  , Virtual  cstring_ "GetName" [] 
   , Virtual (cppclass_ "TClass") "IsA" [] 
   , AliasVirtual void_ "Print" [cstring "option"] "printObj"
+  , Virtual void_    "SaveAs"  [cstring "filename", cstring "option"] 
+  , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ]
   ]
 
 
@@ -68,8 +70,39 @@ tClass = Class "TClass" [tDictionary]
 tFormula :: Class
 tFormula = Class "TFormula" [tNamed] 
            [ Constructor [cstring "name", cstring "formula"] 
-           , Virtual double_ "GetParameter"    [int "idx" ] 
-           , Virtual void_   "SetParameter"    [int "idx" , double "value"] 
+           , NonVirtual void_ "Optimize" [] 
+           -- Analyze
+           -- AnalyzeFunction 
+           , Virtual int_ "Compile" [cstring "expression"]
+           , Virtual void_ "Clear" [cstring "option"]
+           -- DefinedString
+           , Virtual double_ "DefinedValue" [int "code"]
+           -- DefinedVariable
+           , Virtual double_ "Eval" [double "x", double "y", double "z", double "t"]
+           , Virtual double_ "EvalParOld" [doublep "x", doublep "params"]
+           , Virtual double_ "EvalPar" [doublep "x", doublep "params"]
+           -- GetLinearPart
+           , Virtual int_ "GetNdim" [] 
+           , Virtual int_ "GetNpar" [] 
+           , Virtual int_ "GetNumber" [] 
+           -- GetExpFormula
+           , NonVirtual double_ "GetParameter"    [cstring "name" ] 
+           -- GetParameters
+           -- GetParName
+           , Virtual int_   "GetParNumber" [cstring "name"]
+           , Virtual bool_  "IsLinear" [] 
+           , Virtual bool_  "IsNormalized" [] 
+           -- ProcessLinear
+           , Virtual void_  "SetNumber" [int "number"]
+           , Virtual void_  "SetParameter" [cstring "name", double "parvalue"]
+           , Virtual void_  "SetParameters" [doublep "params"]
+           , Virtual void_  "SetParName"  [int "ipar", cstring "name"] 
+           , Virtual void_  "SetParNames" [cstring "name0", cstring "name1", cstring "name2"
+                                          ,cstring "name3", cstring "name4", cstring "name5"
+                                          ,cstring "name6", cstring "name7", cstring "name8"
+                                          ,cstring "name9", cstring "name10" ]
+           , Virtual void_  "Update" [] 
+           -- SetMaxima
            ]
 
 tAtt3D :: Class
@@ -162,9 +195,31 @@ tHStack = Class "THStack" [tNamed]
 
 
 tF1 :: Class
-tF1 = Class "TF1" [tFormula, tAttLine, tAttFill] 
-      [ Constructor [cstring "name",cstring "formula",double "xmin",double "xmax"] 
-      ]
+tF1 = 
+  Class "TF1" [tFormula, tAttLine, tAttFill, tAttMarker] 
+  [ Constructor [cstring "name",cstring "formula",double "xmin",double "xmax"] 
+  -- Browse
+  , Virtual double_ "Derivative" [double "x", doublep "params", double "epsilon"] 
+  , Virtual double_ "Derivative2" [double "x", doublep "params", double "epsilon"] 
+  , Virtual double_ "Derivative3" [double "x", doublep "params", double "epsilon"]
+  -- DerivativeError
+  , AliasVirtual self_ "DrawCopy" [cstring "option"] "drawCopyTF1"
+  , Virtual (cppclass_ "TObject") "DrawDerivative" [cstring "option"]
+  , Virtual (cppclass_ "TObject") "DrawIntegral" [cstring "option"]
+  , Virtual void_ "DrawF1" [cstring "formula", double "xmin", double "xmax", cstring "option"]
+  , Virtual void_ "FixParameter" [int "ipar", double "value"] 
+  , NonVirtual double_ "GetChisquare" [] 
+  , NonVirtual (cppclass_ "TH1")  "GetHistogram" [] 
+  , AliasVirtual double_ "GetMaximum" [double "xmin", double "xmax", double "epsilon", double "maxiter", bool "logx"] "getMaximumTF1"
+  , AliasVirtual double_ "GetMinimum" [double "xmin", double "xmax", double "epsilon", double "maxiter", bool "logx"] "getMinimumTF1"
+  , Virtual double_ "GetMaximumX" [double "xmin", double "xmax", double "epsilon", double "maxiter", bool "logx"]
+  , Virtual double_ "GetMinimumX" [double "xmin", double "xmax", double "epsilon", double "maxiter", bool "logx"]
+  , Virtual int_ "GetNDF" [] 
+  , Virtual int_ "GetNpx" []
+  -- GetMethodCall
+  -- omit..
+
+  ]
 
 tGraph :: Class
 tGraph = Class "TGraph" [tNamed, tAttLine, tAttFill, tAttMarker] 
@@ -553,18 +608,18 @@ tH1 =
   , Virtual double_ "Chi2Test" [cppclass "TH1" "h2", cstring "option", doublep "res"] 
   , Virtual double_ "ComputeIntegral" []
   , Virtual void_ "DirectoryAutoAdd" [cppclass "TDirectory" "dir"]
-  , Virtual int_ "DistancetoPrimitive" [int "px", int "py"]
+
   , Virtual void_ "Divide" [cppclass "TH1" "h1", cppclass "TH2" "h2", double "c1", double "c2", cstring "option"]
-  , Virtual self_ "DrawCopy" [cstring "option"]
+  , AliasVirtual self_ "DrawCopy" [cstring "option"] "drawCopyTH1"
   , Virtual (cppclass_ "TH1") "DrawNormalized" [cstring "option", double "norm"]
   , Virtual void_ "DrawPanel" []
   , Virtual int_ "BufferEmpty" [int "action"]
-  , Virtual void_ "Eval" [cppclass "TF1" "f1", cstring "option"]
-  , Virtual void_ "ExecuteEvent" [int "event", int "px", int "py"]
+  , AliasVirtual void_ "Eval" [cppclass "TF1" "f1", cstring "option"] "evalF"
   , Virtual (cppclass_ "TH1") "FFT" [cppclass "TH1" "h_output", cstring "option"] 
 
   , AliasVirtual int_  "Fill" [double "x"] "fill1"
-  , Virtual void_ "FillN" [int "ntimes", doublep "x", doublep "w", int "stride"]
+  , AliasVirtual int_  "Fill" [double "x", double "w"] "fill1w"
+  , AliasVirtual void_ "FillN" [int "ntimes", doublep "x", doublep "w", int "stride"] "fillN1"
   , Virtual void_ "FillRandom" [cppclass "TH1" "h", int "ntimes"] 
   , Virtual int_ "FindBin" [double "x", double "y", double "z"] 
   , Virtual int_ "FindFixBin" [double "x", double "y", double "z"]
@@ -617,10 +672,10 @@ tH1 =
   , Virtual int_ "GetDimension" []
   , Virtual double_ "GetKurtosis" [int "axis"]
   , Virtual void_ "GetLowEdge" [doublep "edge"] 
-  , Virtual double_ "GetMaximum" [double "maxval"] 
+  , AliasVirtual double_ "GetMaximum" [double "maxval"] "getMaximumTH1"
   , Virtual int_ "GetMaximumBin" []
   , Virtual double_ "GetMaximumStored" []
-  , Virtual double_ "GetMinimum" [double "minval"]
+  , AliasVirtual double_ "GetMinimum" [double "minval"] "getMinimumTH1"
   , Virtual int_ "GetMinimumBin" []
   , Virtual double_ "GetMinimumStored" [] 
   , Virtual double_ "GetMean" [int "axis"]
@@ -716,36 +771,48 @@ tH2 :: Class
 tH2 = 
   Class "TH2" [tH1] 
   [ AliasVirtual int_ "Fill" [double "x", double "y"] "fill2"
+  , AliasVirtual int_ "Fill" [double "x", double "y", double "w"] "fill2w"
+  , AliasVirtual void_ "FillN" [int "ntimes", doublep "x",  doublep "y", doublep "w", int "stride"] "fillN2"
   , AliasVirtual void_ "FillRandom" [cppclass "TH1" "h", int "ntimes"] "fillRandom2"
   , AliasVirtual int_  "FindFirstBinAbove" [double "threshold", int "axis"] "findFirstBinAbove2"
   , AliasVirtual int_  "FindLastBinAbove"  [double "threshold", int "axis"] "findLastBinAbove2"
   , Virtual void_ "FitSlicesX" [cppclass "TF1" "f1", int "firstybin", int "lastybin", int "cut", cstring "option", cppclass "TObjArray" "arr"]
   , Virtual void_ "FitSlicesY" [cppclass "TF1" "f1", int "firstxbin", int "lastxbin", int "cut", cstring "option", cppclass "TObjArray" "arr"]
-  , Virtual double_ "GetCorrelationFactor" [int "axis1", int "axis2"]
-  , Virtual double_ "GetCovariance" [int "axis1", int "axis2"]
---  , Virtual void_ "GetStats" [doublep "stats"]
+  -- GetBinWithContent2
+  , AliasVirtual double_ "GetCorrelationFactor" [int "axis1", int "axis2"] "getCorrelationFactor2"
+  , AliasVirtual double_ "GetCovariance" [int "axis1", int "axis2"] "getCovariance2"
+  -- GetRandom2
   , AliasVirtual double_ "Integral" [int "binx1", int "binx2", int "biny1", int "biny2", cstring "option"] "integral2"
---  , Virtual double_ "Interpolate" [double "x", double "y", double "z"] 
---  , Virtual double_ "KolmogorovTest" [cppclass "TH1" "h2", cstring "option"]
-  -- , NonVirtual (cppclass_ "TProfile") "ProfileX" [cstring "name", int "firstybin", int "lastybin", cstring "option" ] 
-  -- , NonVirtual (cppclass_ "TProfile") "ProfileY" [cstring "name", int "firstxbin", int "lastxbin", cstring "option" ] 
   , NonVirtual (cppclass_ "TH1D") "ProjectionX" [cstring "name", int "firstybin", int "lastybin", cstring "option" ]
   , NonVirtual (cppclass_ "TH1D") "ProjectionY" [cstring "name", int "firstxbin", int "lastxbin", cstring "option" ] 
-  , Virtual (cppclass_ "TH2") "RebinX" [int "ngroup", cstring "newname"] 
-  , Virtual (cppclass_ "TH2") "RebinY" [int "ngroup", cstring "newname"] 
+  , AliasVirtual (cppclass_ "TH2") "RebinX" [int "ngroup", cstring "newname"] "rebinX2"
+  , AliasVirtual (cppclass_ "TH2") "RebinY" [int "ngroup", cstring "newname"] "rebinY2"
   , Virtual (cppclass_ "TH2") "Rebin2D" [int "nxgroup", int "nygroup", cstring "newname"]
   , Virtual void_ "SetShowProjectionX" [int "nbins"]
   , Virtual void_ "SetShowProjectionY" [int "nbins"]
---  , Virtual (cppclass_ "TH1") "ShowBackground" [int "niter", cstring "option"]
---  , Virtual int_  "ShowPeaks" [double "sigma", cstring "option", double "threshold"]
---  , Virtual void_ "Smooth" [int "ntimes", cstring "option"] 
-
   ]
 
 
 tH3 :: Class
-tH3 = Class "TH3" [tH1, tAtt3D]
-      []
+tH3 = 
+  Class "TH3" [tH1, tAtt3D]
+  [ AliasVirtual int_ "Fill" [double "x", double "y", double "z"] "fill3"
+  , AliasVirtual int_ "Fill" [double "x", double "y", double "z", double "w"] "fill3w"
+  , Virtual void_ "FitSlicesZ" [cppclass "TF1" "f1", int "binminx", int "binmaxx", int "binminy", int "binmaxy", int "cut", cstring "option" ] 
+  -- GetBinWithContent3
+  , AliasVirtual double_ "GetCorrelationFactor" [int "axis1", int "axis2"] "getCorrelationFactor3"
+  , AliasVirtual double_ "GetCovariance" [int "axis1", int "axis2"] "getCovariance3"
+  -- GetRandom3
+  , NonVirtual (cppclass_ "TH1D") "ProjectionX" [cstring "name", int "firstybin", int "lastybin", int "firstzbin", int "lastzbin", cstring "option" ]
+  , NonVirtual (cppclass_ "TH1D") "ProjectionY" [cstring "name", int "firstxbin", int "lastxbin", int "firstzbin", int "lastzbin", cstring "option" ]
+  , NonVirtual (cppclass_ "TH1D") "ProjectionZ" [cstring "name", int "firstxbin", int "lastxbin", int "firstybin", int "lastybin", cstring "option" ] 
+  , NonVirtual (cppclass_ "TH1") "Project3D" [cstring "option"]
+  -- Project3DProfile
+  , AliasVirtual (cppclass_ "TH3") "RebinX" [int "ngroup", cstring "newname"] "rebinX3"
+  , AliasVirtual (cppclass_ "TH3") "RebinY" [int "ngroup", cstring "newname"] "rebinY3"
+  , AliasVirtual (cppclass_ "TH3") "RebinZ" [int "ngroup", cstring "newname"] "rebinZ3"
+  , Virtual (cppclass_ "TH3") "Rebin3D" [int "nxgroup", int "nygroup", int "nzgroup", cstring "newname"]
+  ]
 
 
 tH1C :: Class 
@@ -911,8 +978,8 @@ tDatime =
 tVirtualHistPainter :: Class 
 tVirtualHistPainter = 
   AbstractClass "TVirtualHistPainter" [tObject] 
-  [ Virtual int_ "DistanceToPrimitive" [int "px", int "py"]
-  ]
+  [ ] 
+
 
 {-
 tProfile = 

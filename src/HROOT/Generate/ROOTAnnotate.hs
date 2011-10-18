@@ -14,20 +14,27 @@ annotateMap = M.empty
 -}
 
 annotateMap :: AnnotateMap 
-annotateMap = M.fromList [ tNamedAnn, tNamedNewAnn, tNamedSetTitleAnn
-                         , tObjectGetNameAnn, tObjectDrawAnn, tObjectFindObjectAnn
-                         , tH1Ann, tH1AddAnn, tH1AddBinContentAnn, tH1Chi2TestAnn
-                         , tH1ComputeIntegralAnn, tH1DirectoryAutoAddAnn, tH1DistancetoPrimitiveAnn
-                         , tH1DivideAnn, tH1DrawCopyAnn, tH1DrawNormalizedAnn
-                         , tH1DrawPanelAnn
-                         , tH2FillAnn, tH2FillRandomAnn, tH2FindFirstBinAboveAnn, tH2FindLastBinAboveAnn
-                         , tH2FitSlicesXAnn, tH2FitSlicesYAnn, tH2GetCorrelationFactorAnn, tH2GetCovarianceAnn
-                         , tH2GetStatsAnn, tH2IntegralAnn, tH2InterpolateAnn, tH2KolmogorovTestAnn
-                         , tH2ProjectionXAnn, tH2ProjectionYAnn, tH2RebinXAnn, tH2RebinYAnn, tH2Rebin2DAnn
-                         , tH2PutStats, tH2Reset, tH2SetShowProjectionX, tH2SetShowProjectionY, tH2ShowBackgroundAnn
-                         , tH2ShowPeaksAnn, tH2SmoothAnn
-
-                         ] 
+annotateMap = 
+  M.fromList 
+  [ tNamedAnn, tNamedNewAnn, tNamedSetTitleAnn
+  , tObjectGetNameAnn, tObjectDrawAnn, tObjectFindObjectAnn
+  , tH1Ann, tH1AddAnn, tH1AddBinContentAnn, tH1Chi2TestAnn
+  , tH1ComputeIntegralAnn, tH1DirectoryAutoAddAnn, tH1DistancetoPrimitiveAnn
+  , tH1DivideAnn, tH1DrawCopyAnn, tH1DrawNormalizedAnn
+  , tH1DrawPanelAnn
+  , tH2FillAnn, tH2FillRandomAnn, tH2FindFirstBinAboveAnn, tH2FindLastBinAboveAnn
+  , tH2FitSlicesXAnn, tH2FitSlicesYAnn, tH2GetCorrelationFactorAnn, tH2GetCovarianceAnn
+  , tH2GetStatsAnn, tH2IntegralAnn, tH2InterpolateAnn, tH2KolmogorovTestAnn
+  , tH2ProjectionXAnn, tH2ProjectionYAnn, tH2RebinXAnn, tH2RebinYAnn, tH2Rebin2DAnn
+  , tH2PutStats, tH2Reset, tH2SetShowProjectionX, tH2SetShowProjectionY, tH2ShowBackgroundAnn
+  , tH2ShowPeaksAnn, tH2SmoothAnn
+  , ann_interpolate1, ann_interpolate2, ann_interpolate3
+  , ann_tH1IsBinOverflow, ann_tH1IsBinUnderflow, ann_kolmogorovTest, ann_labelsDeflate, ann_labelsInflate
+  , ann_labelsOption, ann_multiplyF, ann_multiply, ann_paint, ann_putStats, ann_rebin, ann_rebinAxis
+  , ann_rebuild, ann_recursiveRemove, ann_reset, ann_resetStats, ann_scale, ann_setAxisColorA
+  , ann_setAxisRange, ann_setBarOffset, ann_setBarWidth, ann_setBinContent1, ann_setBinContent2
+  , ann_setBinContent3                  
+  ] 
 
 tNamedAnn = ((HROOTClass,"TNamed"),[verbatim|
 Class TNamed
@@ -237,3 +244,144 @@ tH2SmoothAnn = ((HROOTMethod, "smooth"), [verbatim|
 > void     Smooth(Int_t ntimes=1, Option_t *option=""); // *MENU*
 
 |])
+
+
+---
+
+ann_interpolate1 = ((HROOTMethod, "interpolate1"), [verbatim|
+> Double_t Interpolate(Double_t x)
+
+|])
+
+ann_interpolate2 = ((HROOTMethod, "interpolate2"), [verbatim|
+> Double_t Interpolate(Double_t x, Double_t y)
+
+|])
+
+ann_interpolate3 = ((HROOTMethod, "interpolate3"), [verbatim|
+> Double_t Interpolate(Double_t x, Double_t y, Double_t z)
+
+|])
+
+ann_tH1IsBinOverflow = ((HROOTMethod, "tH1IsBinOverflow"), [verbatim|
+> Bool_t   TH1::IsBinOverflow(Int_t bin) const
+
+|])
+
+ann_tH1IsBinUnderflow = ((HROOTMethod, "tH1IsBinUnderflow"), [verbatim|
+> Bool_t   IsBinUnderflow(Int_t bin) const
+
+|])
+
+ann_kolmogorovTest = ((HROOTMethod, "kolmogorovTest"), [verbatim|
+> Double_t KolmogorovTest(const TH1 *h2, Option_t *option="") const
+
+|])
+
+ann_labelsDeflate = ((HROOTMethod, "labelsDeflate"), [verbatim|
+> void     LabelsDeflate(Option_t *axis="X")
+
+|])
+
+ann_labelsInflate = ((HROOTMethod, "labelsInflate"), [verbatim|
+> void     LabelsInflate(Option_t *axis="X")
+
+|])
+
+ann_labelsOption = ((HROOTMethod, "labelsOption"), [verbatim|
+> void     LabelsOption(Option_t *option="h", Option_t *axis="X")
+
+|])
+
+ann_multiplyF = ((HROOTMethod, "multiplyF"), [verbatim|
+> void     Multiply(TF1 *h1, Double_t c1=1)
+
+|])
+
+ann_multiply = ((HROOTMethod, "multiply"), [verbatim|
+> void     Multiply(const TH1 *h1, const TH1 *h2, Double_t c1=1, Double_t c2=1, Option_t *option=""); // *MENU*
+
+|])
+
+
+ann_paint = ((HROOTMethod, "paint"), [verbatim|
+> void     Paint(Option_t *option="")
+
+|])
+
+ann_putStats = ((HROOTMethod, "putStats"), [verbatim|
+> void     PutStats(Double_t *stats)
+
+|])
+
+ann_rebin = ((HROOTMethod, "rebin"), [verbatim|
+> TH1     *Rebin(Int_t ngroup=2, const char*newname="", const Double_t *xbins=0);  // *MENU*
+
+|])
+
+ann_rebinAxis = ((HROOTMethod, "rebinAxis"), [verbatim|
+> void     RebinAxis(Double_t x, TAxis *axis)
+
+|])
+
+ann_rebuild = ((HROOTMethod, "rebuild"), [verbatim|
+> void     Rebuild(Option_t *option="")
+
+|])
+
+ann_recursiveRemove = ((HROOTMethod, "recursiveRemove"), [verbatim|
+> void     RecursiveRemove(TObject *obj)
+
+|])
+
+ann_reset = ((HROOTMethod, "reset"), [verbatim|
+> void     Reset(Option_t *option="")
+
+|])
+
+ann_resetStats = ((HROOTMethod, "resetStats"), [verbatim|
+> void     ResetStats()
+
+|])
+
+
+ann_scale = ((HROOTMethod, "scale"), [verbatim|
+> void     Scale(Double_t c1=1, Option_t *option="")
+
+|])
+
+ann_setAxisColorA = ((HROOTMethod, "setAxisColorA"), [verbatim|
+> void     SetAxisColor(Color_t color=1, Option_t *axis="X")
+
+|])
+
+ann_setAxisRange = ((HROOTMethod, "setAxisRange"), [verbatim|
+> void     SetAxisRange(Double_t xmin, Double_t xmax, Option_t *axis="X")
+
+|])
+
+ann_setBarOffset = ((HROOTMethod, "setBarOffset"), [verbatim|
+> void     SetBarOffset(Float_t offset=0.25)
+
+|])
+
+ann_setBarWidth = ((HROOTMethod, "setBarWidth"), [verbatim|
+> void     SetBarWidth(Float_t width=0.5) 
+
+|])
+
+ann_setBinContent1 = ((HROOTMethod, "setBinContent1"), [verbatim|
+> void     SetBinContent(Int_t bin, Double_t content)
+
+|])
+
+ann_setBinContent2 = ((HROOTMethod, "setBinContent2"), [verbatim|
+> void     SetBinContent(Int_t binx, Int_t biny, Double_t content)
+
+|])
+
+ann_setBinContent3 = ((HROOTMethod, "setBinContent3"), [verbatim|
+> void     SetBinContent(Int_t binx, Int_t biny, Int_t binz, Double_t content)
+
+|])
+
