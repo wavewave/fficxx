@@ -46,10 +46,13 @@ tObject =
 
 
 tNamed :: Class
-tNamed = Class "TNamed" [tObject] 
-         [ Constructor [cstring "name", cstring "title"] 
-         , Virtual void_  "SetTitle"        [cstring "name"]  
-         ]
+tNamed = 
+  Class "TNamed" [tObject] 
+  [ Constructor [cstring "name", cstring "title"] 
+  , Virtual void_  "SetName"      [cstring "name"]
+  , Virtual void_  "SetNameTitle" [cstring "name", cstring "title"]
+  , Virtual void_  "SetTitle"     [cstring "name"]  
+  ]
 
 tDictionary :: Class
 tDictionary = AbstractClass "TDictionary" [tNamed]
@@ -74,14 +77,33 @@ tAtt3D = Class "TAtt3D" [deletable]
          []
 
 tAttAxis :: Class
-tAttAxis = Class "TAttAxis" [deletable] 
-                 [ Constructor [] 
-                 , Virtual void_   "SetLabelColor"   [int    "color" ] 
-                 , Virtual void_   "SetLabelSize"    [double "size"  ] 
-                 , Virtual void_   "SetTickLength"   [double "length" ] 
-                 , Virtual void_   "SetTitleOffset"  [double "offset" ] 
-                 , Virtual void_   "SetNdivisions"   [int "n", bool "optim" ]
-                 ] 
+tAttAxis = 
+  Class "TAttAxis" [deletable] 
+  [ Constructor [] 
+  , Virtual int_ "GetNdivisions" [] 
+  , Virtual short_ "GetAxisColor" [] 
+  , Virtual short_ "GetLabelColor" []
+  , Virtual short_ "GetLabelFont" [] 
+  , Virtual float_ "GetLabelOffset" [] 
+  , Virtual float_ "GetLabelSize" [] 
+  , Virtual float_ "GetTitleOffset" [] 
+  , Virtual float_ "GetTitleSize" [] 
+  , Virtual float_ "GetTickLength" []
+  , Virtual short_ "GetTitleFont" [] 
+  -- omit..
+  , Virtual void_   "SetNdivisions"   [int "n", bool "optim" ]
+  , Virtual void_   "SetAxisColor"    [short  "color"]
+  , Virtual void_   "SetLabelColor"   [short  "color" ] 
+  , Virtual void_   "SetLabelFont"    [short "font"] 
+  , Virtual void_   "SetLabelOffset"  [float "offset"] 
+  , Virtual void_   "SetLabelSize"    [float  "size"  ] 
+  , Virtual void_   "SetTickLength"   [float  "length" ] 
+  , Virtual void_   "SetTitleOffset"  [float  "offset" ] 
+  , Virtual void_   "SetTitleSize"    [float  "size"]
+  , Virtual void_   "SetTitleColor"   [short  "color"]
+  , Virtual void_   "SetTitleFont"    [short  "font"]
+
+  ] 
 
 tAttBBox :: Class 
 tAttBBox = Class "TAttBBox" [deletable] 
@@ -557,16 +579,16 @@ tH1 =
   -- GetDefaultBufferSize (static)
   -- GetIntegral
   -- GetListOfFunctions
-  , Virtual int_ "GetNdivisions" [cstring "axis"]
-  , Virtual short_ "GetAxisColor" [cstring "axis"]
-  , Virtual short_ "GetLabelColor" [cstring "axis"]
-  , Virtual short_ "GetLabelFont" [cstring "axis"]
-  , Virtual float_ "GetLabelOffset" [cstring "axis"]
-  , Virtual float_ "GetLabelSize" [cstring "axis"]
-  , Virtual short_ "GetTitleFont" [cstring "axis"]
-  , Virtual float_ "GetTitleOffset" [cstring "axis"]
-  , Virtual float_ "GetTitleSize" [cstring "axis"]
-  , Virtual float_ "GetTickLength" [cstring "axis"]
+  , AliasVirtual int_ "GetNdivisions" [cstring "axis"] "getNdivisionA"
+  , AliasVirtual short_ "GetAxisColor" [cstring "axis"] "getAxisColorA"
+  , AliasVirtual short_ "GetLabelColor" [cstring "axis"] "getLabelColorA"
+  , AliasVirtual short_ "GetLabelFont" [cstring "axis"] "getLabelFontA"
+  , AliasVirtual float_ "GetLabelOffset" [cstring "axis"] "getLabelOffsetA"
+  , AliasVirtual float_ "GetLabelSize" [cstring "axis"] "getLabelSizeA"
+  , AliasVirtual short_ "GetTitleFont" [cstring "axis"] "getTitleFontA"
+  , AliasVirtual float_ "GetTitleOffset" [cstring "axis"] "getTitleOffsetA"
+  , AliasVirtual float_ "GetTitleSize" [cstring "axis"] "getTitleSizeA"
+  , AliasVirtual float_ "GetTickLength" [cstring "axis"] "getTickLengthA"
   , Virtual float_ "GetBarOffset" []
   , Virtual float_ "GetBarWidth" [] 
   , Virtual int_ "GetContour" [doublep "levels"] 
@@ -621,9 +643,31 @@ tH1 =
   , NonVirtual (cppclass_ "TAxis") "GetXaxis" [] 
   , NonVirtual (cppclass_ "TAxis") "GetYaxis" [] 
   , NonVirtual (cppclass_ "TAxis") "GetZaxis" []
-  -- omit.. 
+  , AliasVirtual double_ "Integral" [int "binx1", int "binx2", cstring "option"] "integral1"
+  -- IntegralAndError
+  , AliasVirtual double_ "Interpolate" [double "x"] "interpolate1"
+  , AliasVirtual double_ "Interpolate" [double "x", double "y"] "interpolate2"
+  , AliasVirtual double_ "Interpolate" [double "x", double "y", double "z"] "interpolate3"
+  , NonVirtual bool_ "IsBinOverflow" [int "bin"]
+  , NonVirtual bool_ "IsBinUnderflow" [int "bin"]
+  , Virtual double_ "KolmogorovTest" [cppclass "TH1" "h2", cstring "option"]
+  , Virtual void_ "LabelsDeflate" [cstring "axis"]
+  , Virtual void_ "LabelsInflate" [cstring "axis"]
+  , Virtual void_ "LabelsOption" [cstring "option", cstring "axis"]
+  -- Merge
+  , AliasVirtual void_ "Multiply" [cppclass "TF1" "h1", double "c1"] "multiflyF"
+  , Virtual void_ "Multiply" [cppclass "TH1" "h1", cppclass "TH1" "h2", double "c1", double "c2", cstring "option"] 
+  , Virtual void_ "Paint" [] 
+  , Virtual void_ "PutStats" [doublep "stats"]
+  , Virtual (cppclass_ "TH1") "Rebin" [int "ngroup", cstring "newname", doublep "xbins"]
+  , Virtual void_ "RebinAxis" [double "x", cppclass "TAxis" "axis"]
+  , Virtual void_ "Rebuild" [cstring "option"]
+  , Virtual void_ "RecursiveRemove" [cppclass "TObject" "obj"]
+  , Virtual void_ "Reset" [cstring "option"]
+  , Virtual void_ "ResetStats" [] 
+  -- SavePrimitive
   , Virtual void_ "Scale" [double "c1", cstring "option"]
-  , Virtual void_ "SetAxisColor" [short "color", cstring "axis"]
+  , AliasVirtual void_ "SetAxisColor" [short "color", cstring "axis"] "setAxisColorA"
   , Virtual void_ "SetAxisRange" [double "xmin", double "xmax", cstring "axis"]
   , Virtual void_ "SetBarOffset" [float "offset"]
   , Virtual void_ "SetBarWidth" [float "width"]
@@ -636,14 +680,36 @@ tH1 =
   , AliasVirtual void_ "SetBins" [int "nx", doublep "xBins"] "setBins1"
   , AliasVirtual void_ "SetBins" [int "nx", doublep "xBins", int "ny", doublep "yBins"] "setBins2"
   , AliasVirtual void_ "SetBins" [int "nx", doublep "xBins", int "ny", doublep "yBins", int "nz", doublep "zBins"] "setBins3"
-  -- omit.. 
+  , Virtual void_ "SetBinsLength" [int "bin"]
+  , Virtual void_ "SetBuffer" [int "buffersize", cstring "option"]
+  , Virtual void_ "SetCellContent" [int "binx", int "biny", double "content"]
+  , Virtual void_ "SetContent" [doublep "content"] 
+  , Virtual void_ "SetContour" [int "nlevels", doublep "levels"] 
+  , Virtual void_ "SetContourLevel" [int "level", double "value"]
+  -- SetDefaultBufferSize
+  -- SetDefaultSumw2
+  , Virtual void_ "SetDirectory" [cppclass "TDirectory" "dir"]
+  , Virtual void_ "SetEntries" [double "n"]
+  , Virtual void_ "SetError" [doublep "error"]
+  , AliasVirtual void_ "SetLabelColor" [short "color", cstring "axis"] "setLabelColorA"
+  , AliasVirtual void_ "SetLabelSize" [float "size", cstring "axis"] "setLabelSizeA"
+  , AliasVirtual void_   "SetLabelFont"    [short "font", cstring "axis"] "setLabelFontA"
+  , AliasVirtual void_   "SetLabelOffset"  [float "offset", cstring "axis"] "setLabelOffsetA"
   , Virtual void_ "SetMaximum" [double "maximum"]
   , Virtual void_ "SetMinimum" [double "minimum"]
-  -- omit.. 
+  , Virtual void_ "SetNormFactor" [double "factor"] 
+  , Virtual void_ "SetStats" [bool "stats"] 
+  , Virtual void_ "SetOption" [cstring "option"] 
   , Virtual void_ "SetXTitle" [cstring "title"] 
   , Virtual void_ "SetYTitle" [cstring "title"]
   , Virtual void_ "SetZTitle" [cstring "title"]
-
+  , Virtual (cppclass_ "TH1") "ShowBackground" [int "niter", cstring "option"]
+  , Virtual int_  "ShowPeaks" [double "sigma", cstring "option", double "threshold" ]
+  , Virtual void_ "Smooth" [int "ntimes", cstring "option"] 
+  -- SmoothArray
+  -- StatOverflows
+  , Virtual void_ "Sumw2" [] 
+  , NonVirtual void_ "UseCurrentStyle" [] 
   ] 
 
 tH2 :: Class 
@@ -658,9 +724,9 @@ tH2 =
   , Virtual double_ "GetCorrelationFactor" [int "axis1", int "axis2"]
   , Virtual double_ "GetCovariance" [int "axis1", int "axis2"]
 --  , Virtual void_ "GetStats" [doublep "stats"]
-  , Virtual double_ "Integral" [int "binx1", int "binx2", int "biny1", int "biny2", cstring "option"]
-  , Virtual double_ "Interpolate" [double "x", double "y", double "z"] 
-  , Virtual double_ "KolmogorovTest" [cppclass "TH1" "h2", cstring "option"]
+  , AliasVirtual double_ "Integral" [int "binx1", int "binx2", int "biny1", int "biny2", cstring "option"] "integral2"
+--  , Virtual double_ "Interpolate" [double "x", double "y", double "z"] 
+--  , Virtual double_ "KolmogorovTest" [cppclass "TH1" "h2", cstring "option"]
   -- , NonVirtual (cppclass_ "TProfile") "ProfileX" [cstring "name", int "firstybin", int "lastybin", cstring "option" ] 
   -- , NonVirtual (cppclass_ "TProfile") "ProfileY" [cstring "name", int "firstxbin", int "lastxbin", cstring "option" ] 
   , NonVirtual (cppclass_ "TH1D") "ProjectionX" [cstring "name", int "firstybin", int "lastybin", cstring "option" ]
@@ -668,13 +734,11 @@ tH2 =
   , Virtual (cppclass_ "TH2") "RebinX" [int "ngroup", cstring "newname"] 
   , Virtual (cppclass_ "TH2") "RebinY" [int "ngroup", cstring "newname"] 
   , Virtual (cppclass_ "TH2") "Rebin2D" [int "nxgroup", int "nygroup", cstring "newname"]
-  , Virtual void_ "PutStats" [doublep "stats"]
-  , Virtual void_ "Reset" [cstring "option"]
   , Virtual void_ "SetShowProjectionX" [int "nbins"]
   , Virtual void_ "SetShowProjectionY" [int "nbins"]
-  , Virtual (cppclass_ "TH1") "ShowBackground" [int "niter", cstring "option"]
-  , Virtual int_  "ShowPeaks" [double "sigma", cstring "option", double "threshold"]
-  , Virtual void_ "Smooth" [int "ntimes", cstring "option"] 
+--  , Virtual (cppclass_ "TH1") "ShowBackground" [int "niter", cstring "option"]
+--  , Virtual int_  "ShowPeaks" [double "sigma", cstring "option", double "threshold"]
+--  , Virtual void_ "Smooth" [int "ntimes", cstring "option"] 
 
   ]
 
