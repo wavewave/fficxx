@@ -589,7 +589,35 @@ tH1 =
   -- GetCenter
   -- GetDefaultSumw2
   , NonVirtual (cppclass_ "TDirectory") "GetDirectory" [] 
-  -- omit...
+  , Virtual double_ "GetEntries" []
+  , Virtual double_ "GetEffectiveEntries" [] 
+  , Virtual (cppclass_ "TF1") "GetFunction" [cstring "name"]
+  , Virtual int_ "GetDimension" []
+  , Virtual double_ "GetKurtosis" [int "axis"]
+  , Virtual void_ "GetLowEdge" [doublep "edge"] 
+  , Virtual double_ "GetMaximum" [double "maxval"] 
+  , Virtual int_ "GetMaximumBin" []
+  , Virtual double_ "GetMaximumStored" []
+  , Virtual double_ "GetMinimum" [double "minval"]
+  , Virtual int_ "GetMinimumBin" []
+  , Virtual double_ "GetMinimumStored" [] 
+  , Virtual double_ "GetMean" [int "axis"]
+  , Virtual double_ "GetMeanError" [int "axis"]
+  , Virtual double_ "GetNbinsX" [] 
+  , Virtual double_ "GetNbinsY" [] 
+  , Virtual double_ "GetNbinsZ" [] 
+   -- GetObjectInfo
+   -- GetOption
+  -- , Virtual (cppclass_ "TVirtualHistPainter") "GetPainter" [cstring "option"]
+  , Virtual int_ "GetQuantiles" [int "nprobSum", doublep "q", doublep "pbSum"]
+  , Virtual double_ "GetRandom" []
+  , Virtual void_ "GetStats" [doublep "stats"]
+  , Virtual double_ "GetSumOfWeights" [] 
+  , Virtual (cppclass_ "TArrayD") "GetSumw2" []
+  , Virtual int_ "GetSumw2N" [] 
+  , Virtual double_ "GetRMS" [int "axis"]
+  , Virtual double_ "GetRMSError" [int "axis"] 
+  , Virtual double_ "GetSkewness" [int "axis"]
   , NonVirtual (cppclass_ "TAxis") "GetXaxis" [] 
   , NonVirtual (cppclass_ "TAxis") "GetYaxis" [] 
   , NonVirtual (cppclass_ "TAxis") "GetZaxis" []
@@ -629,7 +657,7 @@ tH2 =
   , Virtual void_ "FitSlicesY" [cppclass "TF1" "f1", int "firstxbin", int "lastxbin", int "cut", cstring "option", cppclass "TObjArray" "arr"]
   , Virtual double_ "GetCorrelationFactor" [int "axis1", int "axis2"]
   , Virtual double_ "GetCovariance" [int "axis1", int "axis2"]
-  , Virtual void_ "GetStats" [doublep "stats"]
+--  , Virtual void_ "GetStats" [doublep "stats"]
   , Virtual double_ "Integral" [int "binx1", int "binx2", int "biny1", int "biny2", cstring "option"]
   , Virtual double_ "Interpolate" [double "x", double "y", double "z"] 
   , Virtual double_ "KolmogorovTest" [cppclass "TH1" "h2", cstring "option"]
@@ -816,6 +844,11 @@ tDatime =
   , Virtual uint_ "Convert" [bool "toGMT"]  
   ] 
 
+tVirtualHistPainter :: Class 
+tVirtualHistPainter = 
+  AbstractClass "TVirtualHistPainter" [tObject] 
+  [ Virtual int_ "DistanceToPrimitive" [int "px", int "py"]
+  ]
 
 {-
 tProfile = 
@@ -873,5 +906,6 @@ root_all_classes =
   , tCollection, tSeqCollection, tObjArray, tList
   , tKey
   , tDatime 
+  , tVirtualHistPainter
   ]
 

@@ -138,7 +138,7 @@
 #include "TKey.h"
 #include "TLegendEntry.h"
 #include "TDatime.h"
-
+#include "TVirtualHistPainter.h"
 
 using namespace std;
 

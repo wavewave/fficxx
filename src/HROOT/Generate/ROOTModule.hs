@@ -119,4 +119,5 @@ classModules = [ "TObject"
                , "TList"
                , "TKey"
                , "TDatime"
+               , "TVirtualHistPainter"
                ]
