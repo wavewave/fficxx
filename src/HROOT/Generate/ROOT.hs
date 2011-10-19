@@ -35,9 +35,9 @@ tObject :: Class
 tObject = 
   Class "TObject" [deletable] 
   [ Constructor [] 
-  , Virtual int_ "DistancetoPrimitive" [int "px", int "py"]
+  -- , Virtual int_ "DistancetoPrimitive" [int "px", int "py"]
   , Virtual void_    "Draw"    [cstring "option"] 
-  , Virtual void_ "ExecuteEvent" [int "event", int "px", int "py"]
+  -- , Virtual void_ "ExecuteEvent" [int "event", int "px", int "py"]
   , Virtual (cppclass_ "TObject") "FindObject" [cstring "name"]
   , Virtual  cstring_ "GetName" [] 
   , Virtual (cppclass_ "TClass") "IsA" [] 
@@ -236,11 +236,11 @@ tF1 =
   , NonVirtual (cppclass_ "TAxis") "GetYaxis" [] 
   , NonVirtual (cppclass_ "TAxis") "GetZaxis" [] 
   , Virtual double_ "GradientPar" [int "ipar", doublep "x", double "eps"] 
-  , Virtual void_ "InitArg" [doublep "x", doublep "params"] 
+  , Virtual void_ "InitArgs" [doublep "x", doublep "params"] 
   -- InitStandardFunctions
   , AliasVirtual double_ "Integral" [double "a", double "b", doublep "params", double "epsilon"] "IntegralTF1"
   , Virtual double_ "IntegralError" [double "a", double "b", doublep "params", doublep "covmat", double "epsilon"]
-  , Virtual double_ "IntegralFast" [int "num", doublep "x", double "w", double "a", double "b", doublep "params", double "epsilon"] 
+  , Virtual double_ "IntegralFast" [int "num", doublep "x", doublep "w", double "a", double "b", doublep "params", double "epsilon"] 
   -- IntegralMultiple
   , Virtual bool_ "IsInside" [doublep "x"]  
   , Virtual void_ "ReleaseParameter" [int "ipar"] 
