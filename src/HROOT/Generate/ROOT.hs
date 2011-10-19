@@ -41,6 +41,7 @@ tObject =
   , Virtual (cppclass_ "TObject") "FindObject" [cstring "name"]
   , Virtual  cstring_ "GetName" [] 
   , Virtual (cppclass_ "TClass") "IsA" [] 
+  , Virtual void_ "Paint" [cstring "option"] 
   , AliasVirtual void_ "Print" [cstring "option"] "printObj"
   , Virtual void_    "SaveAs"  [cstring "filename", cstring "option"] 
   , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ]
@@ -217,7 +218,55 @@ tF1 =
   , Virtual int_ "GetNDF" [] 
   , Virtual int_ "GetNpx" []
   -- GetMethodCall
-  -- omit..
+  , Virtual int_ "GetNumberFreeParameters" [] 
+  , Virtual int_ "GetNumberFitPoints" []
+  , NonVirtual (cppclass_ "TObject") "GetParent" [] 
+  , Virtual double_ "GetParError" [int "ipar"] 
+  -- GetParErrors 
+  -- GetParLiits
+  , Virtual double_ "GetProb" [] 
+  , AliasVirtual int_ "GetQuantiles" [int "nprobSum", doublep "q", doublep "probSum"] "getQuantilesTF1"
+  , AliasVirtual double_ "GetRandom" [double "xmin", double "xmax"] "getRandomTF1"
+  -- GetRange
+  , Virtual double_ "GetSave" [doublep "x"] 
+  , Virtual double_ "GetX" [double "y", double "xmin", double "xmax", double "epsilon", int "maxiter"] 
+  , Virtual double_ "GetXmin" []
+  , Virtual double_ "GetXmax" [] 
+  , NonVirtual (cppclass_ "TAxis") "GetXaxis" [] 
+  , NonVirtual (cppclass_ "TAxis") "GetYaxis" [] 
+  , NonVirtual (cppclass_ "TAxis") "GetZaxis" [] 
+  , Virtual double_ "GradientPar" [int "ipar", doublep "x", double "eps"] 
+  , Virtual void_ "InitArg" [doublep "x", doublep "params"] 
+  -- InitStandardFunctions
+  , AliasVirtual double_ "Integral" [double "a", double "b", doublep "params", double "epsilon"] "IntegralTF1"
+  , Virtual double_ "IntegralError" [double "a", double "b", doublep "params", doublep "covmat", double "epsilon"]
+  , Virtual double_ "IntegralFast" [int "num", doublep "x", double "w", double "a", double "b", doublep "params", double "epsilon"] 
+  -- IntegralMultiple
+  , Virtual bool_ "IsInside" [doublep "x"]  
+  , Virtual void_ "ReleaseParameter" [int "ipar"] 
+  , Virtual void_ "SetChisquare" [double "chi2"] 
+  -- SetFitResult
+  , AliasVirtual void_ "SetMaximum" [double "maximum"] "setMaximumTF1"
+  , AliasVirtual void_ "SetMinimum" [double "minimum"] "setMinimumTF1" 
+  , Virtual void_ "SetNDF" [int "ndf"] 
+  , Virtual void_ "SetNumberFitPoints" [int "npfits"] 
+  , Virtual void_ "SetNpx" [int "npx"]
+  , Virtual void_ "SetParError" [int "ipar", double "error"] 
+  , Virtual void_ "SetParErrors" [doublep "errors"] 
+  , Virtual void_ "SetParLimits" [int "ipar", double "parmin", double "parmax"] 
+  , Virtual void_ "SetParent" [cppclass "TObject" "parent"] 
+  , AliasVirtual void_ "SetRange" [double "xmin", double "xmax"] "setRange1"
+  , AliasVirtual void_ "SetRange" [double "xmin", double "xmax", double "ymin", double "ymax"] "setRange2"
+  , AliasVirtual void_ "SetRange" [double "xmin", double "xmax", double "ymin", double "ymax", double "zmin", double "zmax"] "setRange3"
+  , Virtual void_ "SetSavedPoint" [int "point", double "value"] 
+
+  -- GetCurrent
+  -- AbsValue
+  -- RejectPoint 
+  -- RejectedPoint 
+  -- SetCurrent 
+  
+  
 
   ]
 
@@ -686,7 +735,7 @@ tH1 =
    -- GetObjectInfo
    -- GetOption
   -- , Virtual (cppclass_ "TVirtualHistPainter") "GetPainter" [cstring "option"]
-  , Virtual int_ "GetQuantiles" [int "nprobSum", doublep "q", doublep "pbSum"]
+  , AliasVirtual int_ "GetQuantiles" [int "nprobSum", doublep "q", doublep "pbSum"] "getQuantilesTH1"
   , Virtual double_ "GetRandom" []
   , Virtual void_ "GetStats" [doublep "stats"]
   , Virtual double_ "GetSumOfWeights" [] 
@@ -712,7 +761,7 @@ tH1 =
   -- Merge
   , AliasVirtual void_ "Multiply" [cppclass "TF1" "h1", double "c1"] "multiflyF"
   , Virtual void_ "Multiply" [cppclass "TH1" "h1", cppclass "TH1" "h2", double "c1", double "c2", cstring "option"] 
-  , Virtual void_ "Paint" [] 
+  --  , Virtual void_ "Paint" [] 
   , Virtual void_ "PutStats" [doublep "stats"]
   , Virtual (cppclass_ "TH1") "Rebin" [int "ngroup", cstring "newname", doublep "xbins"]
   , Virtual void_ "RebinAxis" [double "x", cppclass "TAxis" "axis"]
