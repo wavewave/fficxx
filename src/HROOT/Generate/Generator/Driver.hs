@@ -22,8 +22,8 @@ import System.FilePath
 
 import HROOT.Generate.Config
 
-import HROOT.Generate.ROOT
-import HROOT.Generate.ROOTModule
+-- import HROOT.Generate.ROOT
+-- import HROOT.Generate.ROOTModule
 
 import Distribution.Package
 import Distribution.PackageDescription hiding (exposedModules)
@@ -190,9 +190,9 @@ genExposedModules emods cmods =
       cmodstrs = map (\x -> indentspace ++ "HROOT.Class." ++ x) cmods 
   in  unlines (emodstrs ++ cmodstrs) 
 
-genExportList :: String -> String 
-genExportList modname =
-  let cs = filter (\x->class_name x  == modname) root_all_classes
+genExportList :: [Class] -> String -> String 
+genExportList all_classes modname =
+  let cs = filter (\x->class_name x  == modname) all_classes
   in  if null cs 
         then error $ "no such class :" ++ modname 
         else let c = head cs 
@@ -205,15 +205,15 @@ genExportList modname =
                               ++ ('I' : modname) ++ methodstr
                               ++ "\n  , upcast" ++ modname
 
-mkModuleFile :: HROOTConfig -> STGroup String -> String -> IO () 
-mkModuleFile config templates modname = do 
+mkModuleFile :: HROOTConfig -> STGroup String -> [Class] -> String -> IO () 
+mkModuleFile config templates all_classes modname = do 
   let modfilename = modname <.> "hs"
   withFile (hrootConfig_workingDir config </> modfilename) WriteMode $ 
     \h -> do 
       let str = renderTemplateGroup 
                   templates 
                   [ ("moduleName", modname) 
-                  , ("exportList", genExportList modname) 
+                  , ("exportList", genExportList all_classes modname) 
                   ]
                   moduleTemplate 
       hPutStrLn h str
@@ -221,14 +221,14 @@ mkModuleFile config templates modname = do
 
 -- | Generate HROOT.cabal file 
 
-mkCabalFile :: HROOTConfig -> STGroup String -> Handle -> IO () 
-mkCabalFile config templates h = do 
+mkCabalFile :: HROOTConfig -> STGroup String -> Handle -> [String] -> [String] -> IO () 
+mkCabalFile config templates h expmodules classmodules = do 
   version <- getHROOTVersion config
 
   let str = renderTemplateGroup 
               templates 
               [ ("version", version) 
-              , ("exposedModules", genExposedModules exposedModules classModules) 
+              , ("exposedModules", genExposedModules expmodules classmodules) 
               ]
               cabalTemplate 
   hPutStrLn h str

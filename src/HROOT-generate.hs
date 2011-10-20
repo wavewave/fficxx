@@ -1,4 +1,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+-- |
+-- Executable  : HROOT-generate
+-- Copyright   : (c) 2011 Ian-Woo Kim
+-- 
+-- License     : GPL-3
+-- Maintainer  : ianwookim@gmail.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- Generate source code for HROOT  
+--
 
 module Main where
 
@@ -9,9 +20,13 @@ import System.Console.CmdArgs
 
 import Text.StringTemplate hiding (render)
 
-import HROOT.Generate.ROOT
-import HROOT.Generate.ROOTAnnotate
-import HROOT.Generate.ROOTModule
+-- import HROOT.Generate.ROOT
+-- import HROOT.Generate.ROOTAnnotate
+-- import HROOT.Generate.ROOTModule
+
+import HROOT.Generate.ROOTsmall
+import HROOT.Generate.ROOTAnnotatesmall
+import HROOT.Generate.ROOTModulesmall
 
 import HROOT.Generate.Generator.Driver
 import HROOT.Generate.Generator.Command hiding (config)
@@ -49,7 +64,7 @@ commandLineProcess (Generate conf) = do
   getHROOTVersion config
   withFile (workingDir </> cabalFileName) WriteMode $ 
     \h -> do 
-      mkCabalFile config templates h  
+      mkCabalFile config templates h exposedModules classModules 
 
   putStrLn "header file generation"
   withFile (workingDir </> headerFileName) WriteMode $ 
@@ -74,7 +89,7 @@ commandLineProcess (Generate conf) = do
     \h -> hPutStrLn h (mkImplementationHs annotateMap templates root_all_classes)
 
   putStrLn "module file generation" 
-  mapM_ (mkModuleFile config templates) classModules 
+  mapM_ (mkModuleFile config templates root_all_classes) classModules 
 
 
   let dsmap = mkDaughterSelfMap root_all_classes

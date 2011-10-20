@@ -1,5 +1,5 @@
 Name:		HROOT-generate
-Version:	0.6.7.0.999
+Version:	0.6.7.999
 Synopsis:	automatic HROOT binding generation
 Description: 	automatic HROOT binding generation 
 License:        GPL-3
@@ -47,6 +47,10 @@ Library
                    HROOT.Generate.ROOT
                    HROOT.Generate.ROOTAnnotate
                    HROOT.Generate.ROOTModule
+                   HROOT.Generate.ROOTsmall
+                   HROOT.Generate.ROOTAnnotatesmall
+                   HROOT.Generate.ROOTModulesmall
+                
 
   Other-Modules: 
                    HROOT.Generate.QQ.Verbatim
