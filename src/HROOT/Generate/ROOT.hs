@@ -170,10 +170,22 @@ tAttImage = Class "TAttImage" [deletable]
 
 
 tAttLine :: Class
-tAttLine = Class "TAttLine" [deletable] 
-           [ Constructor [short "lcolor", short "lstyle", short "lwidth"] 
-           , Virtual void_   "SetLineColor"    [int "color" ] 
-           ] 
+tAttLine = 
+  Class "TAttLine" [deletable] 
+  [ Constructor [short "lcolor", short "lstyle", short "lwidth"] 
+  , NonVirtual int_ "DistancetoLine" [int "px", int "py", double "xp1", double "yp1", double "xp2", double "yp2"]
+  , Virtual short_ "GetLineColor" [] 
+  , Virtual short_ "GetLineStyle" [] 
+  , Virtual short_ "GetLineWidth" [] 
+  --   , Virtual void_ "Modify" [] 
+  , Virtual void_ "ResetAttLine" [cstring "option"]
+  -- SaveLineAttributes
+  , Virtual void_ "SetLineAttributes" [] 
+  , Virtual void_ "SetLineColor" [short "lcolor" ] 
+  , Virtual void_ "SetLineStyle" [short "lstyle" ]
+  , Virtual void_ "SetLineWidth" [short "lwidth" ]
+  ]
+
 
 tAttMarker :: Class
 tAttMarker = Class "TAttMarker" [deletable] 
@@ -405,6 +417,22 @@ tLine :: Class
 tLine = 
   Class "TLine" [tObject, tAttLine] 
   [ Constructor [double "x1", double "y1", double "x2", double "y2" ] 
+  , Virtual (cppclass_ "TLine") "DrawLine" [double "x1", double "y1", double "x2", double "y2"]
+  , Virtual (cppclass_ "TLine") "DrawLineNDC" [double "x1", double "y1", double "x2", double "y2"]
+  , NonVirtual double_ "GetX1" [] 
+  , NonVirtual double_ "GetX2" [] 
+  , NonVirtual double_ "GetY1" [] 
+  , NonVirtual double_ "GetY2" [] 
+  , NonVirtual bool_ "IsHorizontal" [] 
+  , NonVirtual bool_ "IsVertical" [] 
+  , Virtual void_ "PaintLine" [double "x1", double "y1", double "x2", double "y2"] 
+  , Virtual void_ "PaintLineNDC" [double "u1", double "v1", double "u2", double "v2"] 
+  , NonVirtual void_ "SetHorizontal" [bool "set"] 
+  , NonVirtual void_ "SetVertical" [bool "set"] 
+  , Virtual void_ "SetX1" [double "x1"]
+  , Virtual void_ "SetX2" [double "x2"]
+  , Virtual void_ "SetY1" [double "y1"]
+  , Virtual void_ "SetY2" [double "y2"]
   ]            
 
 tArrow :: Class
