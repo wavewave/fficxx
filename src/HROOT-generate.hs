@@ -20,13 +20,13 @@ import System.Console.CmdArgs
 
 import Text.StringTemplate hiding (render)
 
--- import HROOT.Generate.ROOT
--- import HROOT.Generate.ROOTAnnotate
--- import HROOT.Generate.ROOTModule
+import HROOT.Generate.ROOT
+import HROOT.Generate.ROOTAnnotate
+import HROOT.Generate.ROOTModule
 
-import HROOT.Generate.ROOTsmall
-import HROOT.Generate.ROOTAnnotatesmall
-import HROOT.Generate.ROOTModulesmall
+-- import HROOT.Generate.ROOTsmall
+-- import HROOT.Generate.ROOTAnnotatesmall
+-- import HROOT.Generate.ROOTModulesmall
 
 import HROOT.Generate.Generator.Driver
 import HROOT.Generate.Generator.Command hiding (config)

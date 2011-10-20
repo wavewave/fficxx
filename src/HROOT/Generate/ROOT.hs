@@ -35,15 +35,25 @@ tObject :: Class
 tObject = 
   Class "TObject" [deletable] 
   [ Constructor [] 
+  -- Browse
   -- , Virtual int_ "DistancetoPrimitive" [int "px", int "py"]
   , Virtual void_    "Draw"    [cstring "option"] 
   -- , Virtual void_ "ExecuteEvent" [int "event", int "px", int "py"]
   , Virtual (cppclass_ "TObject") "FindObject" [cstring "name"]
   , Virtual  cstring_ "GetName" [] 
   , Virtual (cppclass_ "TClass") "IsA" [] 
+  , Virtual bool_ "IsFolder" [] 
+  , Virtual bool_ "IsEqual" [cppclass "TObject" "obj"] 
+  , Virtual bool_ "IsSortable" [] 
+  , NonVirtual bool_ "IsOnHeap" [] 
+  , NonVirtual bool_ "IsZombie" [] 
+  -- omit.. 
   , Virtual void_ "Paint" [cstring "option"] 
   , AliasVirtual void_ "Print" [cstring "option"] "printObj"
+  , Virtual void_ "RecursiveRemove" [cppclass "TObject" "obj"] 
   , Virtual void_    "SaveAs"  [cstring "filename", cstring "option"] 
+  -- SavePrimitive
+  , Virtual void_    "UseCurrentStyle" [] 
   , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ]
   ]
 
@@ -265,15 +275,77 @@ tF1 =
   -- RejectPoint 
   -- RejectedPoint 
   -- SetCurrent 
-  
-  
-
+  , Virtual double_ "Moment" [double "n", double "a", double "b", doublep "params", double "epsilon"] 
+  , Virtual double_ "CentralMoment" [double "n", double "a", double "b", doublep "params", double "epsilon"] 
+  , Virtual double_ "Mean" [double "a", double "b", doublep "params", double "epsilon"]
+  , Virtual double_ "Variance" [double "a", double "b", doublep "params", double "epsilon"] 
+  -- CalcGaussLegendreSamplingPoints
   ]
 
 tGraph :: Class
-tGraph = Class "TGraph" [tNamed, tAttLine, tAttFill, tAttMarker] 
-         [ Constructor [int "n", doublep "x", doublep "y"] 
-         ]
+tGraph = 
+  Class "TGraph" [tNamed, tAttLine, tAttFill, tAttMarker] 
+  [ Constructor [int "n", doublep "x", doublep "y"] 
+  , Virtual void_ "Apply" [cppclass "TF1" "f"] 
+  , Virtual double_ "Chisquare" [cppclass "TF1" "f1"]
+  -- CompareArg
+  -- CompareX
+  -- CompareY 
+  -- CompareRadius
+  -- ComputeRange
+  , Virtual void_ "DrawGraph" [int "n", doublep "x", doublep "y", cstring "option"] 
+  , AliasVirtual void_ "DrawPanel" [] "drawPanelTGraph"
+  -- Eval 
+  , Virtual void_ "Expand" [int "newsize", int "step"]
+  -- Fit
+  , AliasVirtual void_ "FitPanel" [] "FitPanelTGraph"
+  , NonVirtual bool_ "GetEditable" [] 
+  , NonVirtual (cppclass_ "TF1") "GetFunction" [cstring "name"]
+  , NonVirtual (cppclass_ "TH1F") "GetHistogram" [] 
+  , NonVirtual (cppclass_ "TList") "GetListOfFunctions" [] 
+  , AliasVirtual double_ "GetCorrelationFactor" [] "getCorrelationFactorTGraph"
+  , AliasVirtual double_ "GetCovariance" [] "getCovarianceTGraph"
+  , AliasVirtual double_ "GetMean" [int "axis"] "getMeanTGraph"
+  , AliasVirtual double_ "GetRMS" [int "axis"] "getRMSTGraph"
+  , NonVirtual int_ "GetMaxSize" [] 
+  , NonVirtual int_ "GetN" []
+  , Virtual double_ "GetErrorX" [int "bin"] 
+  , Virtual double_ "GetErrorY" [int "bin"]
+  , Virtual double_ "GetErrorXhigh" [int "bin"]
+  , Virtual double_ "GetErrorXlow" [int "bin"]
+  , Virtual double_ "GetErrorYhigh" [int "bin"]
+  , Virtual double_ "GetErrorYlow" [int "bin"]
+  -- GetX
+  -- GetY
+  -- GetEX
+  -- GetEY
+  -- omit.. 
+  , NonVirtual double_ "GetMaximum" [] 
+  , NonVirtual double_ "GetMinimum" []
+  , NonVirtual (cppclass_ "TAxis") "GetXaxis" []
+  , NonVirtual (cppclass_ "TAxis") "GetYaxis" [] 
+  -- GetPoint
+  , Virtual void_ "InitExpo" [double "xmin", double "xmax"]
+  , Virtual void_ "InitGaus" [double "xmin", double "xmax"]
+  , Virtual void_ "InitPolynom" [double "xmin", double "xmax"]
+  , Virtual int_ "InsertPoint" [] 
+  , AliasVirtual double_ "Integral" [int "first", int "last"] "integralTGraph"
+  , Virtual bool_ "IsEditable" [] 
+  , AliasVirtual int_ "IsInside" [double "x", double "y"] "isInsideTGraph"
+  , Virtual void_ "LeastSquareFit" [int "m", doublep "a", double "xmin", double "xmax"] 
+  -- LeastSquareLinearFit
+  , NonVirtual void_ "PaintGraph" [int "npoints", doublep "x", doublep "y", cstring "chopt"] 
+  , NonVirtual void_ "PaintGrapHist" [int "npoints", doublep "x", doublep "y", cstring "chopt"] 
+  , Virtual void_ "PaintStats" [cppclass "TF1" "fit"] 
+  , Virtual int_ "RemovePoint" [int "ipoint"]
+  , Virtual void_ "SetEditable" [bool "editable"] 
+  , Virtual void_ "SetHistogram" [cppclass "TH1F" "h"] 
+  , AliasVirtual void_ "SetMaximum" [double "maximum"] "setMaximumTGraph"
+  , AliasVirtual void_ "SetMinimum" [double "minimum"] "setMinimumTGraph"
+  , Virtual void_ "Set" [int "n"]
+  , Virtual void_ "SetPoint" [int "i", double "x", double "y"] 
+  -- Zero
+  ]
 
 tGraphAsymmErrors :: Class
 tGraphAsymmErrors = 
@@ -661,7 +733,7 @@ tH1 =
   , Virtual void_ "Divide" [cppclass "TH1" "h1", cppclass "TH2" "h2", double "c1", double "c2", cstring "option"]
   , AliasVirtual self_ "DrawCopy" [cstring "option"] "drawCopyTH1"
   , Virtual (cppclass_ "TH1") "DrawNormalized" [cstring "option", double "norm"]
-  , Virtual void_ "DrawPanel" []
+  , AliasVirtual void_ "DrawPanel" [] "drawPanelTH1"
   , Virtual int_ "BufferEmpty" [int "action"]
   , AliasVirtual void_ "Eval" [cppclass "TF1" "f1", cstring "option"] "evalF"
   , Virtual (cppclass_ "TH1") "FFT" [cppclass "TH1" "h_output", cstring "option"] 
@@ -675,7 +747,7 @@ tH1 =
   , Virtual int_ "FindFirstBinAbove" [double "threshold", int "axis"] 
   , Virtual int_ "FindLastBinAbove" [double "threshold", int "axis"]  
   -- Fit
-  , Virtual void_ "FitPanel" [] 
+  , AliasVirtual void_ "FitPanel" [] "FitPanelTH1"
   , NonVirtual self_ "GetAsymmetry" [cppclass "TH1" "h2", double "c2", double "dc2"]
   , NonVirtual int_ "GetBufferLength" [] 
   , NonVirtual int_ "GetBufferSize" [] 
@@ -758,18 +830,15 @@ tH1 =
   , Virtual void_ "LabelsDeflate" [cstring "axis"]
   , Virtual void_ "LabelsInflate" [cstring "axis"]
   , Virtual void_ "LabelsOption" [cstring "option", cstring "axis"]
-  -- Merge
   , AliasVirtual void_ "Multiply" [cppclass "TF1" "h1", double "c1"] "multiflyF"
   , Virtual void_ "Multiply" [cppclass "TH1" "h1", cppclass "TH1" "h2", double "c1", double "c2", cstring "option"] 
-  --  , Virtual void_ "Paint" [] 
   , Virtual void_ "PutStats" [doublep "stats"]
   , Virtual (cppclass_ "TH1") "Rebin" [int "ngroup", cstring "newname", doublep "xbins"]
   , Virtual void_ "RebinAxis" [double "x", cppclass "TAxis" "axis"]
   , Virtual void_ "Rebuild" [cstring "option"]
-  , Virtual void_ "RecursiveRemove" [cppclass "TObject" "obj"]
+  -- , Virtual void_ "RecursiveRemove" [cppclass "TObject" "obj"]
   , Virtual void_ "Reset" [cstring "option"]
   , Virtual void_ "ResetStats" [] 
-  -- SavePrimitive
   , Virtual void_ "Scale" [double "c1", cstring "option"]
   , AliasVirtual void_ "SetAxisColor" [short "color", cstring "axis"] "setAxisColorA"
   , Virtual void_ "SetAxisRange" [double "xmin", double "xmax", cstring "axis"]
