@@ -188,9 +188,20 @@ tAttLine =
 
 
 tAttMarker :: Class
-tAttMarker = Class "TAttMarker" [deletable] 
-             [ Constructor [short "color", short "style", short "msize"] 
-             ]  
+tAttMarker = 
+  Class "TAttMarker" [deletable] 
+  [ Constructor [short "color", short "style", short "msize"] 
+  , Virtual short_ "GetMarkerColor" [] 
+  , Virtual short_ "GetMarkerStyle" [] 
+  , Virtual float_ "GetMarkerSize" []
+  -- Modify
+  , Virtual void_ "ResetAttMarker" [cstring "option"]
+  , Virtual void_ "SetMarkerAttributes" [] 
+  , Virtual void_ "SetMarkerColor" [short "tcolor"] 
+  , Virtual void_ "SetMarkerStyle" [short "mstyle"]
+  , Virtual void_ "SetMarkerSize" [short "msize"] 
+  ]  
+  
 
 tAttPad :: Class
 tAttPad = Class "TAttPad" [deletable]
