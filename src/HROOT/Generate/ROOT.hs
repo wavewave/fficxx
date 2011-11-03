@@ -708,7 +708,16 @@ tAxis :: Class
 tAxis = 
   Class "TAxis" [tNamed, tAttAxis] 
   [ Constructor [int "nbins", double "xmin", double "xmax"] 
-  -- , Virtual double_ "GetBinCenter" [int "bin"] 
+  , AliasVirtual int_ "FindBin" [double "x"] "findBinTAxis"
+  , AliasVirtual int_ "FindFixBin" [double "x"] "findFixBinTAxis"
+  , AliasVirtual double_ "GetBinCenter" [int "bin"]  "getBinCenterTAxis"
+  , Virtual double_ "GetBinCenterLog" [int "bin"]  
+  -- , Virtual double_ "GetBinLabel" [int "bin"]
+  , Virtual double_ "GetBinUpEdge" [int "bin"]
+  -- GetCenter
+  , NonVirtual bool_ "GetCenterLabels" []
+  , NonVirtual bool_ "GetCenterTitle" [] 
+  -- GetLowEdge
   , Virtual void_ "SetTimeDisplay" [ int "value" ] 
   , Virtual void_ "SetTimeFormat" [ cstring "format" ] 
   , Virtual void_ "SetTimeOffset" [double "toffset", cstring "option"]
@@ -716,9 +725,15 @@ tAxis =
  
            
 tText :: Class
-tText = Class "TText" [tNamed, tAttText]
-        [] 
-
+tText = 
+  Class "TText" [tNamed, tAttText]
+  [ Constructor [double "x", double "y", cstring "text"]
+  , Virtual (cppclass_ "TText") "DrawText" [double "x", double "y", cstring "text"]
+  , Virtual (cppclass_ "TText") "DrawTextNDC" [double "x", double "y", cstring "text"]
+  , Virtual void_ "GetControlBox" [int "x", int "y", int "theta", intp "cBoxX", intp "cBoxY" ]
+  -- omit..
+  , Virtual void_ "SetText" [double "x", double "y", cstring "text"] 
+  ] 
 
 tLatex :: Class
 tLatex = Class "TLatex" [tText, tAttLine] 
@@ -1106,6 +1121,7 @@ tQObject = Class "TQObject" [deletable]
 tVirtualPad :: Class
 tVirtualPad = Class "TVirtualPad" [tObject, tAttLine, tAttFill, tAttPad, tQObject]
               [ Virtual (cppclass_ "TFrame") "GetFrame" [] 
+              , Virtual void_ "Modified" [bool "flag"]
               , Virtual void_ "Range" [double "x1", double "y1", double "x2", double "y2"] 
               ] 
 
