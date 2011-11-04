@@ -1120,7 +1120,8 @@ tQObject = Class "TQObject" [deletable]
 
 tVirtualPad :: Class
 tVirtualPad = Class "TVirtualPad" [tObject, tAttLine, tAttFill, tAttPad, tQObject]
-              [ Virtual (cppclass_ "TFrame") "GetFrame" [] 
+              [ Virtual (cppclass_ "TVirtualPad") "cd" [int "subpadnumber"]  
+              , Virtual (cppclass_ "TFrame") "GetFrame" [] 
               , Virtual void_ "Modified" [bool "flag"]
               , Virtual void_ "Range" [double "x1", double "y1", double "x2", double "y2"] 
               ] 
@@ -1196,6 +1197,13 @@ tDatime =
   Class "TDatime"  [deletable]
   [ Constructor [int "year", int "month", int "day", int "hour", int "min", int "sec"] 
   , Virtual uint_ "Convert" [bool "toGMT"]  
+  , NonVirtual int_ "GetDay" [] 
+  , NonVirtual int_ "GetHour" []
+  , NonVirtual int_ "GetMinute" [] 
+  , NonVirtual int_ "GetSecond" []
+  , NonVirtual int_ "GetYear" []
+  , NonVirtual int_ "GetMonth" [] 
+  , AliasVirtual void_ "Set" [uint "tloc" ] "setTDatime"
   ] 
 
 tVirtualHistPainter :: Class 
