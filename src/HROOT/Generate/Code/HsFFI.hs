@@ -7,15 +7,17 @@ import HROOT.Generate.Type.Class
 -- import HROOT.Generate.Generator.Templates
 
 
-genHsFFI :: FilePath -> Class -> String 
-genHsFFI h c =
-  let allfns = concatMap (virtualFuncs . class_funcs) 
+genHsFFI :: ClassImportHeader -> String 
+genHsFFI header =
+  let c = cihClass header
+      h = cihSelfHeader header
+      allfns = concatMap (virtualFuncs . class_funcs) 
                          (class_allparents c)
                ++ (class_funcs c) 
   in  intercalateWith connRet (hsFFIClassFunc h c) allfns  
 
-genAllHsFFI :: FilePath -> [Class] -> String 
-genAllHsFFI h = intercalateWith connRet2 (genHsFFI h) 
+genAllHsFFI :: [ClassImportHeader] -> String 
+genAllHsFFI = intercalateWith connRet2 genHsFFI 
 
 --------
 

@@ -21,13 +21,13 @@ data ClassImportHeader = ClassImportHeader
                        , cihSelfHeader :: String 
                        , cihSelfCpp :: String
                        , cihIncludedCHeaders :: [String] 
-                       , cihImportedModules :: [String]
                        }
 
 data ClassModule = ClassModule 
                    { cmModule :: String
                    , cmClass :: [Class] 
                    , cmCIH :: [ClassImportHeader]                    
+                   , cmImportedModules :: [String]
                    } 
 
 data ClassGlobal = ClassGlobal 

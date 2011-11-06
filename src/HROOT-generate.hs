@@ -75,27 +75,31 @@ commandLineProcess (Generate conf) = do
   let cglobal = mkGlobal root_all_classes
    
   putStrLn "header file generation"
-  writeAllDeclHeaders templates cglobal workingDir root_all_classes_imports
+  mapM_ (writeDeclHeaders templates cglobal workingDir) root_all_classes_imports
 
   putStrLn "cpp file generation" 
-  writeAllCppDef templates workingDir root_all_classes_imports
+  mapM_ (writeCppDef templates workingDir) root_all_classes_imports
+
+  putStrLn "RawType.hs file generation" 
+  mapM_ (writeRawTypeHs templates workingDir) root_all_modules 
+
+  putStrLn "FFI.hsc file generation"
+  mapM_ (writeFFIHsc templates workingDir) root_all_modules
 
  --  withFile (workingDir </> headerFileName) WriteMode $ 
  --    \h -> do 
  --     hPutStrLn h (mkDeclHeader templates root_all_classes)
-
-
-
    
 --  withFile (workingDir </> cppFileName) WriteMode $ 
 --    \h -> do 
 --      hPutStrLn h (mkDefMain templates root_all_classes)
 
-  {-      
-  putStrLn "hsc file generation" 
-  withFile (workingDir </> hscFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkFFIHsc templates root_all_classes) 
-      
+       
+
+--  withFile (workingDir </> hscFileName) WriteMode $ 
+--    \h -> hPutStrLn h (mkFFIHsc templates root_all_classes) 
+ 
+ {-     
   putStrLn "Interface.hs file generation" 
   withFile (workingDir </> typeHsFileName) WriteMode $ 
     \h -> hPutStrLn h (mkInterfaceHs annotateMap templates moduleInterface root_all_classes )

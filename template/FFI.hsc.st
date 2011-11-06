@@ -5,9 +5,13 @@ module HROOT.Class.FFI where
 import Foreign.C            
 import Foreign.Ptr
 
-import HROOT.Class.Interface
+-- import HROOT.Class.Interface
 
-#include "$headerFileName$"
+-- #include "$headerFileName$"
+
+$hsInclude$
+
+$cppInclude$
 
 $hsFunctionBody$
 
