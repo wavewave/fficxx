@@ -2,6 +2,8 @@
 extern "C" { 
 #endif 
 
+$declarationheader$
+
 #undef ROOT_TYPE_DECLARATION 
 #define ROOT_TYPE_DECLARATION(Type) \\
 typedef struct Type ##_tag Type ## _t; \\

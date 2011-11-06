@@ -1,5 +1,6 @@
 module HROOT.Generate.Generator.Driver where
 
+import Control.Applicative
 import Control.Monad.Trans.Reader
 
 import Text.StringTemplate hiding (render)
@@ -97,7 +98,14 @@ typeHsFileName = "Interface.hs"
 existHsFileName :: String 
 existHsFileName = "Existential.hs"
 
+cabalIndentation = replicate 23 ' ' 
+
+
 ---- common function for daughter
+
+mkGlobal :: [Class] -> ClassGlobal
+mkGlobal = ClassGlobal <$> mkDaughterSelfMap 
+
 
 mkDaughterDef :: ((Class,[Class]) -> String) -> DaughterMap -> String 
 mkDaughterDef f m = 
@@ -105,43 +113,69 @@ mkDaughterDef f m =
       f' (x,xs) =  f (x,filter (not.isAbstractClass) xs) 
   in  concatMap f' lst 
 
+mkParentDef :: ((Class,Class)->String) -> Class -> String
+mkParentDef f c = g (class_allparents c,c)
+  where g (ps,c) = concatMap (\p -> f (p,c)) ps
+
+
 ---- Header and Cpp file
 
-mkDeclHeader :: STGroup String -> [Class] -> String 
-mkDeclHeader templates classes = 
-  let declDefStr     = genAllCppHeaderTmplVirtual classes 
-                       `connRet2`
-                       genAllCppHeaderTmplNonVirtual classes 
-      typeDeclStr    = genAllCppHeaderTmplType classes 
-      dsmap           = mkDaughterSelfMap classes
-      classDeclsStr  = mkDaughterDef genCppHeaderInstVirtual dsmap
-                       `connRet2` 
-                       genAllCppHeaderInstNonVirtual classes
-      declBodyStr    = declDefStr 
-                       `connRet2` 
-                       typeDeclStr 
-                       `connRet2` 
-                       classDeclsStr 
+genAllCppHeaderInclude :: ClassImportHeader -> String 
+genAllCppHeaderInclude header = 
+  let strlst = map (\x->"#include \""++x++"\"") (cihIncludedCHeaders header) 
+  in  intercalate "\n" strlst 
+
+mkDeclHeader :: STGroup String -> ClassGlobal 
+             -> ClassImportHeader 
+             -> String 
+mkDeclHeader templates cglobal header =
+  let classes = [cihClass header]
+      declHeaderStr = genAllCppHeaderInclude header
+      declDefStr    = genAllCppHeaderTmplVirtual classes 
+                      `connRet2`
+                      genAllCppHeaderTmplNonVirtual classes 
+      typeDeclStr   = genAllCppHeaderTmplType classes 
+      dsmap         = cgDaughterMap cglobal
+      classDeclsStr = mkParentDef genCppHeaderInstVirtual (cihClass header) 
+                      `connRet2`
+                      genCppHeaderInstVirtual (cihClass header, cihClass header)
+                      `connRet2` 
+                      genAllCppHeaderInstNonVirtual classes
+      declBodyStr   = declDefStr 
+                      `connRet2` 
+                      typeDeclStr 
+                      `connRet2` 
+                      classDeclsStr 
   in  renderTemplateGroup 
         templates 
-        [ ("declarationbody", declBodyStr ) ] 
+        [ ("declarationheader", declHeaderStr ) 
+        , ("declarationbody", declBodyStr ) ] 
         declarationTemplate
 
-mkDefMain :: STGroup String -> [Class] -> String 
-mkDefMain templates classes =
-  let dsmap    = mkDaughterSelfMap classes
+      -- classDeclsStr  = mkDaughterDef genCppHeaderInstVirtual dsmap
+      --                 `connRet2` 
+
+
+mkDefMain :: STGroup String -> ClassImportHeader -> String 
+mkDefMain templates header =
+  let -- dsmap    = mkDaughterSelfMap classes
+      classes = [cihClass header]
+      headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ cihSelfHeader header ++ "\"\n"
       cppBody = genAllCppDefTmplVirtual classes
                 `connRet2`
                 genAllCppDefTmplNonVirtual classes
                 `connRet2`
-                mkDaughterDef genCppDefInstVirtual dsmap
+                -- mkDaughterDef genCppDefInstVirtual dsmap
+                mkParentDef genCppDefInstVirtual (cihClass header)
+                `connRet`
+                genCppHeaderInstVirtual (cihClass header, cihClass header)
                 `connRet2` 
                 genAllCppDefInstNonVirtual classes
 
   in  renderTemplateGroup 
         templates 
-        [ ("headerfilename", headerFileName ) 
-        , ("cppbody"       , cppBody ) ] 
+        [ ("header" , headerStr ) 
+        , ("cppbody", cppBody ) ] 
         definitionTemplate
 
 mkFFIHsc :: STGroup String -> [Class] -> String 
@@ -183,12 +217,42 @@ mkImplementationHs amap templates classes =
 
 -- Modules
 
-genExposedModules :: [String] -> [String] -> String
-genExposedModules emods cmods = 
-  let indentspace = replicate 23 ' ' 
-      emodstrs = map (indentspace ++) emods
-      cmodstrs = map (\x -> indentspace ++ "HROOT.Class." ++ x) cmods 
-  in  unlines (emodstrs ++ cmodstrs) 
+genIncludeFiles :: [ClassModule] -> (String,String)
+genIncludeFiles cmods =
+  let indent = cabalIndentation 
+      selfheaders' = do 
+        x <- cmods
+        y <- cmCIH x
+        return (cihSelfHeader y) 
+      selfheaders = nub selfheaders'
+      includeFileStrs = map (\x->indent++x) selfheaders
+      includeFileStrsWithCsrc = map (\x->indent++"csrc"</>x) selfheaders
+  in  (unlines includeFileStrsWithCsrc, unlines includeFileStrs)
+
+genCppFiles :: [ClassModule] -> String 
+genCppFiles cmods = 
+  let indent = cabalIndentation 
+      selfcpp' = do 
+        x <- cmods
+        y <- cmCIH x
+        return (cihSelfCpp y) 
+      selfcpp = nub selfcpp'
+      cppFileStrs = map (\x->indent++ "csrc" </> x) selfcpp
+  in  unlines cppFileStrs 
+
+
+genExposedModules :: [ClassModule] -> String
+genExposedModules cmods = 
+  let indentspace = cabalIndentation
+      cmodstrs = map ((\x->indentspace++"HROOT.Class."++x).cmModule) cmods 
+  in  unlines cmodstrs  
+
+
+genOtherModules cmods = 
+  let indentspace = cabalIndentation 
+      cmodstrsInternal = map ((\x->indentspace++"HROOT.Class."++x++".Internal").cmModule) cmods
+  in  unlines cmodstrsInternal
+
 
 genExportList :: [Class] -> String -> String 
 genExportList all_classes modname =
@@ -221,14 +285,19 @@ mkModuleFile config templates all_classes modname = do
 
 -- | Generate HROOT.cabal file 
 
-mkCabalFile :: HROOTConfig -> STGroup String -> Handle -> [String] -> [String] -> IO () 
-mkCabalFile config templates h expmodules classmodules = do 
+mkCabalFile :: HROOTConfig -> STGroup String -> Handle -> [ClassModule] -> IO () 
+mkCabalFile config templates h classmodules = do 
   version <- getHROOTVersion config
 
   let str = renderTemplateGroup 
               templates 
               [ ("version", version) 
-              , ("exposedModules", genExposedModules expmodules classmodules) 
+              , ("includeFiles", fst (genIncludeFiles classmodules))
+              , ("includeFiles", snd (genIncludeFiles classmodules)) 
+              , ("cppFiles", genCppFiles classmodules)
+              , ("exposedModules", genExposedModules classmodules) 
+              , ("otherModules", genOtherModules classmodules)
+              , ("cabalIndentation", cabalIndentation)
               ]
               cabalTemplate 
   hPutStrLn h str
@@ -274,3 +343,37 @@ mkExistential templates classes =
                     [ ( "existEachBody" , existEachBody) ]
                   "Existential.hs" 
   in  hsfilestr
+
+----
+
+writeDeclHeaders :: STGroup String -> ClassGlobal -> FilePath 
+                 -> ClassImportHeader 
+                 -> IO () 
+writeDeclHeaders templates cglobal wdir header = do 
+  let fn = wdir </> cihSelfHeader header
+  withFile fn WriteMode $ \h -> do 
+    hPutStrLn h (mkDeclHeader templates cglobal header)
+
+writeAllDeclHeaders :: STGroup String -> ClassGlobal -> FilePath 
+                    -> [ClassImportHeader] 
+                    -> IO () 
+writeAllDeclHeaders templates cglobal wdir headers = 
+  mapM_ (writeDeclHeaders templates cglobal wdir) headers
+
+
+writeCppDef :: STGroup String 
+            -> FilePath 
+            -> ClassImportHeader 
+            -> IO () 
+writeCppDef templates wdir header = do 
+  let fn = wdir </> cihSelfCpp header
+  withFile fn WriteMode $ \h -> do 
+    hPutStrLn h (mkDefMain templates header)
+
+writeAllCppDef :: STGroup String
+               -> FilePath 
+               -> [ClassImportHeader] 
+               -> IO () 
+writeAllCppDef templates wdir headers = 
+  mapM_ (writeCppDef templates wdir) headers
+

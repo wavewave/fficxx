@@ -47,10 +47,24 @@ tObject =
   , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ]
   ]
 
+tObjectH = ClassImportHeader tObject "HROOTTObject.h" "HROOTTObject.cpp" 
+                             [ "TObject.h"
+                             , "HROOTDELETABLE.h"
+                             ]
+                             [] 
+tObjectM = ClassModule "TObject" [tObject] [tObjectH]
+
 tDictionary :: Class
 tDictionary = AbstractClass "TDictionary" [tNamed]
               [
               ]
+
+tDictionaryH = ClassImportHeader tDictionary "HROOTTDictionary.h" "HROOTTDictionary.cpp" 
+                                 [ "TDictionary.h"
+                                 , "HROOTTObject.h"
+                                 ] 
+                                 []
+tDictionaryM = ClassModule "TDictionary" [tDictionary] [tDictionaryH]
 
 tNamed :: Class
 tNamed = 
@@ -61,14 +75,43 @@ tNamed =
   , Virtual void_  "SetTitle"     [cstring "name"]  
   ]
 
+tNamedH = ClassImportHeader tNamed "HROOTTNamed.h" "HROOTTNamed.cpp" 
+                            [ "TNamed.h"
+                            , "HROOTTObject.h"
+                            ] 
+                            [] 
+
+tNamedM = ClassModule "TNamed"  [tNamed] [tNamedH]
 
 tClass :: Class
 tClass = Class "TClass" [tDictionary]
          [
          ]
 
+tClassH = ClassImportHeader tClass "HROOTTClass.h" "HROOTTClass.cpp" 
+                            [ "TClass.h" 
+                            , "HROOTTDictonary.h"
+                            ] 
+                            []
+
+tClassM = ClassModule "TClass" [tClass] [tClassH]
+
 
 root_all_classes :: [Class]
 root_all_classes = 
   [ deletable, tObject, tClass, tDictionary, tNamed ] 
+
+root_all_classes_imports :: [ClassImportHeader]
+root_all_classes_imports = 
+  [ tObjectH
+  , tClassH 
+  , tDictionaryH 
+  , tNamedH ] 
+
+root_all_modules :: [ClassModule]
+root_all_modules = 
+  [ tObjectM
+  , tClassM
+  , tDictionaryM
+  , tNamedM ] 
 

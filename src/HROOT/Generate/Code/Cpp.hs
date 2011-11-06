@@ -52,10 +52,10 @@ genAllCppHeaderTmplNonVirtual = intercalateWith connRet genCppHeaderTmplNonVirtu
 
 ---- "Class Declaration Virtual/NonVirtual" Instances
 
-genCppHeaderInstVirtual :: (Class,[Class]) -> String 
-genCppHeaderInstVirtual (c,cs) = 
-  let strc = map toUpper (class_name c) 
-  in  concatMap (\y ->"ROOT_"++strc++"_DECLARATIONVIRT(" ++ class_name y ++ ");\n") cs
+genCppHeaderInstVirtual :: (Class,Class) -> String 
+genCppHeaderInstVirtual (p,c) = 
+  let strc = map toUpper (class_name p) 
+  in  "ROOT_"++strc++"_DECLARATIONVIRT(" ++ class_name c ++ ");\n"
 
 genCppHeaderInstNonVirtual :: Class -> String 
 genCppHeaderInstNonVirtual c = 
@@ -100,10 +100,10 @@ genAllCppDefTmplNonVirtual = intercalateWith connRet2 genCppDefTmplNonVirtual
 
 ---- "Class Definition Virtual/NonVirtual" Instances
 
-genCppDefInstVirtual :: (Class,[Class]) -> String 
-genCppDefInstVirtual (c,cs) = 
-  let strc = map toUpper (class_name c) 
-  in  concatMap (\y ->"ROOT_"++strc++"_DEFINITIONVIRT(" ++ class_name y ++ ")\n") cs
+genCppDefInstVirtual :: (Class,Class) -> String 
+genCppDefInstVirtual (p,c) = 
+  let strc = map toUpper (class_name p) 
+  in  "ROOT_"++strc++"_DEFINITIONVIRT(" ++ class_name c ++ ")\n"
 
 genCppDefInstNonVirtual :: Class -> String
 genCppDefInstNonVirtual c = 

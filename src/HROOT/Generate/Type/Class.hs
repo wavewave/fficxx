@@ -16,6 +16,22 @@ data Class = Class { class_name :: String
                            , class_parents :: [Class]
                            , class_funcs :: [Function] }
 
+data ClassImportHeader = ClassImportHeader
+                       { cihClass :: Class 
+                       , cihSelfHeader :: String 
+                       , cihSelfCpp :: String
+                       , cihIncludedCHeaders :: [String] 
+                       , cihImportedModules :: [String]
+                       }
+
+data ClassModule = ClassModule 
+                   { cmModule :: String
+                   , cmClass :: [Class] 
+                   , cmCIH :: [ClassImportHeader]                    
+                   } 
+
+data ClassGlobal = ClassGlobal 
+                   { cgDaughterMap :: DaughterMap } 
 
 -- | Check abstract clas
 

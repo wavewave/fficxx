@@ -11,18 +11,21 @@ Category:       Graphics
 Tested-with:    GHC >= 7.0.2 && <= 7.0.3
 Build-Type: 	Custom
 cabal-version:  >=1.10
-Extra-source-files: CHANGES
-                    Config.hs
-                    csrc/HROOT.h
-                    csrc/addon.h
-                    example/histadd.hs
-                    example/random1d.hs
-                    example/random2d.hs
-                    example/random2dApp.hs
-                    example/saveAsROOT.hs
-                    example/datetime.hs
-                    example/project1d.hs
-                    test/compiletest.hs
+Extra-source-files: 
+$cabalIndentation$CHANGES
+$cabalIndentation$Config.hs
+$cabalIndentation$csrc/HROOT.h
+$cabalIndentation$csrc/addon.h
+$includeFilesWithCsrc$
+$cabalIndentation$example/histadd.hs
+$cabalIndentation$example/random1d.hs
+$cabalIndentation$example/random2d.hs
+$cabalIndentation$example/random2dApp.hs
+$cabalIndentation$example/saveAsROOT.hs
+$cabalIndentation$example/datetime.hs
+$cabalIndentation$example/project1d.hs
+$cabalIndentation$test/compiletest.hs
+
 Source-repository head
   type:     darcs
   location: http://ianwookim.org/public/repo/HROOT
@@ -40,8 +43,12 @@ Library
   ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind -fno-warn-orphans
   ghc-prof-options: -caf-all -auto-all
   Build-Depends:      base>4 && < 5
-  Exposed-Modules:  
+  Exposed-Modules:
+$cabalIndentation$HROOT
+$cabalIndentation$HROOT.Types  
 $exposedModules$  
+  Other-Modules:
+$otherModules$
 
 --                      HROOT
 --                      HROOT.Class.Interface
@@ -52,10 +59,15 @@ $exposedModules$
   extra-libraries:    stdc++
 -- default-extensions:	      ForeignFunctionInterface
   Include-dirs:       csrc
-  Install-includes:   HROOT.h
-                      addon.h
-  C-sources:          csrc/HROOT.cpp
-                      csrc/addon.cpp
+  Install-includes:   
+$cabalIndentation$addon.h
+$cabalIndentation$HROOT.h
+$includeFiles$
+  C-sources:          
+$cppFiles$
+
+-- csrc/HROOT.cpp
+-- csrc/addon.cpp
    
 
 

@@ -60,22 +60,38 @@ commandLineProcess (Generate conf) = do
       ibase = hrootConfig_installBaseDir config
       cabalFileName = "HROOT.cabal"
 
+  putStrLn "test" 
+  
+  -- putStrLn . show $ map cmModule $ root_all_modules 
+  
   putStrLn "cabal file generation" 
   getHROOTVersion config
   withFile (workingDir </> cabalFileName) WriteMode $ 
     \h -> do 
-      mkCabalFile config templates h exposedModules classModules 
+      mkCabalFile config templates h root_all_modules 
 
+  -- exposedModules classModules 
+
+  let cglobal = mkGlobal root_all_classes
+   
   putStrLn "header file generation"
-  withFile (workingDir </> headerFileName) WriteMode $ 
-    \h -> do 
-      hPutStrLn h (mkDeclHeader templates root_all_classes)
+  writeAllDeclHeaders templates cglobal workingDir root_all_classes_imports
 
   putStrLn "cpp file generation" 
-  withFile (workingDir </> cppFileName) WriteMode $ 
-    \h -> do 
-      hPutStrLn h (mkDefMain templates root_all_classes)
-      
+  writeAllCppDef templates workingDir root_all_classes_imports
+
+ --  withFile (workingDir </> headerFileName) WriteMode $ 
+ --    \h -> do 
+ --     hPutStrLn h (mkDeclHeader templates root_all_classes)
+
+
+
+   
+--  withFile (workingDir </> cppFileName) WriteMode $ 
+--    \h -> do 
+--      hPutStrLn h (mkDefMain templates root_all_classes)
+
+  {-      
   putStrLn "hsc file generation" 
   withFile (workingDir </> hscFileName) WriteMode $ 
     \h -> hPutStrLn h (mkFFIHsc templates root_all_classes) 
@@ -113,5 +129,5 @@ commandLineProcess (Generate conf) = do
   copyFile (workingDir </> existHsFileName) ( srcDir ibase </> existHsFileName)  
   
   mapM_ (\x->copyFile (workingDir </> x <.> "hs")  ( srcDir ibase </> x <.> "hs")) classModules
-
+  -}
   return ()
