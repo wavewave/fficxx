@@ -1,8 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses, 
              FlexibleInstances, TypeSynonymInstances, EmptyDataDecls #-}
 
-
-module HROOT.Class.Implementation where
+$implHeader$
 
 import Data.Word
 -- import Foreign.C            

@@ -104,6 +104,11 @@ rawtypeHsFileName = "RawType.hs"
 ffiHscFileName :: String 
 ffiHscFileName = "FFI.hsc"
 
+interfaceHsFileName :: String
+interfaceHsFileName = "Interface.hs"
+
+implementationHsFileName :: String 
+implementationHsFileName = "Implementation.hs"
 
 cabalIndentation = replicate 23 ' ' 
 
@@ -171,14 +176,9 @@ mkDeclHeader templates cglobal header =
         , ("declarationbody", declBodyStr ) ] 
         declarationTemplate
 
-      -- classDeclsStr  = mkDaughterDef genCppHeaderInstVirtual dsmap
-      --                 `connRet2` 
-
-
 mkDefMain :: STGroup String -> ClassImportHeader -> String 
 mkDefMain templates header =
-  let -- dsmap    = mkDaughterSelfMap classes
-      classes = [cihClass header]
+  let classes = [cihClass header]
       headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ cihSelfHeader header ++ "\"\n"
       cppBody = genAllCppDefTmplVirtual classes
                 `connRet2`
@@ -190,7 +190,6 @@ mkDefMain templates header =
                 genCppHeaderInstVirtual (cihClass header, cihClass header)
                 `connRet2` 
                 genAllCppDefInstNonVirtual classes
-
   in  renderTemplateGroup 
         templates 
         [ ("header" , headerStr ) 
@@ -209,50 +208,52 @@ mkFFIHsc templates mod =
         hsIncludeStr = genModuleImportRawType (cmImportedModules mod)
         cppIncludeStr = genModuleIncludeHeader headers
 
-
-{-  renderTemplateGroup templates
-                      [ ("headerFileName", headerFileName)
-                      , ("hsFunctionBody", genAllHsFFI headerFileName classes) ]  
-                      "FFI.hsc" -} 
-
 mkRawTypeHs :: STGroup String -> ClassModule -> String
 mkRawTypeHs templates mod = 
-  renderTemplateGroup templates [ ("rawtypeHeader", rawtypeHeaderStr) 
-                                , ("rawtypeBody", rawtypeBodyStr)] rawtypeHsFileName
-  where rawtypeHeaderStr = "module " ++ cmModule mod ++ " where\n"
+    renderTemplateGroup templates [ ("rawtypeHeader", rawtypeHeaderStr) 
+                                  , ("rawtypeBody", rawtypeBodyStr)] rawtypeHsFileName
+  where rawtypeHeaderStr = "module HROOT.Class." ++ cmModule mod ++ ".RawType where\n"
         classes = cmClass mod
         rawtypeBodyStr = 
           mkRawClasses (filter (not.isAbstractClass) classes)
+
                      
-mkInterfaceHs :: AnnotateMap -> STGroup String -> Module -> [Class] -> String    
-mkInterfaceHs amap templates mod classes = 
-  renderTemplateGroup templates [ ("ifaceHeader", ifaceHeaderStr) 
-                                , ("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
-  where ifaceHeaderStr = runReader (genModuleDecl mod) amap
+mkInterfaceHs :: AnnotateMap -> STGroup String -> ClassModule -> String    
+mkInterfaceHs amap templates mod  = 
+    renderTemplateGroup templates [ ("ifaceHeader", ifaceHeaderStr) 
+                                  , ("ifaceImport", ifaceImportStr)
+                                  , ("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
+  where ifaceHeaderStr = "module HROOT.Class." ++ cmModule mod ++ ".Interface where\n" 
+        classes = cmClass mod
+        ifaceImportStr = genModuleImportRawType (cmImportedModules mod)
+        -- runReader (genModuleDecl mod) amap
         ifaceBodyStr = 
-          mkRawClasses (filter (not.isAbstractClass) classes)
-          `connRet2`
           runReader (genAllHsFrontDecl classes) amap 
           `connRet2`
           runReader (genAllHsFrontUpcastClass (filter (not.isAbstractClass) classes)) amap  
   
-mkImplementationHs :: AnnotateMap -> STGroup String -> [Class] -> String
-mkImplementationHs amap templates classes = 
-  renderTemplateGroup templates 
-                      [ ("implBody", implBodyStr ) ]
-                      "Implementation.hs"
-  where dmap = mkDaughterMap classes
+mkImplementationHs :: AnnotateMap -> STGroup String -> ClassModule -> String
+mkImplementationHs amap templates mod = 
+    renderTemplateGroup templates 
+                        [ ("implHeader", implHeaderStr) 
+                        , ("implBody", implBodyStr ) ]
+                        "Implementation.hs"
+  where -- dmap = mkDaughterMap classes
+        classes = cmClass mod
+        implHeaderStr = "module HROOT.Class." ++ cmModule mod ++ ".Implementation where\n" 
+
         implBodyStr =  genAllHsFrontInstCastable classes 
                        `connRet2`
                        genAllHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
                        `connRet2`
-                       genAllHsFrontInstExistVirtual (filter (not.isAbstractClass) classes) dmap
-                       `connRet2`
-                       genAllHsFrontInst classes dmap 
-                       `connRet2`
+                       -- genAllHsFrontInstExistVirtual (filter (not.isAbstractClass) classes) dmap
+                       -- `connRet2`
+                       -- genAllHsFrontInst classes dmap 
+                       -- `connRet2`
                        runReader (genAllHsFrontInstNew classes) amap
                        `connRet2`
                        genAllHsFrontInstNonVirtual classes
+
 
 -- Modules
 
@@ -420,18 +421,18 @@ writeFFIHsc templates wdir mod = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkFFIHsc templates mod)
 
+writeInterfaceHs :: AnnotateMap -> STGroup String -> FilePath -> ClassModule 
+                 -> IO ()
+writeInterfaceHs amap templates wdir mod = do 
+  let fn = wdir </> cmModule mod <.> interfaceHsFileName
+  withFile fn WriteMode $ \h -> do 
+    hPutStrLn h (mkInterfaceHs amap templates mod)
+
+writeImplementationHs :: AnnotateMap -> STGroup String -> FilePath -> ClassModule 
+                 -> IO ()
+writeImplementationHs amap templates wdir mod = do 
+  let fn = wdir </> cmModule mod <.> implementationHsFileName
+  withFile fn WriteMode $ \h -> do 
+    hPutStrLn h (mkImplementationHs amap templates mod)
 
 
-{-
-writeAllDeclHeaders :: STGroup String -> ClassGlobal -> FilePath 
-                    -> [ClassImportHeader] 
-                    -> IO () 
-writeAllDeclHeaders templates cglobal wdir headers = 
-  mapM_ (writeDeclHeaders templates cglobal wdir) headers -}
-
-{-writeAllCppDef :: STGroup String
-               -> FilePath 
-               -> [ClassImportHeader] 
-               -> IO () 
-writeAllCppDef templates wdir headers = 
-  mapM_ (writeCppDef templates wdir) headers -}

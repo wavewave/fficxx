@@ -86,6 +86,12 @@ commandLineProcess (Generate conf) = do
   putStrLn "FFI.hsc file generation"
   mapM_ (writeFFIHsc templates workingDir) root_all_modules
 
+  putStrLn "Interface.hs file generation" 
+  mapM_ (writeInterfaceHs annotateMap templates workingDir) root_all_modules
+
+  putStrLn "Implementation.hs file generation"
+  mapM_ (writeImplementationHs annotateMap templates workingDir) root_all_modules
+
  --  withFile (workingDir </> headerFileName) WriteMode $ 
  --    \h -> do 
  --     hPutStrLn h (mkDeclHeader templates root_all_classes)
@@ -94,19 +100,17 @@ commandLineProcess (Generate conf) = do
 --    \h -> do 
 --      hPutStrLn h (mkDefMain templates root_all_classes)
 
-       
-
 --  withFile (workingDir </> hscFileName) WriteMode $ 
 --    \h -> hPutStrLn h (mkFFIHsc templates root_all_classes) 
- 
- {-     
-  putStrLn "Interface.hs file generation" 
-  withFile (workingDir </> typeHsFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkInterfaceHs annotateMap templates moduleInterface root_all_classes )
+
+--  withFile (workingDir </> typeHsFileName) WriteMode $ 
+--    \h -> hPutStrLn h (mkInterfaceHs annotateMap templates moduleInterface root_all_classes )
     
-  putStrLn "Implementation.hs file generation"
-  withFile (workingDir </> hsFileName) WriteMode $ 
-    \h -> hPutStrLn h (mkImplementationHs annotateMap templates root_all_classes)
+  
+--  withFile (workingDir </> hsFileName) WriteMode $ 
+--    \h -> hPutStrLn h (mkImplementationHs annotateMap templates root_all_classes)
+
+  {-
 
   putStrLn "module file generation" 
   mapM_ (mkModuleFile config templates root_all_classes) classModules 
