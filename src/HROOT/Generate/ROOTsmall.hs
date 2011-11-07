@@ -34,7 +34,7 @@ deletable = AbstractClass "Deletable" []
 deletableH = ClassImportHeader deletable "HROOTDeletable.h" "HROOTTDeletable.cpp"
                                []
         
-deletableM = ClassModule "Deletable" [deletable] [deletableH] []
+deletableM = ClassModule "Deletable" [deletable] [deletableH] [] []
 
 
 
@@ -56,13 +56,9 @@ tObject =
 
 tObjectH = ClassImportHeader tObject "HROOTTObject.h" "HROOTTObject.cpp" 
                              [ "HROOTTClass.h" ]
---                             [ "Rtyles.h"
---                             , "TObject.h"
---                             , "TClass.h"
---                             , "HROOTDELETABLE.h"
---                             ]
+
         
-tObjectM = ClassModule "TObject" [tObject] [tObjectH] ["TClass"]
+tObjectM = ClassModule "TObject" [tObject] [tObjectH] ["TClass"] ["Deletable"]
 
 tDictionary :: Class
 tDictionary = AbstractClass "TDictionary" [tNamed]
@@ -75,7 +71,7 @@ tDictionaryH = ClassImportHeader tDictionary "HROOTTDictionary.h" "HROOTTDiction
                                  , "HROOTTObject.h"
                                  ] -}
 
-tDictionaryM = ClassModule "TDictionary" [tDictionary] [tDictionaryH] ["TObject","TNamed"]
+tDictionaryM = ClassModule "TDictionary" [tDictionary] [tDictionaryH] ["TObject","TNamed"] ["TObject","TNamed"] 
 
 tNamed :: Class
 tNamed = 
@@ -92,7 +88,7 @@ tNamedH = ClassImportHeader tNamed "HROOTTNamed.h" "HROOTTNamed.cpp"  []
                             , "HROOTTObject.h"
                             ] -}
                            
-tNamedM = ClassModule "TNamed"  [tNamed] [tNamedH] ["TObject"]
+tNamedM = ClassModule "TNamed"  [tNamed] [tNamedH] ["TObject"] ["TObject"]
 
 tClass :: Class
 tClass = Class "TClass" [tDictionary]
@@ -104,7 +100,7 @@ tClassH = ClassImportHeader tClass "HROOTTClass.h" "HROOTTClass.cpp"  []
                             , "HROOTTDictonary.h"
                             ]  -}
                             
-tClassM = ClassModule "TClass" [tClass] [tClassH] [ "TObject" ]
+tClassM = ClassModule "TClass" [tClass] [tClassH] [ "TObject" ] ["TObject"]
 
 
 root_all_classes :: [Class]

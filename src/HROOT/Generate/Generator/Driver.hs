@@ -213,7 +213,7 @@ mkFFIHsc templates mod =
         ffiHeaderStr = "module HROOT.Class." ++ mname ++ ".FFI where\n"
         ffiImportStr = "import HROOT.Class." ++ mname ++ ".RawType\n"
                        ++ genImportInFFI mod
-        hsIncludeStr = genModuleImportRawType (cmImportedModules mod)
+        hsIncludeStr = genModuleImportRawType (cmImportedModulesRaw mod)
         cppIncludeStr = genModuleIncludeHeader headers
 
 mkRawTypeHs :: STGroup String -> ClassModule -> String
@@ -358,17 +358,23 @@ genImportInModule cs =
 
 genImportInFFI :: ClassModule -> String
 genImportInFFI mod = 
-  let modlst = cmImportedModules mod
+  let modlst = cmImportedModulesRaw mod
   in  intercalateWith connRet (\x->importOneClass x "RawType") modlst
 
 
 genImportInInterface :: ClassModule -> String
 genImportInInterface mod = 
-  let modlst = cmImportedModules mod
-      getImportOneClass mname = 
-        intercalateWith connRet (importOneClass mname) $
-              ["RawType", "Implementation", "Existential"]
-  in  intercalateWith connRet getImportOneClass modlst
+  let modlstraw = cmImportedModulesRaw mod
+      modlsthigh = cmImportedModulesHigh mod
+      getImportOneClassRaw mname = 
+        intercalateWith connRet (importOneClass mname) ["RawType"]
+      getImportOneClassHigh mname = 
+        intercalateWith connRet (importOneClass mname) ["Interface"]
+  in  importOneClass (cmModule mod) "RawType"
+      `connRet`
+      intercalateWith connRet getImportOneClassRaw modlstraw
+      `connRet` 
+      intercalateWith connRet getImportOneClassHigh modlsthigh
 
 genModuleImportRawType :: [String] -> String 
 genModuleImportRawType modstrs =

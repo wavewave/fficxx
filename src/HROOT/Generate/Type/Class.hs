@@ -26,8 +26,9 @@ data ClassImportHeader = ClassImportHeader
 data ClassModule = ClassModule 
                    { cmModule :: String
                    , cmClass :: [Class] 
-                   , cmCIH :: [ClassImportHeader]                    
-                   , cmImportedModules :: [String]
+                   , cmCIH :: [ClassImportHeader] 
+                   , cmImportedModulesRaw :: [String]                   
+                   , cmImportedModulesHigh :: [String]
 --                   , cmExportedSymbol :: [String]
                    } 
 
