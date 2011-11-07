@@ -36,6 +36,7 @@ import Paths_HROOT_generate
 
 import HROOT.Generate.Config
 import HROOT.Generate.Type.Class
+import HROOT.Generate.Generator.ContentMaker 
 
 import qualified Data.Map as M
 import Data.Maybe

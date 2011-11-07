@@ -43,8 +43,10 @@ Library
                    HROOT.Generate.Code.Cpp
                    HROOT.Generate.Code.HsFrontEnd
                    HROOT.Generate.Code.HsFFI
+                   HROOT.Generate.Code.Cabal
                    HROOT.Generate.Generator.Command
                    HROOT.Generate.Generator.Driver
+                   HROOT.Generate.Generator.ContentMaker
                    HROOT.Generate.Util
                    HROOT.Generate.ROOT
                    HROOT.Generate.ROOTAnnotate

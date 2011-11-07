@@ -3,6 +3,7 @@ module HROOT.Generate.Code.HsFrontEnd where
 import qualified Data.Map as M
 import Data.Maybe
 
+import Control.Applicative
 
 import HROOT.Generate.Type.CType
 import HROOT.Generate.Type.Method
@@ -392,6 +393,91 @@ hsUpcastClassTmpl :: String
 hsUpcastClassTmpl =  "upcast$classname$ :: (FPtr a, $ifacename$ a) => a -> $classname$\nupcast$classname$ h = let fh = get_fptr h\n$space$    fh2 :: ForeignPtr $rawclassname$ = castForeignPtr fh\n$space$in cast_fptr_to_obj fh2"
 
 
+
+genExport :: Class -> String 
+genExport c =
+    let methodstr = if null . (filter isVirtualFunc) $ (class_funcs c) 
+                      then ""
+                      else "(..)"
+    in if isAbstractClass c 
+         then "    " ++ ('I' : class_name c) ++ methodstr 
+         else "    " ++ class_name c ++ "(..)\n  , " 
+                     ++ ('I' : class_name c) ++ methodstr
+                     ++ "\n  , upcast" ++ class_name c
+
+genExportList :: [Class] -> String 
+genExportList = concatMap genExport 
+
+--  let cs = filter (\x->class_name x  == modname) all_classes
+--  in  if null cs 
+--        then error $ "no such class :" ++ modname 
+--        else let c = head cs 
+
+importOneClass :: String -> String -> String 
+importOneClass mname typ = "import HROOT.Class." ++ mname ++ "." ++ typ 
+
+genImportInModule :: [Class] -> String 
+genImportInModule cs = 
+  let genImportOneClass c = 
+        let n = class_name c 
+        in  intercalateWith connRet (importOneClass n) $
+              ["RawType", "Interface", "Implementation", "Existential"]
+  in  intercalate "\n" (map genImportOneClass cs)
+
+genImportInFFI :: ClassModule -> String
+genImportInFFI mod = 
+  let modlst = cmImportedModulesRaw mod
+  in  intercalateWith connRet (\x->importOneClass x "RawType") modlst
+
+
+genImportInInterface :: ClassModule -> String
+genImportInInterface mod = 
+  let modlstraw = cmImportedModulesRaw mod
+      modlsthigh = cmImportedModulesHigh mod
+      getImportOneClassRaw mname = 
+        intercalateWith connRet (importOneClass mname) ["RawType"]
+      getImportOneClassHigh mname = 
+        intercalateWith connRet (importOneClass mname) ["Interface"]
+  in  importOneClass (cmModule mod) "RawType"
+      `connRet`
+      intercalateWith connRet getImportOneClassRaw modlstraw
+      `connRet` 
+      intercalateWith connRet getImportOneClassHigh modlsthigh
+
+genImportInCast :: ClassModule -> String 
+genImportInCast mod = importOneClass (cmModule mod) "RawType"
+                      `connRet` 
+                      importOneClass (cmModule mod) "Interface"
+
+genImportInImplementation :: ClassModule -> String
+genImportInImplementation mod = 
+  let modlstraw = cmImportedModulesRaw mod
+      modlsthigh = cmImportedModulesHigh mod
+      getImportOneClassRaw mname = 
+        intercalateWith connRet (importOneClass mname) ["RawType","Cast"]
+      getImportOneClassHigh mname = 
+        intercalateWith connRet (importOneClass mname) ["Interface","Implementation"]
+  in  importOneClass (cmModule mod) "RawType"
+      `connRet`
+      importOneClass (cmModule mod) "FFI"
+      `connRet`
+      importOneClass (cmModule mod) "Interface"
+      `connRet`
+      importOneClass (cmModule mod) "Cast"
+      `connRet`
+      intercalateWith connRet getImportOneClassRaw modlstraw
+      `connRet` 
+      intercalateWith connRet getImportOneClassHigh modlsthigh
+
+
+genImportInExistential :: DaughterMap -> ClassModule -> String
+genImportInExistential dmap mod = 
+  let daughters = concat . catMaybes $ (map (flip M.lookup dmap)  (cmClass mod))
+      alldaughters' = nub . map class_name $ daughters
+      alldaughters = filter ((&&) <$> (/= "TClass") <*> (/= "TObject")) alldaughters'
+      getImportOneClass mname = 
+          intercalateWith connRet (importOneClass mname) ["RawType", "Cast", "Interface", "Implementation"]
+  in  intercalateWith connRet getImportOneClass alldaughters
 
 
 

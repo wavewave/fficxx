@@ -1,12 +1,14 @@
 module HROOT.Generate.Code.Cpp where
 
 import Data.Char 
+import Data.List
+import System.FilePath
 
 import HROOT.Generate.Util
 import HROOT.Generate.Type.Method
 import HROOT.Generate.Type.Class
 import HROOT.Generate.Code.MethodDef
-
+import HROOT.Generate.Code.Cabal
 
 -- Class Declaration and Definition
 
@@ -120,7 +122,59 @@ genAllCppDefInstNonVirtual =
 
 -----------------
 
+genAllCppHeaderInclude :: ClassImportHeader -> String 
+genAllCppHeaderInclude header = 
+    intercalateWith connRet (\x->"#include \""++x++"\"") $
+      cihIncludedHROOTHeaders header
+        ++ cihIncludedCROOTHeaders header
+
+genModuleIncludeHeader :: [ClassImportHeader] -> String 
+genModuleIncludeHeader headers =
+  let strlst = map ((\x->"#include \""++x++"\"") . cihSelfHeader) headers 
+  in  intercalate "\n" strlst 
+
+-----
 
   
 ----
+
+genIncludeFiles :: [ClassModule] -> String
+genIncludeFiles cmods =
+  let indent = cabalIndentation 
+      selfheaders' = do 
+        x <- cmods
+        y <- cmCIH x
+        return (cihSelfHeader y) 
+      selfheaders = nub selfheaders'
+      includeFileStrs = map (\x->indent++x) selfheaders
+  in  unlines includeFileStrs
+
+genCsrcFiles :: [ClassModule] -> String
+genCsrcFiles cmods =
+  let indent = cabalIndentation 
+      selfheaders' = do 
+        x <- cmods
+        y <- cmCIH x
+        return (cihSelfHeader y) 
+      selfheaders = nub selfheaders'
+      selfcpp' = do 
+        x <- cmods
+        y <- cmCIH x 
+        return (cihSelfCpp y)
+      selfcpp = nub selfcpp' 
+      includeFileStrsWithCsrc = map (\x->indent++"csrc"</>x) selfheaders
+      cppFilesWithCsrc = map (\x->indent++"csrc"</>x) selfcpp
+  in  unlines (includeFileStrsWithCsrc ++ cppFilesWithCsrc)
+
+genCppFiles :: [ClassModule] -> String 
+genCppFiles cmods = 
+  let indent = cabalIndentation 
+      selfcpp' = do 
+        x <- cmods
+        y <- cmCIH x
+        return (cihSelfCpp y) 
+      selfcpp = nub selfcpp'
+      cppFileStrs = map (\x->indent++ "csrc" </> x) selfcpp
+  in  unlines cppFileStrs 
+
 
