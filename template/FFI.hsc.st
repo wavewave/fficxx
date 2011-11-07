@@ -1,6 +1,8 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module HROOT.Class.FFI where
+-- module HROOT.Class.FFI where
+
+$ffiHeader$
 
 import Foreign.C            
 import Foreign.Ptr

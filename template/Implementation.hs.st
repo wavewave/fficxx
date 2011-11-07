@@ -10,7 +10,7 @@ import Foreign.ForeignPtr
 
 import System.IO.Unsafe
 
-import HROOT.Class.Interface
-import HROOT.Class.FFI
+import HROOT.Class.$modname$.Interface
+import HROOT.Class.$modname$.FFI
 
 $implBody$

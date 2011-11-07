@@ -45,7 +45,7 @@ Library
   Build-Depends:      base>4 && < 5
   Exposed-Modules:
 $cabalIndentation$HROOT
-$cabalIndentation$HROOT.Types  
+$cabalIndentation$HROOT.TypeCast
 $exposedModules$  
   Other-Modules:
 $otherModules$

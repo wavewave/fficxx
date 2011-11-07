@@ -1,14 +1,17 @@
 {-# LANGUAGE TypeFamilies, GADTs, ExistentialQuantification, EmptyDataDecls #-}
 
-module HROOT.Class.Existential where
+-- module HROOT.Class.Existential where
+
+$existHeader$
+
 
 --import Foreign.C            
 import Foreign.ForeignPtr
 --import Foreign.Marshal.Array
 
 
-import HROOT.Class.Interface
-import HROOT.Class.Implementation ()
+import HROOT.Class.$modname$.Interface
+import HROOT.Class.$modname$.Implementation ()
 
 data BottomType
 

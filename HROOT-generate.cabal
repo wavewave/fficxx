@@ -13,6 +13,7 @@ Data-files: template/*.h.st
             template/*.hsc.st
             template/*.cpp.st
             template/HROOT.cabal.st
+            template/TypeCast.hs
 
 Executable HROOT-generate
   Main-is: HROOT-generate.hs

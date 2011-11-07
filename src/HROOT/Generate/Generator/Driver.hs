@@ -205,12 +205,15 @@ mkDefMain templates header =
 mkFFIHsc :: STGroup String -> ClassModule -> String 
 mkFFIHsc templates mod = 
     renderTemplateGroup templates 
-                        [ ("hsInclude", hsIncludeStr) 
+                        [ ("ffiHeader", ffiHeaderStr)
+                        , ("hsInclude", hsIncludeStr) 
                         , ("cppInclude", cppIncludeStr)
                         , ("hsFunctionBody", genAllHsFFI headers) ]
                         ffiHscFileName
-  where classes = cmClass mod
+  where mname = cmModule mod
+        classes = cmClass mod
         headers = cmCIH mod
+        ffiHeaderStr = "module HROOT.Class." ++ mname ++ ".FFI where\n"
         hsIncludeStr = genModuleImportRawType (cmImportedModules mod)
         cppIncludeStr = genModuleIncludeHeader headers
 
@@ -242,6 +245,7 @@ mkImplementationHs :: AnnotateMap -> STGroup String -> ClassModule -> String
 mkImplementationHs amap templates mod = 
     renderTemplateGroup templates 
                         [ ("implHeader", implHeaderStr) 
+                        , ("modname", cmModule mod)
                         , ("implBody", implBodyStr ) ]
                         "Implementation.hs"
   where -- dmap = mkDaughterMap classes
@@ -417,9 +421,12 @@ mkExistentialHs templates cglobal mod =
             str = mkExistentialEach templates mother daughters
         in  str 
       existEachBody = intercalateWith connRet makeOneMother classes
+      existHeaderStr = "module HROOT.Class."++cmModule mod++".Existential where"
       hsfilestr = renderTemplateGroup 
                     templates 
-                    [ ( "existEachBody" , existEachBody) ]
+                    [ ("existHeader", existHeaderStr)
+                    , ("modname", cmModule mod)
+                    , ( "existEachBody" , existEachBody) ]
                   "Existential.hs" 
   in  hsfilestr
 
@@ -483,6 +490,10 @@ copyHeaderFiles :: FilePath -> FilePath -> IO ()
 copyHeaderFiles = 
 -}
 
+copyPredefined :: FilePath -> FilePath -> IO () 
+copyPredefined tdir ddir = do 
+  copyFile (tdir </> "TypeCast.hs" ) (ddir </> "HROOT/TypeCast.hs") 
+
 copyCppFiles :: FilePath -> FilePath -> ClassImportHeader -> IO ()
 copyCppFiles wdir ddir header = do 
   let hfile = cihSelfHeader header
@@ -497,7 +508,8 @@ copyModule wdir ddir mod = do
         let (fnamebody,fnameext) = splitExtension fname
             (mdir,mfile) = moduleDirFile fnamebody
             origfpath = wdir </> fname
-            newfpath = ddir </> mdir </> mfile  
+            (mfile',mext') = splitExtension mfile
+            newfpath = ddir </> mdir </> mfile' ++ fnameext   
 
         b <- doesDirectoryExist (ddir</>mdir)
         if b then return () else createDirectory (ddir</>mdir)     

@@ -48,9 +48,12 @@ tObject =
   ]
 
 tObjectH = ClassImportHeader tObject "HROOTTObject.h" "HROOTTObject.cpp" 
-                             [ "TObject.h"
-                             , "HROOTDELETABLE.h"
-                             ]
+                             [ "HROOTTClass.h" ]
+--                             [ "Rtyles.h"
+--                             , "TObject.h"
+--                             , "TClass.h"
+--                             , "HROOTDELETABLE.h"
+--                             ]
         
 tObjectM = ClassModule "TObject" [tObject] [tObjectH] []
 
@@ -59,10 +62,11 @@ tDictionary = AbstractClass "TDictionary" [tNamed]
               [
               ]
 
-tDictionaryH = ClassImportHeader tDictionary "HROOTTDictionary.h" "HROOTTDictionary.cpp" 
-                                 [ "TDictionary.h"
+tDictionaryH = ClassImportHeader tDictionary "HROOTTDictionary.h" "HROOTTDictionary.cpp" [] 
+          
+{-                       [ "TDictionary.h"
                                  , "HROOTTObject.h"
-                                 ] 
+                                 ] -}
 
 tDictionaryM = ClassModule "TDictionary" [tDictionary] [tDictionaryH] ["TObject","TNamed"]
 
@@ -75,10 +79,11 @@ tNamed =
   , Virtual void_  "SetTitle"     [cstring "name"]  
   ]
 
-tNamedH = ClassImportHeader tNamed "HROOTTNamed.h" "HROOTTNamed.cpp" 
+tNamedH = ClassImportHeader tNamed "HROOTTNamed.h" "HROOTTNamed.cpp"  []
+{-
                             [ "TNamed.h"
                             , "HROOTTObject.h"
-                            ] 
+                            ] -}
                            
 tNamedM = ClassModule "TNamed"  [tNamed] [tNamedH] ["TObject"]
 
@@ -87,10 +92,10 @@ tClass = Class "TClass" [tDictionary]
          [
          ]
 
-tClassH = ClassImportHeader tClass "HROOTTClass.h" "HROOTTClass.cpp" 
-                            [ "TClass.h" 
+tClassH = ClassImportHeader tClass "HROOTTClass.h" "HROOTTClass.cpp"  []
+{-                            [ "TClass.h" 
                             , "HROOTTDictonary.h"
-                            ] 
+                            ]  -}
                             
 tClassM = ClassModule "TClass" [tClass] [tClassH] ["TObject", "TNamed", "TDictionary"]
 

@@ -94,6 +94,7 @@ commandLineProcess (Generate conf) = do
 
   
   copyFile (workingDir </> cabalFileName)  ( ibase </> cabalFileName ) 
+  copyPredefined templateDir (srcDir ibase)
   mapM_ (copyCppFiles workingDir (csrcDir ibase)) root_all_classes_imports
   mapM_ (copyModule workingDir (srcDir ibase)) root_all_modules 
 
