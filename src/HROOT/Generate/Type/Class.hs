@@ -20,7 +20,8 @@ data ClassImportHeader = ClassImportHeader
                        { cihClass :: Class 
                        , cihSelfHeader :: String 
                        , cihSelfCpp :: String
-                       , cihIncludedCHeaders :: [String] 
+                       , cihIncludedHROOTHeaders :: [String] 
+                       , cihIncludedCROOTHeaders :: [String] 
                        }
 
 data ClassModule = ClassModule 
@@ -29,7 +30,6 @@ data ClassModule = ClassModule
                    , cmCIH :: [ClassImportHeader] 
                    , cmImportedModulesRaw :: [String]                   
                    , cmImportedModulesHigh :: [String]
---                   , cmExportedSymbol :: [String]
                    } 
 
 data ClassGlobal = ClassGlobal 

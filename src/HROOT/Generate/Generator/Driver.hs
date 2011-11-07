@@ -66,6 +66,9 @@ cabalTemplate = "HROOT.cabal"
 declarationTemplate :: String
 declarationTemplate = "HROOT.h"
 
+typeDeclHeaderFileName :: String
+typeDeclHeaderFileName = "HROOTType.h"
+
 declbodyTemplate :: String
 declbodyTemplate    = "declbody.h"
 
@@ -144,8 +147,14 @@ mkParentDef f c = g (class_allparents c,c)
 
 genAllCppHeaderInclude :: ClassImportHeader -> String 
 genAllCppHeaderInclude header = 
-  let strlst = map (\x->"#include \""++x++"\"") (cihIncludedCHeaders header) 
-  in  intercalate "\n" strlst 
+    intercalateWith connRet (\x->"#include \""++x++"\"") $
+      cihIncludedHROOTHeaders header
+        ++ cihIncludedCROOTHeaders header
+{-  let strlst = map (\x->"#include \""++x++"\"") 
+                   ((cihSelfHeader header : cihIncludedHROOTHeaders header)
+                    ++ cihIncludeCROOTHeaders header
+                   ) 
+-- ++ "\n#include \"" ++ cihSelfHeader header ++ "\"\n" -}
 
 
 genModuleIncludeHeader :: [ClassImportHeader] -> String 
@@ -154,27 +163,47 @@ genModuleIncludeHeader headers =
   in  intercalate "\n" strlst 
 
 -----
+mkTypeDeclHeader :: STGroup String -> ClassGlobal 
+             -> [Class]
+             -> String 
+mkTypeDeclHeader templates cglobal classes =
+  let typeDeclBodyStr   = genAllCppHeaderTmplType classes 
+  in  renderTemplateGroup 
+        templates 
+        [ ("typeDeclBody", typeDeclBodyStr ) ] 
+        typeDeclHeaderFileName
+
+
 
 mkDeclHeader :: STGroup String -> ClassGlobal 
              -> ClassImportHeader 
              -> String 
 mkDeclHeader templates cglobal header =
   let classes = [cihClass header]
-      declHeaderStr = genAllCppHeaderInclude header
+      aclass = cihClass header
+      declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"") $
+                        cihIncludedHROOTHeaders header
+                      -- genAllCppHeaderInclude header
       declDefStr    = genAllCppHeaderTmplVirtual classes 
                       `connRet2`
                       genAllCppHeaderTmplNonVirtual classes 
-      typeDeclStr   = genAllCppHeaderTmplType classes 
-      dsmap         = cgDaughterSelfMap cglobal
-      classDeclsStr = mkParentDef genCppHeaderInstVirtual (cihClass header) 
+                      `connRet2`   
+                      genAllCppDefTmplVirtual classes
                       `connRet2`
-                      genCppHeaderInstVirtual (cihClass header, cihClass header)
-                      `connRet2` 
-                      genAllCppHeaderInstNonVirtual classes
+                       genAllCppDefTmplNonVirtual classes
+      -- typeDeclStr   = genAllCppHeaderTmplType classes 
+      dsmap         = cgDaughterSelfMap cglobal
+      classDeclsStr = if class_name aclass /= "Deletable"
+                        then mkParentDef genCppHeaderInstVirtual aclass 
+                             `connRet2`
+                             genCppHeaderInstVirtual (aclass, aclass)
+                             `connRet2` 
+                             genAllCppHeaderInstNonVirtual classes
+                        else "" 
       declBodyStr   = declDefStr 
                       `connRet2` 
-                      typeDeclStr 
-                      `connRet2` 
+                      -- typeDeclStr 
+                      -- `connRet2` 
                       classDeclsStr 
   in  renderTemplateGroup 
         templates 
@@ -185,12 +214,8 @@ mkDeclHeader templates cglobal header =
 mkDefMain :: STGroup String -> ClassImportHeader -> String 
 mkDefMain templates header =
   let classes = [cihClass header]
-      headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ cihSelfHeader header ++ "\"\n"
-      cppBody = genAllCppDefTmplVirtual classes
-                `connRet2`
-                genAllCppDefTmplNonVirtual classes
-                `connRet2`
-                -- mkDaughterDef genCppDefInstVirtual dsmap
+      headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (cihSelfHeader header) ++ "\"" 
+      cppBody = -- mkDaughterDef genCppDefInstVirtual dsmap
                 mkParentDef genCppDefInstVirtual (cihClass header)
                 `connRet`
                 genCppHeaderInstVirtual (cihClass header, cihClass header)
@@ -199,7 +224,8 @@ mkDefMain templates header =
   in  renderTemplateGroup 
         templates 
         [ ("header" , headerStr ) 
-        , ("cppbody", cppBody ) ] 
+        , ("cppbody", cppBody ) 
+        , ("modname", class_name (cihClass header)) ] 
         definitionTemplate
 
 mkFFIHsc :: STGroup String -> ClassModule -> String 
@@ -526,7 +552,17 @@ mkExistentialHs templates cglobal mod =
 
 ----
 
-writeDeclHeaders :: STGroup String -> ClassGlobal -> FilePath -> ClassImportHeader
+writeTypeDeclHeaders :: STGroup String -> ClassGlobal 
+                     -> FilePath -> [ClassImportHeader]
+                     -> IO ()
+writeTypeDeclHeaders templates cglobal wdir headers = do 
+  let fn = wdir </> "HROOTType.h"
+      classes = map cihClass headers
+  withFile fn WriteMode $ \h -> do 
+    hPutStrLn h (mkTypeDeclHeader templates cglobal classes)
+
+writeDeclHeaders :: STGroup String -> ClassGlobal 
+                 -> FilePath -> ClassImportHeader
                  -> IO () 
 writeDeclHeaders templates cglobal wdir header = do 
   let fn = wdir </> cihSelfHeader header
@@ -586,10 +622,7 @@ writeModuleHs templates wdir mod = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkModuleHs templates mod)
 
-{-
-copyHeaderFiles :: FilePath -> FilePath -> IO () 
-copyHeaderFiles = 
--}
+
 
 copyPredefined :: FilePath -> FilePath -> IO () 
 copyPredefined tdir ddir = do 
@@ -597,8 +630,10 @@ copyPredefined tdir ddir = do
 
 copyCppFiles :: FilePath -> FilePath -> ClassImportHeader -> IO ()
 copyCppFiles wdir ddir header = do 
-  let hfile = cihSelfHeader header
+  let thfile = "HROOTType.h"
+      hfile = cihSelfHeader header
       cppfile = cihSelfCpp header
+  copyFile (wdir </> thfile) (ddir </> thfile) 
   copyFile (wdir </> hfile) (ddir </> hfile) 
   copyFile (wdir </> cppfile) (ddir </> cppfile)
 

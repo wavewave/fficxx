@@ -69,6 +69,7 @@ commandLineProcess (Generate conf) = do
   let cglobal = mkGlobal root_all_classes
    
   putStrLn "header file generation"
+  writeTypeDeclHeaders templates cglobal workingDir root_all_classes_imports
   mapM_ (writeDeclHeaders templates cglobal workingDir) root_all_classes_imports
 
   putStrLn "cpp file generation" 

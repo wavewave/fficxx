@@ -31,8 +31,8 @@ deletable :: Class
 deletable = AbstractClass "Deletable" [] 
           [ Destructor ]
 
-deletableH = ClassImportHeader deletable "HROOTDeletable.h" "HROOTTDeletable.cpp"
-                               []
+deletableH = ClassImportHeader deletable "HROOTDeletable.h" "HROOTDeletable.cpp"
+                               [] [] 
         
 deletableM = ClassModule "Deletable" [deletable] [deletableH] [] []
 
@@ -55,8 +55,8 @@ tObject =
   ]
 
 tObjectH = ClassImportHeader tObject "HROOTTObject.h" "HROOTTObject.cpp" 
-                             [ "HROOTTClass.h" ]
-
+                             [ "HROOTDeletable.h" ]
+                             [ "TObject.h" ]
         
 tObjectM = ClassModule "TObject" [tObject] [tObjectH] ["TClass"] ["Deletable"]
 
@@ -65,11 +65,12 @@ tDictionary = AbstractClass "TDictionary" [tNamed]
               [
               ]
 
-tDictionaryH = ClassImportHeader tDictionary "HROOTTDictionary.h" "HROOTTDictionary.cpp" [] 
-          
-{-                       [ "TDictionary.h"
+tDictionaryH = ClassImportHeader tDictionary "HROOTTDictionary.h" "HROOTTDictionary.cpp" 
+                                 [ "HROOTDeletable.h"
                                  , "HROOTTObject.h"
-                                 ] -}
+                                 , "HROOTTNamed.h"
+                                 ] 
+                                 [ "TDictionary.h" ]
 
 tDictionaryM = ClassModule "TDictionary" [tDictionary] [tDictionaryH] [] ["Deletable","TObject","TNamed"] 
 
@@ -82,11 +83,11 @@ tNamed =
   , Virtual void_  "SetTitle"     [cstring "name"]  
   ]
 
-tNamedH = ClassImportHeader tNamed "HROOTTNamed.h" "HROOTTNamed.cpp"  []
-{-
-                            [ "TNamed.h"
+tNamedH = ClassImportHeader tNamed "HROOTTNamed.h" "HROOTTNamed.cpp"  
+                            [ "HROOTDeletable.h"
                             , "HROOTTObject.h"
-                            ] -}
+                            ]
+                            [ "TNamed.h" ]
                            
 tNamedM = ClassModule "TNamed"  [tNamed] [tNamedH] ["TObject","TClass"] ["Deletable","TObject"]
 
@@ -95,11 +96,14 @@ tClass = Class "TClass" [tDictionary]
          [
          ]
 
-tClassH = ClassImportHeader tClass "HROOTTClass.h" "HROOTTClass.cpp"  []
-{-                            [ "TClass.h" 
-                            , "HROOTTDictonary.h"
-                            ]  -}
-                            
+tClassH = ClassImportHeader tClass "HROOTTClass.h" "HROOTTClass.cpp"  
+                            [ "HROOTDeletable.h"
+                            , "HROOTTObject.h"
+                            , "HROOTTNamed.h"
+                            , "HROOTTDictionary.h"
+                            ]
+                            [ "TClass.h" ]
+
 tClassM = ClassModule "TClass" [tClass] [tClassH] ["TObject"] ["Deletable","TObject","TNamed","TDictionary"]
 
 

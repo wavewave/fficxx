@@ -15,3 +15,9 @@ ToType* to_nonconst(FromType* x) {
 
 
 $cppbody$
+
+void dummy$modname$ ( void ) 
+{
+  
+}
+
