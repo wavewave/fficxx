@@ -11,6 +11,8 @@ import Foreign.Ptr
 
 -- #include "$headerFileName$"
 
+$ffiImport$
+
 $hsInclude$
 
 $cppInclude$

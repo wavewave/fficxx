@@ -24,6 +24,10 @@ class FPtr a where
 class Existable a where
   data Exist a :: *  
 
+
+
+
+
 {-
 -- eliminate this for the time being to have a solution with Repl
 instance Castable a a where

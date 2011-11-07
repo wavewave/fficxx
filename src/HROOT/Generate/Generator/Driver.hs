@@ -143,10 +143,6 @@ genAllCppHeaderInclude header =
   let strlst = map (\x->"#include \""++x++"\"") (cihIncludedCHeaders header) 
   in  intercalate "\n" strlst 
 
-genModuleImportRawType :: [String] -> String 
-genModuleImportRawType modstrs =
-  let strlst = map (\x->"import HROOT.Class."++x++".RawType") modstrs
-  in  intercalate "\n" strlst 
 
 genModuleIncludeHeader :: [ClassImportHeader] -> String 
 genModuleIncludeHeader headers =
@@ -206,6 +202,7 @@ mkFFIHsc :: STGroup String -> ClassModule -> String
 mkFFIHsc templates mod = 
     renderTemplateGroup templates 
                         [ ("ffiHeader", ffiHeaderStr)
+                        , ("ffiImport", ffiImportStr)
                         , ("hsInclude", hsIncludeStr) 
                         , ("cppInclude", cppIncludeStr)
                         , ("hsFunctionBody", genAllHsFFI headers) ]
@@ -214,6 +211,8 @@ mkFFIHsc templates mod =
         classes = cmClass mod
         headers = cmCIH mod
         ffiHeaderStr = "module HROOT.Class." ++ mname ++ ".FFI where\n"
+        ffiImportStr = "import HROOT.Class." ++ mname ++ ".RawType\n"
+                       ++ genImportInFFI mod
         hsIncludeStr = genModuleImportRawType (cmImportedModules mod)
         cppIncludeStr = genModuleIncludeHeader headers
 
@@ -224,7 +223,8 @@ mkRawTypeHs templates mod =
   where rawtypeHeaderStr = "module HROOT.Class." ++ cmModule mod ++ ".RawType where\n"
         classes = cmClass mod
         rawtypeBodyStr = 
-          mkRawClasses (filter (not.isAbstractClass) classes)
+          intercalateWith connRet2 hsClassRawType (filter (not.isAbstractClass) classes)
+          -- mkRawClasses (filter (not.isAbstractClass) classes)
 
                      
 mkInterfaceHs :: AnnotateMap -> STGroup String -> ClassModule -> String    
@@ -234,10 +234,12 @@ mkInterfaceHs amap templates mod  =
                                   , ("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
   where ifaceHeaderStr = "module HROOT.Class." ++ cmModule mod ++ ".Interface where\n" 
         classes = cmClass mod
-        ifaceImportStr = genModuleImportRawType (cmImportedModules mod)
+        ifaceImportStr = genImportInInterface mod
         -- runReader (genModuleDecl mod) amap
         ifaceBodyStr = 
           runReader (genAllHsFrontDecl classes) amap 
+          `connRet2`
+          intercalateWith connRet hsClassExistType (filter (not.isAbstractClass) classes) 
           `connRet2`
           runReader (genAllHsFrontUpcastClass (filter (not.isAbstractClass) classes)) amap  
   
@@ -343,15 +345,47 @@ genExportList = concatMap genExport
 --        then error $ "no such class :" ++ modname 
 --        else let c = head cs 
 
+importOneClass :: String -> String -> String 
+importOneClass mname typ = "import HROOT.Class." ++ mname ++ "." ++ typ 
+
 genImportInModule :: [Class] -> String 
 genImportInModule cs = 
   let genImportOneClass c = 
-        let cname = class_name c 
-        in      "import HROOT.Class." ++ cname ++ ".RawType\n"
-             ++ "import HROOT.Class." ++ cname ++ ".Interface\n"
-             ++ "import HROOT.Class." ++ cname ++ ".Implementation ()\n"
-             ++ "import HROOT.Class." ++ cname ++ ".Existential\n"
+        let n = class_name c 
+        in  intercalateWith connRet (importOneClass n) $
+              ["RawType", "Interface", "Implementation", "Existential"]
   in  intercalate "\n" (map genImportOneClass cs)
+
+genImportInFFI :: ClassModule -> String
+genImportInFFI mod = 
+  let modlst = cmImportedModules mod
+  in  intercalateWith connRet (\x->importOneClass x "RawType") modlst
+
+
+genImportInInterface :: ClassModule -> String
+genImportInInterface mod = 
+  let modlst = cmImportedModules mod
+      getImportOneClass mname = 
+        intercalateWith connRet (importOneClass mname) $
+              ["RawType", "Implementation", "Existential"]
+  in  intercalateWith connRet getImportOneClass modlst
+
+genModuleImportRawType :: [String] -> String 
+genModuleImportRawType modstrs =
+  let strlst = map (\x->"import HROOT.Class."++x++".RawType") modstrs
+  in  intercalate "\n" strlst 
+
+
+{-
+genImportInExistential :: ClassModule -> String
+genImportInExistential mod = 
+  let modlst = cmImportedModules mod
+      getImportOneClass mname = 
+          "import HROOT.Class." ++ mname ++ ".RawType\n"
+          ++ "import HROOT.Class." ++ mname ++ "\n"
+  in  intercalate "\n" (map getImportOneClass modlst)
+-}
+
 
 mkModuleHs :: STGroup String -> ClassModule -> String 
 mkModuleHs templates mod = 
@@ -411,7 +445,7 @@ mkExistentialEach templates mother daughters =
 
 mkExistentialHs :: STGroup String -> ClassGlobal -> ClassModule -> String
 mkExistentialHs templates cglobal mod = 
-  let classes = cmClass mod
+  let classes = filter (not.isAbstractClass) (cmClass mod)
       dsmap = cgDaughterSelfMap cglobal
       makeOneMother :: Class -> String 
       makeOneMother mother = 

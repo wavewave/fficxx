@@ -258,6 +258,30 @@ existableInstance :: String
 existableInstance = "instance Existable $highname$ where\n  data Exist $highname$ = forall a. (FPtr a, $interfacename$ a) => $existConstructor$ a"
 
 
+hsClassRawType :: Class -> String 
+hsClassRawType c = 
+    let decl = render rawToHighDecl tmplName
+        inst1 = render rawToHighInstance tmplName
+    in  decl `connRet` inst1 
+  where (highname,rawname) = hsClassName c
+        iname = typeclassName c 
+        ename = existConstructorName c
+        tmplName = [ ("rawname",rawname)
+                   , ("highname",highname)
+                   , ("interfacename",iname)
+                   ] 
+
+hsClassExistType :: Class -> String 
+hsClassExistType c = render existableInstance tmplName
+  where (highname,rawname) = hsClassName c
+        iname = typeclassName c 
+        ename = existConstructorName c
+        tmplName = [ ("existConstructor",ename) 
+                   , ("highname",highname)
+                   , ("interfacename",iname)
+                   ]
+
+{-
 hsClassType :: Class -> String 
 hsClassType c = let decl = render rawToHighDecl tmplName
                     inst1 = render rawToHighInstance tmplName
@@ -271,11 +295,12 @@ hsClassType c = let decl = render rawToHighDecl tmplName
                    , ("interfacename",iname)
                    , ("existConstructor",ename)
                    ] 
-            
-mkRawClasses :: [Class] -> String 
-mkRawClasses = intercalateWith connRet2 hsClassType
+-}
 
-
+{-            
+mkRawTypes :: [Class] -> String 
+mkRawTypes = intercalateWith connRet2 hsClassRawType
+-}
 
 hsClassDeclFuncTmpl :: String
 hsClassDeclFuncTmpl = "$funcann$\n    $funcname$ :: $args$ "

@@ -31,6 +31,13 @@ deletable :: Class
 deletable = AbstractClass "Deletable" [] 
           [ Destructor ]
 
+deletableH = ClassImportHeader deletable "HROOTDeletable.h" "HROOTTDeletable.cpp"
+                               []
+        
+deletableM = ClassModule "Deletable" [deletable] [deletableH] []
+
+
+
 tObject :: Class
 tObject = 
   Class "TObject" [deletable] 
@@ -55,7 +62,7 @@ tObjectH = ClassImportHeader tObject "HROOTTObject.h" "HROOTTObject.cpp"
 --                             , "HROOTDELETABLE.h"
 --                             ]
         
-tObjectM = ClassModule "TObject" [tObject] [tObjectH] []
+tObjectM = ClassModule "TObject" [tObject] [tObjectH] ["TClass"]
 
 tDictionary :: Class
 tDictionary = AbstractClass "TDictionary" [tNamed]
@@ -97,7 +104,7 @@ tClassH = ClassImportHeader tClass "HROOTTClass.h" "HROOTTClass.cpp"  []
                             , "HROOTTDictonary.h"
                             ]  -}
                             
-tClassM = ClassModule "TClass" [tClass] [tClassH] ["TObject", "TNamed", "TDictionary"]
+tClassM = ClassModule "TClass" [tClass] [tClassH] [ "TObject" ]
 
 
 root_all_classes :: [Class]
@@ -106,14 +113,16 @@ root_all_classes =
 
 root_all_classes_imports :: [ClassImportHeader]
 root_all_classes_imports = 
-  [ tObjectH
+  [ deletableH
+  , tObjectH
   , tClassH 
   , tDictionaryH 
   , tNamedH ] 
 
 root_all_modules :: [ClassModule]
 root_all_modules = 
-  [ tObjectM
+  [ deletableM
+  , tObjectM
   , tClassM
   , tDictionaryM
   , tNamedM ] 
