@@ -255,17 +255,26 @@ mkImplementationHs amap templates mod =
         classes = cmClass mod
         implHeaderStr = "module HROOT.Class." ++ cmModule mod ++ ".Implementation where\n" 
         implImportStr = genImportInImplementation mod
+        f y = intercalateWith connRet (flip genHsFrontInst y) (y:class_allparents y )
+        g y = intercalateWith connRet (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
+
         implBodyStr =  genAllHsFrontInstCastable classes 
                        `connRet2`
                        genAllHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
                        `connRet2`
-                       -- genAllHsFrontInstExistVirtual (filter (not.isAbstractClass) classes) dmap
-                       -- `connRet2`
-                       -- genAllHsFrontInst classes dmap 
-                       -- `connRet2`
+                       intercalateWith connRet2 f classes
+                       `connRet2` 
+                       intercalateWith connRet2 g (filter (not.isAbstractClass) classes)
+                       `connRet2`
                        runReader (genAllHsFrontInstNew classes) amap
                        `connRet2`
                        genAllHsFrontInstNonVirtual classes
+
+-- genAllHsFrontInstExistVirtual (filter (not.isAbstractClass) classes) dmap
+                       -- `connRet2`
+                       -- genAllHsFrontInst classes dmap 
+                       -- `connRet2`
+
 
 
 -- Modules
