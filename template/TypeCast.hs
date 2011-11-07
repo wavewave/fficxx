@@ -1,6 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses, 
              FlexibleInstances, TypeSynonymInstances, 
-             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}
+             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables, 
+             GADTs #-}
 
 module HROOT.TypeCast where
 
@@ -24,6 +25,11 @@ class FPtr a where
 class Existable a where
   data Exist a :: *  
 
+data BottomType
+
+class GADTTypeable a where
+  data GADTType a :: * -> *
+  data EGADTType a :: *
 
 
 

@@ -13,8 +13,6 @@ import Foreign.Ptr
 
 $ffiImport$
 
-$hsInclude$
-
 $cppInclude$
 
 $hsFunctionBody$

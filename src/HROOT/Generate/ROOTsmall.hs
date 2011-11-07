@@ -71,7 +71,7 @@ tDictionaryH = ClassImportHeader tDictionary "HROOTTDictionary.h" "HROOTTDiction
                                  , "HROOTTObject.h"
                                  ] -}
 
-tDictionaryM = ClassModule "TDictionary" [tDictionary] [tDictionaryH] ["TObject","TNamed"] ["TObject","TNamed"] 
+tDictionaryM = ClassModule "TDictionary" [tDictionary] [tDictionaryH] [] ["Deletable","TObject","TNamed"] 
 
 tNamed :: Class
 tNamed = 
@@ -88,7 +88,7 @@ tNamedH = ClassImportHeader tNamed "HROOTTNamed.h" "HROOTTNamed.cpp"  []
                             , "HROOTTObject.h"
                             ] -}
                            
-tNamedM = ClassModule "TNamed"  [tNamed] [tNamedH] ["TObject"] ["TObject"]
+tNamedM = ClassModule "TNamed"  [tNamed] [tNamedH] ["TObject","TClass"] ["Deletable","TObject"]
 
 tClass :: Class
 tClass = Class "TClass" [tDictionary]
@@ -100,7 +100,7 @@ tClassH = ClassImportHeader tClass "HROOTTClass.h" "HROOTTClass.cpp"  []
                             , "HROOTTDictonary.h"
                             ]  -}
                             
-tClassM = ClassModule "TClass" [tClass] [tClassH] [ "TObject" ] ["TObject"]
+tClassM = ClassModule "TClass" [tClass] [tClassH] ["TObject"] ["Deletable","TObject","TNamed","TDictionary"]
 
 
 root_all_classes :: [Class]

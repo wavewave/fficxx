@@ -1,5 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses, 
-             FlexibleInstances, TypeSynonymInstances, EmptyDataDecls #-}
+             FlexibleInstances, TypeSynonymInstances, EmptyDataDecls, 
+             OverlappingInstances, IncoherentInstances #-}
 
 $implHeader$
 
@@ -9,12 +10,10 @@ $implImport$
 
 import Data.Word
 -- import Foreign.C            
-import Foreign.Ptr
+-- import Foreign.Ptr
 import Foreign.ForeignPtr
 
 import System.IO.Unsafe
 
-import HROOT.Class.$modname$.Interface
-import HROOT.Class.$modname$.FFI
 
 $implBody$

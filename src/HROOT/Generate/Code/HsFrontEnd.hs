@@ -243,6 +243,14 @@ genAllHsFrontInstCastable :: [Class] -> String
 genAllHsFrontInstCastable = 
   intercalateWith connRet2 genHsFrontInstCastable
 
+genHsFrontInstCastableSelf :: Class -> String 
+genHsFrontInstCastableSelf c 
+  | (not.isAbstractClass) c = 
+    let (cname,rname) = hsClassName c
+    in  render hsInterfaceCastableInstanceSelfTmpl 
+               [("className",cname)
+               ,("rawClassName",rname)]
+  | otherwise = "" 
 
 
 --------------------------
@@ -332,7 +340,10 @@ mkHsFuncRetType c func =
   let rtyp = genericFuncRet func
   in case rtyp of 
     SelfType -> ("a",[])
-    CPT (CPTClass cname) _ -> ("(Exist " ++ cname ++ ")",[])
+--    CPT (CPTClass cname) _ -> ("(Exist " ++ cname ++ ")",[])
+    CPT (CPTClass cname) _ -> (cname,[])
+
+
   {-    let iname = typeclassNameFromStr cname -- typeclassName c
           newname = "b"
           newprefix1 = iname ++ " " ++ newname    
@@ -346,6 +357,11 @@ mkHsFuncRetType c func =
 hsInterfaceCastableInstanceTmpl :: String 
 hsInterfaceCastableInstanceTmpl = 
   "instance ($interfaceName$ a, FPtr a) => Castable a (Ptr $rawClassName$) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
+
+hsInterfaceCastableInstanceSelfTmpl :: String 
+hsInterfaceCastableInstanceSelfTmpl = 
+  "instance Castable $className$ (Ptr $rawClassName$) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
+
 
 ----------
 

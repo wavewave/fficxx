@@ -37,7 +37,7 @@ data ClassGlobal = ClassGlobal
                    , cgDaughterMap :: DaughterMap
                    } 
 
--- | Check abstract clas
+-- | Check abstract class
 
 isAbstractClass :: Class -> Bool 
 isAbstractClass (Class _ _ _) = False 

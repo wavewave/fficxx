@@ -83,6 +83,9 @@ commandLineProcess (Generate conf) = do
   putStrLn "Interface.hs file generation" 
   mapM_ (writeInterfaceHs annotateMap templates workingDir) root_all_modules
 
+  putStrLn "Cast.hs file generation"
+  mapM_ (writeCastHs templates workingDir) root_all_modules
+
   putStrLn "Implementation.hs file generation"
   mapM_ (writeImplementationHs annotateMap templates workingDir) root_all_modules
 
