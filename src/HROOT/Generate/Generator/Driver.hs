@@ -247,13 +247,14 @@ mkImplementationHs :: AnnotateMap -> STGroup String -> ClassModule -> String
 mkImplementationHs amap templates mod = 
     renderTemplateGroup templates 
                         [ ("implHeader", implHeaderStr) 
+                        , ("implImport", implImportStr)
                         , ("modname", cmModule mod)
                         , ("implBody", implBodyStr ) ]
                         "Implementation.hs"
   where -- dmap = mkDaughterMap classes
         classes = cmClass mod
         implHeaderStr = "module HROOT.Class." ++ cmModule mod ++ ".Implementation where\n" 
-
+        implImportStr = genImportInImplementation mod
         implBodyStr =  genAllHsFrontInstCastable classes 
                        `connRet2`
                        genAllHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
@@ -375,6 +376,25 @@ genImportInInterface mod =
       intercalateWith connRet getImportOneClassRaw modlstraw
       `connRet` 
       intercalateWith connRet getImportOneClassHigh modlsthigh
+
+genImportInImplementation :: ClassModule -> String
+genImportInImplementation mod = 
+  let modlstraw = cmImportedModulesRaw mod
+      modlsthigh = cmImportedModulesHigh mod
+      getImportOneClassRaw mname = 
+        intercalateWith connRet (importOneClass mname) ["RawType"]
+      getImportOneClassHigh mname = 
+        intercalateWith connRet (importOneClass mname) ["Interface"]
+  in  importOneClass (cmModule mod) "RawType"
+      `connRet`
+      importOneClass (cmModule mod) "FFI"
+      `connRet`
+      importOneClass (cmModule mod) "Interface"
+      `connRet`
+      intercalateWith connRet getImportOneClassRaw modlstraw
+      `connRet` 
+      intercalateWith connRet getImportOneClassHigh modlsthigh
+
 
 genModuleImportRawType :: [String] -> String 
 genModuleImportRawType modstrs =

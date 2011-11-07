@@ -3,6 +3,10 @@
 
 $implHeader$
 
+import HROOT.TypeCast
+
+$implImport$
+
 import Data.Word
 -- import Foreign.C            
 import Foreign.Ptr
