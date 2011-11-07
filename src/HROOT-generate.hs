@@ -60,17 +60,11 @@ commandLineProcess (Generate conf) = do
       ibase = hrootConfig_installBaseDir config
       cabalFileName = "HROOT.cabal"
 
-  putStrLn "test" 
-  
-  -- putStrLn . show $ map cmModule $ root_all_modules 
-  
   putStrLn "cabal file generation" 
   getHROOTVersion config
   withFile (workingDir </> cabalFileName) WriteMode $ 
     \h -> do 
       mkCabalFile config templates h root_all_modules 
-
-  -- exposedModules classModules 
 
   let cglobal = mkGlobal root_all_classes
    
@@ -92,50 +86,16 @@ commandLineProcess (Generate conf) = do
   putStrLn "Implementation.hs file generation"
   mapM_ (writeImplementationHs annotateMap templates workingDir) root_all_modules
 
- --  withFile (workingDir </> headerFileName) WriteMode $ 
- --    \h -> do 
- --     hPutStrLn h (mkDeclHeader templates root_all_classes)
-   
---  withFile (workingDir </> cppFileName) WriteMode $ 
---    \h -> do 
---      hPutStrLn h (mkDefMain templates root_all_classes)
-
---  withFile (workingDir </> hscFileName) WriteMode $ 
---    \h -> hPutStrLn h (mkFFIHsc templates root_all_classes) 
-
---  withFile (workingDir </> typeHsFileName) WriteMode $ 
---    \h -> hPutStrLn h (mkInterfaceHs annotateMap templates moduleInterface root_all_classes )
-    
-  
---  withFile (workingDir </> hsFileName) WriteMode $ 
---    \h -> hPutStrLn h (mkImplementationHs annotateMap templates root_all_classes)
-
-  {-
+  putStrLn "Existential.hs generation"
+  mapM_ (writeExistentialHs templates cglobal workingDir) root_all_modules
 
   putStrLn "module file generation" 
-  mapM_ (mkModuleFile config templates root_all_classes) classModules 
+  mapM_ (writeModuleHs templates workingDir) root_all_modules
 
-
-  let dsmap = mkDaughterSelfMap root_all_classes
-      tObjectDaughters = filter (not.isAbstractClass) . fromJust . M.lookup tObject $ dsmap
-
-  putStrLn "Existential.hs generation"
-  withFile (workingDir </> existHsFileName) WriteMode $ 
-    \h -> hPutStrLn h . mkExistential templates $ tObjectDaughters 
-
-   -- . filter (not.isAbstractClass) $ root_all_classes
-
-
-
-
-  copyFile (workingDir </> cabalFileName)  ( ibase </> cabalFileName ) 
-  copyFile (workingDir </> headerFileName) ( csrcDir ibase </> headerFileName) 
-  copyFile (workingDir </> cppFileName) ( csrcDir ibase </> cppFileName) 
-  copyFile (workingDir </> hscFileName) ( srcDir ibase </> hscFileName) 
-  copyFile (workingDir </> typeHsFileName) ( srcDir ibase </> typeHsFileName) 
-  copyFile (workingDir </> hsFileName) ( srcDir ibase </> hsFileName)  
-  copyFile (workingDir </> existHsFileName) ( srcDir ibase </> existHsFileName)  
   
-  mapM_ (\x->copyFile (workingDir </> x <.> "hs")  ( srcDir ibase </> x <.> "hs")) classModules
-  -}
+  copyFile (workingDir </> cabalFileName)  ( ibase </> cabalFileName ) 
+  mapM_ (copyCppFiles workingDir (csrcDir ibase)) root_all_classes_imports
+  mapM_ (copyModule workingDir (srcDir ibase)) root_all_modules 
+
   return ()
+

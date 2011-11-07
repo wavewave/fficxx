@@ -20,16 +20,17 @@ Executable HROOT-generate
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
-                 HStringTemplate, HSH, safe, strict, filemanip,   
-                 parsec>3, cmdargs, transformers, template-haskell, Cabal 
+                 HStringTemplate, HSH, safe, strict, filemanip, split,
+                 parsec>3, cmdargs, transformers, template-haskell, Cabal
 
 Library
   hs-source-dirs: src
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
-                 HStringTemplate, HSH, safe, strict, filemanip,   
-                 parsec>3, cmdargs, transformers, template-haskell, Cabal
+                 HStringTemplate, HSH, safe, strict, filemanip, split,
+                 parsec>3, cmdargs, transformers, template-haskell, Cabal 
+
   Exposed-Modules: 
                    Text.StringTemplate.Helpers
                    HEP.Parser.Config
@@ -55,3 +56,4 @@ Library
   Other-Modules: 
                    HROOT.Generate.QQ.Verbatim
                    HROOT.Generate.Type.Annotate
+                   HEP.Util.File

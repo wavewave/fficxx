@@ -20,8 +20,11 @@ import HROOT.Generate.Code.HsFFI
 import HROOT.Generate.Code.HsFrontEnd
 
 import System.FilePath 
+import System.Directory 
 
 import HROOT.Generate.Config
+
+import HEP.Util.File
 
 -- import HROOT.Generate.ROOT
 -- import HROOT.Generate.ROOTModule
@@ -48,7 +51,7 @@ getHROOTVersion conf = do
 ----- 
 
 srcDir :: FilePath -> FilePath
-srcDir installbasedir = installbasedir </> "src" </> "HROOT" </> "Class"
+srcDir installbasedir = installbasedir </> "src" -- </> "HROOT" </> "Class"
 
 csrcDir :: FilePath -> FilePath
 csrcDir installbasedir = installbasedir </> "csrc" 
@@ -110,13 +113,16 @@ interfaceHsFileName = "Interface.hs"
 implementationHsFileName :: String 
 implementationHsFileName = "Implementation.hs"
 
+existentialHsFileName :: String 
+existentialHsFileName = "Existential.hs"
+
 cabalIndentation = replicate 23 ' ' 
 
 
 ---- common function for daughter
 
 mkGlobal :: [Class] -> ClassGlobal
-mkGlobal = ClassGlobal <$> mkDaughterSelfMap 
+mkGlobal = ClassGlobal <$> mkDaughterSelfMap <*> mkDaughterMap 
 
 
 mkDaughterDef :: ((Class,[Class]) -> String) -> DaughterMap -> String 
@@ -159,7 +165,7 @@ mkDeclHeader templates cglobal header =
                       `connRet2`
                       genAllCppHeaderTmplNonVirtual classes 
       typeDeclStr   = genAllCppHeaderTmplType classes 
-      dsmap         = cgDaughterMap cglobal
+      dsmap         = cgDaughterSelfMap cglobal
       classDeclsStr = mkParentDef genCppHeaderInstVirtual (cihClass header) 
                       `connRet2`
                       genCppHeaderInstVirtual (cihClass header, cihClass header)
@@ -257,7 +263,7 @@ mkImplementationHs amap templates mod =
 
 -- Modules
 
-genIncludeFiles :: [ClassModule] -> (String,String)
+genIncludeFiles :: [ClassModule] -> String
 genIncludeFiles cmods =
   let indent = cabalIndentation 
       selfheaders' = do 
@@ -266,8 +272,24 @@ genIncludeFiles cmods =
         return (cihSelfHeader y) 
       selfheaders = nub selfheaders'
       includeFileStrs = map (\x->indent++x) selfheaders
+  in  unlines includeFileStrs
+
+genCsrcFiles :: [ClassModule] -> String
+genCsrcFiles cmods =
+  let indent = cabalIndentation 
+      selfheaders' = do 
+        x <- cmods
+        y <- cmCIH x
+        return (cihSelfHeader y) 
+      selfheaders = nub selfheaders'
+      selfcpp' = do 
+        x <- cmods
+        y <- cmCIH x 
+        return (cihSelfCpp y)
+      selfcpp = nub selfcpp' 
       includeFileStrsWithCsrc = map (\x->indent++"csrc"</>x) selfheaders
-  in  (unlines includeFileStrsWithCsrc, unlines includeFileStrs)
+      cppFilesWithCsrc = map (\x->indent++"csrc"</>x) selfcpp
+  in  unlines (includeFileStrsWithCsrc ++ cppFilesWithCsrc)
 
 genCppFiles :: [ClassModule] -> String 
 genCppFiles cmods = 
@@ -290,37 +312,53 @@ genExposedModules cmods =
 
 genOtherModules cmods = 
   let indentspace = cabalIndentation 
-      cmodstrsInternal = map ((\x->indentspace++"HROOT.Class."++x++".Internal").cmModule) cmods
-  in  unlines cmodstrsInternal
+      rawType = map ((\x->indentspace++"HROOT.Class."++x++".RawType").cmModule) cmods
+      ffi = map ((\x->indentspace++"HROOT.Class."++x++".FFI").cmModule) cmods
+      interface= map ((\x->indentspace++"HROOT.Class."++x++".Interface").cmModule) cmods
+      implementation = map ((\x->indentspace++"HROOT.Class."++x++".Implementation").cmModule) cmods
+      existential = map ((\x->indentspace++"HROOT.Class."++x++".Existential").cmModule) cmods 
+  in  unlines (rawType++ffi++interface++implementation++existential)
 
 
-genExportList :: [Class] -> String -> String 
-genExportList all_classes modname =
-  let cs = filter (\x->class_name x  == modname) all_classes
-  in  if null cs 
-        then error $ "no such class :" ++ modname 
-        else let c = head cs 
-                 methodstr = if null . (filter isVirtualFunc) $ (class_funcs c) 
-                               then ""
-                               else "(..)"
-             in if isAbstractClass c 
-                  then "    " ++ ('I' : modname) ++ methodstr 
-                  else "    " ++ modname ++ "(..)\n  , " 
-                              ++ ('I' : modname) ++ methodstr
-                              ++ "\n  , upcast" ++ modname
+genExport :: Class -> String 
+genExport c =
+    let methodstr = if null . (filter isVirtualFunc) $ (class_funcs c) 
+                      then ""
+                      else "(..)"
+    in if isAbstractClass c 
+         then "    " ++ ('I' : class_name c) ++ methodstr 
+         else "    " ++ class_name c ++ "(..)\n  , " 
+                     ++ ('I' : class_name c) ++ methodstr
+                     ++ "\n  , upcast" ++ class_name c
 
-mkModuleFile :: HROOTConfig -> STGroup String -> [Class] -> String -> IO () 
-mkModuleFile config templates all_classes modname = do 
-  let modfilename = modname <.> "hs"
-  withFile (hrootConfig_workingDir config </> modfilename) WriteMode $ 
-    \h -> do 
-      let str = renderTemplateGroup 
-                  templates 
-                  [ ("moduleName", modname) 
-                  , ("exportList", genExportList all_classes modname) 
-                  ]
-                  moduleTemplate 
-      hPutStrLn h str
+genExportList :: [Class] -> String 
+genExportList = concatMap genExport 
+
+--  let cs = filter (\x->class_name x  == modname) all_classes
+--  in  if null cs 
+--        then error $ "no such class :" ++ modname 
+--        else let c = head cs 
+
+genImportInModule :: [Class] -> String 
+genImportInModule cs = 
+  let genImportOneClass c = 
+        let cname = class_name c 
+        in      "import HROOT.Class." ++ cname ++ ".RawType\n"
+             ++ "import HROOT.Class." ++ cname ++ ".Interface\n"
+             ++ "import HROOT.Class." ++ cname ++ ".Implementation ()\n"
+             ++ "import HROOT.Class." ++ cname ++ ".Existential\n"
+  in  intercalate "\n" (map genImportOneClass cs)
+
+mkModuleHs :: STGroup String -> ClassModule -> String 
+mkModuleHs templates mod = 
+    let str = renderTemplateGroup 
+                templates 
+                [ ("moduleName", cmModule mod) 
+                , ("exportList", genExportList (cmClass mod)) 
+                , ("importList", genImportInModule (cmClass mod))
+                ]
+                moduleTemplate 
+    in str
   
 
 -- | Generate HROOT.cabal file 
@@ -332,8 +370,8 @@ mkCabalFile config templates h classmodules = do
   let str = renderTemplateGroup 
               templates 
               [ ("version", version) 
-              , ("includeFiles", fst (genIncludeFiles classmodules))
-              , ("includeFiles", snd (genIncludeFiles classmodules)) 
+              , ("csrcFiles", genCsrcFiles classmodules)
+              , ("includeFiles", genIncludeFiles classmodules) 
               , ("cppFiles", genCppFiles classmodules)
               , ("exposedModules", genExposedModules classmodules) 
               , ("otherModules", genOtherModules classmodules)
@@ -367,9 +405,10 @@ mkExistentialEach templates mother daughters =
 
 ----
 
-mkExistential :: STGroup String -> [Class] -> String
-mkExistential templates classes = 
-  let dsmap = mkDaughterSelfMap classes
+mkExistentialHs :: STGroup String -> ClassGlobal -> ClassModule -> String
+mkExistentialHs templates cglobal mod = 
+  let classes = cmClass mod
+      dsmap = cgDaughterSelfMap cglobal
       makeOneMother :: Class -> String 
       makeOneMother mother = 
         let daughters = case M.lookup mother dsmap of 
@@ -386,53 +425,89 @@ mkExistential templates classes =
 
 ----
 
-writeDeclHeaders :: STGroup String -> ClassGlobal -> FilePath 
-                 -> ClassImportHeader 
+writeDeclHeaders :: STGroup String -> ClassGlobal -> FilePath -> ClassImportHeader
                  -> IO () 
 writeDeclHeaders templates cglobal wdir header = do 
   let fn = wdir </> cihSelfHeader header
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkDeclHeader templates cglobal header)
 
-writeCppDef :: STGroup String 
-            -> FilePath 
-            -> ClassImportHeader 
-            -> IO () 
+writeCppDef :: STGroup String -> FilePath -> ClassImportHeader -> IO () 
 writeCppDef templates wdir header = do 
   let fn = wdir </> cihSelfCpp header
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkDefMain templates header)
 
-writeRawTypeHs :: STGroup String
-               -> FilePath 
-               -> ClassModule
-               -> IO ()
+writeRawTypeHs :: STGroup String -> FilePath -> ClassModule -> IO ()
 writeRawTypeHs templates wdir mod = do
-  let fn = wdir </> cmModule mod <.> rawtypeHsFileName
+  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> rawtypeHsFileName
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkRawTypeHs templates mod) 
 
-writeFFIHsc :: STGroup String
-            -> FilePath
-            -> ClassModule
-            -> IO ()
+writeFFIHsc :: STGroup String -> FilePath -> ClassModule -> IO ()
 writeFFIHsc templates wdir mod = do 
-  let fn = wdir </> cmModule mod <.> ffiHscFileName
+  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> ffiHscFileName
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkFFIHsc templates mod)
 
 writeInterfaceHs :: AnnotateMap -> STGroup String -> FilePath -> ClassModule 
                  -> IO ()
 writeInterfaceHs amap templates wdir mod = do 
-  let fn = wdir </> cmModule mod <.> interfaceHsFileName
+  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> interfaceHsFileName
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkInterfaceHs amap templates mod)
 
 writeImplementationHs :: AnnotateMap -> STGroup String -> FilePath -> ClassModule 
-                 -> IO ()
+                      -> IO ()
 writeImplementationHs amap templates wdir mod = do 
-  let fn = wdir </> cmModule mod <.> implementationHsFileName
+  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> implementationHsFileName
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkImplementationHs amap templates mod)
 
+writeExistentialHs :: STGroup String -> ClassGlobal -> FilePath -> ClassModule 
+                   -> IO ()
+writeExistentialHs templates cglobal wdir mod = do 
+  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> existentialHsFileName
+  withFile fn WriteMode $ \h -> do 
+    hPutStrLn h (mkExistentialHs templates cglobal mod)
 
+
+writeModuleHs :: STGroup String -> FilePath -> ClassModule -> IO () 
+writeModuleHs templates wdir mod = do 
+  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> "hs"
+  withFile fn WriteMode $ \h -> do 
+    hPutStrLn h (mkModuleHs templates mod)
+
+{-
+copyHeaderFiles :: FilePath -> FilePath -> IO () 
+copyHeaderFiles = 
+-}
+
+copyCppFiles :: FilePath -> FilePath -> ClassImportHeader -> IO ()
+copyCppFiles wdir ddir header = do 
+  let hfile = cihSelfHeader header
+      cppfile = cihSelfCpp header
+  copyFile (wdir </> hfile) (ddir </> hfile) 
+  copyFile (wdir </> cppfile) (ddir </> cppfile)
+
+copyModule :: FilePath -> FilePath -> ClassModule -> IO ()
+copyModule wdir ddir mod = do 
+  let modbase = cmModule mod 
+  let onefilecopy fname = do 
+        let (fnamebody,fnameext) = splitExtension fname
+            (mdir,mfile) = moduleDirFile fnamebody
+            origfpath = wdir </> fname
+            newfpath = ddir </> mdir </> mfile  
+
+        b <- doesDirectoryExist (ddir</>mdir)
+        if b then return () else createDirectory (ddir</>mdir)     
+        copyFile origfpath newfpath 
+
+  onefilecopy $ "HROOT.Class." ++ modbase ++ ".hs"
+  onefilecopy $ "HROOT.Class." ++ modbase ++ ".RawType.hs"
+  onefilecopy $ "HROOT.Class." ++ modbase ++ ".FFI.hsc"
+  onefilecopy $ "HROOT.Class." ++ modbase ++ ".Interface.hs"
+  onefilecopy $ "HROOT.Class." ++ modbase ++ ".Implementation.hs"
+  onefilecopy $ "HROOT.Class." ++ modbase ++ ".Existential.hs"
+
+  return ()

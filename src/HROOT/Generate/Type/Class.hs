@@ -28,10 +28,13 @@ data ClassModule = ClassModule
                    , cmClass :: [Class] 
                    , cmCIH :: [ClassImportHeader]                    
                    , cmImportedModules :: [String]
+--                   , cmExportedSymbol :: [String]
                    } 
 
 data ClassGlobal = ClassGlobal 
-                   { cgDaughterMap :: DaughterMap } 
+                   { cgDaughterSelfMap :: DaughterMap 
+                   , cgDaughterMap :: DaughterMap
+                   } 
 
 -- | Check abstract clas
 

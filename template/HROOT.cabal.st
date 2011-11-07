@@ -16,7 +16,7 @@ $cabalIndentation$CHANGES
 $cabalIndentation$Config.hs
 $cabalIndentation$csrc/HROOT.h
 $cabalIndentation$csrc/addon.h
-$includeFilesWithCsrc$
+$csrcFiles$
 $cabalIndentation$example/histadd.hs
 $cabalIndentation$example/random1d.hs
 $cabalIndentation$example/random2d.hs
