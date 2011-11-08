@@ -20,13 +20,13 @@ import System.Console.CmdArgs
 
 import Text.StringTemplate hiding (render)
 
---import HROOT.Generate.ROOT
---import HROOT.Generate.ROOTAnnotate
---import HROOT.Generate.ROOTModule
+import HROOT.Generate.ROOT
+import HROOT.Generate.ROOTAnnotate
+import HROOT.Generate.ROOTModule
 
-import HROOT.Generate.ROOTsmall
-import HROOT.Generate.ROOTAnnotatesmall
-import HROOT.Generate.ROOTModulesmall
+-- import HROOT.Generate.ROOTsmall
+-- import HROOT.Generate.ROOTAnnotatesmall
+-- import HROOT.Generate.ROOTModulesmall
 
 import HROOT.Generate.Generator.Driver
 import HROOT.Generate.Generator.Command hiding (config)
@@ -36,6 +36,7 @@ import Paths_HROOT_generate
 
 import HROOT.Generate.Config
 import HROOT.Generate.Type.Class
+import HROOT.Generate.Code.Dependency
 import HROOT.Generate.Generator.ContentMaker 
 
 import qualified Data.Map as M
@@ -46,6 +47,8 @@ main = do
   param <- cmdArgs mode
   putStrLn $ show param 
   commandLineProcess param 
+  -- putStrLn $ show $ mkModuleDepRaw4One tObject
+
 
 commandLineProcess :: HROOT_Generate -> IO () 
 commandLineProcess (Generate conf) = do 
@@ -61,6 +64,8 @@ commandLineProcess (Generate conf) = do
       ibase = hrootConfig_installBaseDir config
       cabalFileName = "HROOT.cabal"
 
+      (root_all_modules,root_all_classes_imports) = mkAllClassModulesAndCIH root_all_classes 
+  
   putStrLn "cabal file generation" 
   getHROOTVersion config
   withFile (workingDir </> cabalFileName) WriteMode $ 
