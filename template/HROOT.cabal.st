@@ -14,7 +14,6 @@ cabal-version:  >=1.10
 Extra-source-files: 
 $cabalIndentation$CHANGES
 $cabalIndentation$Config.hs
-$cabalIndentation$csrc/HROOT.h
 $cabalIndentation$csrc/addon.h
 $csrcFiles$
 $cabalIndentation$example/histadd.hs
