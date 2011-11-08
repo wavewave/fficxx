@@ -421,12 +421,13 @@ genImportInModule cs =
   let genImportOneClass c = 
         let n = class_name c 
         in  intercalateWith connRet (importOneClass n) $
-              ["RawType", "Interface", "Implementation", "Existential"]
+              ["RawType", "Interface", "Implementation" {- , "Existential" -}]
   in  intercalate "\n" (map genImportOneClass cs)
+
 
 genImportInFFI :: ClassModule -> String
 genImportInFFI mod = 
-  let modlst = cmImportedModulesRaw mod
+  let modlst = cmImportedModulesForFFI mod
   in  intercalateWith connRet (\x->importOneClass x "RawType") modlst
 
 
@@ -451,12 +452,15 @@ genImportInCast mod = importOneClass (cmModule mod) "RawType"
 
 genImportInImplementation :: ClassModule -> String
 genImportInImplementation mod = 
-  let modlstraw = cmImportedModulesRaw mod
-      modlsthigh = cmImportedModulesHigh mod
+  let modlstraw' = cmImportedModulesForFFI mod
+      modlsthigh = nub $ map class_name $ concatMap class_allparents (cmClass mod)
+                   -- cmImportedModulesHigh mod
+      modlstraw = filter (not.(flip elem modlsthigh)) modlstraw' 
       getImportOneClassRaw mname = 
-        intercalateWith connRet (importOneClass mname) ["RawType","Cast"]
+        intercalateWith connRet (importOneClass mname) ["RawType","Cast","Interface"]
       getImportOneClassHigh mname = 
-        intercalateWith connRet (importOneClass mname) ["Interface","Implementation"]
+        intercalateWith connRet (importOneClass mname) ["RawType","Cast","Interface"] -- 
+        -- ,"Implementation"]
   in  importOneClass (cmModule mod) "RawType"
       `connRet`
       importOneClass (cmModule mod) "FFI"

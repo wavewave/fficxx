@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeFamilies, 
-             MultiParamTypeClasses, OverlappingInstances #-}
+             MultiParamTypeClasses, OverlappingInstances, IncoherentInstances #-}
 
 $castHeader$
 

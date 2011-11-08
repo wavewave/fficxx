@@ -20,5 +20,5 @@ genOtherModules cmods =
       interface= map ((\x->indentspace++"HROOT.Class."++x++".Interface").cmModule) cmods
       cast = map ((\x->indentspace++"HROOT.Class."++x++".Cast").cmModule) cmods 
       implementation = map ((\x->indentspace++"HROOT.Class."++x++".Implementation").cmModule) cmods
-      existential = map ((\x->indentspace++"HROOT.Class."++x++".Existential").cmModule) cmods 
-  in  unlines (rawType++ffi++interface++cast++implementation++existential)
+      --   existential = map ((\x->indentspace++"HROOT.Class."++x++".Existential").cmModule) cmods 
+  in  unlines (rawType++ffi++interface++cast++implementation {- ++existential -})

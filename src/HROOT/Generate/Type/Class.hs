@@ -30,6 +30,7 @@ data ClassModule = ClassModule
                    , cmCIH :: [ClassImportHeader] 
                    , cmImportedModulesRaw :: [String]                   
                    , cmImportedModulesHigh :: [String]
+                   , cmImportedModulesForFFI :: [String]
                    } 
 
 data ClassGlobal = ClassGlobal 

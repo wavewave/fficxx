@@ -34,7 +34,7 @@ deletable = AbstractClass "Deletable" []
 deletableH = ClassImportHeader deletable "HROOTDeletable.h" "HROOTDeletable.cpp"
                                [] [] 
         
-deletableM = ClassModule "Deletable" [deletable] [deletableH] [] []
+deletableM = ClassModule "Deletable" [deletable] [deletableH] [] [] []
 
 
 
@@ -57,8 +57,8 @@ tObject =
 tObjectH = ClassImportHeader tObject "HROOTTObject.h" "HROOTTObject.cpp" 
                              [ "HROOTDeletable.h" ]
                              [ "TObject.h" ]
-        
-tObjectM = ClassModule "TObject" [tObject] [tObjectH] ["TClass"] ["Deletable"]
+                             
+tObjectM = ClassModule "TObject" [tObject] [tObjectH] ["TClass"] ["Deletable"] []
 
 tDictionary :: Class
 tDictionary = AbstractClass "TDictionary" [tNamed]
@@ -72,7 +72,7 @@ tDictionaryH = ClassImportHeader tDictionary "HROOTTDictionary.h" "HROOTTDiction
                                  ] 
                                  [ "TDictionary.h" ]
 
-tDictionaryM = ClassModule "TDictionary" [tDictionary] [tDictionaryH] [] ["Deletable","TObject","TNamed"] 
+tDictionaryM = ClassModule "TDictionary" [tDictionary] [tDictionaryH] [] ["Deletable","TObject","TNamed"] []
 
 tNamed :: Class
 tNamed = 
@@ -89,7 +89,7 @@ tNamedH = ClassImportHeader tNamed "HROOTTNamed.h" "HROOTTNamed.cpp"
                             ]
                             [ "TNamed.h" ]
                            
-tNamedM = ClassModule "TNamed"  [tNamed] [tNamedH] ["TObject","TClass"] ["Deletable","TObject"]
+tNamedM = ClassModule "TNamed"  [tNamed] [tNamedH] ["TObject","TClass"] ["Deletable","TObject"] []
 
 tClass :: Class
 tClass = Class "TClass" [tDictionary]
@@ -104,7 +104,7 @@ tClassH = ClassImportHeader tClass "HROOTTClass.h" "HROOTTClass.cpp"
                             ]
                             [ "TClass.h" ]
 
-tClassM = ClassModule "TClass" [tClass] [tClassH] ["TObject"] ["Deletable","TObject","TNamed","TDictionary"]
+tClassM = ClassModule "TClass" [tClass] [tClassH] ["TObject"] ["Deletable","TObject","TNamed","TDictionary"] []
 
 
 root_all_classes :: [Class]

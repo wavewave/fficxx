@@ -753,7 +753,8 @@ tDirectory = Class "TDirectory" [tNamed]
 
 tKey :: Class
 tKey = Class "TKey" [tNamed]
-       [ Constructor [cstring "name", cstring "title", cppclass "TClass" "cl", int "nbytes", cppclass "TDirectory" "motherDir"]
+       [ 
+-- Constructor [cstring "name", cstring "title", cppclass "TClass" "cl", int "nbytes", cppclass "TDirectory" "motherDir"]
        ] 
 
 
@@ -834,7 +835,7 @@ tH1 =
   , Virtual double_ "ComputeIntegral" []
   , Virtual void_ "DirectoryAutoAdd" [cppclass "TDirectory" "dir"]
 
-  , Virtual void_ "Divide" [cppclass "TH1" "h1", cppclass "TH2" "h2", double "c1", double "c2", cstring "option"]
+  , Virtual void_ "Divide" [cppclass "TH1" "h1", cppclass "TH1" "h2", double "c1", double "c2", cstring "option"]
   , AliasVirtual self_ "DrawCopy" [cstring "option"] "drawCopyTH1"
   , Virtual (cppclass_ "TH1") "DrawNormalized" [cstring "option", double "norm"]
   , AliasVirtual void_ "DrawPanel" [] "drawPanelTH1"

@@ -6,7 +6,6 @@ import HROOT.Generate.Type.Method
 import HROOT.Generate.Type.Class
 -- import HROOT.Generate.Generator.Templates
 
-
 genHsFFI :: ClassImportHeader -> String 
 genHsFFI header =
   let c = cihClass header

@@ -47,7 +47,7 @@ main = do
   param <- cmdArgs mode
   putStrLn $ show param 
   commandLineProcess param 
-  -- putStrLn $ show $ mkModuleDepRaw4One tObject
+  -- putStrLn $ show $ mkModuleDepHigh tKey
 
 
 commandLineProcess :: HROOT_Generate -> IO () 
@@ -96,9 +96,11 @@ commandLineProcess (Generate conf) = do
   putStrLn "Implementation.hs file generation"
   mapM_ (writeImplementationHs annotateMap templates workingDir) root_all_modules
 
+  {-
   putStrLn "Existential.hs generation"
   mapM_ (writeExistentialHs templates cglobal workingDir) root_all_modules
-
+  -}
+  
   putStrLn "module file generation" 
   mapM_ (writeModuleHs templates workingDir) root_all_modules
 

@@ -132,6 +132,6 @@ copyModule wdir ddir mod = do
   onefilecopy $ "HROOT.Class." ++ modbase ++ ".Interface.hs"
   onefilecopy $ "HROOT.Class." ++ modbase ++ ".Cast.hs"
   onefilecopy $ "HROOT.Class." ++ modbase ++ ".Implementation.hs"
-  onefilecopy $ "HROOT.Class." ++ modbase ++ ".Existential.hs"
+  -- onefilecopy $ "HROOT.Class." ++ modbase ++ ".Existential.hs"
  
   return ()
