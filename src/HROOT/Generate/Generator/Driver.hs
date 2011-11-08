@@ -7,6 +7,7 @@ import System.IO
 import HROOT.Generate.Type.Class
 import HROOT.Generate.Type.Annotate
 import HROOT.Generate.Generator.ContentMaker 
+import HROOT.Generate.Util
 
 import Text.StringTemplate
 import Text.StringTemplate.Helpers
@@ -97,6 +98,18 @@ writeModuleHs templates wdir mod = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkModuleHs templates mod)
 
+writeHROOTHs :: STGroup String -> FilePath -> [ClassModule] -> IO () 
+writeHROOTHs templates wdir mods = do 
+  let fn = wdir </> "HROOT.hs"
+      exportListStr = intercalateWith conncomma ((" module HROOT.Class."++).cmModule) mods 
+      importListStr = intercalateWith connRet (("import HROOT.Class."++).cmModule) mods
+      str = renderTemplateGroup 
+              templates 
+              [ ("exportList", exportListStr) 
+              , ("importList", importListStr) ]
+              "HROOT.hs"
+  withFile fn WriteMode $ \h -> do 
+    hPutStrLn h str
 
 
 copyPredefined :: FilePath -> FilePath -> IO () 
@@ -133,5 +146,7 @@ copyModule wdir ddir mod = do
   onefilecopy $ "HROOT.Class." ++ modbase ++ ".Cast.hs"
   onefilecopy $ "HROOT.Class." ++ modbase ++ ".Implementation.hs"
   -- onefilecopy $ "HROOT.Class." ++ modbase ++ ".Existential.hs"
- 
+
+  copyFile (wdir </> "HROOT.hs") (ddir </> "HROOT.hs")
+
   return ()

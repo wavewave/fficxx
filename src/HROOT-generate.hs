@@ -104,6 +104,8 @@ commandLineProcess (Generate conf) = do
   putStrLn "module file generation" 
   mapM_ (writeModuleHs templates workingDir) root_all_modules
 
+  putStrLn "HROOT.hs file generation"
+  writeHROOTHs templates workingDir root_all_modules
   
   copyFile (workingDir </> cabalFileName)  ( ibase </> cabalFileName ) 
   copyPredefined templateDir (srcDir ibase)
