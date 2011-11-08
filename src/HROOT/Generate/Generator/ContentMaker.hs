@@ -204,11 +204,14 @@ mkDefMain :: STGroup String -> ClassImportHeader -> String
 mkDefMain templates header =
   let classes = [cihClass header]
       headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (cihSelfHeader header) ++ "\"" 
+      aclass = cihClass header
       cppBody = -- mkDaughterDef genCppDefInstVirtual dsmap
                 mkParentDef genCppDefInstVirtual (cihClass header)
+                `connRet` 
+                if isAbstractClass aclass 
+                  then "" 
+                  else genCppDefInstVirtual (aclass, aclass)
                 `connRet`
-                genCppHeaderInstVirtual (cihClass header, cihClass header)
-                `connRet2` 
                 genAllCppDefInstNonVirtual classes
   in  renderTemplateGroup 
         templates 

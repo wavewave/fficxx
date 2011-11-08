@@ -403,7 +403,18 @@ genExport c =
          then "    " ++ ('I' : class_name c) ++ methodstr 
          else "    " ++ class_name c ++ "(..)\n  , " 
                      ++ ('I' : class_name c) ++ methodstr
-                     ++ "\n  , upcast" ++ class_name c
+                     ++ "\n  , upcast" ++ class_name c ++ "\n"
+                     ++ genExportConstructorAndNonvirtual c 
+
+genExportConstructorAndNonvirtual :: Class -> String 
+genExportConstructorAndNonvirtual c =         
+    intercalateWith connRet (\x->indent++", "++x) fns
+  where indent = replicate 2 ' ' 
+        fs = class_funcs c
+        fns = map (aliasedFuncName c) (constructorFuncs fs 
+                                       ++ nonVirtualNotNewFuncs fs)
+
+
 
 genExportList :: [Class] -> String 
 genExportList = concatMap genExport 

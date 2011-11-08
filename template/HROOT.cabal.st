@@ -61,7 +61,6 @@ $otherModules$
   Include-dirs:       csrc
   Install-includes:   
 $cabalIndentation$addon.h
-$cabalIndentation$HROOT.h
 $includeFiles$
   C-sources:          
 $cppFiles$

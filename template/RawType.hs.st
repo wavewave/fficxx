@@ -4,11 +4,9 @@
 
 $rawtypeHeader$
 
-import Data.Word
-import Foreign.C            
-import Foreign.Ptr
+-- import Foreign.Ptr
 import Foreign.ForeignPtr
-import Foreign.Marshal.Array
+-- import Foreign.Marshal.Array
 
 import HROOT.TypeCast  
 
