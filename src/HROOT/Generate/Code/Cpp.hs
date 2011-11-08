@@ -147,7 +147,7 @@ genIncludeFiles cmods =
         return (cihSelfHeader y) 
       selfheaders = nub selfheaders'
       includeFileStrs = map (\x->indent++x) selfheaders
-  in  unlines includeFileStrs
+  in  unlines ((indent++"HROOTType.h") : includeFileStrs)
 
 genCsrcFiles :: [ClassModule] -> String
 genCsrcFiles cmods =
