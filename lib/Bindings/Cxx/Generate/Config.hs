@@ -14,7 +14,7 @@ data FFICXXConfig = FFICXXConfig {
 
 fficxxconfigParse :: ParsecT String () Identity FFICXXConfig 
 fficxxconfigParse = 
-  oneGroupFieldInput "HROOTconf" $ 
+  oneGroupFieldInput "fficxxconf" $ 
     FFICXXConfig <$> (oneFieldInput "scriptbase")
                 <*> (oneFieldInput "workingdir")
                 <*> (oneFieldInput "installbase")
