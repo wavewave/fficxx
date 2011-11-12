@@ -857,7 +857,7 @@ tH1 =
   , NonVirtual int_ "GetBufferLength" [] 
   , NonVirtual int_ "GetBufferSize" [] 
   -- GetBuffer
-  -- GetDefaultBufferSize (static)
+  , Static int_ "GetDefaultBufferSize" []
   -- GetIntegral
   -- GetListOfFunctions
   , AliasVirtual int_ "GetNdivisions" [cstring "axis"] "getNdivisionA"
@@ -890,7 +890,7 @@ tH1 =
   , Virtual double_ "GetCellContent" [int "binx", int "biny"] 
   , Virtual double_ "GetCellError" [int "binx", int "biny"]
   -- GetCenter
-  -- GetDefaultSumw2
+  , Static  bool_ "GetDefaultSumw2" []
   , NonVirtual (cppclass_ "TDirectory") "GetDirectory" [] 
   , Virtual double_ "GetEntries" []
   , Virtual double_ "GetEffectiveEntries" [] 
@@ -964,7 +964,8 @@ tH1 =
   , Virtual void_ "SetContent" [doublep "content"] 
   , Virtual void_ "SetContour" [int "nlevels", doublep "levels"] 
   , Virtual void_ "SetContourLevel" [int "level", double "value"]
-  -- SetDefaultBufferSize
+  , Static  void_ "SetDefaultBufferSize" [int "buffersize"]
+  , Static  void_ "SetDefaultSumw2" [bool "sumw2"]
   -- SetDefaultSumw2
   , Virtual void_ "SetDirectory" [cppclass "TDirectory" "dir"]
   , Virtual void_ "SetEntries" [double "n"]
@@ -984,10 +985,11 @@ tH1 =
   , Virtual (cppclass_ "TH1") "ShowBackground" [int "niter", cstring "option"]
   , Virtual int_  "ShowPeaks" [double "sigma", cstring "option", double "threshold" ]
   , Virtual void_ "Smooth" [int "ntimes", cstring "option"] 
-  -- SmoothArray
-  -- StatOverflows
+  , Static  void_ "SmoothArray" [int "NN", doublep "XX", int "ntimes"]
+  , Static  void_ "StatOverflows" [bool "flag"]
   , Virtual void_ "Sumw2" [] 
   , NonVirtual void_ "UseCurrentStyle" [] 
+  -- TransformHisto
   ] 
 
 tH2 :: Class 
