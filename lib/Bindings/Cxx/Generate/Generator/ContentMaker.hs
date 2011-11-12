@@ -37,7 +37,7 @@ import Distribution.Version
 import Data.List 
 import Data.Maybe
 
- 
+{-
 getHROOTVersion :: HROOTConfig -> IO String 
 getHROOTVersion conf = do 
   let hrootgeneratecabal = hrootConfig_scriptBaseDir conf </> "HROOT-generate.cabal"
@@ -46,11 +46,12 @@ getHROOTVersion conf = do
   let vnums = versionBranch . pkgVersion . package . packageDescription $ gdescs 
   return $ intercalate "." (map show vnums)
 --  putStrLn $ "version = " ++ show vnum
+-}
 
 ----- 
 
 srcDir :: FilePath -> FilePath
-srcDir installbasedir = installbasedir </> "src" -- </> "HROOT" </> "Class"
+srcDir installbasedir = installbasedir </> "src" 
 
 csrcDir :: FilePath -> FilePath
 csrcDir installbasedir = installbasedir </> "csrc" 
@@ -137,6 +138,7 @@ mkParentDef :: ((Class,Class)->String) -> Class -> String
 mkParentDef f c = g (class_allparents c,c)
   where g (ps,c) = concatMap (\p -> f (p,c)) ps
 
+{-
 mkCabalFile :: HROOTConfig -> STGroup String -> Handle -> [ClassModule] -> IO () 
 mkCabalFile config templates h classmodules = do 
   version <- getHROOTVersion config
@@ -153,6 +155,8 @@ mkCabalFile config templates h classmodules = do
               ]
               cabalTemplate 
   hPutStrLn h str
+-}
+
 
 mkTypeDeclHeader :: STGroup String -> ClassGlobal 
              -> [Class]

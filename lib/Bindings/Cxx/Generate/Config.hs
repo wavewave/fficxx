@@ -6,15 +6,15 @@ import Control.Monad.Identity
 import HEP.Parser.Config
 import Text.Parsec 
 
-data HROOTConfig = HROOTConfig { 
-  hrootConfig_scriptBaseDir :: FilePath, 
-  hrootConfig_workingDir :: FilePath, 
-  hrootConfig_installBaseDir :: FilePath
+data FFICXXConfig = FFICXXConfig { 
+  fficxxconfig_scriptBaseDir :: FilePath, 
+  fficxxconfig_workingDir :: FilePath, 
+  fficxxconfig_installBaseDir :: FilePath
 } deriving Show
 
-hrootconfigParse :: ParsecT String () Identity HROOTConfig 
-hrootconfigParse = 
+fficxxconfigParse :: ParsecT String () Identity FFICXXConfig 
+fficxxconfigParse = 
   oneGroupFieldInput "HROOTconf" $ 
-    HROOTConfig <$> (oneFieldInput "scriptbase")
+    FFICXXConfig <$> (oneFieldInput "scriptbase")
                 <*> (oneFieldInput "workingdir")
                 <*> (oneFieldInput "installbase")
