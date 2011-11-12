@@ -60,6 +60,9 @@ intp_ = CT CTIntStar NoConst
 charpp_ :: Types
 charpp_ = CT CTCharStarStar NoConst
 
+self :: String -> (Types, String)
+self var = (self_, var)
+
 voidp :: String -> (Types,String) 
 voidp var = (voidp_ , var)
 

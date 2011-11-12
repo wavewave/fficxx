@@ -51,52 +51,56 @@ writeCppDef templates wdir header = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkDefMain templates header)
 
-writeRawTypeHs :: STGroup String -> FilePath -> ClassModule -> IO ()
-writeRawTypeHs templates wdir mod = do
-  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> rawtypeHsFileName
+writeRawTypeHs :: STGroup String -> FilePath -> String -> ClassModule -> IO ()
+writeRawTypeHs templates wdir prefix mod = do
+  let fn = wdir </> prefix <.> cmModule mod <.> rawtypeHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkRawTypeHs templates mod) 
+    hPutStrLn h (mkRawTypeHs templates prefix mod) 
 
-writeFFIHsc :: STGroup String -> FilePath -> ClassModule -> IO ()
-writeFFIHsc templates wdir mod = do 
-  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> ffiHscFileName
+writeFFIHsc :: STGroup String -> FilePath -> String -> ClassModule -> IO ()
+writeFFIHsc templates wdir prefix mod = do 
+  let fn = wdir </> prefix <.> cmModule mod <.> ffiHscFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkFFIHsc templates mod)
+    hPutStrLn h (mkFFIHsc templates prefix mod)
 
-writeInterfaceHs :: AnnotateMap -> STGroup String -> FilePath -> ClassModule 
+writeInterfaceHs :: AnnotateMap -> STGroup String -> FilePath 
+                 -> String -> ClassModule 
                  -> IO ()
-writeInterfaceHs amap templates wdir mod = do 
-  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> interfaceHsFileName
+writeInterfaceHs amap templates wdir prefix mod = do 
+  let fn = wdir </> prefix <.> cmModule mod <.> interfaceHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkInterfaceHs amap templates mod)
+    hPutStrLn h (mkInterfaceHs amap templates prefix mod)
 
-writeCastHs :: STGroup String -> FilePath -> ClassModule 
+writeCastHs :: STGroup String -> FilePath -> String ->  ClassModule 
             -> IO ()
-writeCastHs templates wdir mod = do 
-  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> castHsFileName
+writeCastHs templates wdir prefix mod = do 
+  let fn = wdir </> prefix <.> cmModule mod <.> castHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkCastHs templates mod)
+    hPutStrLn h (mkCastHs templates prefix mod)
 
-writeImplementationHs :: AnnotateMap -> STGroup String -> FilePath -> ClassModule 
+writeImplementationHs :: AnnotateMap -> STGroup String -> FilePath 
+                      -> String -> ClassModule 
                       -> IO ()
-writeImplementationHs amap templates wdir mod = do 
-  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> implementationHsFileName
+writeImplementationHs amap templates wdir prefix mod = do 
+  let fn = wdir </> prefix <.> cmModule mod <.> implementationHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkImplementationHs amap templates mod)
+    hPutStrLn h (mkImplementationHs amap templates prefix mod)
 
-writeExistentialHs :: STGroup String -> ClassGlobal -> FilePath -> ClassModule 
+writeExistentialHs :: STGroup String -> ClassGlobal -> FilePath 
+                   -> String -> ClassModule 
                    -> IO ()
-writeExistentialHs templates cglobal wdir mod = do 
-  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> existentialHsFileName
+writeExistentialHs templates cglobal wdir prefix mod = do 
+  let fn = wdir </> prefix <.> cmModule mod <.> existentialHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkExistentialHs templates cglobal mod)
+    hPutStrLn h (mkExistentialHs templates cglobal prefix mod)
 
 
-writeModuleHs :: STGroup String -> FilePath -> ClassModule -> IO () 
-writeModuleHs templates wdir mod = do 
-  let fn = wdir </> "HROOT.Class." ++ cmModule mod <.> "hs"
+writeModuleHs :: STGroup String -> FilePath 
+              -> String -> ClassModule -> IO () 
+writeModuleHs templates wdir prefix mod = do 
+  let fn = wdir </> prefix <.> cmModule mod <.> "hs"
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkModuleHs templates mod)
+    hPutStrLn h (mkModuleHs templates prefix mod)
 
 writeHROOTHs :: STGroup String -> FilePath -> [ClassModule] -> IO () 
 writeHROOTHs templates wdir mods = do 
@@ -125,8 +129,8 @@ copyCppFiles wdir ddir header = do
   copyFile (wdir </> hfile) (ddir </> hfile) 
   copyFile (wdir </> cppfile) (ddir </> cppfile)
 
-copyModule :: FilePath -> FilePath -> ClassModule -> IO ()
-copyModule wdir ddir mod = do 
+copyModule :: FilePath -> FilePath -> String -> ClassModule -> IO ()
+copyModule wdir ddir prefix mod = do 
   let modbase = cmModule mod 
   let onefilecopy fname = do 
         let (fnamebody,fnameext) = splitExtension fname
@@ -139,13 +143,13 @@ copyModule wdir ddir mod = do
         if b then return () else createDirectory (ddir</>mdir)     
         copyFile origfpath newfpath 
 
-  onefilecopy $ "HROOT.Class." ++ modbase ++ ".hs"
-  onefilecopy $ "HROOT.Class." ++ modbase ++ ".RawType.hs"
-  onefilecopy $ "HROOT.Class." ++ modbase ++ ".FFI.hsc"
-  onefilecopy $ "HROOT.Class." ++ modbase ++ ".Interface.hs"
-  onefilecopy $ "HROOT.Class." ++ modbase ++ ".Cast.hs"
-  onefilecopy $ "HROOT.Class." ++ modbase ++ ".Implementation.hs"
-  -- onefilecopy $ "HROOT.Class." ++ modbase ++ ".Existential.hs"
+  onefilecopy $ prefix <.> modbase ++ ".hs"
+  onefilecopy $ prefix <.> modbase ++ ".RawType.hs"
+  onefilecopy $ prefix <.> modbase ++ ".FFI.hsc"
+  onefilecopy $ prefix <.> modbase ++ ".Interface.hs"
+  onefilecopy $ prefix <.> modbase ++ ".Cast.hs"
+  onefilecopy $ prefix <.> modbase ++ ".Implementation.hs"
+  -- onefilecopy $ prefix <.> modbase ++ ".Existential.hs"
 
   copyFile (wdir </> "HROOT.hs") (ddir </> "HROOT.hs")
 
