@@ -51,6 +51,8 @@ Library
                    Bindings.Cxx.Generate.Generator.Driver
                    Bindings.Cxx.Generate.Generator.ContentMaker
                    Bindings.Cxx.Generate.Util
+                   Bindings.Cxx.Generate.QQ.Verbatim
+                   Bindings.Cxx.Generate.Type.Annotate
 
 
                    Bindings.Cxx.Generate.ROOT
@@ -59,10 +61,8 @@ Library
                    Bindings.Cxx.Generate.ROOTsmall
                    Bindings.Cxx.Generate.ROOTAnnotatesmall
                    Bindings.Cxx.Generate.ROOTModulesmall
+                   Paths_fficxx
                 
 
   Other-Modules: 
-                   Paths_fficxx
-                   Bindings.Cxx.Generate.QQ.Verbatim
-                   Bindings.Cxx.Generate.Type.Annotate
                    HEP.Util.File
