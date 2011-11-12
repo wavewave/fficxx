@@ -15,15 +15,15 @@ Data-files: template/*.h.st
             template/HROOT.cabal.st
             template/TypeCast.hs
 
-Executable fficxx
-  Main-is: fficxx.hs
-  hs-source-dirs: exe
-  ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
-  ghc-prof-options: -caf-all -auto-all
-  Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
-                 HStringTemplate, HSH, safe, strict, filemanip, split,
-                 parsec>3, cmdargs, transformers, template-haskell, Cabal, 
-                 fficxx
+-- Executable fficxx
+--   Main-is: fficxx.hs
+--  hs-source-dirs: exe
+--  ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
+--   ghc-prof-options: -caf-all -auto-all
+--  Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
+--                 HStringTemplate, HSH, safe, strict, filemanip, split,
+--                 parsec>3, cmdargs, transformers, template-haskell, Cabal, 
+--                 fficxx
 
 Library
   hs-source-dirs: lib
@@ -53,15 +53,15 @@ Library
                    Bindings.Cxx.Generate.Util
                    Bindings.Cxx.Generate.QQ.Verbatim
                    Bindings.Cxx.Generate.Type.Annotate
-
-
-                   Bindings.Cxx.Generate.ROOT
-                   Bindings.Cxx.Generate.ROOTAnnotate
-                   Bindings.Cxx.Generate.ROOTModule
-                   Bindings.Cxx.Generate.ROOTsmall
-                   Bindings.Cxx.Generate.ROOTAnnotatesmall
-                   Bindings.Cxx.Generate.ROOTModulesmall
                    Paths_fficxx
+
+
+--                   Bindings.Cxx.Generate.ROOT
+--                   Bindings.Cxx.Generate.ROOTAnnotate
+--                   Bindings.Cxx.Generate.ROOTModule
+--                   Bindings.Cxx.Generate.ROOTsmall
+--                   Bindings.Cxx.Generate.ROOTAnnotatesmall
+--                   Bindings.Cxx.Generate.ROOTModulesmall
                 
 
   Other-Modules: 
