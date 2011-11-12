@@ -52,6 +52,8 @@ tObject =
   , AliasVirtual void_ "Print" [cstring "option"] "printObj"
   , Virtual void_    "SaveAs"  [cstring "filename", cstring "option"] 
   , Virtual int_     "Write"   [cstring "name", int "option", int "bufsize" ]
+
+  , Static  bool_    "GetObjectStat" []
   ]
 
 tObjectH = ClassImportHeader tObject "HROOTTObject.h" "HROOTTObject.cpp" 

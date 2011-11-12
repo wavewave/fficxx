@@ -158,15 +158,25 @@ hsFuncName c f = let (x:xs) = aliasedFuncName c f
                  in (toLower x) : xs
                   
 hsFuncXformer :: Function -> String 
+hsFuncXformer func@(Constructor _) = let len = length (genericFuncArgs func) 
+                                     in if len > 0
+                                        then "xform" ++ show (len - 1)
+                                        else "xformnull" 
+hsFuncXformer func@(Static _ _ _) = 
+  let len = length (genericFuncArgs func) 
+  in if len > 0
+     then "xform" ++ show (len - 1)
+     else "xformnull" 
 hsFuncXformer func = let len = length (genericFuncArgs func) 
                      in "xform" ++ show len
-                        
+
+{-                        
 hsFuncXformerNew :: Function -> String 
 hsFuncXformerNew func = let len = length (genericFuncArgs func) 
                         in if len > 0
                              then "xform" ++ show (len - 1)
                              else "xformnull" 
-
+-}
 
 genericFuncRet :: Function -> Types 
 genericFuncRet f = 
@@ -174,6 +184,7 @@ genericFuncRet f =
     Constructor _ -> self_ 
     Virtual t _ _ -> t 
     NonVirtual t _ _ -> t
+    Static t _ _ -> t
     AliasVirtual t _ _ _ -> t
     Destructor -> void_
 
@@ -187,14 +198,19 @@ aliasedFuncName c f =
     Constructor _ -> constructorName c   
     Virtual _ str _ -> str 
     NonVirtual _ str _ -> nonvirtualName c str 
+    Static _ str _ -> nonvirtualName c str 
     AliasVirtual _ _  _ alias -> alias 
     Destructor -> destructorName  
 
-cppFuncName :: Function -> String 
-cppFuncName f =   case f of 
+cppStaticName :: Class -> Function -> String 
+cppStaticName c f = class_name c ++ "::" ++ func_name f
+
+cppFuncName :: Class -> Function -> String 
+cppFuncName c f =   case f of 
     Constructor _ -> "new"
     Virtual _ _  _ -> func_name f 
     NonVirtual _ _ _ -> func_name f  
+    Static _ _ _ -> cppStaticName c f 
     AliasVirtual _ _  _ _ -> func_name f 
     Destructor -> destructorName
 

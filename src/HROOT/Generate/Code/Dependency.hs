@@ -40,6 +40,8 @@ extractClassDep (Virtual ret _ args) =
     (catMaybes [extractClassFromType ret], mapMaybe (extractClassFromType.fst) args)
 extractClassDep (NonVirtual ret _ args) = 
     (catMaybes [extractClassFromType ret], mapMaybe (extractClassFromType.fst) args)
+extractClassDep (Static ret _ args) = 
+    (catMaybes [extractClassFromType ret], mapMaybe (extractClassFromType.fst) args)
 extractClassDep (AliasVirtual ret _ args _) = 
     (catMaybes [extractClassFromType ret], mapMaybe (extractClassFromType.fst) args)
 extractClassDep Destructor = ([],[]) 

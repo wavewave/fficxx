@@ -202,7 +202,7 @@ genHsFrontInstNew c = do
           newfuncann = mkComment 0 cann
           newlinehead = "new" ++ class_name c ++ " :: " ++ argstr newfunc 
           newlinebody = "new" ++ class_name c ++ " = " 
-                              ++ hsFuncXformerNew newfunc ++ " " 
+                              ++ hsFuncXformer newfunc ++ " " 
                               ++ hscFuncName c newfunc 
           argstr func = intercalateWith connArrow id $
                           map (ctypeToHsType c.fst) (genericFuncArgs func)
@@ -230,6 +230,24 @@ genHsFrontInstNonVirtual c
 
 genAllHsFrontInstNonVirtual :: [Class] -> String 
 genAllHsFrontInstNonVirtual = intercalate "\n\n" . map fromJust . filter isJust . map genHsFrontInstNonVirtual
+
+-----
+
+genHsFrontInstStatic :: Class -> Maybe String 
+genHsFrontInstStatic c 
+  | (not.null) fs =                        
+    let header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
+        body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
+        argstr f = intercalateWith connArrow id $ 
+                     map (ctypeToHsType c.fst) (genericFuncArgs f)
+                     ++ ["IO " ++ (ctypeToHsType c . genericFuncRet) f] 
+    in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) fs
+  | otherwise = Nothing   
+ where fs = staticFuncs (class_funcs c)
+
+-----
+
+
 
 genHsFrontInstCastable :: Class -> String 
 genHsFrontInstCastable c 

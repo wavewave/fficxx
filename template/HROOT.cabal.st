@@ -26,8 +26,8 @@ $cabalIndentation$example/project1d.hs
 $cabalIndentation$test/compiletest.hs
 
 Source-repository head
-  type:     darcs
-  location: http://ianwookim.org/public/repo/HROOT
+  type:     git
+  location: https://github.com/wavewave/HROOT, https://github.com/wavewave/HROOT-generate
 
 -- Test-Suite compiletest
 --   default-language: Haskell2010

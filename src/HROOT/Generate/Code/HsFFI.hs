@@ -27,7 +27,7 @@ ffistub = "foreign import ccall \"$headerfilename$ $classname$_$funcname$\" $hsf
 hsFFIClassFunc :: FilePath -> Class -> Function -> String 
 hsFFIClassFunc headerfilename c f = if isAbstractClass c 
                        then ""
-                       else if isNewFunc f     
+                       else if (isNewFunc f || isStaticFunc f)
                               then render ffistub 
                                        [ ("headerfilename",headerfilename) 
                                        , ("classname",class_name c)

@@ -311,7 +311,10 @@ mkImplementationHs amap templates mod =
           `connRet2`
           genAllHsFrontInstNonVirtual classes
           `connRet2`
+          intercalateWith connRet id (mapMaybe genHsFrontInstStatic classes)
+          `connRet2`
           genAllHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
+        
 
 mkExistentialEach :: STGroup String -> Class -> [Class] -> String 
 mkExistentialEach templates mother daughters =   

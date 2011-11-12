@@ -12,6 +12,9 @@ data Function = Constructor { func_args :: Args }
               | NonVirtual { func_ret :: Types 
                            , func_name :: String
                            , func_args :: Args }
+              | Static     { func_ret :: Types 
+                           , func_name :: String
+                           , func_args :: Args }
               | AliasVirtual { func_ret :: Types 
                              , func_name :: String
                              , func_args :: Args 
@@ -35,6 +38,10 @@ isVirtualFunc (Virtual _ _ _)        = True
 isVirtualFunc (AliasVirtual _ _ _ _) = True 
 isVirtualFunc _ = False 
 
+isStaticFunc :: Function -> Bool 
+isStaticFunc (Static _ _ _) = True
+isStaticFunc _ = False
+
 virtualFuncs :: [Function] -> [Function] 
 virtualFuncs = filter isVirtualFunc 
 
@@ -43,7 +50,10 @@ constructorFuncs = filter isNewFunc
 
 nonVirtualNotNewFuncs :: [Function] -> [Function]
 nonVirtualNotNewFuncs = 
-  filter (\x -> (not.isVirtualFunc) x && (not.isNewFunc) x && (not.isDeleteFunc) x)
+  filter (\x -> (not.isVirtualFunc) x && (not.isNewFunc) x && (not.isDeleteFunc) x && (not.isStaticFunc) x )
+
+staticFuncs :: [Function] -> [Function] 
+staticFuncs = filter isStaticFunc
 
 argToString :: (Types,String) -> String 
 argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname 
