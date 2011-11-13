@@ -29,10 +29,10 @@ import HEP.Util.File
 ----
 
 writeTypeDeclHeaders :: STGroup String -> ClassGlobal 
-                     -> FilePath -> [ClassImportHeader]
+                     -> FilePath -> String -> [ClassImportHeader]
                      -> IO ()
-writeTypeDeclHeaders templates cglobal wdir headers = do 
-  let fn = wdir </> "HROOTType.h"
+writeTypeDeclHeaders templates cglobal wdir cprefix headers = do 
+  let fn = wdir </> cprefix ++ "Type.h"
       classes = map cihClass headers
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkTypeDeclHeader templates cglobal classes)
@@ -120,17 +120,17 @@ copyPredefined :: FilePath -> FilePath -> IO ()
 copyPredefined tdir ddir = do 
   copyFile (tdir </> "TypeCast.hs" ) (ddir </> "HROOT/TypeCast.hs") 
 
-copyCppFiles :: FilePath -> FilePath -> ClassImportHeader -> IO ()
-copyCppFiles wdir ddir header = do 
-  let thfile = "HROOTType.h"
+copyCppFiles :: FilePath -> FilePath -> String -> ClassImportHeader -> IO ()
+copyCppFiles wdir ddir cprefix header = do 
+  let thfile = cprefix ++ "Type.h"
       hfile = cihSelfHeader header
       cppfile = cihSelfCpp header
   copyFile (wdir </> thfile) (ddir </> thfile) 
   copyFile (wdir </> hfile) (ddir </> hfile) 
   copyFile (wdir </> cppfile) (ddir </> cppfile)
 
-copyModule :: FilePath -> FilePath -> String -> ClassModule -> IO ()
-copyModule wdir ddir prefix mod = do 
+copyModule :: FilePath -> FilePath -> String -> String -> ClassModule -> IO ()
+copyModule wdir ddir prefix pkgname mod = do 
   let modbase = cmModule mod 
   let onefilecopy fname = do 
         let (fnamebody,fnameext) = splitExtension fname
@@ -151,6 +151,6 @@ copyModule wdir ddir prefix mod = do
   onefilecopy $ prefix <.> modbase ++ ".Implementation.hs"
   -- onefilecopy $ prefix <.> modbase ++ ".Existential.hs"
 
-  copyFile (wdir </> "HROOT.hs") (ddir </> "HROOT.hs")
+  copyFile (wdir </> pkgname <.> "hs") (ddir </> pkgname <.> "hs")
 
   return ()
