@@ -20,6 +20,7 @@ import Data.Maybe
 import Control.Monad.State
 import Control.Monad.Reader
 
+import System.FilePath ((<.>),(</>))
 
 mkComment :: Int -> String -> String
 mkComment indent str 
@@ -442,74 +443,76 @@ genExportList = concatMap genExport
 --        then error $ "no such class :" ++ modname 
 --        else let c = head cs 
 
-importOneClass :: String -> String -> String 
-importOneClass mname typ = "import HROOT.Class." ++ mname ++ "." ++ typ 
+importOneClass :: String -> String -> String -> String 
+importOneClass prefix mname typ = "import " ++ prefix <.> mname <.> typ 
 
-genImportInModule :: [Class] -> String 
-genImportInModule cs = 
+genImportInModule :: String -> [Class] -> String 
+genImportInModule prefix cs = 
   let genImportOneClass c = 
         let n = class_name c 
-        in  intercalateWith connRet (importOneClass n) $
-              ["RawType", "Interface", "Implementation" {- , "Existential" -}]
+        in  intercalateWith connRet (importOneClass prefix n) $
+              ["RawType", "Interface", "Implementation"]
   in  intercalate "\n" (map genImportOneClass cs)
 
 
-genImportInFFI :: ClassModule -> String
-genImportInFFI mod = 
+genImportInFFI :: String -> ClassModule -> String
+genImportInFFI prefix mod = 
   let modlst = cmImportedModulesForFFI mod
-  in  intercalateWith connRet (\x->importOneClass x "RawType") modlst
+  in  intercalateWith connRet (\x->importOneClass prefix x "RawType") modlst
 
 
-genImportInInterface :: ClassModule -> String
-genImportInInterface mod = 
+genImportInInterface :: String -> ClassModule -> String
+genImportInInterface prefix mod = 
   let modlstraw = cmImportedModulesRaw mod
       modlsthigh = cmImportedModulesHigh mod
       getImportOneClassRaw mname = 
-        intercalateWith connRet (importOneClass mname) ["RawType"]
+        intercalateWith connRet (importOneClass prefix mname) ["RawType"]
       getImportOneClassHigh mname = 
-        intercalateWith connRet (importOneClass mname) ["Interface"]
-  in  importOneClass (cmModule mod) "RawType"
+        intercalateWith connRet (importOneClass prefix mname) ["Interface"]
+  in  importOneClass prefix (cmModule mod) "RawType"
       `connRet`
       intercalateWith connRet getImportOneClassRaw modlstraw
       `connRet` 
       intercalateWith connRet getImportOneClassHigh modlsthigh
 
-genImportInCast :: ClassModule -> String 
-genImportInCast mod = importOneClass (cmModule mod) "RawType"
-                      `connRet` 
-                      importOneClass (cmModule mod) "Interface"
+genImportInCast :: String -> ClassModule -> String 
+genImportInCast prefix mod = 
+    importOneClass prefix (cmModule mod) "RawType"
+    `connRet` 
+    importOneClass prefix (cmModule mod) "Interface"
 
-genImportInImplementation :: ClassModule -> String
-genImportInImplementation mod = 
+genImportInImplementation :: String -> ClassModule -> String
+genImportInImplementation prefix mod = 
   let modlstraw' = cmImportedModulesForFFI mod
       modlsthigh = nub $ map class_name $ concatMap class_allparents (cmClass mod)
-                   -- cmImportedModulesHigh mod
       modlstraw = filter (not.(flip elem modlsthigh)) modlstraw' 
       getImportOneClassRaw mname = 
-        intercalateWith connRet (importOneClass mname) ["RawType","Cast","Interface"]
+        intercalateWith connRet (importOneClass prefix mname) 
+                        ["RawType","Cast","Interface"]
       getImportOneClassHigh mname = 
-        intercalateWith connRet (importOneClass mname) ["RawType","Cast","Interface"] -- 
-        -- ,"Implementation"]
-  in  importOneClass (cmModule mod) "RawType"
+        intercalateWith connRet (importOneClass prefix mname) 
+                        ["RawType","Cast","Interface"] 
+  in  importOneClass prefix (cmModule mod) "RawType"
       `connRet`
-      importOneClass (cmModule mod) "FFI"
+      importOneClass prefix (cmModule mod) "FFI"
       `connRet`
-      importOneClass (cmModule mod) "Interface"
+      importOneClass prefix (cmModule mod) "Interface"
       `connRet`
-      importOneClass (cmModule mod) "Cast"
+      importOneClass prefix (cmModule mod) "Cast"
       `connRet`
       intercalateWith connRet getImportOneClassRaw modlstraw
       `connRet` 
       intercalateWith connRet getImportOneClassHigh modlsthigh
 
 
-genImportInExistential :: DaughterMap -> ClassModule -> String
-genImportInExistential dmap mod = 
+genImportInExistential :: DaughterMap -> String -> ClassModule -> String
+genImportInExistential dmap prefix mod = 
   let daughters = concat . catMaybes $ (map (flip M.lookup dmap)  (cmClass mod))
       alldaughters' = nub . map class_name $ daughters
       alldaughters = filter ((&&) <$> (/= "TClass") <*> (/= "TObject")) alldaughters'
       getImportOneClass mname = 
-          intercalateWith connRet (importOneClass mname) ["RawType", "Cast", "Interface", "Implementation"]
+          intercalateWith connRet (importOneClass prefix mname) 
+                          ["RawType", "Cast", "Interface", "Implementation"]
   in  intercalateWith connRet getImportOneClass alldaughters
 
 

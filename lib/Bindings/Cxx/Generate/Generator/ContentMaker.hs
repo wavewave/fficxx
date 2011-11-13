@@ -241,7 +241,7 @@ mkFFIHsc templates prefix mod =
         headers = cmCIH mod
         ffiHeaderStr = "module " ++ prefix <.> mname <.> "FFI where\n"
         ffiImportStr = "import " ++ prefix <.> mname <.> "RawType\n"
-                       ++ genImportInFFI mod
+                       ++ genImportInFFI prefix mod
         --  hsIncludeStr = genModuleImportRawType (cmImportedModulesRaw mod)
         cppIncludeStr = genModuleIncludeHeader headers
 
@@ -267,7 +267,7 @@ mkInterfaceHs amap templates prefix mod  =
                                   , ("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
   where ifaceHeaderStr = "module " ++ prefix <.> cmModule mod <.> "Interface where\n" 
         classes = cmClass mod
-        ifaceImportStr = genImportInInterface mod
+        ifaceImportStr = genImportInInterface prefix mod
         -- runReader (genModuleDecl mod) amap
         ifaceBodyStr = 
           runReader (genAllHsFrontDecl classes) amap 
@@ -286,7 +286,7 @@ mkCastHs templates prefix mod  =
                                   castHsFileName
   where castHeaderStr = "module " ++ prefix <.> cmModule mod <.> "Cast where\n" 
         classes = cmClass mod
-        castImportStr = genImportInCast mod
+        castImportStr = genImportInCast prefix mod
         castBodyStr = 
           genAllHsFrontInstCastable classes 
           `connRet2`
@@ -302,7 +302,7 @@ mkImplementationHs amap templates prefix mod =
   where -- dmap = mkDaughterMap classes
         classes = cmClass mod
         implHeaderStr = "module " ++ prefix <.> cmModule mod <.> "Implementation where\n" 
-        implImportStr = genImportInImplementation mod
+        implImportStr = genImportInImplementation prefix mod
         f y = intercalateWith connRet (flip genHsFrontInst y) (y:class_allparents y )
         g y = intercalateWith connRet (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
@@ -351,7 +351,7 @@ mkExistentialHs templates cglobal prefix mod =
         in  str 
       existEachBody = intercalateWith connRet makeOneMother classes
       existHeaderStr = "module " ++ prefix <.> cmModule mod <.> "Existential where"
-      existImportStr = genImportInExistential dsmap mod
+      existImportStr = genImportInExistential dsmap prefix mod
       hsfilestr = renderTemplateGroup 
                     templates 
                     [ ("existHeader", existHeaderStr)
@@ -368,7 +368,7 @@ mkModuleHs templates prefix mod =
                 templates 
                 [ ("moduleName", prefix <.> cmModule mod) 
                 , ("exportList", genExportList (cmClass mod)) 
-                , ("importList", genImportInModule (cmClass mod))
+                , ("importList", genImportInModule prefix (cmClass mod))
                 ]
                 moduleTemplate 
     in str

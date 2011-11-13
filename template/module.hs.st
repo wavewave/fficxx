@@ -1,10 +1,7 @@
-module HROOT.Class.$moduleName$
+module $moduleName$
   (
 $exportList$ 
   ) where
-
--- import HROOT.Class.Interface
--- import HROOT.Class.Implementation ()
 
 $importList$
 
