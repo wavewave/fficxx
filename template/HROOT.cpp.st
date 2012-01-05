@@ -1,6 +1,7 @@
 $header$
 
 using namespace std;
+$namespace$
 
 template<class ToType, class FromType>
 const ToType* to_const(const FromType* x) {

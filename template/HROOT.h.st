@@ -2,7 +2,7 @@
 extern "C" { 
 #endif 
 
-#include "HROOTType.h"
+#include "$cprefix$Type.h"
 
 $declarationheader$
 

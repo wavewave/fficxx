@@ -169,9 +169,10 @@ mkTypeDeclHeader templates cglobal classes =
         typeDeclHeaderFileName
 
 mkDeclHeader :: STGroup String -> ClassGlobal 
+             -> String 
              -> ClassImportHeader 
              -> String 
-mkDeclHeader templates cglobal header =
+mkDeclHeader templates cglobal cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"") $
@@ -200,7 +201,8 @@ mkDeclHeader templates cglobal header =
                       classDeclsStr 
   in  renderTemplateGroup 
         templates 
-        [ ("declarationheader", declHeaderStr ) 
+        [ ("cprefix", cprefix)
+        , ("declarationheader", declHeaderStr ) 
         , ("declarationbody", declBodyStr ) ] 
         declarationTemplate
 

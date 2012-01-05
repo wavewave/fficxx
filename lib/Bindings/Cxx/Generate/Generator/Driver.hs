@@ -38,12 +38,12 @@ writeTypeDeclHeaders templates cglobal wdir cprefix headers = do
     hPutStrLn h (mkTypeDeclHeader templates cglobal classes)
 
 writeDeclHeaders :: STGroup String -> ClassGlobal 
-                 -> FilePath -> ClassImportHeader
+                 -> FilePath -> String -> ClassImportHeader
                  -> IO () 
-writeDeclHeaders templates cglobal wdir header = do 
+writeDeclHeaders templates cglobal wdir cprefix header = do 
   let fn = wdir </> cihSelfHeader header
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkDeclHeader templates cglobal header)
+    hPutStrLn h (mkDeclHeader templates cglobal cprefix header)
 
 writeCppDef :: STGroup String -> FilePath -> ClassImportHeader -> IO () 
 writeCppDef templates wdir header = do 
