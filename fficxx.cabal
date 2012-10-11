@@ -1,5 +1,5 @@
 Name:		fficxx
-Version:	0.1
+Version:	0.1.0.999
 Synopsis:	automatic C++ binding generation
 Description: 	automatic C++ binding generation 
 License:        GPL-3
@@ -15,15 +15,6 @@ Data-files: template/*.h.st
             template/HROOT.cabal.st
             template/TypeCast.hs
 
--- Executable fficxx
---   Main-is: fficxx.hs
---  hs-source-dirs: exe
---  ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
---   ghc-prof-options: -caf-all -auto-all
---  Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
---                 HStringTemplate, HSH, safe, strict, filemanip, split,
---                 parsec>3, cmdargs, transformers, template-haskell, Cabal, 
---                 fficxx
 
 Library
   hs-source-dirs: lib
@@ -34,7 +25,6 @@ Library
                  parsec>3, cmdargs, transformers, template-haskell, Cabal 
 
   Exposed-Modules: 
-                   Text.StringTemplate.Helpers
                    HEP.Parser.Config
                    Bindings.Cxx.Generate.Type.CType
                    Bindings.Cxx.Generate.Type.Class
@@ -54,15 +44,6 @@ Library
                    Bindings.Cxx.Generate.QQ.Verbatim
                    Bindings.Cxx.Generate.Type.Annotate
                    Paths_fficxx
-
-
---                   Bindings.Cxx.Generate.ROOT
---                   Bindings.Cxx.Generate.ROOTAnnotate
---                   Bindings.Cxx.Generate.ROOTModule
---                   Bindings.Cxx.Generate.ROOTsmall
---                   Bindings.Cxx.Generate.ROOTAnnotatesmall
---                   Bindings.Cxx.Generate.ROOTModulesmall
-                
-
   Other-Modules: 
                    HEP.Util.File
+                   Text.StringTemplate.Helpers
