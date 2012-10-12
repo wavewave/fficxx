@@ -13,7 +13,7 @@ typedef Type ## _t const* const_ ## Type ## _p
 
 $typeDeclBody$
 
-#endif __HROOTTYPE__
+#endif // __HROOTTYPE__
 
 #ifdef __cplusplus
 }

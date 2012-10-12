@@ -116,9 +116,17 @@ writeHROOTHs templates wdir mods = do
     hPutStrLn h str
 
 
-copyPredefined :: FilePath -> FilePath -> IO () 
-copyPredefined tdir ddir = do 
-  copyFile (tdir </> "TypeCast.hs" ) (ddir </> "HROOT/TypeCast.hs") 
+notExistThenCreate :: FilePath -> IO () 
+notExistThenCreate dir = do 
+    b <- doesDirectoryExist dir
+    if b then return () else createDirectory dir     
+
+
+copyPredefined :: FilePath -> FilePath -> String -> IO () 
+copyPredefined tdir ddir prefix = do 
+    notExistThenCreate (ddir </> prefix)
+    copyFile (tdir </> "TypeCast.hs" ) (ddir </> prefix </> "TypeCast.hs") 
+
 
 copyCppFiles :: FilePath -> FilePath -> String -> ClassImportHeader -> IO ()
 copyCppFiles wdir ddir cprefix header = do 
@@ -138,9 +146,9 @@ copyModule wdir ddir prefix pkgname mod = do
             origfpath = wdir </> fname
             (mfile',mext') = splitExtension mfile
             newfpath = ddir </> mdir </> mfile' ++ fnameext   
-
-        b <- doesDirectoryExist (ddir</>mdir)
-        if b then return () else createDirectory (ddir</>mdir)     
+        -- b <- doesDirectoryExist (ddir</>mdir)
+        -- if b then return () else createDirectory (ddir</>mdir)     
+        notExistThenCreate (ddir </> mdir) 
         copyFile origfpath newfpath 
 
   onefilecopy $ prefix <.> modbase ++ ".hs"
