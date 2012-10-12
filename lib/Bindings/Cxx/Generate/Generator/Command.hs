@@ -4,12 +4,12 @@ module Bindings.Cxx.Generate.Generator.Command where
 
 import System.Console.CmdArgs
 
-data HROOT_Generate = Generate { config :: FilePath } 
-                    deriving (Show,Data,Typeable)
+data FFICXX = Generate { config :: FilePath } 
+            deriving (Show,Data,Typeable)
 
-generate :: HROOT_Generate
-generate = Generate { config = "HROOT.conf" } 
+generate :: FFICXX
+generate = Generate { config = "Pkg.conf" } 
 
-mode :: HROOT_Generate
+mode :: FFICXX
 mode = modes [generate] 
 

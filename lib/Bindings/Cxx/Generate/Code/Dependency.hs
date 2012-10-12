@@ -7,16 +7,16 @@ import Bindings.Cxx.Generate.Type.Class
 import Bindings.Cxx.Generate.Type.Method
 import Bindings.Cxx.Generate.Type.CType
 
-mkHROOTHeaderFileName :: Class -> String 
-mkHROOTHeaderFileName c = "HROOT" ++ (class_name c) ++ ".h"   
+mkPkgHeaderFileName :: Class -> String 
+mkPkgHeaderFileName c = "Pkg" ++ (class_name c) ++ ".h"   
 
-mkHROOTCppFileName :: Class -> String 
-mkHROOTCppFileName c = "HROOT" ++ (class_name c) ++ ".cpp"
+mkPkgCppFileName :: Class -> String 
+mkPkgCppFileName c = "Pkg" ++ (class_name c) ++ ".cpp"
 
-mkHROOTIncludeHeaders :: Class -> [String] 
-mkHROOTIncludeHeaders c =
+mkPkgIncludeHeaders :: Class -> [String] 
+mkPkgIncludeHeaders c =
   let cs = class_allparents c
-  in  map mkHROOTHeaderFileName cs
+  in  map mkPkgHeaderFileName cs
 
 mkCROOTIncludeHeaders :: Class -> [String] 
 mkCROOTIncludeHeaders c = 
@@ -25,7 +25,7 @@ mkCROOTIncludeHeaders c =
     _ -> [(class_name c) ++ ".h"]
 
 mkCIH :: Class -> ClassImportHeader
-mkCIH c = ClassImportHeader c (mkHROOTHeaderFileName c) (mkHROOTCppFileName c) (mkHROOTIncludeHeaders c) (mkCROOTIncludeHeaders c)
+mkCIH c = ClassImportHeader c (mkPkgHeaderFileName c) (mkPkgCppFileName c) (mkPkgIncludeHeaders c) (mkCROOTIncludeHeaders c)
 
 extractClassFromType :: Types -> Maybe String
 extractClassFromType Void = Nothing

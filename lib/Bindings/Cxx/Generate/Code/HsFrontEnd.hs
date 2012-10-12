@@ -69,13 +69,13 @@ hsClassDeclHeaderTmpl = "$classann$\nclass $constraint$$classname$ a where"
 genHsFrontDecl :: Class -> Reader AnnotateMap String 
 genHsFrontDecl c = do 
   amap <- ask  
-  let cann = maybe "" id $ M.lookup (HROOTClass,class_name c) amap 
+  let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap 
   let header = render hsClassDeclHeaderTmpl [ ("classname", typeclassName c ) 
                                             , ("constraint", classprefix c) 
                                             , ("classann",   mkComment 0 cann) ] 
       bodyline func = 
         let fname = hsFuncName c func 
-            mann = maybe "" id $ M.lookup (HROOTMethod,fname) amap
+            mann = maybe "" id $ M.lookup (PkgMethod,fname) amap
         in  render hsClassDeclFuncTmpl 
                                     [ ("funcname", hsFuncName c func) 
                                     , ("args" , prefixstr func ++ argstr func )
@@ -199,7 +199,7 @@ genHsFrontInstNew c = do
     then return Nothing
     else do 
       let newfunc = head newfuncs
-          cann = maybe "" id $ M.lookup (HROOTMethod, "new" ++ class_name c) amap
+          cann = maybe "" id $ M.lookup (PkgMethod, "new" ++ class_name c) amap
           newfuncann = mkComment 0 cann
           newlinehead = "new" ++ class_name c ++ " :: " ++ argstr newfunc 
           newlinebody = "new" ++ class_name c ++ " = " 

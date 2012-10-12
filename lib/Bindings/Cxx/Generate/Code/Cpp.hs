@@ -125,8 +125,8 @@ genAllCppDefInstNonVirtual =
 genAllCppHeaderInclude :: ClassImportHeader -> String 
 genAllCppHeaderInclude header = 
     intercalateWith connRet (\x->"#include \""++x++"\"") $
-      cihIncludedHROOTHeaders header
-        ++ cihIncludedCROOTHeaders header
+      cihIncludedHPkgHeaders header
+        ++ cihIncludedCPkgHeaders header
 
 genModuleIncludeHeader :: [ClassImportHeader] -> String 
 genModuleIncludeHeader headers =
@@ -147,7 +147,7 @@ genIncludeFiles cmods =
         return (cihSelfHeader y) 
       selfheaders = nub selfheaders'
       includeFileStrs = map (\x->indent++x) selfheaders
-  in  unlines ((indent++"HROOTType.h") : includeFileStrs)
+  in  unlines ((indent++"PkgType.h") : includeFileStrs)
 
 genCsrcFiles :: [ClassModule] -> String
 genCsrcFiles cmods =

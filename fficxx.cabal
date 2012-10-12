@@ -12,7 +12,7 @@ Data-files: template/*.h.st
             template/*.hs.st
             template/*.hsc.st
             template/*.cpp.st
-            template/HROOT.cabal.st
+            template/Pkg.cabal.st
             template/TypeCast.hs
 
 

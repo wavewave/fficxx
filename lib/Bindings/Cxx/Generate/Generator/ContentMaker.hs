@@ -26,8 +26,6 @@ import System.IO
 import Bindings.Cxx.Generate.Config
 import Bindings.Cxx.Generate.Code.Cabal 
 
--- import HEP.Util.File
-
 import Distribution.Package
 import Distribution.PackageDescription hiding (exposedModules)
 import Distribution.PackageDescription.Parse
@@ -37,17 +35,7 @@ import Distribution.Version
 import Data.List 
 import Data.Maybe
 
-{-
-getHROOTVersion :: HROOTConfig -> IO String 
-getHROOTVersion conf = do 
-  let hrootgeneratecabal = hrootConfig_scriptBaseDir conf </> "HROOT-generate.cabal"
-  gdescs <- readPackageDescription normal hrootgeneratecabal
-  
-  let vnums = versionBranch . pkgVersion . package . packageDescription $ gdescs 
-  return $ intercalate "." (map show vnums)
---  putStrLn $ "version = " ++ show vnum
--}
-
+ 
 ----- 
 
 srcDir :: FilePath -> FilePath
@@ -60,13 +48,13 @@ moduleTemplate :: String
 moduleTemplate = "module.hs"
 
 cabalTemplate :: String 
-cabalTemplate = "HROOT.cabal"
+cabalTemplate = "Pkg.cabal"
 
 declarationTemplate :: String
-declarationTemplate = "HROOT.h"
+declarationTemplate = "Pkg.h"
 
 typeDeclHeaderFileName :: String
-typeDeclHeaderFileName = "HROOTType.h"
+typeDeclHeaderFileName = "PkgType.h"
 
 declbodyTemplate :: String
 declbodyTemplate    = "declbody.h"
@@ -75,7 +63,7 @@ funcdeclTemplate :: String
 funcdeclTemplate    = "funcdecl.h" 
 
 definitionTemplate :: String
-definitionTemplate = "HROOT.cpp"
+definitionTemplate = "Pkg.cpp"
 
 classDefTemplate :: String
 classDefTemplate   = "classdef.cpp"
@@ -87,10 +75,10 @@ funcbodyTemplate :: String
 funcbodyTemplate   = "functionbody.cpp"
 
 headerFileName :: String
-headerFileName = "HROOT.h"
+headerFileName = "Pkg.h"
 
 cppFileName :: String
-cppFileName = "HROOT.cpp" 
+cppFileName = "Pkg.cpp" 
 
 hscFileName :: String
 hscFileName = "FFI.hsc"
@@ -139,9 +127,9 @@ mkParentDef f c = g (class_allparents c,c)
   where g (ps,c) = concatMap (\p -> f (p,c)) ps
 
 {-
-mkCabalFile :: HROOTConfig -> STGroup String -> Handle -> [ClassModule] -> IO () 
+mkCabalFile :: PkgConfig -> STGroup String -> Handle -> [ClassModule] -> IO () 
 mkCabalFile config templates h classmodules = do 
-  version <- getHROOTVersion config
+  version <- getPkgVersion config
 
   let str = renderTemplateGroup 
               templates 
@@ -176,8 +164,7 @@ mkDeclHeader templates cglobal cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"") $
-                        cihIncludedHROOTHeaders header
-                      -- genAllCppHeaderInclude header
+                        cihIncludedHPkgHeaders header
       declDefStr    = genAllCppHeaderTmplVirtual classes 
                       `connRet2`
                       genAllCppHeaderTmplNonVirtual classes 
@@ -185,7 +172,6 @@ mkDeclHeader templates cglobal cprefix header =
                       genAllCppDefTmplVirtual classes
                       `connRet2`
                        genAllCppDefTmplNonVirtual classes
-      -- typeDeclStr   = genAllCppHeaderTmplType classes 
       dsmap         = cgDaughterSelfMap cglobal
       classDeclsStr = if class_name aclass /= "Deletable"
                         then mkParentDef genCppHeaderInstVirtual aclass 
@@ -196,8 +182,6 @@ mkDeclHeader templates cglobal cprefix header =
                         else "" 
       declBodyStr   = declDefStr 
                       `connRet2` 
-                      -- typeDeclStr 
-                      -- `connRet2` 
                       classDeclsStr 
   in  renderTemplateGroup 
         templates 
@@ -211,8 +195,7 @@ mkDefMain templates header =
   let classes = [cihClass header]
       headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (cihSelfHeader header) ++ "\"" 
       aclass = cihClass header
-      cppBody = -- mkDaughterDef genCppDefInstVirtual dsmap
-                mkParentDef genCppDefInstVirtual (cihClass header)
+      cppBody = mkParentDef genCppDefInstVirtual (cihClass header)
                 `connRet` 
                 if isAbstractClass aclass 
                   then "" 

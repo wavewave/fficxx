@@ -18,7 +18,7 @@ import HEP.Util.File
 
 -- Modules
 
--- | Generate HROOT.cabal file 
+-- | Generate Pkg.cabal file 
 
 -- | Generate Existential.hs file 
 
@@ -102,16 +102,16 @@ writeModuleHs templates wdir prefix mod = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkModuleHs templates prefix mod)
 
-writeHROOTHs :: STGroup String -> FilePath -> [ClassModule] -> IO () 
-writeHROOTHs templates wdir mods = do 
-  let fn = wdir </> "HROOT.hs"
-      exportListStr = intercalateWith conncomma ((" module HROOT.Class."++).cmModule) mods 
-      importListStr = intercalateWith connRet (("import HROOT.Class."++).cmModule) mods
+writePkgHs :: STGroup String -> FilePath -> [ClassModule] -> IO () 
+writePkgHs templates wdir mods = do 
+  let fn = wdir </> "Pkg.hs"
+      exportListStr = intercalateWith conncomma ((" module Pkg.Class."++).cmModule) mods 
+      importListStr = intercalateWith connRet (("import Pkg.Class."++).cmModule) mods
       str = renderTemplateGroup 
               templates 
               [ ("exportList", exportListStr) 
               , ("importList", importListStr) ]
-              "HROOT.hs"
+              "Pkg.hs"
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h str
 

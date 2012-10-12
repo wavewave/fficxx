@@ -2,10 +2,10 @@ module Bindings.Cxx.Generate.Type.Annotate where
 
 import qualified Data.Map as M
 
-data HROOTType = HROOTModule | HROOTClass | HROOTMethod 
+data PkgType = PkgModule | PkgClass | PkgMethod 
                deriving (Show,Eq,Ord)
 
-type AnnotateMap = M.Map (HROOTType,String) String
+type AnnotateMap = M.Map (PkgType,String) String
 
 
 
