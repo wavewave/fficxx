@@ -24,7 +24,7 @@ mkPkgIncludeHeaders pkgname c =
   let cs = class_allparents c
   in  map (mkPkgHeaderFileName pkgname) cs
 
-
+{-
 -- this function must be outsourced!
 mkCROOTIncludeHeaders :: Class 
                       -> [String] 
@@ -32,16 +32,16 @@ mkCROOTIncludeHeaders c =
   case class_name c of
     "Deletable" -> [] 
     _ -> [(class_name c) ++ ".h"]
+-}
 
-
-mkCIH :: String   -- ^ package name 
+mkCIH :: (String,Class->[String])  -- ^ (package name, mkIncludeHeaders)  
       -> Class 
       -> ClassImportHeader
-mkCIH pkgname c = ClassImportHeader c 
-                                    (mkPkgHeaderFileName pkgname c) 
-                                    (mkPkgCppFileName pkgname c) 
-                                    (mkPkgIncludeHeaders pkgname c) 
-                                    (mkCROOTIncludeHeaders c)
+mkCIH (pkgname,mkincheaders) c = ClassImportHeader c 
+                                   (mkPkgHeaderFileName pkgname c) 
+                                   (mkPkgCppFileName pkgname c) 
+                                   (mkPkgIncludeHeaders pkgname c) 
+                                   (mkincheaders c)
 
 extractClassFromType :: Types -> Maybe String
 extractClassFromType Void = Nothing
@@ -89,20 +89,21 @@ mkModuleDepFFI c =
   in  alldeps
 
                     
-mkClassModule :: String -> Class -> ClassModule 
-mkClassModule pkgname  = 
+mkClassModule :: (String,Class->[String])
+              -> Class -> ClassModule 
+mkClassModule (pkgname,mkincheaders) = 
   ClassModule <$> class_name
               <*> return
-              <*> return . mkCIH pkgname 
+              <*> return . mkCIH (pkgname,mkincheaders) 
               <*> mkModuleDepRaw
               <*> mkModuleDepHigh
               <*> mkModuleDepFFI 
 
-mkAllClassModulesAndCIH :: String   -- ^ package name 
+mkAllClassModulesAndCIH :: (String,Class->[String]) -- ^ (package name,mkIncludeHeaders)
                         -> [Class] 
                         -> ([ClassModule],[ClassImportHeader])
-mkAllClassModulesAndCIH pkgname cs = 
-  let ms = map (mkClassModule pkgname) cs 
+mkAllClassModulesAndCIH (pkgname,mkincheaders) cs = 
+  let ms = map (mkClassModule (pkgname,mkincheaders)) cs 
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
   in (ms,cihs)
