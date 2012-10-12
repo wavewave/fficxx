@@ -13,19 +13,9 @@ import Text.StringTemplate
 import Text.StringTemplate.Helpers
 
 import HEP.Util.File 
+
 -----
 ---- Header and Cpp file
-
--- Modules
-
--- | Generate Pkg.cabal file 
-
--- | Generate Existential.hs file 
-
-----------
-
-----
-
 ----
 
 writeTypeDeclHeaders :: STGroup String -> ClassGlobal 
@@ -102,11 +92,15 @@ writeModuleHs templates wdir prefix mod = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkModuleHs templates prefix mod)
 
-writePkgHs :: STGroup String -> FilePath -> [ClassModule] -> IO () 
-writePkgHs templates wdir mods = do 
-  let fn = wdir </> "Pkg.hs"
-      exportListStr = intercalateWith conncomma ((" module Pkg.Class."++).cmModule) mods 
-      importListStr = intercalateWith connRet (("import Pkg.Class."++).cmModule) mods
+writePkgHs :: (String,String) -- ^ (package name, module prefix) 
+           -> STGroup String 
+           -> FilePath 
+           -> [ClassModule] 
+           -> IO () 
+writePkgHs (pkgname,hprefix) templates wdir mods = do 
+  let fn = wdir </> pkgname <.> "hs"
+      exportListStr = intercalateWith conncomma ((\x->" module " ++ hprefix ++"."++x).cmModule) mods 
+      importListStr = intercalateWith connRet ((\x->"import " ++ hprefix++"."++x).cmModule) mods
       str = renderTemplateGroup 
               templates 
               [ ("exportList", exportListStr) 

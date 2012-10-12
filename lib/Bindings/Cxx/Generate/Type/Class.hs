@@ -22,7 +22,7 @@ data ClassImportHeader = ClassImportHeader
                        , cihSelfCpp :: String
                        , cihIncludedHPkgHeaders :: [String] 
                        , cihIncludedCPkgHeaders :: [String] 
-                       }
+                       } deriving (Show)
 
 data ClassModule = ClassModule 
                    { cmModule :: String
@@ -31,7 +31,7 @@ data ClassModule = ClassModule
                    , cmImportedModulesRaw :: [String]                   
                    , cmImportedModulesHigh :: [String]
                    , cmImportedModulesForFFI :: [String]
-                   } 
+                   } deriving (Show)
 
 data ClassGlobal = ClassGlobal 
                    { cgDaughterSelfMap :: DaughterMap 

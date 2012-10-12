@@ -2,8 +2,7 @@ module Bindings.Cxx.Generate.Code.Cabal where
 
 import Bindings.Cxx.Generate.Type.Class 
 
-import Data.List
-
+cabalIndentation :: String 
 cabalIndentation = replicate 23 ' ' 
 
 
@@ -27,5 +26,4 @@ genOtherModules prefix cmods =
       interface= map ((\x->indentspace++prefix++"."++x++".Interface").cmModule) cmods
       cast = map ((\x->indentspace++prefix++"."++x++".Cast").cmModule) cmods 
       implementation = map ((\x->indentspace++prefix++"."++x++".Implementation").cmModule) cmods
-      --   existential = map ((\x->indentspace++"Pkg.Class."++x++".Existential").cmModule) cmods 
-  in  unlines (rawType++ffi++interface++cast++implementation {- ++existential -})
+  in  unlines (rawType++ffi++interface++cast++implementation)
