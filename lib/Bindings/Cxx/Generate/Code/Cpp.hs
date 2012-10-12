@@ -138,8 +138,10 @@ genModuleIncludeHeader headers =
   
 ----
 
-genIncludeFiles :: [ClassModule] -> String
-genIncludeFiles cmods =
+genIncludeFiles :: String        -- ^ package name 
+                -> [ClassModule] 
+                -> String
+genIncludeFiles pkgname cmods =
   let indent = cabalIndentation 
       selfheaders' = do 
         x <- cmods
@@ -147,7 +149,7 @@ genIncludeFiles cmods =
         return (cihSelfHeader y) 
       selfheaders = nub selfheaders'
       includeFileStrs = map (\x->indent++x) selfheaders
-  in  unlines ((indent++"PkgType.h") : includeFileStrs)
+  in  unlines ((indent++pkgname++"Type.h") : includeFileStrs)
 
 genCsrcFiles :: [ClassModule] -> String
 genCsrcFiles cmods =
