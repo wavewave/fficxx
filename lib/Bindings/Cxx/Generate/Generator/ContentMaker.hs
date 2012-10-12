@@ -138,8 +138,9 @@ mkTypeDeclHeader templates cglobal classes =
         [ ("typeDeclBody", typeDeclBodyStr ) ] 
         typeDeclHeaderFileName
 
-mkDeclHeader :: STGroup String -> ClassGlobal 
-             -> String 
+mkDeclHeader :: STGroup String 
+             -> ClassGlobal 
+             -> String  -- ^ C prefix 
              -> ClassImportHeader 
              -> String 
 mkDeclHeader templates cglobal cprefix header =
@@ -172,7 +173,9 @@ mkDeclHeader templates cglobal cprefix header =
         , ("declarationbody", declBodyStr ) ] 
         declarationTemplate
 
-mkDefMain :: STGroup String -> ClassImportHeader -> String 
+mkDefMain :: STGroup String 
+          -> ClassImportHeader 
+          -> String 
 mkDefMain templates header =
   let classes = [cihClass header]
       headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (cihSelfHeader header) ++ "\"" 
@@ -194,12 +197,14 @@ mkDefMain templates header =
 
 
 
-mkFFIHsc :: STGroup String -> String -> ClassModule -> String 
+mkFFIHsc :: STGroup String 
+         -> String 
+         -> ClassModule 
+         -> String 
 mkFFIHsc templates prefix mod = 
     renderTemplateGroup templates 
                         [ ("ffiHeader", ffiHeaderStr)
                         , ("ffiImport", ffiImportStr)
-                        -- , ("hsInclude", hsIncludeStr) 
                         , ("cppInclude", cppIncludeStr)
                         , ("hsFunctionBody", genAllHsFFI headers) ]
                         ffiHscFileName
@@ -209,13 +214,15 @@ mkFFIHsc templates prefix mod =
         ffiHeaderStr = "module " ++ prefix <.> mname <.> "FFI where\n"
         ffiImportStr = "import " ++ prefix <.> mname <.> "RawType\n"
                        ++ genImportInFFI prefix mod
-        --  hsIncludeStr = genModuleImportRawType (cmImportedModulesRaw mod)
         cppIncludeStr = genModuleIncludeHeader headers
 
                      
 
 
-mkRawTypeHs :: STGroup String -> String -> ClassModule -> String
+mkRawTypeHs :: STGroup String 
+            -> String            -- ^ haskell prefix
+            -> ClassModule 
+            -> String
 mkRawTypeHs templates prefix mod = 
     renderTemplateGroup templates [ ("rawtypeHeader", rawtypeHeaderStr) 
                                   , ("rawtypeBody", rawtypeBodyStr)] rawtypeHsFileName
@@ -223,11 +230,14 @@ mkRawTypeHs templates prefix mod =
         classes = cmClass mod
         rawtypeBodyStr = 
           intercalateWith connRet2 hsClassRawType (filter (not.isAbstractClass) classes)
-          -- mkRawClasses (filter (not.isAbstractClass) classes)
 
 
 
-mkInterfaceHs :: AnnotateMap -> STGroup String -> String -> ClassModule -> String    
+mkInterfaceHs :: AnnotateMap 
+              -> STGroup String 
+              -> String           -- ^ haskell prefix
+              -> ClassModule 
+              -> String    
 mkInterfaceHs amap templates prefix mod  = 
     renderTemplateGroup templates [ ("ifaceHeader", ifaceHeaderStr) 
                                   , ("ifaceImport", ifaceImportStr)
@@ -235,7 +245,6 @@ mkInterfaceHs amap templates prefix mod  =
   where ifaceHeaderStr = "module " ++ prefix <.> cmModule mod <.> "Interface where\n" 
         classes = cmClass mod
         ifaceImportStr = genImportInInterface prefix mod
-        -- runReader (genModuleDecl mod) amap
         ifaceBodyStr = 
           runReader (genAllHsFrontDecl classes) amap 
           `connRet2`
@@ -266,8 +275,7 @@ mkImplementationHs amap templates prefix mod =
                         , ("implImport", implImportStr)
                         , ("implBody", implBodyStr ) ]
                         "Implementation.hs"
-  where -- dmap = mkDaughterMap classes
-        classes = cmClass mod
+  where classes = cmClass mod
         implHeaderStr = "module " ++ prefix <.> cmModule mod <.> "Implementation where\n" 
         implImportStr = genImportInImplementation prefix mod
         f y = intercalateWith connRet (flip genHsFrontInst y) (y:class_allparents y )
