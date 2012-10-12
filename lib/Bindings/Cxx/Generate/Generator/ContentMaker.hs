@@ -47,8 +47,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 moduleTemplate :: String 
 moduleTemplate = "module.hs"
 
-cabalTemplate :: String 
-cabalTemplate = "Pkg.cabal"
+-- cabalTemplate :: String 
+-- cabalTemplate = "Pkg.cabal"
 
 declarationTemplate :: String
 declarationTemplate = "Pkg.h"
@@ -126,24 +126,6 @@ mkParentDef :: ((Class,Class)->String) -> Class -> String
 mkParentDef f c = g (class_allparents c,c)
   where g (ps,c) = concatMap (\p -> f (p,c)) ps
 
-{-
-mkCabalFile :: PkgConfig -> STGroup String -> Handle -> [ClassModule] -> IO () 
-mkCabalFile config templates h classmodules = do 
-  version <- getPkgVersion config
-
-  let str = renderTemplateGroup 
-              templates 
-              [ ("version", version) 
-              , ("csrcFiles", genCsrcFiles classmodules)
-              , ("includeFiles", genIncludeFiles classmodules) 
-              , ("cppFiles", genCppFiles classmodules)
-              , ("exposedModules", genExposedModules classmodules) 
-              , ("otherModules", genOtherModules classmodules)
-              , ("cabalIndentation", cabalIndentation)
-              ]
-              cabalTemplate 
-  hPutStrLn h str
--}
 
 
 mkTypeDeclHeader :: STGroup String -> ClassGlobal 
