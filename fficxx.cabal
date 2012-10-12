@@ -37,7 +37,7 @@ Library
                    Bindings.Cxx.Generate.Code.HsFFI
                    Bindings.Cxx.Generate.Code.Cabal
                    Bindings.Cxx.Generate.Code.Dependency
-                   Bindings.Cxx.Generate.Generator.Command
+                   -- Bindings.Cxx.Generate.Generator.Command
                    Bindings.Cxx.Generate.Generator.Driver
                    Bindings.Cxx.Generate.Generator.ContentMaker
                    Bindings.Cxx.Generate.Util
