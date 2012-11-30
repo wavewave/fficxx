@@ -3,11 +3,19 @@ module Bindings.Cxx.Generate.Util where
 
 -- 
 import           Data.Char 
-import           Data.List (find)
+import           Data.List
+import           Data.List.Split 
 import qualified Text.StringTemplate as ST
 -- 
 import           Bindings.Cxx.Generate.Type.CType 
 -- 
+
+moduleDirFile :: String -> (String,String)
+moduleDirFile mname = 
+  let splitted = splitOn "." mname
+      moddir  = intercalate "/" (init splitted )
+      modfile = (last splitted) ++ ".hs" 
+  in  (moddir, modfile)
 
 hline :: IO ()
 hline = putStrLn "--------------------------------------------------------"

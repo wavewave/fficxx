@@ -1,5 +1,5 @@
 Name:		fficxx
-Version:	0.1.0.999
+Version:	0.0.999
 Synopsis:	automatic C++ binding generation
 Description: 	automatic C++ binding generation 
 License:        GPL-3
@@ -20,12 +20,18 @@ Library
   hs-source-dirs: lib
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
-  Build-Depends: base>4, mtl>2, containers, filepath>1, directory, process, 
-                 HStringTemplate, HSH, safe, strict, filemanip, split,
-                 parsec>3, cmdargs, transformers, template-haskell, Cabal 
+  Build-Depends: base>4, 
+                 mtl>2, 
+                 containers, 
+                 filepath>1, 
+                 directory, 
+                 HStringTemplate, 
+                 split,
+                 transformers >= 0.3, 
+                 template-haskell,  
+                 Cabal 
 
   Exposed-Modules: 
-                   HEP.Parser.Config
                    Bindings.Cxx.Generate.Type.CType
                    Bindings.Cxx.Generate.Type.Class
                    Bindings.Cxx.Generate.Type.Method
@@ -37,13 +43,10 @@ Library
                    Bindings.Cxx.Generate.Code.HsFFI
                    Bindings.Cxx.Generate.Code.Cabal
                    Bindings.Cxx.Generate.Code.Dependency
-                   -- Bindings.Cxx.Generate.Generator.Command
                    Bindings.Cxx.Generate.Generator.Driver
                    Bindings.Cxx.Generate.Generator.ContentMaker
                    Bindings.Cxx.Generate.Util
                    Bindings.Cxx.Generate.QQ.Verbatim
                    Bindings.Cxx.Generate.Type.Annotate
                    Paths_fficxx
-  Other-Modules: 
-                   HEP.Util.File
-                   -- Text.StringTemplate.Helpers
+

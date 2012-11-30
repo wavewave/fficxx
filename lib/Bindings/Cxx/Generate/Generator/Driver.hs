@@ -12,9 +12,8 @@ import Bindings.Cxx.Generate.Util
 import Text.StringTemplate
 -- import Text.StringTemplate.Helpers
 
-import HEP.Util.File 
 
------
+----
 ---- Header and Cpp file
 ----
 
