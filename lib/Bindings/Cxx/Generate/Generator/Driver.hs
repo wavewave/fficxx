@@ -10,7 +10,7 @@ import Bindings.Cxx.Generate.Generator.ContentMaker
 import Bindings.Cxx.Generate.Util
 
 import Text.StringTemplate
-import Text.StringTemplate.Helpers
+-- import Text.StringTemplate.Helpers
 
 import HEP.Util.File 
 

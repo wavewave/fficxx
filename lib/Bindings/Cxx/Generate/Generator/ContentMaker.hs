@@ -4,7 +4,7 @@ import Control.Applicative
 import Control.Monad.Trans.Reader
 
 import Text.StringTemplate hiding (render)
-import Text.StringTemplate.Helpers
+-- import Text.StringTemplate.Helpers
 
 import qualified Data.Map as M
 

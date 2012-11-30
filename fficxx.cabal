@@ -46,4 +46,4 @@ Library
                    Paths_fficxx
   Other-Modules: 
                    HEP.Util.File
-                   Text.StringTemplate.Helpers
+                   -- Text.StringTemplate.Helpers

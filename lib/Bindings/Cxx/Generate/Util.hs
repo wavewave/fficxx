@@ -1,9 +1,13 @@
 module Bindings.Cxx.Generate.Util where
 
-import Bindings.Cxx.Generate.Type.CType 
 
-import Data.Char 
-import Text.StringTemplate.Helpers
+-- 
+import           Data.Char 
+import           Data.List (find)
+import qualified Text.StringTemplate as ST
+-- 
+import           Bindings.Cxx.Generate.Type.CType 
+-- 
 
 hline :: IO ()
 hline = putStrLn "--------------------------------------------------------"
@@ -80,4 +84,27 @@ ctypToStr ctyp isconst =
         NoConst -> typword 
         
 render :: String -> [(String,String)] -> String        
-render = flip render1 
+render tmpl attribs = (ST.render . ST.setManyAttrib attribs . ST.newSTMP) tmpl 
+   -- flip render1
+
+renderTemplateGroup :: (ST.ToSElem a) => ST.STGroup String -> [(String,a)] 
+                    -> [Char] -> String 
+renderTemplateGroup gr attrs tmpl = 
+    maybe ("template not found: " ++ tmpl)
+          (ST.toString . setManyAttribSafer attrs) 
+          (ST.getStringTemplate tmpl gr)
+ 
+setManyAttribSafer :: (ST.Stringable b, ST.ToSElem a) => 
+                      [(String, a)] 
+                   -> ST.StringTemplate b 
+                   -> ST.StringTemplate b
+setManyAttribSafer attrs st = 
+    let mbFoundbadattr = find badTmplVarName . map fst $ attrs 
+    in maybe (ST.setManyAttrib attrs st) 
+             (\mbA -> ST.newSTMP . ("setManyAttribSafer, bad template atr: "++) 
+                      $ mbA)
+             mbFoundbadattr 
+  where badTmplVarName :: String -> Bool 
+        badTmplVarName t = not . null . filter (not . isAlpha) $ t 
+
+
