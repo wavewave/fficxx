@@ -48,5 +48,6 @@ Library
                    Bindings.Cxx.Generate.Util
                    Bindings.Cxx.Generate.QQ.Verbatim
                    Bindings.Cxx.Generate.Type.Annotate
+                   Bindings.Cxx.Runtime.Cast
                    Paths_fficxx
 
