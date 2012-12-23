@@ -13,7 +13,6 @@ Data-files: template/*.h.st
             template/*.hsc.st
             template/*.cpp.st
             template/Pkg.cabal.st
-            template/TypeCast.hs
 
 
 Library

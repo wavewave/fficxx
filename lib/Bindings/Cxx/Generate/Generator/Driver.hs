@@ -115,10 +115,11 @@ notExistThenCreate dir = do
     if b then return () else createDirectory dir     
 
 
+-- | now only create directory
 copyPredefined :: FilePath -> FilePath -> String -> IO () 
 copyPredefined tdir ddir prefix = do 
     notExistThenCreate (ddir </> prefix)
-    copyFile (tdir </> "TypeCast.hs" ) (ddir </> prefix </> "TypeCast.hs") 
+    -- copyFile (tdir </> "TypeCast.hs" ) (ddir </> prefix </> "TypeCast.hs") 
 
 
 copyCppFiles :: FilePath -> FilePath -> String -> ClassImportHeader -> IO ()

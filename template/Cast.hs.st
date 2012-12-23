@@ -5,7 +5,7 @@ $castHeader$
 
 import Foreign.Ptr
 import Foreign.ForeignPtr
-import HROOT.TypeCast
+import Bindings.Cxx.Runtime.Cast
 import System.IO.Unsafe
 
 $castImport$

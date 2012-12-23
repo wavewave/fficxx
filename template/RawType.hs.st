@@ -7,7 +7,6 @@ $rawtypeHeader$
 -- import Foreign.Ptr
 import Foreign.ForeignPtr
 -- import Foreign.Marshal.Array
-
-import HROOT.TypeCast  
+import Bindings.Cxx.Runtime.Cast  
 
 $rawtypeBody$

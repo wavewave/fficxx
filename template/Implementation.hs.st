@@ -4,7 +4,7 @@
 
 $implHeader$
 
-import HROOT.TypeCast
+import Bindings.Cxx.Runtime.Cast
 
 $implImport$
 
