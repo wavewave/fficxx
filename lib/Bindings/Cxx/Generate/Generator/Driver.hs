@@ -3,14 +3,15 @@ module Bindings.Cxx.Generate.Generator.Driver where
 import System.Directory 
 import System.FilePath
 import System.IO
-
+import System.Process
+import Text.StringTemplate
+-- import Text.StringTemplate.Helpers
+--
 import Bindings.Cxx.Generate.Type.Class
 import Bindings.Cxx.Generate.Type.Annotate
 import Bindings.Cxx.Generate.Generator.ContentMaker 
 import Bindings.Cxx.Generate.Util
 
-import Text.StringTemplate
--- import Text.StringTemplate.Helpers
 
 
 ----
@@ -112,13 +113,14 @@ writePkgHs (pkgname,hprefix) templates wdir mods = do
 notExistThenCreate :: FilePath -> IO () 
 notExistThenCreate dir = do 
     b <- doesDirectoryExist dir
-    if b then return () else createDirectory dir     
+    if b then return () else system ("mkdir -p " ++ dir) >> return ()
 
 
 -- | now only create directory
 copyPredefined :: FilePath -> FilePath -> String -> IO () 
 copyPredefined tdir ddir prefix = do 
-    notExistThenCreate (ddir </> prefix)
+    return () 
+    -- notExistThenCreate (ddir </> prefix)
     -- copyFile (tdir </> "TypeCast.hs" ) (ddir </> prefix </> "TypeCast.hs") 
 
 
@@ -141,7 +143,8 @@ copyModule wdir ddir prefix pkgname mod = do
             (mfile',mext') = splitExtension mfile
             newfpath = ddir </> mdir </> mfile' ++ fnameext   
         -- b <- doesDirectoryExist (ddir</>mdir)
-        -- if b then return () else createDirectory (ddir</>mdir)     
+        -- if b then return () else createDirectory (ddir</>mdir) 
+        -- print (ddir,mdir)
         notExistThenCreate (ddir </> mdir) 
         copyFile origfpath newfpath 
 

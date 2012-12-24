@@ -26,6 +26,7 @@ Library
                  directory, 
                  HStringTemplate, 
                  split,
+                 process,
                  transformers >= 0.3, 
                  template-haskell,  
                  Cabal 
