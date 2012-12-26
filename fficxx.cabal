@@ -29,6 +29,11 @@ Library
                  process,
                  transformers >= 0.3, 
                  template-haskell,  
+                 hashable,
+                 unordered-containers,
+                 lens > 3,
+                 either, 
+                 errors,  
                  Cabal 
 
   Exposed-Modules: 
@@ -36,6 +41,7 @@ Library
                    Bindings.Cxx.Generate.Type.Class
                    Bindings.Cxx.Generate.Type.Method
                    Bindings.Cxx.Generate.Type.Module
+                   Bindings.Cxx.Generate.Type.PackageInterface
                    Bindings.Cxx.Generate.Config
                    Bindings.Cxx.Generate.Code.MethodDef
                    Bindings.Cxx.Generate.Code.Cpp

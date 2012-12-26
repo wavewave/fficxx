@@ -1,42 +1,34 @@
 module Bindings.Cxx.Generate.Generator.ContentMaker where 
 
-import Control.Applicative
-import Control.Monad.Trans.Reader
-
-import Text.StringTemplate hiding (render)
--- import Text.StringTemplate.Helpers
-
+import           Control.Applicative
+import           Control.Lens (set,at)
+import           Control.Monad.Trans.Reader
 import qualified Data.Map as M
-
-import Bindings.Cxx.Generate.Util
-
-import Bindings.Cxx.Generate.Type.Annotate
-import Bindings.Cxx.Generate.Type.Class
-import Bindings.Cxx.Generate.Type.Module 
-import Bindings.Cxx.Generate.Type.Method
-
-import Bindings.Cxx.Generate.Code.Cpp
-import Bindings.Cxx.Generate.Code.HsFFI 
-import Bindings.Cxx.Generate.Code.HsFrontEnd
-
-import System.FilePath 
-import System.Directory 
-import System.IO
-
-import Bindings.Cxx.Generate.Config
-import Bindings.Cxx.Generate.Code.Cabal 
-
-import Distribution.Package
-import Distribution.PackageDescription hiding (exposedModules)
-import Distribution.PackageDescription.Parse
-import Distribution.Verbosity
-import Distribution.Version 
-
-import Data.List 
-import Data.Maybe
-
+import           Data.List 
+import           Data.Maybe
+import           Distribution.Package
+import           Distribution.PackageDescription hiding (exposedModules)
+import           Distribution.PackageDescription.Parse
+import           Distribution.Verbosity
+import           Distribution.Version 
+import           System.Directory 
+import           System.FilePath 
+import           System.IO
+import           Text.StringTemplate hiding (render)
+-- 
+import           Bindings.Cxx.Generate.Code.Cpp
+import           Bindings.Cxx.Generate.Code.HsFFI 
+import           Bindings.Cxx.Generate.Code.HsFrontEnd
+import           Bindings.Cxx.Generate.Code.Cabal 
+import           Bindings.Cxx.Generate.Config
+import           Bindings.Cxx.Generate.Type.Annotate
+import           Bindings.Cxx.Generate.Type.Class
+import           Bindings.Cxx.Generate.Type.Module 
+import           Bindings.Cxx.Generate.Type.Method
+import qualified Bindings.Cxx.Generate.Type.PackageInterface as T
+import           Bindings.Cxx.Generate.Util
+--
  
------ 
 
 srcDir :: FilePath -> FilePath
 srcDir installbasedir = installbasedir </> "src" 
@@ -113,21 +105,24 @@ existentialHsFileName = "Existential.hs"
 
 ---- common function for daughter
 
+-- | 
 mkGlobal :: [Class] -> ClassGlobal
 mkGlobal = ClassGlobal <$> mkDaughterSelfMap <*> mkDaughterMap 
 
+-- | 
 mkDaughterDef :: ((Class,[Class]) -> String) -> DaughterMap -> String 
 mkDaughterDef f m = 
   let lst = M.toList m 
       f' (x,xs) =  f (x,filter (not.isAbstractClass) xs) 
   in  concatMap f' lst 
 
+-- | 
 mkParentDef :: ((Class,Class)->String) -> Class -> String
 mkParentDef f c = g (class_allparents c,c)
   where g (ps,c) = concatMap (\p -> f (p,c)) ps
 
 
-
+-- |
 mkTypeDeclHeader :: STGroup String -> ClassGlobal 
              -> [Class]
              -> String 
@@ -138,6 +133,7 @@ mkTypeDeclHeader templates cglobal classes =
         [ ("typeDeclBody", typeDeclBodyStr ) ] 
         typeDeclHeaderFileName
 
+-- | 
 mkDeclHeader :: STGroup String 
              -> ClassGlobal 
              -> String  -- ^ C prefix 
@@ -173,6 +169,7 @@ mkDeclHeader templates cglobal cprefix header =
         , ("declarationbody", declBodyStr ) ] 
         declarationTemplate
 
+-- | 
 mkDefMain :: STGroup String 
           -> ClassImportHeader 
           -> String 
@@ -194,9 +191,7 @@ mkDefMain templates header =
         , ("modname", class_name (cihClass header)) ] 
         definitionTemplate
 
-
-
-
+-- | 
 mkFFIHsc :: STGroup String 
          -> String 
          -> ClassModule 
@@ -216,9 +211,7 @@ mkFFIHsc templates prefix mod =
                        ++ genImportInFFI prefix mod
         cppIncludeStr = genModuleIncludeHeader headers
 
-                     
-
-
+-- |                      
 mkRawTypeHs :: STGroup String 
             -> String            -- ^ haskell prefix
             -> ClassModule 
@@ -231,8 +224,7 @@ mkRawTypeHs templates prefix mod =
         rawtypeBodyStr = 
           intercalateWith connRet2 hsClassRawType (filter (not.isAbstractClass) classes)
 
-
-
+-- | 
 mkInterfaceHs :: AnnotateMap 
               -> STGroup String 
               -> String           -- ^ haskell prefix
@@ -252,8 +244,7 @@ mkInterfaceHs amap templates prefix mod  =
           `connRet2`
           runReader (genAllHsFrontUpcastClass (filter (not.isAbstractClass) classes)) amap  
 
-
-
+-- | 
 mkCastHs :: STGroup String -> String -> ClassModule -> String    
 mkCastHs templates prefix mod  = 
     renderTemplateGroup templates [ ("castHeader", castHeaderStr) 
@@ -268,6 +259,7 @@ mkCastHs templates prefix mod  =
           `connRet2`
           intercalateWith connRet2 genHsFrontInstCastableSelf classes
 
+-- | 
 mkImplementationHs :: AnnotateMap -> STGroup String -> String -> ClassModule -> String
 mkImplementationHs amap templates prefix mod = 
     renderTemplateGroup templates 
@@ -294,7 +286,7 @@ mkImplementationHs amap templates prefix mod =
           `connRet2`
           genAllHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
         
-
+-- | 
 mkExistentialEach :: STGroup String -> Class -> [Class] -> String 
 mkExistentialEach templates mother daughters =   
   let makeOneDaughterGADTBody daughter = render hsExistentialGADTBodyTmpl 
@@ -313,6 +305,7 @@ mkExistentialEach templates mother daughters =
               "ExistentialEach.hs" 
   in  str
 
+-- | 
 mkExistentialHs :: STGroup String -> ClassGlobal -> String -> ClassModule -> String
 mkExistentialHs templates cglobal prefix mod = 
   let classes = filter (not.isAbstractClass) (cmClass mod)
@@ -336,7 +329,7 @@ mkExistentialHs templates cglobal prefix mod =
                   "Existential.hs" 
   in  hsfilestr
 
-
+-- | 
 mkModuleHs :: STGroup String -> String -> ClassModule -> String 
 mkModuleHs templates prefix mod = 
     let str = renderTemplateGroup 
@@ -348,3 +341,14 @@ mkModuleHs templates prefix mod =
                 moduleTemplate 
     in str
   
+-- |
+mkPackageInterface :: T.PackageInterface 
+                   -> T.PackageName 
+                   -> [ClassImportHeader] 
+                   -> T.PackageInterface
+mkPackageInterface pinfc pkgname = foldr f pinfc 
+  where f cih repo = 
+          let name = (class_name . cihClass) cih 
+              header = cihSelfHeader cih 
+          in set (at (pkgname,T.ClsName name)) (Just (T.HdrName header)) repo
+
