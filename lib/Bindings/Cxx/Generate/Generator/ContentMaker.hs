@@ -110,11 +110,13 @@ mkGlobal :: [Class] -> ClassGlobal
 mkGlobal = ClassGlobal <$> mkDaughterSelfMap <*> mkDaughterMap 
 
 -- | 
-mkDaughterDef :: ((Class,[Class]) -> String) -> DaughterMap -> String 
-mkDaughterDef f m = 
-  let lst = M.toList m 
-      f' (x,xs) =  f (x,filter (not.isAbstractClass) xs) 
-  in  concatMap f' lst 
+mkDaughterDef :: ((Class,[Class]) -> String) 
+              -> DaughterMap 
+              -> String 
+mkDaughterDef f m =   
+    let lst = M.toList m 
+        f' (x,xs) =  f (x,filter (not.isAbstractClass) xs) 
+    in (concatMap f' lst)
 
 -- | 
 mkParentDef :: ((Class,Class)->String) -> Class -> String
@@ -260,7 +262,11 @@ mkCastHs templates prefix mod  =
           intercalateWith connRet2 genHsFrontInstCastableSelf classes
 
 -- | 
-mkImplementationHs :: AnnotateMap -> STGroup String -> String -> ClassModule -> String
+mkImplementationHs :: AnnotateMap 
+                   -> STGroup String  -- ^ template 
+                   -> String 
+                   -> ClassModule 
+                   -> String
 mkImplementationHs amap templates prefix mod = 
     renderTemplateGroup templates 
                         [ ("implHeader", implHeaderStr) 
@@ -287,7 +293,10 @@ mkImplementationHs amap templates prefix mod =
           genAllHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
         
 -- | 
-mkExistentialEach :: STGroup String -> Class -> [Class] -> String 
+mkExistentialEach :: STGroup String 
+                  -> Class 
+                  -> [Class] 
+                  -> String 
 mkExistentialEach templates mother daughters =   
   let makeOneDaughterGADTBody daughter = render hsExistentialGADTBodyTmpl 
                                                 [ ( "mother", class_name mother ) 
@@ -306,7 +315,11 @@ mkExistentialEach templates mother daughters =
   in  str
 
 -- | 
-mkExistentialHs :: STGroup String -> ClassGlobal -> String -> ClassModule -> String
+mkExistentialHs :: STGroup String 
+                -> ClassGlobal 
+                -> String 
+                -> ClassModule 
+                -> String
 mkExistentialHs templates cglobal prefix mod = 
   let classes = filter (not.isAbstractClass) (cmClass mod)
       dsmap = cgDaughterSelfMap cglobal
@@ -330,7 +343,10 @@ mkExistentialHs templates cglobal prefix mod =
   in  hsfilestr
 
 -- | 
-mkModuleHs :: STGroup String -> String -> ClassModule -> String 
+mkModuleHs :: STGroup String 
+           -> String 
+           -> ClassModule 
+           -> String 
 mkModuleHs templates prefix mod = 
     let str = renderTemplateGroup 
                 templates 
