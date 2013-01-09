@@ -127,14 +127,18 @@ mkParentDef f c = g (class_allparents c,c)
 
 
 -- |
-mkTypeDeclHeader :: STGroup String -> ClassGlobal 
-             -> [Class]
-             -> String 
-mkTypeDeclHeader templates cglobal classes =
+mkTypeDeclHeader :: STGroup String -- -> ClassGlobal 
+                 -> String -- ^ typemacro 
+                 -> [Class]
+                 -> String 
+mkTypeDeclHeader templates typemacro classes =
   let typeDeclBodyStr   = genAllCppHeaderTmplType classes 
   in  renderTemplateGroup 
         templates 
-        [ ("typeDeclBody", typeDeclBodyStr ) ] 
+        [ ("typeDeclBody", typeDeclBodyStr ) 
+        , ("typemacro", typemacro ) 
+
+        ] 
         typeDeclHeaderFileName
 
 -- | 

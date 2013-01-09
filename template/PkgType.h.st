@@ -2,8 +2,8 @@
 extern "C" { 
 #endif
 
-#ifndef __HROOTTYPE__
-#define __HROOTTYPE__
+#ifndef $typemacro$
+#define $typemacro$
 
 #undef ROOT_TYPE_DECLARATION 
 #define ROOT_TYPE_DECLARATION(Type) \\
@@ -13,7 +13,7 @@ typedef Type ## _t const* const_ ## Type ## _p
 
 $typeDeclBody$
 
-#endif // __HROOTTYPE__
+#endif // $typemacro$
 
 #ifdef __cplusplus
 }

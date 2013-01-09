@@ -18,15 +18,20 @@ import Bindings.Cxx.Generate.Util
 ---- Header and Cpp file
 ----
 
-writeTypeDeclHeaders :: STGroup String -> ClassGlobal 
-                     -> FilePath -> String -> [ClassImportHeader]
+-- | 
+writeTypeDeclHeaders :: STGroup String 
+                     -> String  -- ^ type macro 
+                     -> FilePath 
+                     -> String  -- ^ cprefix 
+                     -> [ClassImportHeader]
                      -> IO ()
-writeTypeDeclHeaders templates cglobal wdir cprefix headers = do 
+writeTypeDeclHeaders templates typemacro wdir cprefix headers = do 
   let fn = wdir </> cprefix ++ "Type.h"
       classes = map cihClass headers
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkTypeDeclHeader templates cglobal classes)
+    hPutStrLn h (mkTypeDeclHeader templates typemacro classes)
 
+-- | 
 writeDeclHeaders :: STGroup String -> ClassGlobal 
                  -> FilePath -> String -> ClassImportHeader
                  -> IO () 
