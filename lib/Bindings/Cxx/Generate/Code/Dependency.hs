@@ -9,22 +9,21 @@ import Bindings.Cxx.Generate.Type.Class
 import Bindings.Cxx.Generate.Type.Method
 import Bindings.Cxx.Generate.Type.CType
 
-mkPkgHeaderFileName :: String  -- ^ package name 
-                    -> Class 
-                    -> String 
-mkPkgHeaderFileName pkgname c = pkgname ++ (class_name c) ++ ".h"   
+-- | 
+mkPkgHeaderFileName ::Class -> String 
+mkPkgHeaderFileName c = 
+    (cabal_cheaderprefix.class_cabal) c ++ class_name c <.> "h" 
+    -- pkgname ++ (class_name c) ++ ".h"   
 
-mkPkgCppFileName :: String  -- ^ package name 
-                 -> Class 
-                 -> String 
-mkPkgCppFileName pkgname c = pkgname ++ (class_name c) ++ ".cpp"
+-- | 
+mkPkgCppFileName ::Class -> String 
+mkPkgCppFileName c = 
+    (cabal_cheaderprefix.class_cabal) c ++ class_name c <.> "cpp"
+    -- pkgname ++ (class_name c) ++ ".cpp"
 
-mkPkgIncludeHeaders :: String   -- ^ package name 
-                    -> Class 
-                    -> [String] 
-mkPkgIncludeHeaders pkgname c =
-  let cs = class_allparents c
-  in  map (mkPkgHeaderFileName pkgname) cs
+-- | 
+mkPkgIncludeHeaders :: Class -> [String] 
+mkPkgIncludeHeaders = map mkPkgHeaderFileName . class_allparents 
 
 {-
 -- this function must be outsourced!
@@ -40,9 +39,9 @@ mkCIH :: (String,Class->[String])  -- ^ (package name, mkIncludeHeaders)
       -> Class 
       -> ClassImportHeader
 mkCIH (pkgname,mkincheaders) c = ClassImportHeader c 
-                                   (mkPkgHeaderFileName pkgname c) 
-                                   (mkPkgCppFileName pkgname c) 
-                                   (mkPkgIncludeHeaders pkgname c) 
+                                   (mkPkgHeaderFileName c) 
+                                   (mkPkgCppFileName c) 
+                                   (mkPkgIncludeHeaders c) 
                                    (mkincheaders c)
 
 -- |
