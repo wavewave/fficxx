@@ -37,9 +37,9 @@ Library
                  Cabal 
 
   Exposed-Modules: 
-                   Bindings.Cxx.Generate.Type.CType
+                   -- Bindings.Cxx.Generate.Type.CType
                    Bindings.Cxx.Generate.Type.Class
-                   Bindings.Cxx.Generate.Type.Method
+                   -- Bindings.Cxx.Generate.Type.Method
                    Bindings.Cxx.Generate.Type.Module
                    Bindings.Cxx.Generate.Type.PackageInterface
                    Bindings.Cxx.Generate.Config

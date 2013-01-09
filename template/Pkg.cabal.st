@@ -25,7 +25,7 @@ Library
   hs-source-dirs: src
   ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind -fno-warn-orphans
   ghc-prof-options: -caf-all -auto-all
-  Build-Depends:      base>4 && < 5, fficxx >= 0.0.999
+  Build-Depends:      base>4 && < 5, fficxx >= 0.0.999 $deps$
   Exposed-Modules:
 $exposedModules$  
   Other-Modules:

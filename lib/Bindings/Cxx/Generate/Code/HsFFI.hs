@@ -2,7 +2,7 @@ module Bindings.Cxx.Generate.Code.HsFFI where
 
 
 import Bindings.Cxx.Generate.Util 
-import Bindings.Cxx.Generate.Type.Method
+-- import Bindings.Cxx.Generate.Type.Method
 import Bindings.Cxx.Generate.Type.Class
 -- import Bindings.Cxx.Generate.Generator.Templates
 

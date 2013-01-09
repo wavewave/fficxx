@@ -1,14 +1,255 @@
 module Bindings.Cxx.Generate.Type.Class where
 
-import Control.Applicative 
+import Control.Applicative ((<$>),(<*>))
 import Data.Char
 import Data.List 
 import qualified Data.Map as M
 import System.FilePath 
 -- 
-import Bindings.Cxx.Generate.Type.CType
+-- import Bindings.Cxx.Generate.Type.CType
 import Bindings.Cxx.Generate.Util
-import Bindings.Cxx.Generate.Type.Method
+-- import Bindings.Cxx.Generate.Type.Method
+
+---------
+
+data CTypes = CTString | CTInt | CTDouble | CTBool | CTDoubleStar | CTVoidStar | CTIntStar | CTCharStarStar | CTUInt
+            deriving Show 
+
+data CPPTypes = CPTClass Class 
+              deriving Show
+
+data IsConst = Const | NoConst
+             deriving Show
+
+data Types = Void 
+           | SelfType
+           | CT  CTypes IsConst 
+           | CPT CPPTypes IsConst
+           deriving Show
+
+cvarToStr :: CTypes -> IsConst -> String -> String
+cvarToStr ctyp isconst varname = (ctypToStr ctyp isconst) `connspace` varname 
+
+ctypToStr :: CTypes -> IsConst -> String
+ctypToStr ctyp isconst = 
+  let typword = case ctyp of 
+        CTString -> "char *"
+        CTInt    -> "int " 
+        CTUInt   -> "unsigned int "
+        CTDouble -> "double" 
+        CTBool   -> "int"              -- Currently available solution
+        CTDoubleStar -> "double *"
+        CTVoidStar -> "void *"
+        CTIntStar -> "int *"
+        CTCharStarStar -> "char **"
+  in case isconst of 
+        Const   -> "const" `connspace` typword 
+        NoConst -> typword 
+
+
+self_ :: Types 
+self_ = SelfType
+
+cstring_ :: Types
+cstring_ = CT CTString Const 
+
+cint_ :: Types
+cint_    = CT CTInt    Const
+
+int_ :: Types 
+int_     = CT CTInt    NoConst
+
+uint_ :: Types
+uint_ = CT CTUInt NoConst
+
+short_ :: Types
+short_ = int_
+
+cdouble_ :: Types
+cdouble_ = CT CTDouble Const
+
+double_ :: Types
+double_  = CT CTDouble NoConst
+
+doublep_ :: Types
+doublep_ = CT CTDoubleStar NoConst
+
+float_ :: Types
+float_ = double_
+
+bool_ :: Types 
+bool_    = CT CTBool   NoConst 
+
+void_ :: Types
+void_ = Void 
+
+voidp_ :: Types 
+voidp_ = CT CTVoidStar NoConst
+
+intp_ :: Types 
+intp_ = CT CTIntStar NoConst
+
+charpp_ :: Types
+charpp_ = CT CTCharStarStar NoConst
+
+self :: String -> (Types, String)
+self var = (self_, var)
+
+voidp :: String -> (Types,String) 
+voidp var = (voidp_ , var)
+
+cstring :: String -> (Types,String)
+cstring var = (cstring_ , var)
+
+cint :: String -> (Types,String)
+cint    var = (cint_    , var) 
+
+int :: String -> (Types,String)
+int     var = (int_     , var)
+
+uint :: String -> (Types,String)
+uint var = (uint_ , var)
+
+short :: String -> (Types,String)
+short = int
+
+cdouble :: String -> (Types,String)
+cdouble var = (cdouble_ , var)
+
+double :: String -> (Types,String)
+double  var = (double_  , var)
+
+doublep :: String -> (Types,String)
+doublep var = (doublep_ , var)
+
+float :: String -> (Types,String)
+float = double
+
+bool :: String -> (Types,String)
+bool    var = (bool_    , var)
+
+intp :: String -> (Types, String) 
+intp var = (intp_ , var)
+
+charpp :: String -> (Types, String)
+charpp var = (charpp_, var)
+
+cppclass_ :: Class -> Types
+cppclass_ c =  CPT (CPTClass c) NoConst
+
+cppclass :: Class -> String -> (Types, String)
+cppclass c vname = ( cppclass_ c, vname)
+
+cppclassconst :: Class -> String -> (Types, String) 
+cppclassconst c vname = ( CPT (CPTClass c) Const, vname)
+
+hsCTypeName :: CTypes -> String 
+hsCTypeName CTString = "CString" 
+hsCTypeName CTInt    = "CInt"
+hsCTypeName CTUInt   = "CUInt" 
+hsCTypeName CTDouble = "CDouble"
+hsCTypeName CTDoubleStar = "(Ptr CDouble)"
+hsCTypeName CTBool   = "CInt"
+hsCTypeName CTVoidStar = "(Ptr ())"
+hsCTypeName CTIntStar = "(Ptr CInt)"
+hsCTypeName CTCharStarStar = "(Ptr (CString))"
+
+
+
+hsCppTypeName :: CPPTypes -> String
+hsCppTypeName (CPTClass c) =  "(Ptr Raw"++name++")"  
+  where name = class_name c 
+
+-------------
+
+type Args = [(Types,String)]
+
+data Function = Constructor { func_args :: Args } 
+              | Virtual { func_ret :: Types
+                        , func_name :: String
+                        , func_args :: Args } 
+              | NonVirtual { func_ret :: Types 
+                           , func_name :: String
+                           , func_args :: Args }
+              | Static     { func_ret :: Types 
+                           , func_name :: String
+                           , func_args :: Args }
+              | AliasVirtual { func_ret :: Types 
+                             , func_name :: String
+                             , func_args :: Args 
+                             , func_alias :: String }
+              | Destructor  
+              deriving Show
+
+
+  
+isNewFunc :: Function -> Bool 
+isNewFunc (Constructor _ ) = True 
+isNewFunc _ = False
+
+isDeleteFunc :: Function -> Bool 
+isDeleteFunc Destructor = True 
+isDeleteFunc _ = False
+       
+isVirtualFunc :: Function -> Bool 
+isVirtualFunc (Destructor)           = True
+isVirtualFunc (Virtual _ _ _)        = True 
+isVirtualFunc (AliasVirtual _ _ _ _) = True 
+isVirtualFunc _ = False 
+
+isStaticFunc :: Function -> Bool 
+isStaticFunc (Static _ _ _) = True
+isStaticFunc _ = False
+
+virtualFuncs :: [Function] -> [Function] 
+virtualFuncs = filter isVirtualFunc 
+
+constructorFuncs :: [Function] -> [Function]
+constructorFuncs = filter isNewFunc
+
+nonVirtualNotNewFuncs :: [Function] -> [Function]
+nonVirtualNotNewFuncs = 
+  filter (\x -> (not.isVirtualFunc) x && (not.isNewFunc) x && (not.isDeleteFunc) x && (not.isStaticFunc) x )
+
+staticFuncs :: [Function] -> [Function] 
+staticFuncs = filter isStaticFunc
+
+argToString :: (Types,String) -> String 
+argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname 
+argToString (SelfType, varname) = "Type ## _p " ++ varname
+argToString (CPT (CPTClass c) isconst, varname) = case isconst of 
+    Const   -> "const_" ++ cname ++ "_p " ++ varname 
+    NoConst -> cname ++ "_p " ++ varname
+  where cname = class_name c 
+argToString _ = error "undefined argToString"
+
+argsToString :: Args -> String 
+argsToString args = 
+  let args' = (SelfType, "p") : args 
+  in  intercalateWith conncomma argToString args'
+
+argsToStringNoSelf :: Args -> String 
+argsToStringNoSelf = intercalateWith conncomma argToString 
+
+
+argToCallString :: (Types,String) -> String
+argToCallString (CPT (CPTClass c) _,varname) = 
+    "to_nonconst<"++str++","++str++"_t>("++varname++")"
+  where str = class_name c
+argToCallString (_,varname) = varname
+
+argsToCallString :: Args -> String
+argsToCallString = intercalateWith conncomma argToCallString
+
+rettypeToString :: Types -> String 
+rettypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
+rettypeToString Void = "void"
+rettypeToString SelfType = "Type ## _p"
+rettypeToString (CPT (CPTClass c) _) = str ++ "_p"
+  where str = class_name c 
+
+--------
+
 
 data Cabal = Cabal { cabal_pkgname :: String
                    , cabal_cheaderprefix :: String
@@ -108,7 +349,7 @@ ctypeToHsType _c (CT CTDoubleStar _) = "[Double]"
 ctypeToHsType _c (CT CTVoidStar _) = "(Ptr ())"
 ctypeToHsType _c (CT CTIntStar _) = "[Int]" 
 ctypeToHsType _c (CT CTCharStarStar _) = "[String]"
-ctypeToHsType _c (CPT (CPTClass name) _) = name
+ctypeToHsType _c (CPT (CPTClass c') _) = class_name c'
 
 
 typeclassName :: Class -> String

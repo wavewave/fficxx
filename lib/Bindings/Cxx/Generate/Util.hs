@@ -7,7 +7,7 @@ import           Data.List
 import           Data.List.Split 
 import qualified Text.StringTemplate as ST
 -- 
-import           Bindings.Cxx.Generate.Type.CType 
+-- import           Bindings.Cxx.Generate.Type.CType 
 -- 
 
 moduleDirFile :: String -> (String,String)
@@ -72,24 +72,6 @@ intercalateWithM f mapper x
 -- intercalateM str = return . foldl1 (\x y-> x ++ str ++ y)
 
 
-cvarToStr :: CTypes -> IsConst -> String -> String
-cvarToStr ctyp isconst varname = (ctypToStr ctyp isconst) `connspace` varname 
-
-ctypToStr :: CTypes -> IsConst -> String
-ctypToStr ctyp isconst = 
-  let typword = case ctyp of 
-        CTString -> "char *"
-        CTInt    -> "int " 
-        CTUInt   -> "unsigned int "
-        CTDouble -> "double" 
-        CTBool   -> "int"              -- Currently available solution
-        CTDoubleStar -> "double *"
-        CTVoidStar -> "void *"
-        CTIntStar -> "int *"
-        CTCharStarStar -> "char **"
-  in case isconst of 
-        Const   -> "const" `connspace` typword 
-        NoConst -> typword 
         
 render :: String -> [(String,String)] -> String        
 render tmpl attribs = (ST.render . ST.setManyAttrib attribs . ST.newSTMP) tmpl 

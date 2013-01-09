@@ -5,8 +5,8 @@ import Data.Maybe
 
 import Control.Applicative
 
-import Bindings.Cxx.Generate.Type.CType
-import Bindings.Cxx.Generate.Type.Method
+-- import Bindings.Cxx.Generate.Type.CType
+-- import Bindings.Cxx.Generate.Type.Method
 import Bindings.Cxx.Generate.Type.Class
 import Bindings.Cxx.Generate.Type.Annotate
 import Bindings.Cxx.Generate.Type.Module
@@ -346,9 +346,10 @@ mkHsFuncArgType c lst =
           case typ of                  
             SelfType -> return "a"
             CT _ _   -> return $ ctypeToHsType c typ 
-            CPT (CPTClass cname) _ -> do 
+            CPT (CPTClass c') _ -> do 
               (prefix,n) <- get 
-              let iname = typeclassNameFromStr cname -- typeclassName c
+              let cname = class_name c' 
+                  iname = typeclassNameFromStr cname -- typeclassName c
                   newname = 'c' : show n
                   newprefix1 = iname ++ " " ++ newname    
                   newprefix2 = "FPtr " ++ newname
@@ -362,9 +363,8 @@ mkHsFuncRetType c func =
   in case rtyp of 
     SelfType -> ("a",[])
 --    CPT (CPTClass cname) _ -> ("(Exist " ++ cname ++ ")",[])
-    CPT (CPTClass cname) _ -> (cname,[])
-
-
+    CPT (CPTClass c') _ -> (cname,[])
+      where cname = class_name c' 
   {-    let iname = typeclassNameFromStr cname -- typeclassName c
           newname = "b"
           newprefix1 = iname ++ " " ++ newname    

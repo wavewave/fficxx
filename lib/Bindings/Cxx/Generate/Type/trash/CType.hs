@@ -1,9 +1,10 @@
 module Bindings.Cxx.Generate.Type.CType where
 
+{-
 data CTypes = CTString | CTInt | CTDouble | CTBool | CTDoubleStar | CTVoidStar | CTIntStar | CTCharStarStar | CTUInt
             deriving Show 
 
-data CPPTypes = CPTClass String 
+data CPPTypes = CPTClass Class 
               deriving Show
 
 data IsConst = Const | NoConst
@@ -126,4 +127,4 @@ hsCTypeName CTCharStarStar = "(Ptr (CString))"
 
 hsCppTypeName :: CPPTypes -> String
 hsCppTypeName (CPTClass name) =  "(Ptr Raw"++name++")"  
-
+-}

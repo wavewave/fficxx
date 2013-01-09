@@ -3,6 +3,7 @@ module Bindings.Cxx.Generate.Type.Method where
 import Bindings.Cxx.Generate.Type.CType
 import Bindings.Cxx.Generate.Util
 
+{-
 type Args = [(Types,String)]
 
 data Function = Constructor { func_args :: Args } 
@@ -86,3 +87,4 @@ rettypeToString Void = "void"
 rettypeToString SelfType = "Type ## _p"
 rettypeToString (CPT (CPTClass str) _) = str ++ "_p"
 
+-}

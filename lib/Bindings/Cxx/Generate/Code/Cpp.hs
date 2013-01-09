@@ -5,7 +5,7 @@ import Data.List
 import System.FilePath
 
 import Bindings.Cxx.Generate.Util
-import Bindings.Cxx.Generate.Type.Method
+-- import Bindings.Cxx.Generate.Type.Method
 import Bindings.Cxx.Generate.Type.Class
 import Bindings.Cxx.Generate.Code.MethodDef
 import Bindings.Cxx.Generate.Code.Cabal

@@ -1,7 +1,7 @@
 module Bindings.Cxx.Generate.Code.MethodDef where
 
-import Bindings.Cxx.Generate.Type.CType
-import Bindings.Cxx.Generate.Type.Method
+-- import Bindings.Cxx.Generate.Type.CType
+-- import Bindings.Cxx.Generate.Type.Method
 import Bindings.Cxx.Generate.Type.Class
 import Bindings.Cxx.Generate.Util 
 
@@ -48,8 +48,9 @@ funcToDef c func
           Void -> callstr ++ ";"
           SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
           (CT _ctyp _isconst) -> "return "++callstr++";" 
-          (CPT (CPTClass str) _) -> "return to_nonconst<"++str++"_t,"++str
+          (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
                                     ++">(("++str++"*)"++callstr++");"
+            where str = class_name c' 
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | otherwise = 
     let declstr = funcToDecl c func
@@ -61,8 +62,9 @@ funcToDef c func
           Void -> callstr ++ ";"
           SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
           (CT _ctyp _isconst) -> "return "++callstr++";" 
-          (CPT (CPTClass str) _) -> "return to_nonconst<"++str++"_t,"++str
+          (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
                                     ++">(("++str++"*)"++callstr++");"
+             where str = class_name c'
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
 
 

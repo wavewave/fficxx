@@ -24,7 +24,7 @@ import           Bindings.Cxx.Generate.Config
 import           Bindings.Cxx.Generate.Type.Annotate
 import           Bindings.Cxx.Generate.Type.Class
 import           Bindings.Cxx.Generate.Type.Module 
-import           Bindings.Cxx.Generate.Type.Method
+-- import           Bindings.Cxx.Generate.Type.Method
 import qualified Bindings.Cxx.Generate.Type.PackageInterface as T
 import           Bindings.Cxx.Generate.Util
 --
