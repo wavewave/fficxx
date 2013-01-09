@@ -7,23 +7,21 @@ cabalIndentation = replicate 23 ' '
 
 
 -- | generate exposed module list in cabal file 
-genExposedModules :: String          -- ^ prefix 
-                  -> [ClassModule]
+genExposedModules :: [ClassModule]
                   -> String
-genExposedModules prefix cmods = 
+genExposedModules cmods = 
   let indentspace = cabalIndentation
-      cmodstrs = map ((\x->indentspace++prefix++"."++x).cmModule) cmods 
+      cmodstrs = map ((\x->indentspace++x).cmModule) cmods 
   in  unlines cmodstrs  
 
 -- | generate other modules in cabal file 
-genOtherModules :: String         -- ^ prefix
-                -> [ClassModule] 
+genOtherModules :: [ClassModule] 
                 -> String 
-genOtherModules prefix cmods = 
+genOtherModules cmods = 
   let indentspace = cabalIndentation 
-      rawType = map ((\x->indentspace++prefix++"."++x++".RawType").cmModule) cmods
-      ffi = map ((\x->indentspace++prefix++"."++x++".FFI").cmModule) cmods
-      interface= map ((\x->indentspace++prefix++"."++x++".Interface").cmModule) cmods
-      cast = map ((\x->indentspace++prefix++"."++x++".Cast").cmModule) cmods 
-      implementation = map ((\x->indentspace++prefix++"."++x++".Implementation").cmModule) cmods
+      rawType = map ((\x->indentspace++x++".RawType").cmModule) cmods
+      ffi = map ((\x->indentspace++x++".FFI").cmModule) cmods
+      interface= map ((\x->indentspace++x++".Interface").cmModule) cmods
+      cast = map ((\x->indentspace++x++".Cast").cmModule) cmods 
+      implementation = map ((\x->indentspace++x++".Implementation").cmModule) cmods
   in  unlines (rawType++ffi++interface++cast++implementation)

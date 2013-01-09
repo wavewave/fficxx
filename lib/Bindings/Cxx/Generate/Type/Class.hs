@@ -1,18 +1,26 @@
 module Bindings.Cxx.Generate.Type.Class where
 
+import Control.Applicative 
 import Data.Char
-
+import Data.List 
 import qualified Data.Map as M
-
+import System.FilePath 
+-- 
 import Bindings.Cxx.Generate.Type.CType
 import Bindings.Cxx.Generate.Util
 import Bindings.Cxx.Generate.Type.Method
-import Data.List 
 
-data Class = Class { class_name :: String
+data Cabal = Cabal { cabal_pkgname :: String
+                   , cabal_cheaderprefix :: String
+                   , cabal_moduleprefix :: String } 
+
+
+data Class = Class { class_cabal :: Cabal 
+                   , class_name :: String
                    , class_parents :: [Class]
                    , class_funcs :: [Function] }
-           | AbstractClass { class_name :: String
+           | AbstractClass { class_cabal :: Cabal 
+                           , class_name :: String
                            , class_parents :: [Class]
                            , class_funcs :: [Function] }
 
@@ -41,8 +49,8 @@ data ClassGlobal = ClassGlobal
 -- | Check abstract class
 
 isAbstractClass :: Class -> Bool 
-isAbstractClass (Class _ _ _) = False 
-isAbstractClass (AbstractClass _ _ _ ) = True            
+isAbstractClass (Class _ _ _ _) = False 
+isAbstractClass (AbstractClass _ _ _ _ ) = True            
 
 instance Show Class where
   show x = show (class_name x)
@@ -53,7 +61,7 @@ instance Eq Class where
 instance Ord Class where
   compare x y = compare (class_name x) (class_name y)
 
-type DaughterMap = M.Map Class [Class] 
+type DaughterMap = M.Map String [Class] 
 
 class_allparents :: Class -> [Class] 
 class_allparents c = let ps = class_parents c
@@ -62,21 +70,26 @@ class_allparents c = let ps = class_parents c
                            else nub (ps ++ (concatMap class_allparents ps))
 
 
--- | Daughter map not including itself
+getClassModuleBase :: Class -> String 
+getClassModuleBase = (<.>) <$> (cabal_moduleprefix.class_cabal) <*> class_name 
 
+
+
+-- | Daughter map not including itself
 mkDaughterMap :: [Class] -> DaughterMap 
 mkDaughterMap = foldl mkDaughterMapWorker M.empty  
-  where mkDaughterMapWorker m c = let ps = class_allparents c 
+  where mkDaughterMapWorker m c = let ps = map getClassModuleBase (class_allparents c)
                                   in  foldl (addmeToYourDaughterList c) m ps 
         addmeToYourDaughterList c m p = let f Nothing = Just [c]
                                             f (Just cs)  = Just (c:cs)    
                                         in  M.alter f p m
 
--- | Daughter Map including itself as a daughter
 
+
+-- | Daughter Map including itself as a daughter
 mkDaughterSelfMap :: [Class] -> DaughterMap
 mkDaughterSelfMap = foldl worker M.empty  
-  where worker m c = let ps = c : class_allparents c 
+  where worker m c = let ps = map getClassModuleBase (c:class_allparents c)
                      in  foldl (addToList c) m ps 
         addToList c m p = let f Nothing = Just [c]
                               f (Just cs)  = Just (c:cs)    

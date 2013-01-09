@@ -105,12 +105,14 @@ existentialHsFileName = "Existential.hs"
 
 ---- common function for daughter
 
+
 -- | 
 mkGlobal :: [Class] -> ClassGlobal
 mkGlobal = ClassGlobal <$> mkDaughterSelfMap <*> mkDaughterMap 
 
+
 -- | 
-mkDaughterDef :: ((Class,[Class]) -> String) 
+mkDaughterDef :: ((String,[Class]) -> String) 
               -> DaughterMap 
               -> String 
 mkDaughterDef f m =   
@@ -195,10 +197,9 @@ mkDefMain templates header =
 
 -- | 
 mkFFIHsc :: STGroup String 
-         -> String 
          -> ClassModule 
          -> String 
-mkFFIHsc templates prefix mod = 
+mkFFIHsc templates mod = 
     renderTemplateGroup templates 
                         [ ("ffiHeader", ffiHeaderStr)
                         , ("ffiImport", ffiImportStr)
@@ -208,20 +209,19 @@ mkFFIHsc templates prefix mod =
   where mname = cmModule mod
         classes = cmClass mod
         headers = cmCIH mod
-        ffiHeaderStr = "module " ++ prefix <.> mname <.> "FFI where\n"
-        ffiImportStr = "import " ++ prefix <.> mname <.> "RawType\n"
-                       ++ genImportInFFI prefix mod
+        ffiHeaderStr = "module " ++ mname <.> "FFI where\n"
+        ffiImportStr = "import " ++ mname <.> "RawType\n"
+                       ++ genImportInFFI mod
         cppIncludeStr = genModuleIncludeHeader headers
 
 -- |                      
 mkRawTypeHs :: STGroup String 
-            -> String            -- ^ haskell prefix
             -> ClassModule 
             -> String
-mkRawTypeHs templates prefix mod = 
+mkRawTypeHs templates mod = 
     renderTemplateGroup templates [ ("rawtypeHeader", rawtypeHeaderStr) 
                                   , ("rawtypeBody", rawtypeBodyStr)] rawtypeHsFileName
-  where rawtypeHeaderStr = "module " ++ prefix <.> cmModule mod <.> "RawType where\n"
+  where rawtypeHeaderStr = "module " ++ cmModule mod <.> "RawType where\n"
         classes = cmClass mod
         rawtypeBodyStr = 
           intercalateWith connRet2 hsClassRawType (filter (not.isAbstractClass) classes)
@@ -229,16 +229,15 @@ mkRawTypeHs templates prefix mod =
 -- | 
 mkInterfaceHs :: AnnotateMap 
               -> STGroup String 
-              -> String           -- ^ haskell prefix
               -> ClassModule 
               -> String    
-mkInterfaceHs amap templates prefix mod  = 
+mkInterfaceHs amap templates mod  = 
     renderTemplateGroup templates [ ("ifaceHeader", ifaceHeaderStr) 
                                   , ("ifaceImport", ifaceImportStr)
                                   , ("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
-  where ifaceHeaderStr = "module " ++ prefix <.> cmModule mod <.> "Interface where\n" 
+  where ifaceHeaderStr = "module " ++ cmModule mod <.> "Interface where\n" 
         classes = cmClass mod
-        ifaceImportStr = genImportInInterface prefix mod
+        ifaceImportStr = genImportInInterface mod
         ifaceBodyStr = 
           runReader (genAllHsFrontDecl classes) amap 
           `connRet2`
@@ -247,15 +246,15 @@ mkInterfaceHs amap templates prefix mod  =
           runReader (genAllHsFrontUpcastClass (filter (not.isAbstractClass) classes)) amap  
 
 -- | 
-mkCastHs :: STGroup String -> String -> ClassModule -> String    
-mkCastHs templates prefix mod  = 
+mkCastHs :: STGroup String -> ClassModule -> String    
+mkCastHs templates mod  = 
     renderTemplateGroup templates [ ("castHeader", castHeaderStr) 
                                   , ("castImport", castImportStr)
                                   , ("castBody", castBodyStr) ]  
                                   castHsFileName
-  where castHeaderStr = "module " ++ prefix <.> cmModule mod <.> "Cast where\n" 
+  where castHeaderStr = "module " ++ cmModule mod <.> "Cast where\n" 
         classes = cmClass mod
-        castImportStr = genImportInCast prefix mod
+        castImportStr = genImportInCast mod
         castBodyStr = 
           genAllHsFrontInstCastable classes 
           `connRet2`
@@ -264,18 +263,17 @@ mkCastHs templates prefix mod  =
 -- | 
 mkImplementationHs :: AnnotateMap 
                    -> STGroup String  -- ^ template 
-                   -> String 
                    -> ClassModule 
                    -> String
-mkImplementationHs amap templates prefix mod = 
+mkImplementationHs amap templates mod = 
     renderTemplateGroup templates 
                         [ ("implHeader", implHeaderStr) 
                         , ("implImport", implImportStr)
                         , ("implBody", implBodyStr ) ]
                         "Implementation.hs"
   where classes = cmClass mod
-        implHeaderStr = "module " ++ prefix <.> cmModule mod <.> "Implementation where\n" 
-        implImportStr = genImportInImplementation prefix mod
+        implHeaderStr = "module " ++ cmModule mod <.> "Implementation where\n" 
+        implImportStr = genImportInImplementation mod
         f y = intercalateWith connRet (flip genHsFrontInst y) (y:class_allparents y )
         g y = intercalateWith connRet (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
@@ -317,22 +315,21 @@ mkExistentialEach templates mother daughters =
 -- | 
 mkExistentialHs :: STGroup String 
                 -> ClassGlobal 
-                -> String 
                 -> ClassModule 
                 -> String
-mkExistentialHs templates cglobal prefix mod = 
+mkExistentialHs templates cglobal mod = 
   let classes = filter (not.isAbstractClass) (cmClass mod)
       dsmap = cgDaughterSelfMap cglobal
       makeOneMother :: Class -> String 
       makeOneMother mother = 
-        let daughters = case M.lookup mother dsmap of 
+        let daughters = case M.lookup (getClassModuleBase mother) dsmap of 
                              Nothing -> error "error in mkExistential"
                              Just lst -> filter (not.isAbstractClass) lst
             str = mkExistentialEach templates mother daughters
         in  str 
       existEachBody = intercalateWith connRet makeOneMother classes
-      existHeaderStr = "module " ++ prefix <.> cmModule mod <.> "Existential where"
-      existImportStr = genImportInExistential dsmap prefix mod
+      existHeaderStr = "module " ++ cmModule mod <.> "Existential where"
+      existImportStr = genImportInExistential dsmap mod
       hsfilestr = renderTemplateGroup 
                     templates 
                     [ ("existHeader", existHeaderStr)
@@ -344,15 +341,14 @@ mkExistentialHs templates cglobal prefix mod =
 
 -- | 
 mkModuleHs :: STGroup String 
-           -> String 
            -> ClassModule 
            -> String 
-mkModuleHs templates prefix mod = 
+mkModuleHs templates mod = 
     let str = renderTemplateGroup 
                 templates 
-                [ ("moduleName", prefix <.> cmModule mod) 
+                [ ("moduleName", cmModule mod) 
                 , ("exportList", genExportList (cmClass mod)) 
-                , ("importList", genImportInModule prefix (cmClass mod))
+                , ("importList", genImportInModule (cmClass mod))
                 ]
                 moduleTemplate 
     in str

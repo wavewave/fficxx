@@ -41,66 +41,75 @@ writeCppDef templates wdir header = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkDefMain templates header)
 
-writeRawTypeHs :: STGroup String -> FilePath -> String -> ClassModule -> IO ()
-writeRawTypeHs templates wdir prefix mod = do
-  let fn = wdir </> prefix <.> cmModule mod <.> rawtypeHsFileName
+-- | 
+writeRawTypeHs :: STGroup String -> FilePath -> ClassModule -> IO ()
+writeRawTypeHs templates wdir mod = do
+  let fn = wdir </> cmModule mod <.> rawtypeHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkRawTypeHs templates prefix mod) 
+    hPutStrLn h (mkRawTypeHs templates mod) 
 
-writeFFIHsc :: STGroup String -> FilePath -> String -> ClassModule -> IO ()
-writeFFIHsc templates wdir prefix mod = do 
-  let fn = wdir </> prefix <.> cmModule mod <.> ffiHscFileName
+-- | 
+writeFFIHsc :: STGroup String -> FilePath -> ClassModule -> IO ()
+writeFFIHsc templates wdir mod = do 
+  let fn = wdir </> cmModule mod <.> ffiHscFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkFFIHsc templates prefix mod)
+    hPutStrLn h (mkFFIHsc templates mod)
 
+-- | 
 writeInterfaceHs :: AnnotateMap -> STGroup String -> FilePath 
-                 -> String -> ClassModule 
+                 -> ClassModule 
                  -> IO ()
-writeInterfaceHs amap templates wdir prefix mod = do 
-  let fn = wdir </> prefix <.> cmModule mod <.> interfaceHsFileName
+writeInterfaceHs amap templates wdir mod = do 
+  let fn = wdir </> cmModule mod <.> interfaceHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkInterfaceHs amap templates prefix mod)
+    hPutStrLn h (mkInterfaceHs amap templates mod)
 
-writeCastHs :: STGroup String -> FilePath -> String ->  ClassModule 
+-- |
+writeCastHs :: STGroup String -> FilePath -> ClassModule 
             -> IO ()
-writeCastHs templates wdir prefix mod = do 
-  let fn = wdir </> prefix <.> cmModule mod <.> castHsFileName
+writeCastHs templates wdir mod = do 
+  let fn = wdir </> cmModule mod <.> castHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkCastHs templates prefix mod)
+    hPutStrLn h (mkCastHs templates mod)
 
-writeImplementationHs :: AnnotateMap -> STGroup String -> FilePath 
-                      -> String -> ClassModule 
+-- | 
+writeImplementationHs :: AnnotateMap 
+                      -> STGroup String 
+                      -> FilePath 
+                      -> ClassModule 
                       -> IO ()
-writeImplementationHs amap templates wdir prefix mod = do 
-  let fn = wdir </> prefix <.> cmModule mod <.> implementationHsFileName
+writeImplementationHs amap templates wdir mod = do 
+  let fn = wdir </> cmModule mod <.> implementationHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkImplementationHs amap templates prefix mod)
+    hPutStrLn h (mkImplementationHs amap templates mod)
 
-writeExistentialHs :: STGroup String -> ClassGlobal -> FilePath 
-                   -> String -> ClassModule 
+-- | 
+writeExistentialHs :: STGroup String 
+                   -> ClassGlobal 
+                   -> FilePath 
+                   -> ClassModule 
                    -> IO ()
-writeExistentialHs templates cglobal wdir prefix mod = do 
-  let fn = wdir </> prefix <.> cmModule mod <.> existentialHsFileName
+writeExistentialHs templates cglobal wdir mod = do 
+  let fn = wdir </> cmModule mod <.> existentialHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkExistentialHs templates cglobal prefix mod)
+    hPutStrLn h (mkExistentialHs templates cglobal mod)
 
-
-writeModuleHs :: STGroup String -> FilePath 
-              -> String -> ClassModule -> IO () 
-writeModuleHs templates wdir prefix mod = do 
-  let fn = wdir </> prefix <.> cmModule mod <.> "hs"
+-- |
+writeModuleHs :: STGroup String -> FilePath -> ClassModule -> IO () 
+writeModuleHs templates wdir mod = do 
+  let fn = wdir </> cmModule mod <.> "hs"
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkModuleHs templates prefix mod)
+    hPutStrLn h (mkModuleHs templates mod)
 
-writePkgHs :: (String,String) -- ^ (package name, module prefix) 
+writePkgHs :: String -- ^ package name
            -> STGroup String 
            -> FilePath 
            -> [ClassModule] 
            -> IO () 
-writePkgHs (pkgname,hprefix) templates wdir mods = do 
+writePkgHs pkgname templates wdir mods = do 
   let fn = wdir </> pkgname <.> "hs"
-      exportListStr = intercalateWith conncomma ((\x->" module " ++ hprefix ++"."++x).cmModule) mods 
-      importListStr = intercalateWith connRet ((\x->"import " ++ hprefix++"."++x).cmModule) mods
+      exportListStr = intercalateWith conncomma ((\x->" module " ++ x).cmModule) mods 
+      importListStr = intercalateWith connRet ((\x->"import " ++ x).cmModule) mods
       str = renderTemplateGroup 
               templates 
               [ ("exportList", exportListStr) 
@@ -133,8 +142,8 @@ copyCppFiles wdir ddir cprefix header = do
   copyFile (wdir </> hfile) (ddir </> hfile) 
   copyFile (wdir </> cppfile) (ddir </> cppfile)
 
-copyModule :: FilePath -> FilePath -> String -> String -> ClassModule -> IO ()
-copyModule wdir ddir prefix pkgname mod = do 
+copyModule :: FilePath -> FilePath -> String -> ClassModule -> IO ()
+copyModule wdir ddir pkgname mod = do 
   let modbase = cmModule mod 
   let onefilecopy fname = do 
         let (fnamebody,fnameext) = splitExtension fname
@@ -148,12 +157,12 @@ copyModule wdir ddir prefix pkgname mod = do
         notExistThenCreate (ddir </> mdir) 
         copyFile origfpath newfpath 
 
-  onefilecopy $ prefix <.> modbase ++ ".hs"
-  onefilecopy $ prefix <.> modbase ++ ".RawType.hs"
-  onefilecopy $ prefix <.> modbase ++ ".FFI.hsc"
-  onefilecopy $ prefix <.> modbase ++ ".Interface.hs"
-  onefilecopy $ prefix <.> modbase ++ ".Cast.hs"
-  onefilecopy $ prefix <.> modbase ++ ".Implementation.hs"
+  onefilecopy $ modbase ++ ".hs"
+  onefilecopy $ modbase ++ ".RawType.hs"
+  onefilecopy $ modbase ++ ".FFI.hsc"
+  onefilecopy $ modbase ++ ".Interface.hs"
+  onefilecopy $ modbase ++ ".Cast.hs"
+  onefilecopy $ modbase ++ ".Implementation.hs"
   -- onefilecopy $ prefix <.> modbase ++ ".Existential.hs"
 
   copyFile (wdir </> pkgname <.> "hs") (ddir </> pkgname <.> "hs")
