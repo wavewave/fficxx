@@ -106,18 +106,19 @@ writeModuleHs templates wdir mod = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkModuleHs templates mod)
 
-writePkgHs :: String -- ^ package name
+writePkgHs :: String -- ^ summary module 
            -> STGroup String 
            -> FilePath 
            -> [ClassModule] 
            -> IO () 
-writePkgHs pkgname templates wdir mods = do 
-  let fn = wdir </> pkgname <.> "hs"
+writePkgHs modname templates wdir mods = do 
+  let fn = wdir </> modname <.> "hs"
       exportListStr = intercalateWith conncomma ((\x->" module " ++ x).cmModule) mods 
       importListStr = intercalateWith connRet ((\x->"import " ++ x).cmModule) mods
       str = renderTemplateGroup 
               templates 
-              [ ("exportList", exportListStr) 
+              [ ("summarymod", modname)
+              , ("exportList", exportListStr) 
               , ("importList", importListStr) ]
               "Pkg.hs"
   withFile fn WriteMode $ \h -> do 
@@ -148,7 +149,7 @@ copyCppFiles wdir ddir cprefix header = do
   copyFile (wdir </> cppfile) (ddir </> cppfile)
 
 copyModule :: FilePath -> FilePath -> String -> ClassModule -> IO ()
-copyModule wdir ddir pkgname mod = do 
+copyModule wdir ddir summarymod mod = do 
   let modbase = cmModule mod 
   let onefilecopy fname = do 
         let (fnamebody,fnameext) = splitExtension fname
@@ -169,7 +170,7 @@ copyModule wdir ddir pkgname mod = do
   onefilecopy $ modbase ++ ".Cast.hs"
   onefilecopy $ modbase ++ ".Implementation.hs"
   -- onefilecopy $ prefix <.> modbase ++ ".Existential.hs"
-
-  copyFile (wdir </> pkgname <.> "hs") (ddir </> pkgname <.> "hs")
+  onefilecopy $ summarymod <.> "hs"
+  -- copyFile (wdir </> summarymod <.> "hs") (ddir </> summarymod <.> "hs")
 
   return ()
