@@ -57,3 +57,5 @@ Library
                    Bindings.Cxx.Runtime.Cast
                    Paths_fficxx
 
+  Include-dirs:    csrc
+  Install-includes: MacroPatternMatch.h
