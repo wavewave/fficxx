@@ -1,3 +1,5 @@
+#include <MacroPatternMatch.h>
+
 $header$
 
 using namespace std;
