@@ -114,6 +114,16 @@ mkParentDef f cls = g (class_allparents cls,cls)
   where g (ps,c) = concatMap (\p -> f (p,c)) ps
 
 
+-- | 
+mkProtectedFunctionList :: Class -> String 
+mkProtectedFunctionList c = 
+    (unlines 
+     . map (\x->"#define IS_" ++ class_name c ++ "_" ++ x ++ "_PROTECTED ()") 
+     . unProtected . class_protected) c 
+
+
+
+
 -- |
 mkTypeDeclHeader :: STGroup String -- -> ClassGlobal 
                  -> String -- ^ typemacro 
@@ -173,7 +183,9 @@ mkDefMain templates header =
   let classes = [cihClass header]
       headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (cihSelfHeader header) ++ "\"" 
       aclass = cihClass header
-      cppBody = mkParentDef genCppDefInstVirtual (cihClass header)
+      cppBody = mkProtectedFunctionList (cihClass header) 
+                `connRet`
+                mkParentDef genCppDefInstVirtual (cihClass header)
                 `connRet` 
                 if isAbstractClass aclass 
                   then "" 

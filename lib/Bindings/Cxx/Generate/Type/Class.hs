@@ -1,8 +1,11 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Bindings.Cxx.Generate.Type.Class where
 
 import Control.Applicative ((<$>),(<*>))
 import Data.Char
 import Data.List 
+import Data.Monoid 
 import qualified Data.Map as M
 import System.FilePath 
 -- 
@@ -252,6 +255,8 @@ rettypeToString (CPT (CPTClass c) _) = str ++ "_p"
 
 --------
 
+newtype ProtectedMethod = Protected { unProtected :: [String] } 
+    deriving (Monoid) 
 
 data Cabal = Cabal { cabal_pkgname :: String
                    , cabal_cheaderprefix :: String
@@ -260,11 +265,14 @@ data Cabal = Cabal { cabal_pkgname :: String
 
 data Class = Class { class_cabal :: Cabal 
                    , class_name :: String
-                   , class_parents :: [Class]
-                   , class_funcs :: [Function] }
+                   , class_parents :: [Class] 
+                   , class_protected :: ProtectedMethod
+                   , class_funcs :: [Function] 
+                   }
            | AbstractClass { class_cabal :: Cabal 
                            , class_name :: String
                            , class_parents :: [Class]
+                           , class_protected :: ProtectedMethod
                            , class_funcs :: [Function] }
 
 data ClassImportHeader = ClassImportHeader
@@ -292,8 +300,8 @@ data ClassGlobal = ClassGlobal
 -- | Check abstract class
 
 isAbstractClass :: Class -> Bool 
-isAbstractClass (Class _ _ _ _) = False 
-isAbstractClass (AbstractClass _ _ _ _ ) = True            
+isAbstractClass (Class _ _ _ _ _) = False 
+isAbstractClass (AbstractClass _ _ _ _ _ ) = True            
 
 instance Show Class where
   show x = show (class_name x)
@@ -360,8 +368,7 @@ typeclassName c = 'I' : class_name c
 typeclassNameFromStr :: String -> String 
 typeclassNameFromStr = ('I':)
 
-hsClassName :: Class 
-               -> (String, String)  -- ^ High-level, 'Raw'-level
+hsClassName :: Class -> (String, String)  -- ^ High-level, 'Raw'-level
 hsClassName c = 
   let cname = class_name c
   in (cname, "Raw" ++ cname) 

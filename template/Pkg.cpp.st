@@ -15,7 +15,12 @@ ToType* to_nonconst(FromType* x) {
   return reinterpret_cast<ToType*>(x);
 }
 
+#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)
 
+#define TYPECASTMETHOD(cname,mname,oname) \\
+  IIF( CHECKPROTECT(cname,mname) ) ( \\
+  (to_nonconst<oname,cname ## _t>), \\
+  (to_nonconst<cname,cname ## _t>) )
 
 $cppbody$
 
