@@ -48,34 +48,33 @@ writeCppDef templates wdir header = do
 
 -- | 
 writeRawTypeHs :: STGroup String -> FilePath -> ClassModule -> IO ()
-writeRawTypeHs templates wdir mod = do
-  let fn = wdir </> cmModule mod <.> rawtypeHsFileName
+writeRawTypeHs templates wdir m = do
+  let fn = wdir </> cmModule m <.> rawtypeHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkRawTypeHs templates mod) 
+    hPutStrLn h (mkRawTypeHs templates m) 
 
 -- | 
 writeFFIHsc :: STGroup String -> FilePath -> ClassModule -> IO ()
-writeFFIHsc templates wdir mod = do 
-  let fn = wdir </> cmModule mod <.> ffiHscFileName
+writeFFIHsc templates wdir m = do 
+  let fn = wdir </> cmModule m <.> ffiHscFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkFFIHsc templates mod)
+    hPutStrLn h (mkFFIHsc templates m)
 
 -- | 
 writeInterfaceHs :: AnnotateMap -> STGroup String -> FilePath 
                  -> ClassModule 
                  -> IO ()
-writeInterfaceHs amap templates wdir mod = do 
-  let fn = wdir </> cmModule mod <.> interfaceHsFileName
+writeInterfaceHs amap templates wdir m = do 
+  let fn = wdir </> cmModule m <.> interfaceHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkInterfaceHs amap templates mod)
+    hPutStrLn h (mkInterfaceHs amap templates m)
 
 -- |
-writeCastHs :: STGroup String -> FilePath -> ClassModule 
-            -> IO ()
-writeCastHs templates wdir mod = do 
-  let fn = wdir </> cmModule mod <.> castHsFileName
+writeCastHs :: STGroup String -> FilePath -> ClassModule -> IO ()
+writeCastHs templates wdir m = do 
+  let fn = wdir </> cmModule m <.> castHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkCastHs templates mod)
+    hPutStrLn h (mkCastHs templates m)
 
 -- | 
 writeImplementationHs :: AnnotateMap 
@@ -83,10 +82,10 @@ writeImplementationHs :: AnnotateMap
                       -> FilePath 
                       -> ClassModule 
                       -> IO ()
-writeImplementationHs amap templates wdir mod = do 
-  let fn = wdir </> cmModule mod <.> implementationHsFileName
+writeImplementationHs amap templates wdir m = do 
+  let fn = wdir </> cmModule m <.> implementationHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkImplementationHs amap templates mod)
+    hPutStrLn h (mkImplementationHs amap templates m)
 
 -- | 
 writeExistentialHs :: STGroup String 
@@ -94,17 +93,17 @@ writeExistentialHs :: STGroup String
                    -> FilePath 
                    -> ClassModule 
                    -> IO ()
-writeExistentialHs templates cglobal wdir mod = do 
-  let fn = wdir </> cmModule mod <.> existentialHsFileName
+writeExistentialHs templates cglobal wdir m = do 
+  let fn = wdir </> cmModule m <.> existentialHsFileName
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkExistentialHs templates cglobal mod)
+    hPutStrLn h (mkExistentialHs templates cglobal m)
 
 -- |
 writeModuleHs :: STGroup String -> FilePath -> ClassModule -> IO () 
-writeModuleHs templates wdir mod = do 
-  let fn = wdir </> cmModule mod <.> "hs"
+writeModuleHs templates wdir m = do 
+  let fn = wdir </> cmModule m <.> "hs"
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkModuleHs templates mod)
+    hPutStrLn h (mkModuleHs templates m)
 
 writePkgHs :: String -- ^ summary module 
            -> STGroup String 
@@ -133,7 +132,7 @@ notExistThenCreate dir = do
 
 -- | now only create directory
 copyPredefined :: FilePath -> FilePath -> String -> IO () 
-copyPredefined tdir ddir prefix = do 
+copyPredefined _tdir _ddir _prefix = do 
     return () 
     -- notExistThenCreate (ddir </> prefix)
     -- copyFile (tdir </> "TypeCast.hs" ) (ddir </> prefix </> "TypeCast.hs") 
@@ -149,17 +148,14 @@ copyCppFiles wdir ddir cprefix header = do
   copyFile (wdir </> cppfile) (ddir </> cppfile)
 
 copyModule :: FilePath -> FilePath -> String -> ClassModule -> IO ()
-copyModule wdir ddir summarymod mod = do 
-  let modbase = cmModule mod 
+copyModule wdir ddir summarymod m = do 
+  let modbase = cmModule m 
   let onefilecopy fname = do 
         let (fnamebody,fnameext) = splitExtension fname
             (mdir,mfile) = moduleDirFile fnamebody
             origfpath = wdir </> fname
-            (mfile',mext') = splitExtension mfile
+            (mfile',_mext') = splitExtension mfile
             newfpath = ddir </> mdir </> mfile' ++ fnameext   
-        -- b <- doesDirectoryExist (ddir</>mdir)
-        -- if b then return () else createDirectory (ddir</>mdir) 
-        -- print (ddir,mdir)
         notExistThenCreate (ddir </> mdir) 
         copyFile origfpath newfpath 
 
@@ -172,5 +168,4 @@ copyModule wdir ddir summarymod mod = do
   -- onefilecopy $ prefix <.> modbase ++ ".Existential.hs"
   onefilecopy $ summarymod <.> "hs"
   -- copyFile (wdir </> summarymod <.> "hs") (ddir </> summarymod <.> "hs")
-
   return ()

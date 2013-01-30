@@ -3,10 +3,7 @@ module Bindings.Cxx.Generate.Code.HsFrontEnd where
 import qualified Data.Map as M
 import Data.Maybe
 
-import Control.Applicative
 
--- import Bindings.Cxx.Generate.Type.CType
--- import Bindings.Cxx.Generate.Type.Method
 import Bindings.Cxx.Generate.Type.Class
 import Bindings.Cxx.Generate.Type.Annotate
 import Bindings.Cxx.Generate.Type.Module
@@ -15,12 +12,12 @@ import Bindings.Cxx.Generate.Type.Module
 import Bindings.Cxx.Generate.Util
 
 import Data.List
-import Data.Maybe
+
 
 import Control.Monad.State
 import Control.Monad.Reader
 
-import System.FilePath ((<.>),(</>))
+import System.FilePath ((<.>))
 
 mkComment :: Int -> String -> String
 mkComment indent str 
@@ -48,10 +45,10 @@ hsModuleDeclTmpl :: String
 hsModuleDeclTmpl = "module $moduleName$ $moduleExp$ where"
 
 genModuleDecl :: Module -> Reader AnnotateMap String 
-genModuleDecl mod = do 
-  amap <- ask 
-  let modheader = render hsModuleDeclTmpl [ ("moduleName", module_name mod) 
-                                          , ("moduleExp", mkModuleExports mod) ] 
+genModuleDecl m = do 
+  -- amap <- ask 
+  let modheader = render hsModuleDeclTmpl [ ("moduleName", module_name m) 
+                                          , ("moduleExp", mkModuleExports m) ] 
   return (modheader)
 
 
@@ -181,10 +178,10 @@ genHsFrontInstExistVirtualMethod p c f =
              _ -> render hsClassInstExistVirtualMethodNoSelfTmpl tmplName
   where tmplName = [ ("methodname", hsFuncName p f)
                    , ("exist", existConstructorName c) ]
-        args  = [ ("args", intercalate " " (take (length (func_args f)) (map (\x -> 'a':(show x)) [1..])))]
+        args  = [ ("args", intercalate " " (take (length (func_args f)) (map (\x -> 'a':(show x)) ([1..] :: [Int]) )))]
 
 genAllHsFrontInstExistVirtual :: [Class] -> DaughterMap -> String 
-genAllHsFrontInstExistVirtual cs dmap = intercalateWith connRet2 allinstances cs
+genAllHsFrontInstExistVirtual cs _dmap = intercalateWith connRet2 allinstances cs
   where allinstances c = 
           let ps = c : class_allparents c
           in  intercalateWith connRet2 (\p->genHsFrontInstExistVirtual p c) ps 
@@ -294,7 +291,7 @@ hsClassRawType c =
     in  decl `connRet` inst1 
   where (highname,rawname) = hsClassName c
         iname = typeclassName c 
-        ename = existConstructorName c
+        -- ename = existConstructorName c
         tmplName = [ ("rawname",rawname)
                    , ("highname",highname)
                    , ("interfacename",iname)
@@ -302,7 +299,7 @@ hsClassRawType c =
 
 hsClassExistType :: Class -> String 
 hsClassExistType c = render existableInstance tmplName
-  where (highname,rawname) = hsClassName c
+  where (highname,_rawname) = hsClassName c
         iname = typeclassName c 
         ename = existConstructorName c
         tmplName = [ ("existConstructor",ename) 
@@ -397,7 +394,7 @@ hsExistentialCastBodyTmpl = "    \"$daughter$\" -> case obj of\n        $mother$
 
 genHsFrontUpcastClass :: Class -> Reader AnnotateMap String
 genHsFrontUpcastClass c = do 
-  amap <- ask 
+  -- amap <- ask 
   let (highname,rawname) = hsClassName c
       upcaststr = render hsUpcastClassTmpl [ ("classname", highname) 
                                            , ("ifacename", typeclassName c)
@@ -458,20 +455,20 @@ genImportInModule cs =
 
 
 genImportInFFI :: ClassModule -> String
-genImportInFFI mod = 
-  let modlst = cmImportedModulesForFFI mod
+genImportInFFI m = 
+  let modlst = cmImportedModulesForFFI m
   in  intercalateWith connRet (\x->importOneClass x "RawType") modlst
 
 
 genImportInInterface :: ClassModule -> String
-genImportInInterface mod = 
-  let modlstraw = cmImportedModulesRaw mod
-      modlsthigh = cmImportedModulesHigh mod
+genImportInInterface m = 
+  let modlstraw = cmImportedModulesRaw m
+      modlsthigh = cmImportedModulesHigh m
       getImportOneClassRaw mname = 
         intercalateWith connRet (importOneClass mname) ["RawType"]
       getImportOneClassHigh mname = 
         intercalateWith connRet (importOneClass mname) ["Interface"]
-  in  importOneClass (cmModule mod) "RawType"
+  in  importOneClass (cmModule m) "RawType"
       `connRet`
       intercalateWith connRet getImportOneClassRaw modlstraw
       `connRet` 
@@ -479,16 +476,16 @@ genImportInInterface mod =
 
 -- |
 genImportInCast :: ClassModule -> String 
-genImportInCast mod = 
-    importOneClass (cmModule mod) "RawType"
+genImportInCast m = 
+    importOneClass (cmModule m) "RawType"
     `connRet` 
-    importOneClass (cmModule mod) "Interface"
+    importOneClass (cmModule m) "Interface"
 
 -- | 
 genImportInImplementation :: ClassModule -> String
-genImportInImplementation mod = 
-  let modlstraw' = cmImportedModulesForFFI mod
-      modlsthigh = nub $ map getClassModuleBase $ concatMap class_allparents (cmClass mod)
+genImportInImplementation m = 
+  let modlstraw' = cmImportedModulesForFFI m
+      modlsthigh = nub $ map getClassModuleBase $ concatMap class_allparents (cmClass m)
       modlstraw = filter (not.(flip elem modlsthigh)) modlstraw' 
       getImportOneClassRaw mname = 
         intercalateWith connRet (importOneClass mname) 
@@ -496,13 +493,13 @@ genImportInImplementation mod =
       getImportOneClassHigh mname = 
         intercalateWith connRet (importOneClass mname) 
                         ["RawType","Cast","Interface"] 
-  in  importOneClass (cmModule mod) "RawType"
+  in  importOneClass (cmModule m) "RawType"
       `connRet`
-      importOneClass (cmModule mod) "FFI"
+      importOneClass (cmModule m) "FFI"
       `connRet`
-      importOneClass (cmModule mod) "Interface"
+      importOneClass (cmModule m) "Interface"
       `connRet`
-      importOneClass (cmModule mod) "Cast"
+      importOneClass (cmModule m) "Cast"
       `connRet`
       intercalateWith connRet getImportOneClassRaw modlstraw
       `connRet` 
@@ -510,8 +507,8 @@ genImportInImplementation mod =
 
 -- | 
 genImportInExistential :: DaughterMap -> ClassModule -> String
-genImportInExistential dmap mod = 
-  let daughters = concat . catMaybes $ (map (flip M.lookup dmap . getClassModuleBase)  (cmClass mod))
+genImportInExistential dmap m = 
+  let daughters = concat . catMaybes $ (map (flip M.lookup dmap . getClassModuleBase)  (cmClass m))
       alldaughters' = nub . map getClassModuleBase $ daughters
       -- alldaughters = filter ((&&) <$> (/= "TClass") <*> (/= "TObject")) alldaughters'
       alldaughters = alldaughters'

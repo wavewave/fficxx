@@ -21,7 +21,7 @@ genExposedModules summarymod cmods =
 
 -- | generate other modules in cabal file 
 genOtherModules :: [ClassModule] -> String 
-genOtherModules cmods = "" 
+genOtherModules _cmods = "" 
 {-  let indentspace = cabalIndentation 
       rawType = map ((\x->indentspace++x++".RawType").cmModule) cmods
       ffi = map ((\x->indentspace++x++".FFI").cmModule) cmods

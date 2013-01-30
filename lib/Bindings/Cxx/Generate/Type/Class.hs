@@ -181,6 +181,8 @@ data Function = Constructor { func_args :: Args }
               | Destructor  
               deriving Show
 
+--               | Protected { func_name :: String } 
+
 
   
 isNewFunc :: Function -> Bool 
@@ -370,18 +372,18 @@ existConstructorName c = 'E' : class_name c
 hsFuncTyp :: Class -> Function -> String
 hsFuncTyp c f = let args = genericFuncArgs f 
                     ret  = genericFuncRet f 
-                in  self ++ " -> " ++ concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
+                in  selfstr ++ " -> " ++ concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
                     
   where (_hcname,rcname) = hsClassName c
-        self = "(Ptr " ++ rcname ++ ")" 
+        selfstr = "(Ptr " ++ rcname ++ ")" 
 
         hsargtype (CT ctype _) = hsCTypeName ctype
         hsargtype (CPT x _) = hsCppTypeName x 
-        hsargtype SelfType = self 
+        hsargtype SelfType = selfstr 
         hsargtype _ = error "undefined hsargtype"
         
         hsrettype Void = "IO ()"
-        hsrettype SelfType = "IO " ++ self
+        hsrettype SelfType = "IO " ++ selfstr
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
         hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x 
         
@@ -391,15 +393,15 @@ hsFuncTypNoSelf c f = let args = genericFuncArgs f
                       in  intercalateWith connArrow id $ map (hsargtype . fst) args ++ [hsrettype ret]  
                           
   where (_hcname,rcname) = hsClassName c
-        self = "(Ptr " ++ rcname ++ ")" 
+        selfstr = "(Ptr " ++ rcname ++ ")" 
 
         hsargtype (CT ctype _) = hsCTypeName ctype
         hsargtype (CPT x _) = hsCppTypeName x 
-        hsargtype SelfType = self 
+        hsargtype SelfType = selfstr
         hsargtype _ = error "undefined hsargtype"
         
         hsrettype Void = "IO ()"
-        hsrettype SelfType = "IO " ++ self
+        hsrettype SelfType = "IO " ++ selfstr
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
         hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x 
 
@@ -424,13 +426,6 @@ hsFuncXformer func@(Static _ _ _) =
 hsFuncXformer func = let len = length (genericFuncArgs func) 
                      in "xform" ++ show len
 
-{-                        
-hsFuncXformerNew :: Function -> String 
-hsFuncXformerNew func = let len = length (genericFuncArgs func) 
-                        in if len > 0
-                             then "xform" ++ show (len - 1)
-                             else "xformnull" 
--}
 
 genericFuncRet :: Function -> Types 
 genericFuncRet f = 

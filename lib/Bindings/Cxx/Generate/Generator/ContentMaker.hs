@@ -6,29 +6,17 @@ import           Control.Monad.Trans.Reader
 import qualified Data.Map as M
 import           Data.List 
 import           Data.Maybe
-import           Distribution.Package
-import           Distribution.PackageDescription hiding (exposedModules)
-import           Distribution.PackageDescription.Parse
-import           Distribution.Verbosity
-import           Distribution.Version 
-import           System.Directory 
 import           System.FilePath 
-import           System.IO
 import           Text.StringTemplate hiding (render)
 -- 
 import           Bindings.Cxx.Generate.Code.Cpp
 import           Bindings.Cxx.Generate.Code.HsFFI 
 import           Bindings.Cxx.Generate.Code.HsFrontEnd
-import           Bindings.Cxx.Generate.Code.Cabal 
-import           Bindings.Cxx.Generate.Config
 import           Bindings.Cxx.Generate.Type.Annotate
 import           Bindings.Cxx.Generate.Type.Class
-import           Bindings.Cxx.Generate.Type.Module 
--- import           Bindings.Cxx.Generate.Type.Method
 import qualified Bindings.Cxx.Generate.Type.PackageInterface as T
 import           Bindings.Cxx.Generate.Util
 --
- 
 
 srcDir :: FilePath -> FilePath
 srcDir installbasedir = installbasedir </> "src" 
@@ -122,7 +110,7 @@ mkDaughterDef f m =
 
 -- | 
 mkParentDef :: ((Class,Class)->String) -> Class -> String
-mkParentDef f c = g (class_allparents c,c)
+mkParentDef f cls = g (class_allparents cls,cls)
   where g (ps,c) = concatMap (\p -> f (p,c)) ps
 
 
@@ -147,7 +135,7 @@ mkDeclHeader :: STGroup String
              -> String  -- ^ C prefix 
              -> ClassImportHeader 
              -> String 
-mkDeclHeader templates cglobal cprefix header =
+mkDeclHeader templates _cglobal cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"") $
@@ -159,7 +147,7 @@ mkDeclHeader templates cglobal cprefix header =
                       genAllCppDefTmplVirtual classes
                       `connRet2`
                        genAllCppDefTmplNonVirtual classes
-      dsmap         = cgDaughterSelfMap cglobal
+      -- dsmap         = cgDaughterSelfMap cglobal
       classDeclsStr = if class_name aclass /= "Deletable"
                         then mkParentDef genCppHeaderInstVirtual aclass 
                              `connRet2`
@@ -203,30 +191,30 @@ mkDefMain templates header =
 mkFFIHsc :: STGroup String 
          -> ClassModule 
          -> String 
-mkFFIHsc templates mod = 
+mkFFIHsc templates m = 
     renderTemplateGroup templates 
                         [ ("ffiHeader", ffiHeaderStr)
                         , ("ffiImport", ffiImportStr)
                         , ("cppInclude", cppIncludeStr)
                         , ("hsFunctionBody", genAllHsFFI headers) ]
                         ffiHscFileName
-  where mname = cmModule mod
-        classes = cmClass mod
-        headers = cmCIH mod
+  where mname = cmModule m
+        -- classes = cmClass m
+        headers = cmCIH m
         ffiHeaderStr = "module " ++ mname <.> "FFI where\n"
         ffiImportStr = "import " ++ mname <.> "RawType\n"
-                       ++ genImportInFFI mod
+                       ++ genImportInFFI m
         cppIncludeStr = genModuleIncludeHeader headers
 
 -- |                      
 mkRawTypeHs :: STGroup String 
             -> ClassModule 
             -> String
-mkRawTypeHs templates mod = 
+mkRawTypeHs templates m = 
     renderTemplateGroup templates [ ("rawtypeHeader", rawtypeHeaderStr) 
                                   , ("rawtypeBody", rawtypeBodyStr)] rawtypeHsFileName
-  where rawtypeHeaderStr = "module " ++ cmModule mod <.> "RawType where\n"
-        classes = cmClass mod
+  where rawtypeHeaderStr = "module " ++ cmModule m <.> "RawType where\n"
+        classes = cmClass m
         rawtypeBodyStr = 
           intercalateWith connRet2 hsClassRawType (filter (not.isAbstractClass) classes)
 
@@ -235,13 +223,13 @@ mkInterfaceHs :: AnnotateMap
               -> STGroup String 
               -> ClassModule 
               -> String    
-mkInterfaceHs amap templates mod  = 
+mkInterfaceHs amap templates m = 
     renderTemplateGroup templates [ ("ifaceHeader", ifaceHeaderStr) 
                                   , ("ifaceImport", ifaceImportStr)
                                   , ("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
-  where ifaceHeaderStr = "module " ++ cmModule mod <.> "Interface where\n" 
-        classes = cmClass mod
-        ifaceImportStr = genImportInInterface mod
+  where ifaceHeaderStr = "module " ++ cmModule m <.> "Interface where\n" 
+        classes = cmClass m
+        ifaceImportStr = genImportInInterface m
         ifaceBodyStr = 
           runReader (genAllHsFrontDecl classes) amap 
           `connRet2`
@@ -251,14 +239,14 @@ mkInterfaceHs amap templates mod  =
 
 -- | 
 mkCastHs :: STGroup String -> ClassModule -> String    
-mkCastHs templates mod  = 
+mkCastHs templates m  = 
     renderTemplateGroup templates [ ("castHeader", castHeaderStr) 
                                   , ("castImport", castImportStr)
                                   , ("castBody", castBodyStr) ]  
                                   castHsFileName
-  where castHeaderStr = "module " ++ cmModule mod <.> "Cast where\n" 
-        classes = cmClass mod
-        castImportStr = genImportInCast mod
+  where castHeaderStr = "module " ++ cmModule m <.> "Cast where\n" 
+        classes = cmClass m
+        castImportStr = genImportInCast m
         castBodyStr = 
           genAllHsFrontInstCastable classes 
           `connRet2`
@@ -269,15 +257,15 @@ mkImplementationHs :: AnnotateMap
                    -> STGroup String  -- ^ template 
                    -> ClassModule 
                    -> String
-mkImplementationHs amap templates mod = 
+mkImplementationHs amap templates m = 
     renderTemplateGroup templates 
                         [ ("implHeader", implHeaderStr) 
                         , ("implImport", implImportStr)
                         , ("implBody", implBodyStr ) ]
                         "Implementation.hs"
-  where classes = cmClass mod
-        implHeaderStr = "module " ++ cmModule mod <.> "Implementation where\n" 
-        implImportStr = genImportInImplementation mod
+  where classes = cmClass m
+        implHeaderStr = "module " ++ cmModule m <.> "Implementation where\n" 
+        implImportStr = genImportInImplementation m
         f y = intercalateWith connRet (flip genHsFrontInst y) (y:class_allparents y )
         g y = intercalateWith connRet (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
@@ -321,8 +309,8 @@ mkExistentialHs :: STGroup String
                 -> ClassGlobal 
                 -> ClassModule 
                 -> String
-mkExistentialHs templates cglobal mod = 
-  let classes = filter (not.isAbstractClass) (cmClass mod)
+mkExistentialHs templates cglobal m = 
+  let classes = filter (not.isAbstractClass) (cmClass m)
       dsmap = cgDaughterSelfMap cglobal
       makeOneMother :: Class -> String 
       makeOneMother mother = 
@@ -332,13 +320,13 @@ mkExistentialHs templates cglobal mod =
             str = mkExistentialEach templates mother daughters
         in  str 
       existEachBody = intercalateWith connRet makeOneMother classes
-      existHeaderStr = "module " ++ cmModule mod <.> "Existential where"
-      existImportStr = genImportInExistential dsmap mod
+      existHeaderStr = "module " ++ cmModule m <.> "Existential where"
+      existImportStr = genImportInExistential dsmap m
       hsfilestr = renderTemplateGroup 
                     templates 
                     [ ("existHeader", existHeaderStr)
                     , ("existImport", existImportStr)
-                    , ("modname", cmModule mod)
+                    , ("modname", cmModule m)
                     , ( "existEachBody" , existEachBody) ]
                   "Existential.hs" 
   in  hsfilestr
@@ -347,12 +335,12 @@ mkExistentialHs templates cglobal mod =
 mkModuleHs :: STGroup String 
            -> ClassModule 
            -> String 
-mkModuleHs templates mod = 
+mkModuleHs templates m = 
     let str = renderTemplateGroup 
                 templates 
-                [ ("moduleName", cmModule mod) 
-                , ("exportList", genExportList (cmClass mod)) 
-                , ("importList", genImportInModule (cmClass mod))
+                [ ("moduleName", cmModule m) 
+                , ("exportList", genExportList (cmClass m)) 
+                , ("importList", genImportInModule (cmClass m))
                 ]
                 moduleTemplate 
     in str

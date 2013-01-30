@@ -6,8 +6,7 @@ import Data.Maybe
 import System.FilePath 
 --
 import Bindings.Cxx.Generate.Type.Class 
--- import Bindings.Cxx.Generate.Type.Method
--- import Bindings.Cxx.Generate.Type.CType
+-- 
 
 -- | 
 mkPkgHeaderFileName ::Class -> String 
@@ -38,7 +37,7 @@ mkCROOTIncludeHeaders c =
 mkCIH :: (String,Class->[String])  -- ^ (package name, mkIncludeHeaders)  
       -> Class 
       -> ClassImportHeader
-mkCIH (pkgname,mkincheaders) c = ClassImportHeader c 
+mkCIH (_pkgname,mkincheaders) c = ClassImportHeader c 
                                    (mkPkgHeaderFileName c) 
                                    (mkPkgCppFileName c) 
                                    (mkPkgIncludeHeaders c) 
@@ -105,7 +104,7 @@ mkClassModule (pkgname,mkincheaders) c =
                  <*> highs -- mkModuleDepHigh 
                  <*> ffis -- mkModuleDepFFI 
     ) c
-  where mbase = (cabal_moduleprefix.class_cabal) c
+  where -- mbase = (cabal_moduleprefix.class_cabal) c
         raws = map getClassModuleBase . mkModuleDepRaw 
         highs = map getClassModuleBase . mkModuleDepHigh 
         ffis = map getClassModuleBase . mkModuleDepFFI 
