@@ -1,6 +1,5 @@
 #!/bin/bash 
 
-sudo apt-get install cadaver 
 cabal install transformers
 cabal install hscolour 
 
@@ -23,16 +22,8 @@ cabal haddock --hyperlink-source
 cabal copy 
 
 
-echo "machine $SRVR"'\n'"login $SRVRID"'\n'"password $SRVRPKEY" > $HOME/.netrc 
-chmod 0600 $HOME/.netrc 
-
 tar cvzf fficxx.tar.gz $HOME/.cabal/share/doc/fficxx*
-echo "open http://$SRVR:$SRVRPORT$SRVRDIR"'\n'"put fficxx.tar.gz"'\n'" "  > script 
-
-cadaver < script  
-
-rm script 
-rm $HOME/.netrc 
+echo $CR | curl --digest -T fficxx.tar.gz -K - $SRVRURL 
 
 
 # this is needed for checking
