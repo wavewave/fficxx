@@ -112,7 +112,7 @@ writePkgHs :: String -- ^ summary module
            -> IO () 
 writePkgHs modname templates wdir mods = do 
   let fn = wdir </> modname <.> "hs"
-      exportListStr = intercalateWith conncomma ((\x->" module " ++ x).cmModule) mods 
+      exportListStr = intercalateWith (conn "\n, ") ((\x->"module " ++ x).cmModule) mods 
       importListStr = intercalateWith connRet ((\x->"import " ++ x).cmModule) mods
       str = renderTemplateGroup 
               templates 
