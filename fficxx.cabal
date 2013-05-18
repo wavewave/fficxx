@@ -37,9 +37,7 @@ Library
                  Cabal 
 
   Exposed-Modules: 
-                   -- Bindings.Cxx.Generate.Type.CType
                    Bindings.Cxx.Generate.Type.Class
-                   -- Bindings.Cxx.Generate.Type.Method
                    Bindings.Cxx.Generate.Type.Module
                    Bindings.Cxx.Generate.Type.PackageInterface
                    Bindings.Cxx.Generate.Config
@@ -54,8 +52,8 @@ Library
                    Bindings.Cxx.Generate.Util
                    Bindings.Cxx.Generate.QQ.Verbatim
                    Bindings.Cxx.Generate.Type.Annotate
-                   Bindings.Cxx.Runtime.Cast
+--                    Bindings.Cxx.Runtime.Cast
                    Paths_fficxx
 
-  Include-dirs:    csrc
-  Install-includes: MacroPatternMatch.h
+--  Include-dirs:    csrc
+--  Install-includes: MacroPatternMatch.h
