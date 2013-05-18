@@ -275,9 +275,12 @@ data Class = Class { class_cabal :: Cabal
                            , class_protected :: ProtectedMethod
                            , class_funcs :: [Function] }
 
+newtype Namespace = NS { unNamespace :: String } deriving (Show)
+
 data ClassImportHeader = ClassImportHeader
                        { cihClass :: Class 
                        , cihSelfHeader :: String 
+                       , cihNamespace :: [Namespace] 
                        , cihSelfCpp :: String
                        , cihIncludedHPkgHeaders :: [String] 
                        , cihIncludedCPkgHeaders :: [String] 

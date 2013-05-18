@@ -24,24 +24,16 @@ mkPkgCppFileName c =
 mkPkgIncludeHeaders :: Class -> [String] 
 mkPkgIncludeHeaders = map mkPkgHeaderFileName . class_allparents 
 
-{-
--- this function must be outsourced!
-mkCROOTIncludeHeaders :: Class 
-                      -> [String] 
-mkCROOTIncludeHeaders c = 
-  case class_name c of
-    "Deletable" -> [] 
-    _ -> [(class_name c) ++ ".h"]
--}
 
-mkCIH :: (String,Class->[String])  -- ^ (package name, mkIncludeHeaders)  
+mkCIH :: (Class->([Namespace],[String]))  -- ^ (mk namespace and include headers)  
       -> Class 
       -> ClassImportHeader
-mkCIH (_pkgname,mkincheaders) c = ClassImportHeader c 
-                                   (mkPkgHeaderFileName c) 
-                                   (mkPkgCppFileName c) 
-                                   (mkPkgIncludeHeaders c) 
-                                   (mkincheaders c)
+mkCIH mkNSandIncHdrs c = ClassImportHeader c 
+                           (mkPkgHeaderFileName c) 
+                           ((fst . mkNSandIncHdrs) c)
+                           (mkPkgCppFileName c) 
+                           (mkPkgIncludeHeaders c) 
+                           ((snd . mkNSandIncHdrs) c)
 
 -- |
 extractClassFromType :: Types -> Maybe Class
@@ -93,29 +85,27 @@ mkModuleDepFFI c =
   in  alldeps
 
                     
-mkClassModule :: (String,Class->[String])
+mkClassModule :: (String,Class->([Namespace],[String]))
               -> Class 
               -> ClassModule 
 mkClassModule (pkgname,mkincheaders) c = 
-    (ClassModule <$> getClassModuleBase  -- modulename -- class_name
+    (ClassModule <$> getClassModuleBase  
                  <*> return
-                 <*> return . mkCIH (pkgname,mkincheaders) 
-                 <*> raws -- mkModuleDepRaw 
-                 <*> highs -- mkModuleDepHigh 
-                 <*> ffis -- mkModuleDepFFI 
+                 <*> return . mkCIH mkincheaders
+                 <*> raws 
+                 <*> highs 
+                 <*> ffis 
     ) c
-  where -- mbase = (cabal_moduleprefix.class_cabal) c
-        raws = map getClassModuleBase . mkModuleDepRaw 
+  where raws = map getClassModuleBase . mkModuleDepRaw 
         highs = map getClassModuleBase . mkModuleDepHigh 
         ffis = map getClassModuleBase . mkModuleDepFFI 
 
--- where modulename = (<.>) <$> (cabal_moduleprefix.class_cabal) <*> class_name  
 
-mkAllClassModulesAndCIH :: (String,Class->[String]) -- ^ (package name,mkIncludeHeaders)
+mkAllClassModulesAndCIH :: (String,Class->([Namespace],[String])) -- ^ (package name,mkIncludeHeaders)
                         -> [Class] 
                         -> ([ClassModule],[ClassImportHeader])
-mkAllClassModulesAndCIH (pkgname,mkincheaders) cs = 
-  let ms = map (mkClassModule (pkgname,mkincheaders)) cs 
+mkAllClassModulesAndCIH (pkgname,mkNSandIncHdrs) cs = 
+  let ms = map (mkClassModule (pkgname,mkNSandIncHdrs)) cs 
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
   in (ms,cihs)

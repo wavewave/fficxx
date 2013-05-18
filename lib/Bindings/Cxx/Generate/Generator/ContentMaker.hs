@@ -182,6 +182,7 @@ mkDefMain :: STGroup String
 mkDefMain templates header =
   let classes = [cihClass header]
       headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (cihSelfHeader header) ++ "\"" 
+      namespaceStr = (concatMap (\x->"using namespace " ++ unNamespace x ++ ";\n") . cihNamespace) header
       aclass = cihClass header
       cppBody = mkProtectedFunctionList (cihClass header) 
                 `connRet`
@@ -195,6 +196,7 @@ mkDefMain templates header =
   in  renderTemplateGroup 
         templates 
         [ ("header" , headerStr ) 
+        , ("namespace", namespaceStr ) 
         , ("cppbody", cppBody ) 
         , ("modname", class_name (cihClass header)) ] 
         definitionTemplate
