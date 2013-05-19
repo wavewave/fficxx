@@ -19,6 +19,7 @@ data CTypes = CTString | CTInt | CTDouble | CTBool | CTDoubleStar | CTVoidStar |
             deriving Show 
 
 data CPPTypes = CPTClass Class 
+              | CPTClassRef Class 
               deriving Show
 
 data IsConst = Const | NoConst
@@ -146,6 +147,13 @@ cppclass c vname = ( cppclass_ c, vname)
 cppclassconst :: Class -> String -> (Types, String) 
 cppclassconst c vname = ( CPT (CPTClass c) Const, vname)
 
+cppclassref_ :: Class -> Types 
+cppclassref_ c = CPT (CPTClassRef c) NoConst 
+
+cppclassref :: Class -> String -> (Types, String) 
+cppclassref c vname = (cppclassref_ c, vname)
+
+
 hsCTypeName :: CTypes -> String 
 hsCTypeName CTString = "CString" 
 hsCTypeName CTInt    = "CInt"
@@ -160,8 +168,8 @@ hsCTypeName CTCharStarStar = "(Ptr (CString))"
 
 
 hsCppTypeName :: CPPTypes -> String
-hsCppTypeName (CPTClass c) =  "(Ptr Raw"++name++")"  
-  where name = class_name c 
+hsCppTypeName (CPTClass c) =  "(Ptr Raw"++name++")"  where name = class_name c 
+hsCppTypeName (CPTClassRef c) = "(Ptr Raw"++name++")" where name = class_name c 
 
 -------------
 
@@ -226,6 +234,10 @@ argToString (CPT (CPTClass c) isconst, varname) = case isconst of
     Const   -> "const_" ++ cname ++ "_p " ++ varname 
     NoConst -> cname ++ "_p " ++ varname
   where cname = class_name c 
+argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of 
+    Const   -> "const_" ++ cname ++ "_p " ++ varname 
+    NoConst -> cname ++ "_p " ++ varname
+  where cname = class_name c  
 argToString _ = error "undefined argToString"
 
 argsToString :: Args -> String 
@@ -239,18 +251,22 @@ argsToStringNoSelf = intercalateWith conncomma argToString
 
 argToCallString :: (Types,String) -> String
 argToCallString (CPT (CPTClass c) _,varname) = 
-    "to_nonconst<"++str++","++str++"_t>("++varname++")"
-  where str = class_name c
+    "to_nonconst<"++str++","++str++"_t>("++varname++")" where str = class_name c
+argToCallString (CPT (CPTClassRef c) _,varname) = 
+    "to_nonconstref<"++str++","++str++"_t>(*"++varname++")" where str = class_name c
 argToCallString (_,varname) = varname
 
 argsToCallString :: Args -> String
 argsToCallString = intercalateWith conncomma argToCallString
+
 
 rettypeToString :: Types -> String 
 rettypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
 rettypeToString Void = "void"
 rettypeToString SelfType = "Type ## _p"
 rettypeToString (CPT (CPTClass c) _) = str ++ "_p"
+  where str = class_name c 
+rettypeToString (CPT (CPTClassRef c) _) = str ++ "_p" 
   where str = class_name c 
 
 --------
@@ -363,6 +379,7 @@ ctypeToHsType _c (CT CTVoidStar _) = "(Ptr ())"
 ctypeToHsType _c (CT CTIntStar _) = "[Int]" 
 ctypeToHsType _c (CT CTCharStarStar _) = "[String]"
 ctypeToHsType _c (CPT (CPTClass c') _) = class_name c'
+ctypeToHsType _c (CPT (CPTClassRef c') _) = class_name c'
 
 
 typeclassName :: Class -> String

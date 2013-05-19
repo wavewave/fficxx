@@ -346,7 +346,16 @@ mkHsFuncArgType c lst =
             CPT (CPTClass c') _ -> do 
               (prefix,n) <- get 
               let cname = class_name c' 
-                  iname = typeclassNameFromStr cname -- typeclassName c
+                  iname = typeclassNameFromStr cname 
+                  newname = 'c' : show n
+                  newprefix1 = iname ++ " " ++ newname    
+                  newprefix2 = "FPtr " ++ newname
+              put (newprefix1:newprefix2:prefix,n+1)
+              return newname
+            CPT (CPTClassRef c') _ -> do 
+              (prefix,n) <- get 
+              let cname = class_name c' 
+                  iname = typeclassNameFromStr cname 
                   newname = 'c' : show n
                   newprefix1 = iname ++ " " ++ newname    
                   newprefix2 = "FPtr " ++ newname
@@ -359,14 +368,8 @@ mkHsFuncRetType c func =
   let rtyp = genericFuncRet func
   in case rtyp of 
     SelfType -> ("a",[])
---    CPT (CPTClass cname) _ -> ("(Exist " ++ cname ++ ")",[])
-    CPT (CPTClass c') _ -> (cname,[])
-      where cname = class_name c' 
-  {-    let iname = typeclassNameFromStr cname -- typeclassName c
-          newname = "b"
-          newprefix1 = iname ++ " " ++ newname    
-          newprefix2 = "FPtr " ++ newname
-      in  ("b",[newprefix1,newprefix2]) -}
+    CPT (CPTClass c') _ -> (cname,[]) where cname = class_name c' 
+    CPT (CPTClassRef c') _ -> (cname,[]) where cname = class_name c' 
     _ -> (ctypeToHsType c rtyp,[])
 
       

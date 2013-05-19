@@ -7,6 +7,7 @@ import System.FilePath
 --
 import Bindings.Cxx.Generate.Type.Class 
 -- 
+import Debug.Trace 
 
 -- | 
 mkPkgHeaderFileName ::Class -> String 
@@ -22,18 +23,20 @@ mkPkgCppFileName c =
 
 -- | 
 mkPkgIncludeHeaders :: Class -> [String] 
-mkPkgIncludeHeaders = map mkPkgHeaderFileName . class_allparents 
+mkPkgIncludeHeaders = map mkPkgHeaderFileName . mkModuleDepHigh -- class_allparents 
 
 
 mkCIH :: (Class->([Namespace],[String]))  -- ^ (mk namespace and include headers)  
       -> Class 
       -> ClassImportHeader
-mkCIH mkNSandIncHdrs c = ClassImportHeader c 
-                           (mkPkgHeaderFileName c) 
-                           ((fst . mkNSandIncHdrs) c)
-                           (mkPkgCppFileName c) 
-                           (mkPkgIncludeHeaders c) 
-                           ((snd . mkNSandIncHdrs) c)
+mkCIH mkNSandIncHdrs c = let r = ClassImportHeader c 
+                                   (mkPkgHeaderFileName c) 
+                                   ((fst . mkNSandIncHdrs) c)
+                                   (mkPkgCppFileName c) 
+                                   (mkPkgIncludeHeaders c) 
+                                   ((snd . mkNSandIncHdrs) c)
+                         in trace (show r) $ r 
+
 
 -- |
 extractClassFromType :: Types -> Maybe Class
@@ -41,6 +44,7 @@ extractClassFromType Void = Nothing
 extractClassFromType SelfType = Nothing
 extractClassFromType (CT _ _) = Nothing
 extractClassFromType (CPT (CPTClass c) _) = Just c
+extractClassFromType (CPT (CPTClassRef c) _) = Just c
 
 -- | 
 extractClassDep :: Function -> ([Class],[Class])

@@ -36,7 +36,6 @@ funcToDef c func
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | isDeleteFunc func = 
     let declstr = funcToDecl c func
-     --   callstr = "( Type ## _p p )"
         returnstr = "delete (to_nonconst<Type,Type ## _t>(p)) ; "
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | isStaticFunc func = 
@@ -49,8 +48,9 @@ funcToDef c func
           SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
           (CT _ctyp _isconst) -> "return "++callstr++";" 
           (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
-                                    ++">(("++str++"*)"++callstr++");"
+                                    ++">(("++str++"*)"++callstr++");" 
             where str = class_name c' 
+          (CPT (CPTClassRef c') _) -> "return ((*)"++callstr++");" 
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | otherwise = 
     let declstr = funcToDecl c func
@@ -66,6 +66,7 @@ funcToDef c func
           (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
                                     ++">(("++str++"*)"++callstr++");"
              where str = class_name c'
+          (CPT (CPTClassRef c') _) -> "return ((*)"++callstr++");" 
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
 
 

@@ -15,6 +15,17 @@ ToType* to_nonconst(FromType* x) {
   return reinterpret_cast<ToType*>(x);
 }
 
+template<class ToType, class FromType>
+const ToType& to_constref(const FromType& x) {
+  return reinterpret_cast<const ToType&>(x);
+}
+
+template<class ToType, class FromType>
+ToType& to_nonconstref(FromType& x) {
+  return reinterpret_cast<ToType&>(x);
+}
+
+
 #define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)
 
 #define TYPECASTMETHOD(cname,mname,oname) \\
