@@ -393,7 +393,9 @@ hsExistentialGADTBodyTmpl = "    GADT$mother$$daughter$ :: $daughter$ -> GADTTyp
 hsExistentialCastBodyTmpl :: String
 hsExistentialCastBodyTmpl = "    \"$daughter$\" -> case obj of\n        $mother$ fptr -> let obj' = $daughter$ (castForeignPtr fptr :: ForeignPtr Raw$daughter$)\n                        in  return . EGADT$mother$ . GADT$mother$$daughter$ \\$ obj'"
 
------------
+------------
+-- upcast --
+------------
 
 genHsFrontUpcastClass :: Class -> Reader AnnotateMap String
 genHsFrontUpcastClass c = do 
@@ -413,6 +415,30 @@ hsUpcastClassTmpl :: String
 hsUpcastClassTmpl =  "upcast$classname$ :: (FPtr a, $ifacename$ a) => a -> $classname$\nupcast$classname$ h = let fh = get_fptr h\n$space$    fh2 :: ForeignPtr $rawclassname$ = castForeignPtr fh\n$space$in cast_fptr_to_obj fh2"
 
 
+--------------
+-- downcast --
+--------------
+
+genHsFrontDowncastClass :: Class -> Reader AnnotateMap String
+genHsFrontDowncastClass c = do 
+  -- amap <- ask 
+  let (highname,rawname) = hsClassName c
+      downcaststr = render hsDowncastClassTmpl [ ("classname", highname) 
+                                               , ("ifacename", typeclassName c)
+                                               , ("rawclassname", rawname)  
+                                               , ("space", replicate (length highname+13) ' ' ) ] 
+  return downcaststr
+
+genAllHsFrontDowncastClass :: [Class] -> Reader AnnotateMap String
+genAllHsFrontDowncastClass = intercalateWithM connRet2 genHsFrontDowncastClass
+
+
+hsDowncastClassTmpl :: String 
+hsDowncastClassTmpl =  "downcast$classname$ :: (FPtr a, $ifacename$ a) => $classname$ -> a \ndowncast$classname$ h = let fh = get_fptr h\n$space$    fh2 = castForeignPtr fh\n$space$in cast_fptr_to_obj fh2"
+
+------------
+-- Export --
+------------
 
 genExport :: Class -> String 
 genExport c =
@@ -423,9 +449,10 @@ genExport c =
          then "    " ++ ('I' : class_name c) ++ methodstr 
          else "    " ++ class_name c ++ "(..)\n  , " 
                      ++ ('I' : class_name c) ++ methodstr
-                     ++ "\n  , upcast" ++ class_name c ++ "\n"
-                     ++ genExportConstructorAndNonvirtual c ++ "\n"
-                     ++ genExportStatic c 
+                     ++ "\n  , upcast" ++ class_name c 
+                     ++ "\n  , downcast" ++ class_name c 
+                     ++ "\n" ++ genExportConstructorAndNonvirtual c 
+                     ++ "\n" ++ genExportStatic c 
 
 -- | constructor and non-virtual function 
 genExportConstructorAndNonvirtual :: Class -> String 

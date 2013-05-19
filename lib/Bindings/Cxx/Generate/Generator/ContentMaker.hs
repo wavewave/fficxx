@@ -250,6 +250,8 @@ mkInterfaceHs amap templates m =
           intercalateWith connRet hsClassExistType (filter (not.isAbstractClass) classes) 
           `connRet2`
           runReader (genAllHsFrontUpcastClass (filter (not.isAbstractClass) classes)) amap  
+          `connRet2`
+          runReader (genAllHsFrontDowncastClass (filter (not.isAbstractClass) classes)) amap
 
 -- | 
 mkCastHs :: STGroup String -> ClassModule -> String    
