@@ -424,8 +424,10 @@ genExport c =
          else "    " ++ class_name c ++ "(..)\n  , " 
                      ++ ('I' : class_name c) ++ methodstr
                      ++ "\n  , upcast" ++ class_name c ++ "\n"
-                     ++ genExportConstructorAndNonvirtual c 
+                     ++ genExportConstructorAndNonvirtual c ++ "\n"
+                     ++ genExportStatic c 
 
+-- | constructor and non-virtual function 
 genExportConstructorAndNonvirtual :: Class -> String 
 genExportConstructorAndNonvirtual c =         
     intercalateWith connRet (\x->indent++", "++x) fns
@@ -433,6 +435,16 @@ genExportConstructorAndNonvirtual c =
         fs = class_funcs c
         fns = map (aliasedFuncName c) (constructorFuncs fs 
                                        ++ nonVirtualNotNewFuncs fs)
+
+-- | staic function export list 
+genExportStatic :: Class -> String 
+genExportStatic c =         
+    intercalateWith connRet (\x->indent++", "++x) fns
+  where indent = replicate 2 ' ' 
+        fs = class_funcs c
+        fns = map (aliasedFuncName c) (staticFuncs fs) 
+
+
 
 
 
