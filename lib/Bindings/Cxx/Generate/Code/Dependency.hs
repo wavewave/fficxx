@@ -1,12 +1,14 @@
 module Bindings.Cxx.Generate.Code.Dependency where
 
 import Control.Applicative
+import Data.Function (on)
 import Data.List 
 import Data.Maybe
 import System.FilePath 
 --
 import Bindings.Cxx.Generate.Type.Class 
 --
+import Debug.Trace 
 
 -- | 
 mkPkgHeaderFileName ::Class -> String 
@@ -21,20 +23,36 @@ mkPkgCppFileName c =
     -- pkgname ++ (class_name c) ++ ".cpp"
 
 -- | 
-mkPkgIncludeHeaders :: Class -> [String] 
-mkPkgIncludeHeaders = map mkPkgHeaderFileName . mkModuleDepHigh -- class_allparents 
+mkPkgIncludeHeadersInH :: Class -> [String] 
+mkPkgIncludeHeadersInH c =
+    let pkgname = (cabal_pkgname . class_cabal) c
+        extclasses = (filter ((/= pkgname) . cabal_pkgname . class_cabal) . mkModuleDepCpp) c 
+    in map mkPkgHeaderFileName  (mkModuleDepHigh c ++ extclasses)
+
+    -- (map mkPkgHeaderFileName . class_allparents) c 
+                           
+
+-- | 
+mkPkgIncludeHeadersInCPP :: Class -> [String] 
+mkPkgIncludeHeadersInCPP = map mkPkgHeaderFileName . mkModuleDepCpp 
+
+
+-- mkModuleDepFFI4One
+
+-- mkModuleDepHigh -- class_allparents 
 
 
 mkCIH :: (Class->([Namespace],[String]))  -- ^ (mk namespace and include headers)  
       -> Class 
       -> ClassImportHeader
-mkCIH mkNSandIncHdrs c = ClassImportHeader c 
+mkCIH mkNSandIncHdrs c = let r = ClassImportHeader c 
                                    (mkPkgHeaderFileName c) 
                                    ((fst . mkNSandIncHdrs) c)
                                    (mkPkgCppFileName c) 
-                                   (mkPkgIncludeHeaders c) 
+                                   (mkPkgIncludeHeadersInH c) 
+                                   (mkPkgIncludeHeadersInCPP c)
                                    ((snd . mkNSandIncHdrs) c)
-                         
+                         in trace (show r) r 
 
 
 -- |
@@ -46,7 +64,8 @@ extractClassFromType (CPT (CPTClass c) _) = Just c
 extractClassFromType (CPT (CPTClassRef c) _) = Just c
 
 -- | 
-extractClassDep :: Function -> ([Class],[Class])
+extractClassDep :: Function 
+                -> ([Class],[Class])  -- ^ (rettypedep,argtypedep) 
 extractClassDep (Constructor args)  = 
     ([],catMaybes (map (extractClassFromType.fst) args))
 extractClassDep (Virtual ret _ args) = 
@@ -63,14 +82,26 @@ extractClassDep Destructor = ([],[])
 mkModuleDepRaw :: Class -> [Class] 
 mkModuleDepRaw c = 
   let fs = class_funcs c 
-  in  nub . filter (/= c) . concatMap (fst.extractClassDep) $ fs
+  in  nub . filter (/= c) $
+        concatMap (fst.extractClassDep) fs
+        -- ++ concatMap (snd.extractClassDep) fs        
 
 -- | 
 mkModuleDepHigh :: Class -> [Class] 
 mkModuleDepHigh c = 
   let fs = class_funcs c 
   in  nub . filter (/= c)  $ 
+        -- concatMap (fst.extractClassDep) fs   
         concatMap (snd.extractClassDep) fs
+        ++ (class_parents c) 
+
+-- | 
+mkModuleDepCpp :: Class -> [Class] 
+mkModuleDepCpp c = 
+  let fs = class_funcs c 
+  in  nub . filter (/= c)  $ 
+        concatMap (fst.extractClassDep) fs   
+        ++ concatMap (snd.extractClassDep) fs
         ++ (class_parents c) 
 
 -- | 

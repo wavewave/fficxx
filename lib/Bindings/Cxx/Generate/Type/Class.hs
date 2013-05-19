@@ -298,7 +298,8 @@ data ClassImportHeader = ClassImportHeader
                        , cihSelfHeader :: String 
                        , cihNamespace :: [Namespace] 
                        , cihSelfCpp :: String
-                       , cihIncludedHPkgHeaders :: [String] 
+                       , cihIncludedHPkgHeadersInH :: [String] 
+                       , cihIncludedHPkgHeadersInCPP :: [String] 
                        , cihIncludedCPkgHeaders :: [String] 
                        } deriving (Show)
 

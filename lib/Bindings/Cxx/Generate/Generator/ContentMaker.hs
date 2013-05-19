@@ -149,7 +149,7 @@ mkDeclHeader templates _cglobal cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"") $
-                        cihIncludedHPkgHeaders header
+                        cihIncludedHPkgHeadersInH header
       declDefStr    = genAllCppHeaderTmplVirtual classes 
                       `connRet2`
                       genAllCppHeaderTmplNonVirtual classes 

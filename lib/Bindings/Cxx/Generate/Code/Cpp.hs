@@ -125,7 +125,7 @@ genAllCppDefInstNonVirtual =
 genAllCppHeaderInclude :: ClassImportHeader -> String 
 genAllCppHeaderInclude header = 
     intercalateWith connRet (\x->"#include \""++x++"\"") $
-      cihIncludedHPkgHeaders header
+      cihIncludedHPkgHeadersInCPP header
         ++ cihIncludedCPkgHeaders header
 
 genModuleIncludeHeader :: [ClassImportHeader] -> String 
