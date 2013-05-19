@@ -53,7 +53,7 @@ mkCIH mkNSandIncHdrs c = let r = ClassImportHeader c
                                    (mkPkgIncludeHeadersInH c) 
                                    (mkPkgIncludeHeadersInCPP c)
                                    ((snd . mkNSandIncHdrs) c)
-                         in trace (show r) r 
+                         in r -- trace (show r) r 
 
 
 -- |
