@@ -10,3 +10,5 @@ newtype HeaderName = HdrName String deriving (Hashable, Show, Eq, Ord)
 
 type PackageInterface = HM.HashMap (PackageName, ClassName) HeaderName 
 
+newtype TypeMacro = TypMcro { unTypMcro :: String } 
+                  deriving (Show,Eq,Ord)

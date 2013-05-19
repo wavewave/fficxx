@@ -26,8 +26,9 @@ mkPkgCppFileName c =
 mkPkgIncludeHeadersInH :: Class -> [String] 
 mkPkgIncludeHeadersInH c =
     let pkgname = (cabal_pkgname . class_cabal) c
-        extclasses = (filter ((/= pkgname) . cabal_pkgname . class_cabal) . mkModuleDepCpp) c 
-    in map mkPkgHeaderFileName  (mkModuleDepHigh c ++ extclasses)
+        extclasses = (filter ((/= pkgname) . cabal_pkgname . class_cabal) . mkModuleDepCpp) c
+        extheaders = nub . map ((++"Type.h") .  cabal_pkgname . class_cabal) $ extclasses  
+    in map mkPkgHeaderFileName (class_allparents c) ++ extheaders
 
     -- (map mkPkgHeaderFileName . class_allparents) c 
                            

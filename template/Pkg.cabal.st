@@ -23,7 +23,7 @@ Source-repository head
 Library
   default-language: Haskell2010
   hs-source-dirs: src
-  ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind -fno-warn-orphans
+  ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind -fno-warn-orphans -fno-warn-unused-imports
   ghc-prof-options: -caf-all -auto-all
   Build-Depends:      base>4 && < 5, fficxx-runtime >= 0.0.999 $deps$
   Exposed-Modules:

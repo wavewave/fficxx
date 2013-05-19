@@ -31,7 +31,7 @@ moduleTemplate = "module.hs"
 -- cabalTemplate = "Pkg.cabal"
 
 declarationTemplate :: String
-declarationTemplate = "Pkg.h"
+declarationTemplate = "Module.h"
 
 typeDeclHeaderFileName :: String
 typeDeclHeaderFileName = "PkgType.h"
@@ -55,7 +55,7 @@ funcbodyTemplate :: String
 funcbodyTemplate   = "functionbody.cpp"
 
 headerFileName :: String
-headerFileName = "Pkg.h"
+headerFileName = "Module.h"
 
 cppFileName :: String
 cppFileName = "Pkg.cpp" 
@@ -126,10 +126,10 @@ mkProtectedFunctionList c =
 
 -- |
 mkTypeDeclHeader :: STGroup String -- -> ClassGlobal 
-                 -> String -- ^ typemacro 
+                 -> T.TypeMacro -- ^ typemacro 
                  -> [Class]
                  -> String 
-mkTypeDeclHeader templates typemacro classes =
+mkTypeDeclHeader templates (T.TypMcro typemacro) classes =
   let typeDeclBodyStr   = genAllCppHeaderTmplType classes 
   in  renderTemplateGroup 
         templates 
@@ -141,13 +141,15 @@ mkTypeDeclHeader templates typemacro classes =
 
 -- | 
 mkDeclHeader :: STGroup String 
-             -> ClassGlobal 
-             -> String  -- ^ C prefix 
+             -- -> ClassGlobal 
+             -> T.TypeMacro  -- ^ typemacro prefix 
+             -> String     -- ^ C prefix 
              -> ClassImportHeader 
              -> String 
-mkDeclHeader templates _cglobal cprefix header =
+mkDeclHeader templates (T.TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
+      typemacrostr = typemacroprefix ++ class_name aclass ++ "__" 
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"") $
                         cihIncludedHPkgHeadersInH header
       declDefStr    = genAllCppHeaderTmplVirtual classes 
@@ -170,7 +172,8 @@ mkDeclHeader templates _cglobal cprefix header =
                       classDeclsStr 
   in  renderTemplateGroup 
         templates 
-        [ ("cprefix", cprefix)
+        [ ("typemacro", typemacrostr)
+        , ("cprefix", cprefix)
         , ("declarationheader", declHeaderStr ) 
         , ("declarationbody", declBodyStr ) ] 
         declarationTemplate

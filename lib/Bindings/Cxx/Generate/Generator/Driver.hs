@@ -9,6 +9,7 @@ import Text.StringTemplate
 --
 import Bindings.Cxx.Generate.Type.Class
 import Bindings.Cxx.Generate.Type.Annotate
+import Bindings.Cxx.Generate.Type.PackageInterface 
 import Bindings.Cxx.Generate.Generator.ContentMaker 
 import Bindings.Cxx.Generate.Util
 
@@ -20,25 +21,28 @@ import Bindings.Cxx.Generate.Util
 
 -- | 
 writeTypeDeclHeaders :: STGroup String 
-                     -> String  -- ^ type macro 
                      -> FilePath 
+                     -> TypeMacro  -- ^ type macro 
                      -> String  -- ^ cprefix 
                      -> [ClassImportHeader]
                      -> IO ()
-writeTypeDeclHeaders templates typemacro wdir cprefix headers = do 
+writeTypeDeclHeaders templates wdir typemacro cprefix headers = do 
   let fn = wdir </> cprefix ++ "Type.h"
       classes = map cihClass headers
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkTypeDeclHeader templates typemacro classes)
 
 -- | 
-writeDeclHeaders :: STGroup String -> ClassGlobal 
-                 -> FilePath -> String -> ClassImportHeader
+writeDeclHeaders :: STGroup String  
+                 -> FilePath 
+                 -> TypeMacro 
+                 -> String  -- ^ c prefix 
+                 -> ClassImportHeader
                  -> IO () 
-writeDeclHeaders templates cglobal wdir cprefix header = do 
+writeDeclHeaders templates wdir typemacroprefix cprefix header = do 
   let fn = wdir </> cihSelfHeader header
   withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkDeclHeader templates cglobal cprefix header)
+    hPutStrLn h (mkDeclHeader templates typemacroprefix cprefix header)
 
 writeCppDef :: STGroup String -> FilePath -> ClassImportHeader -> IO () 
 writeCppDef templates wdir header = do 
