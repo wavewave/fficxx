@@ -6,8 +6,7 @@ import Data.Maybe
 import System.FilePath 
 --
 import Bindings.Cxx.Generate.Type.Class 
--- 
-import Debug.Trace 
+--
 
 -- | 
 mkPkgHeaderFileName ::Class -> String 
@@ -29,13 +28,13 @@ mkPkgIncludeHeaders = map mkPkgHeaderFileName . mkModuleDepHigh -- class_allpare
 mkCIH :: (Class->([Namespace],[String]))  -- ^ (mk namespace and include headers)  
       -> Class 
       -> ClassImportHeader
-mkCIH mkNSandIncHdrs c = let r = ClassImportHeader c 
+mkCIH mkNSandIncHdrs c = ClassImportHeader c 
                                    (mkPkgHeaderFileName c) 
                                    ((fst . mkNSandIncHdrs) c)
                                    (mkPkgCppFileName c) 
                                    (mkPkgIncludeHeaders c) 
                                    ((snd . mkNSandIncHdrs) c)
-                         in trace (show r) $ r 
+                         
 
 
 -- |
