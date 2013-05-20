@@ -11,6 +11,7 @@ Cabal-Version:  >= 1.8
 Data-files: template/*.h.st
             template/*.hs.st
             template/*.hsc.st
+            template/*.hs-boot.st
             template/*.cpp.st
             template/Pkg.cabal.st
 

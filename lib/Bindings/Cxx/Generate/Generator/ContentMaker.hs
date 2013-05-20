@@ -5,6 +5,7 @@ import           Control.Lens (set,at)
 import           Control.Monad.Trans.Reader
 import qualified Data.Map as M
 import           Data.List 
+import           Data.List.Split (splitOn) 
 import           Data.Maybe
 import           System.FilePath 
 import           Text.StringTemplate hiding (render)
@@ -26,6 +27,9 @@ csrcDir installbasedir = installbasedir </> "csrc"
 
 moduleTemplate :: String 
 moduleTemplate = "module.hs"
+
+hsbootTemplate :: String
+hsbootTemplate = "Class.hs-boot"
 
 -- cabalTemplate :: String 
 -- cabalTemplate = "Pkg.cabal"
@@ -349,6 +353,21 @@ mkExistentialHs templates cglobal m =
                     , ( "existEachBody" , existEachBody) ]
                   "Existential.hs" 
   in  hsfilestr
+
+-- | 
+mkInterfaceHSBOOT :: STGroup String -> String -> String 
+mkInterfaceHSBOOT templates mname = 
+  let cname = last (splitOn "." mname)
+      hsbootbodystr = "class " ++ 'I':cname ++ " a" 
+      hsbootstr = renderTemplateGroup 
+                    templates 
+                    [ ("moduleName", mname <.> "Interface") 
+                    , ("hsBootBody", hsbootbodystr)
+                    ]
+                    hsbootTemplate
+  in hsbootstr 
+
+
 
 -- | 
 mkModuleHs :: STGroup String 

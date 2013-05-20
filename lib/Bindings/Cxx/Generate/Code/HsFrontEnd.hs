@@ -487,6 +487,10 @@ genExportList = concatMap genExport
 importOneClass :: String -> String -> String 
 importOneClass mname typ = "import " ++ mname <.> typ 
 
+importSOURCEOneClass :: String -> String -> String 
+importSOURCEOneClass mname typ = "import {-# SOURCE #-} " ++ mname <.> typ 
+
+
 genImportInModule :: [Class] -> String 
 genImportInModule cs = 
   let genImportOneClass c = 
@@ -511,6 +515,8 @@ genImportInInterface m =
         intercalateWith connRet (importOneClass mname) ["RawType"]
       getImportOneClassHigh mname = 
         intercalateWith connRet (importOneClass mname) ["Interface"]
+      getImportSOURCEOneClassHigh mname = 
+        intercalateWith connRet (importSOURCEOneClass mname) ["Interface"]
   in  importOneClass (cmModule m) "RawType"
       `connRet`
       intercalateWith connRet getImportOneClassRaw modlstraw
@@ -519,7 +525,7 @@ genImportInInterface m =
       `connRet` 
       "---- ============ ----" 
       `connRet` 
-      intercalateWith connRet getImportOneClassHigh modlsthigh
+      intercalateWith connRet getImportSOURCEOneClassHigh modlsthigh
 
 -- |
 genImportInCast :: ClassModule -> String 

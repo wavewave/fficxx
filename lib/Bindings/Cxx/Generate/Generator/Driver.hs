@@ -1,5 +1,7 @@
 module Bindings.Cxx.Generate.Generator.Driver where
 
+
+import Control.Monad (when)
 import System.Directory 
 import System.FilePath
 import System.IO
@@ -102,6 +104,12 @@ writeExistentialHs templates cglobal wdir m = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkExistentialHs templates cglobal m)
 
+-- | 
+writeInterfaceHSBOOT :: STGroup String -> FilePath -> String -> IO ()
+writeInterfaceHSBOOT templates wdir mname = do 
+  let fn = wdir </> mname <.> "Interface" <.> "hs-boot"
+  withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHSBOOT templates mname)
+
 -- |
 writeModuleHs :: STGroup String -> FilePath -> ClassModule -> IO () 
 writeModuleHs templates wdir m = do 
@@ -160,8 +168,10 @@ copyModule wdir ddir summarymod m = do
             origfpath = wdir </> fname
             (mfile',_mext') = splitExtension mfile
             newfpath = ddir </> mdir </> mfile' ++ fnameext   
-        notExistThenCreate (ddir </> mdir) 
-        copyFile origfpath newfpath 
+        b <- doesFileExist origfpath 
+        when b $ do 
+          notExistThenCreate (ddir </> mdir) 
+          copyFile origfpath newfpath 
 
   onefilecopy $ modbase ++ ".hs"
   onefilecopy $ modbase ++ ".RawType.hs"
@@ -169,6 +179,7 @@ copyModule wdir ddir summarymod m = do
   onefilecopy $ modbase ++ ".Interface.hs"
   onefilecopy $ modbase ++ ".Cast.hs"
   onefilecopy $ modbase ++ ".Implementation.hs"
+  onefilecopy $ modbase ++ ".Interface.hs-boot"
   -- onefilecopy $ prefix <.> modbase ++ ".Existential.hs"
   onefilecopy $ summarymod <.> "hs"
   -- copyFile (wdir </> summarymod <.> "hs") (ddir </> summarymod <.> "hs")

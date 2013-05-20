@@ -143,14 +143,14 @@ mkClassModule (pkgname,mkincheaders) c =
                  <*> highs 
                  <*> ffis 
             ) c
-    in trace (show r) r 
+    in r -- trace (show r) r 
     
   where parents = map getClassModuleBase . class_parents
         raws = map getClassModuleBase . mkModuleDepRaw 
         highs = map getClassModuleBase . mkModuleDepHigh 
         ffis = map getClassModuleBase . mkModuleDepFFI 
 
-
+ 
 mkAllClassModulesAndCIH :: (String,Class->([Namespace],[String])) -- ^ (package name,mkIncludeHeaders)
                         -> [Class] 
                         -> ([ClassModule],[ClassImportHeader])
@@ -160,3 +160,5 @@ mkAllClassModulesAndCIH (pkgname,mkNSandIncHdrs) cs =
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
   in (ms,cihs)
 
+mkHSBOOTCandidateList :: [ClassModule] -> [String]
+mkHSBOOTCandidateList ms = nub (concatMap cmImportedModulesHigh ms)
