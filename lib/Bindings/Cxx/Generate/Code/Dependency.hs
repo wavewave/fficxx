@@ -98,12 +98,21 @@ mkModuleDepRaw c = (nub . filter (/= c) . mapMaybe (returnDependency.extractClas
         -- ++ concatMap (snd.extractClassDep) fs        
 
 -- | 
-mkModuleDepHigh :: Class -> [Class] 
-mkModuleDepHigh c = 
+mkModuleDepHighNonSource :: Class -> [Class] 
+mkModuleDepHighNonSource c = 
   let fs = class_funcs c 
-  in  nub . filter (\x-> x /= c && not (x `elem` class_parents c))  $ 
-        -- concatMap (fst.extractClassDep) fs   
-        concatMap (argumentDependency.extractClassDep) fs
+      pkgname = (cabal_pkgname . class_cabal) c 
+      extclasses = (filter (\x-> x /= c && ((/= pkgname) . cabal_pkgname . class_cabal) x) . concatMap (argumentDependency.extractClassDep)) fs
+      parents = class_parents c 
+  in  nub (parents ++ extclasses) 
+
+
+-- | 
+mkModuleDepHighSource :: Class -> [Class] 
+mkModuleDepHighSource c = 
+  let fs = class_funcs c 
+      pkgname = (cabal_pkgname . class_cabal) c 
+  in  nub . filter (\x-> x /= c && not (x `elem` class_parents c) && (((== pkgname) . cabal_pkgname . class_cabal) x)) . concatMap (argumentDependency.extractClassDep) $ fs
 
 -- | 
 mkModuleDepCpp :: Class -> [Class] 
@@ -138,16 +147,16 @@ mkClassModule (pkgname,mkincheaders) c =
     let r = (ClassModule <$> getClassModuleBase  
                  <*> pure
                  <*> return . mkCIH mkincheaders
-                 <*> parents  
+                 <*> highs_nonsource  
                  <*> raws 
-                 <*> highs 
+                 <*> highs_source
                  <*> ffis 
             ) c
     in r -- trace (show r) r 
     
-  where parents = map getClassModuleBase . class_parents
+  where highs_nonsource = map getClassModuleBase . mkModuleDepHighNonSource
         raws = map getClassModuleBase . mkModuleDepRaw 
-        highs = map getClassModuleBase . mkModuleDepHigh 
+        highs_source = map getClassModuleBase . mkModuleDepHighSource
         ffis = map getClassModuleBase . mkModuleDepFFI 
 
  
@@ -161,4 +170,4 @@ mkAllClassModulesAndCIH (pkgname,mkNSandIncHdrs) cs =
   in (ms,cihs)
 
 mkHSBOOTCandidateList :: [ClassModule] -> [String]
-mkHSBOOTCandidateList ms = nub (concatMap cmImportedModulesHigh ms)
+mkHSBOOTCandidateList ms = nub (concatMap cmImportedModulesHighSource ms)
