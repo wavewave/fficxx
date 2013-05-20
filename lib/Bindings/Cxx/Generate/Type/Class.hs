@@ -307,7 +307,8 @@ data ClassModule = ClassModule
                    { cmModule :: String
                    , cmClass :: [Class] 
                    , cmCIH :: [ClassImportHeader] 
-                   , cmImportedModulesRaw :: [String]                   
+                   , cmImportedModulesParents :: [String]
+                   , cmImportedModulesRaw :: [String] 
                    , cmImportedModulesHigh :: [String]
                    , cmImportedModulesForFFI :: [String]
                    } deriving (Show)

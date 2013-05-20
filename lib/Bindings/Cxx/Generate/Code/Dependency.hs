@@ -64,52 +64,63 @@ extractClassFromType (CT _ _) = Nothing
 extractClassFromType (CPT (CPTClass c) _) = Just c
 extractClassFromType (CPT (CPTClassRef c) _) = Just c
 
+
+-- | class dependency for a given function 
+data Dep4Func = Dep4Func { returnDependency :: Maybe Class 
+                         , argumentDependency :: [Class] }
+
+{- 
 -- | 
-extractClassDep :: Function 
-                -> ([Class],[Class])  -- ^ (rettypedep,argtypedep) 
-extractClassDep (Constructor args)  = 
-    ([],catMaybes (map (extractClassFromType.fst) args))
+data Dep4Interface = Dep4Interface 
+                     { parentDependency :: [Class] 
+                     , interfaceDependency :: [Class] 
+                     , typeDependecny :: [Class] 
+                     } 
+-}
+
+-- | 
+extractClassDep :: Function -> Dep4Func {- ([Class],[Class])  -- ^ (rettypedep,argtypedep)  -} 
+extractClassDep (Constructor args)  = Dep4Func Nothing (catMaybes (map (extractClassFromType.fst) args))
 extractClassDep (Virtual ret _ args) = 
-    (catMaybes [extractClassFromType ret], mapMaybe (extractClassFromType.fst) args)
-extractClassDep (NonVirtual ret _ args) = 
-    (catMaybes [extractClassFromType ret], mapMaybe (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
+extractClassDep (NonVirtual ret _ args) =
+    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
 extractClassDep (Static ret _ args) = 
-    (catMaybes [extractClassFromType ret], mapMaybe (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
 extractClassDep (AliasVirtual ret _ args _) = 
-    (catMaybes [extractClassFromType ret], mapMaybe (extractClassFromType.fst) args)
-extractClassDep Destructor = ([],[]) 
+    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
+extractClassDep Destructor = 
+    Dep4Func Nothing [] 
 
 -- | 
 mkModuleDepRaw :: Class -> [Class] 
-mkModuleDepRaw c = 
-  let fs = class_funcs c 
-  in  nub . filter (/= c) $
-        concatMap (fst.extractClassDep) fs
+mkModuleDepRaw c = (nub . filter (/= c) . mapMaybe (returnDependency.extractClassDep) . class_funcs) c
         -- ++ concatMap (snd.extractClassDep) fs        
 
 -- | 
 mkModuleDepHigh :: Class -> [Class] 
 mkModuleDepHigh c = 
   let fs = class_funcs c 
-  in  nub . filter (/= c)  $ 
+  in  nub . filter (\x-> x /= c && not (x `elem` class_parents c))  $ 
         -- concatMap (fst.extractClassDep) fs   
-        concatMap (snd.extractClassDep) fs
-        ++ (class_parents c) 
+        concatMap (argumentDependency.extractClassDep) fs
 
 -- | 
 mkModuleDepCpp :: Class -> [Class] 
 mkModuleDepCpp c = 
   let fs = class_funcs c 
   in  nub . filter (/= c)  $ 
-        concatMap (fst.extractClassDep) fs   
-        ++ concatMap (snd.extractClassDep) fs
+        mapMaybe (returnDependency.extractClassDep) fs   
+        ++ concatMap (argumentDependency.extractClassDep) fs
         ++ (class_parents c) 
 
 -- | 
 mkModuleDepFFI4One :: Class -> [Class] 
 mkModuleDepFFI4One c = 
   let fs = class_funcs c 
-  in  (++) <$> concatMap (fst.extractClassDep)  <*> concatMap (snd.extractClassDep) $ fs
+  in  (++) <$> mapMaybe (returnDependency.extractClassDep)  
+           <*> concatMap (argumentDependency.extractClassDep) 
+      $ fs
 
 -- | 
 mkModuleDepFFI :: Class -> [Class] 
@@ -124,14 +135,18 @@ mkClassModule :: (String,Class->([Namespace],[String]))
               -> Class 
               -> ClassModule 
 mkClassModule (pkgname,mkincheaders) c = 
-    (ClassModule <$> getClassModuleBase  
-                 <*> return
+    let r = (ClassModule <$> getClassModuleBase  
+                 <*> pure
                  <*> return . mkCIH mkincheaders
+                 <*> parents  
                  <*> raws 
                  <*> highs 
                  <*> ffis 
-    ) c
-  where raws = map getClassModuleBase . mkModuleDepRaw 
+            ) c
+    in trace (show r) r 
+    
+  where parents = map getClassModuleBase . class_parents
+        raws = map getClassModuleBase . mkModuleDepRaw 
         highs = map getClassModuleBase . mkModuleDepHigh 
         ffis = map getClassModuleBase . mkModuleDepFFI 
 

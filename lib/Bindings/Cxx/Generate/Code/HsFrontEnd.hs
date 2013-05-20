@@ -505,6 +505,7 @@ genImportInFFI m =
 genImportInInterface :: ClassModule -> String
 genImportInInterface m = 
   let modlstraw = cmImportedModulesRaw m
+      modlstparent = cmImportedModulesParents m 
       modlsthigh = cmImportedModulesHigh m
       getImportOneClassRaw mname = 
         intercalateWith connRet (importOneClass mname) ["RawType"]
@@ -513,6 +514,10 @@ genImportInInterface m =
   in  importOneClass (cmModule m) "RawType"
       `connRet`
       intercalateWith connRet getImportOneClassRaw modlstraw
+      `connRet`
+      intercalateWith connRet getImportOneClassHigh modlstparent 
+      `connRet` 
+      "---- ============ ----" 
       `connRet` 
       intercalateWith connRet getImportOneClassHigh modlsthigh
 
