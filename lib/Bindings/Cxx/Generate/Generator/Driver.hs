@@ -1,12 +1,28 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Bindings.Cxx.Generate.Generator.Driver
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- 
+-- License     : GPL-3
+-- Maintainer  : ianwookim@gmail.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- 
+--
+-----------------------------------------------------------------------------
+
 module Bindings.Cxx.Generate.Generator.Driver where
 
-
-import Control.Monad (when)
-import System.Directory 
-import System.FilePath
-import System.IO
-import System.Process
-import Text.StringTemplate
+import           Control.Applicative ((<$>))
+import           Control.Monad (when)
+import qualified Data.ByteString.Lazy.Char8 as L
+import           Data.Digest.Pure.MD5
+import           System.Directory 
+import           System.FilePath
+import           System.IO
+import           System.Process
+import           Text.StringTemplate
 -- import Text.StringTemplate.Helpers
 --
 import Bindings.Cxx.Generate.Type.Class
@@ -142,12 +158,24 @@ notExistThenCreate dir = do
     if b then return () else system ("mkdir -p " ++ dir) >> return ()
 
 
+{- 
 -- | now only create directory
 copyPredefined :: FilePath -> FilePath -> String -> IO () 
 copyPredefined _tdir _ddir _prefix = do 
     return () 
     -- notExistThenCreate (ddir </> prefix)
     -- copyFile (tdir </> "TypeCast.hs" ) (ddir </> prefix </> "TypeCast.hs") 
+-}
+
+copyFileWithMD5Check :: FilePath -> FilePath -> IO () 
+copyFileWithMD5Check src tgt = do
+  b <- doesFileExist tgt 
+  if b 
+    then do 
+      srcmd5 <- md5 <$> L.readFile src  
+      tgtmd5 <- md5 <$> L.readFile tgt 
+      if srcmd5 == tgtmd5 then return () else copyFile src tgt 
+    else copyFile src tgt  
 
 
 copyCppFiles :: FilePath -> FilePath -> String -> ClassImportHeader -> IO ()
@@ -155,9 +183,9 @@ copyCppFiles wdir ddir cprefix header = do
   let thfile = cprefix ++ "Type.h"
       hfile = cihSelfHeader header
       cppfile = cihSelfCpp header
-  copyFile (wdir </> thfile) (ddir </> thfile) 
-  copyFile (wdir </> hfile) (ddir </> hfile) 
-  copyFile (wdir </> cppfile) (ddir </> cppfile)
+  copyFileWithMD5Check (wdir </> thfile) (ddir </> thfile) 
+  copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
+  copyFileWithMD5Check (wdir </> cppfile) (ddir </> cppfile)
 
 copyModule :: FilePath -> FilePath -> String -> ClassModule -> IO ()
 copyModule wdir ddir summarymod m = do 
@@ -171,7 +199,7 @@ copyModule wdir ddir summarymod m = do
         b <- doesFileExist origfpath 
         when b $ do 
           notExistThenCreate (ddir </> mdir) 
-          copyFile origfpath newfpath 
+          copyFileWithMD5Check origfpath newfpath 
 
   onefilecopy $ modbase ++ ".hs"
   onefilecopy $ modbase ++ ".RawType.hs"
@@ -180,7 +208,5 @@ copyModule wdir ddir summarymod m = do
   onefilecopy $ modbase ++ ".Cast.hs"
   onefilecopy $ modbase ++ ".Implementation.hs"
   onefilecopy $ modbase ++ ".Interface.hs-boot"
-  -- onefilecopy $ prefix <.> modbase ++ ".Existential.hs"
   onefilecopy $ summarymod <.> "hs"
-  -- copyFile (wdir </> summarymod <.> "hs") (ddir </> summarymod <.> "hs")
   return ()

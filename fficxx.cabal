@@ -34,8 +34,10 @@ Library
                  unordered-containers,
                  lens > 3,
                  either, 
-                 errors,  
-                 Cabal 
+                 errors,
+                 bytestring,
+                 pureMD5,  
+                 Cabal
 
   Exposed-Modules: 
                    Bindings.Cxx.Generate.Type.Class
