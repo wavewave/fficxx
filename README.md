@@ -15,3 +15,17 @@ Haskell packages that are generated from fficxx will be dependent on fficxx-runt
 
 Getting Started
 ===============
+
+We provide a very simple sample case in fficxx/sample. fficxx/sample/cxxlib is a sample C++ library. 
+fficxx/sample/mysample-generator has a haskell code for generating haskell cabal package for binding to the C++ library. You can start code generation by compling MySampleGen.hs
+```
+> ghc MySampleGen.hs
+```
+then run it 
+```
+> ./MySampleGen
+```
+and then it generates a MySample package in the MySample directory which is installable with cabal install. 
+Note that this assumes cxxlib is installed in global path, i.e., header files and libmysample.so file are visible. You can test it simply by adjusting CPATH and LIBRARY_PATH, LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH) in your environment. 
+
+Detailed explanataion is in order. 
