@@ -1,24 +1,21 @@
 Name:		$pkgname$
 Version:	$version$
-Synopsis:	Wrapper for ROOT
-Description: 	Haskell FFI binding for ROOT  
-Homepage:       http://ianwookim.org/HROOT
-License: 	LGPL-2.1
-License-file:	LICENSE
-Author:		Ian-Woo Kim
-Maintainer: 	Ian-Woo Kim <ianwookim@gmail.com>
-Category:       Graphics
+Synopsis:	$synopsis$
+Description: 	$description$
+Homepage:       $homepage$
+$license$
+Author:		$author$
+Maintainer: 	$maintainer$
+Category:       $category$
 Tested-with:    GHC >= 7.0
-Build-Type: 	Custom
+Build-Type: 	$buildtype$
 cabal-version:  >=1.10
 Extra-source-files: 
 $cabalIndentation$CHANGES
 $cabalIndentation$Config.hs
 $csrcFiles$
 
-Source-repository head
-  type:     git
-  location: https://github.com/wavewave/HROOT, https://github.com/wavewave/HROOT-generate
+$sourcerepository$
 
 Library
   default-language: Haskell2010
