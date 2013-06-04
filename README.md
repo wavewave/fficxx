@@ -34,11 +34,16 @@ then run it
 and then it generates a `MySample` package in the `MySample` directory which is installable with 
 `cabal install`. Note that the generated `MySample.cabal` file has the absolute path for the `cxxlib/include` and `cxxlib/lib`. Later, one can change this to an appropriate path. 
 
-To test, we provide the code `use_mysample.hs`. Note that one need to set `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on Mac OS X) in your environment. For example, if you run in `fficxx/mysample-generator`, 
+To test, we provide the code `use_mysample.hs` in `fficxx/sample/mysample-generator`. Note that one need to set `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on Mac OS X) in your environment. For example, if you run in `fficxx/sample/mysample-generator`, run the following command: 
 ```
 > LD_LIBRARY_PATH=../cxxlib/lib ./use_mysample 
+
+A:foo
+B:foo
+B:foo
+bar
 ``` 
-You should see that the C++ library is successfully called. 
+You should see that the C++ library is successfully called as above. 
 
 
 Object-Oriented Programming Model in fficxx
