@@ -27,9 +27,9 @@ Library
 $exposedModules$  
   Other-Modules:
 $otherModules$
-
-  extra-libraries:    stdc++
-  Include-dirs:       csrc
+  extra-lib-dirs: $extralibdirs$
+  extra-libraries:    stdc++ $extralib$
+  Include-dirs:       csrc $extraincludedirs$ 
   Install-includes:   
 $includeFiles$
   C-sources:          

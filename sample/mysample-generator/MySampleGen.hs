@@ -56,6 +56,8 @@ mkCabalFile :: FFICXXConfig
             -> FilePath  
             -> IO () 
 mkCabalFile config templates classmodules cabalfile = do 
+  cpath <- getCurrentDirectory 
+
   let str = renderTemplateGroup 
               templates 
               [ ("pkgname", "MySample") 
@@ -68,6 +70,9 @@ mkCabalFile config templates classmodules cabalfile = do
               , ("cppFiles", genCppFiles classmodules)
               , ("exposedModules", genExposedModules "MySample" classmodules) 
               , ("otherModules", genOtherModules classmodules)
+              , ("extralibdirs", cpath </> ".." </> "cxxlib" </> "lib" )  -- this need to be changed 
+              , ("extraincludedirs", cpath </> ".." </> "cxxlib" </> "include" )  -- this need to be changed 
+              , ("extralib", ", mysample")
               , ("cabalIndentation", cabalIndentation)
               ]
               cabalTemplate 
