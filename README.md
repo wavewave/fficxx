@@ -16,7 +16,13 @@ Haskell packages that are generated from fficxx will be dependent on fficxx-runt
 Getting Started
 ===============
 
-We provide a very simple sample case in fficxx/sample. fficxx/sample/cxxlib is a sample C++ library. 
+We provide a very simple sample case in the `fficxx/sample` directory. `fficxx/sample/cxxlib` is a sample C++ library. 
+Build the C++ library by 
+```
+> sh ./build.sh
+```
+in the directory. 
+
 fficxx/sample/mysample-generator has a haskell code for generating haskell cabal package for binding to the C++ library. You can start code generation by compling MySampleGen.hs
 ```
 > ghc MySampleGen.hs
@@ -25,7 +31,17 @@ then run it
 ```
 > ./MySampleGen
 ```
-and then it generates a MySample package in the MySample directory which is installable with cabal install. 
-Note that this assumes cxxlib is installed in global path, i.e., header files and libmysample.so file are visible. You can test it simply by adjusting CPATH and LIBRARY_PATH, LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH) in your environment. 
+and then it generates a `MySample` package in the `MySample` directory which is installable with 
+`cabal install`. Note that the generated `MySample.cabal` file has the absolute path for the `cxxlib/include` and `cxxlib/lib`. Later, one can change this to an appropriate path. 
 
-Detailed explanataion is in order. 
+To test, we provide the code `use_mysample.hs`. Note that one need to set `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on Mac OS X) in your environment. For example, if you run in `fficxx/mysample-generator`, 
+```
+> LD_LIBRARY_PATH=../cxxlib/lib ./use_mysample 
+``` 
+You should see that the C++ library is successfully called. 
+
+
+Object-Oriented Programming Model in fficxx
+===========================================
+
+To be explained 
