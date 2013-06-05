@@ -1,14 +1,25 @@
-module Bindings.Cxx.Generate.Code.Dependency where
+-----------------------------------------------------------------------------
+-- |
+-- Module      : FFICXX.Generate.Code.Dependency
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-----------------------------------------------------------------------------
+
+module FFICXX.Generate.Code.Dependency where
 
 import Control.Applicative
-import Data.Function (on)
 import Data.List 
 import Data.Maybe
 import System.FilePath 
 --
-import Bindings.Cxx.Generate.Type.Class 
+import FFICXX.Generate.Type.Class 
 --
-import Debug.Trace 
+-- import Debug.Trace 
 
 -- | 
 mkPkgHeaderFileName ::Class -> String 

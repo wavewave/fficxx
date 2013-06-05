@@ -1,6 +1,18 @@
-module Bindings.Cxx.Generate.Code.Cabal where
+-----------------------------------------------------------------------------
+-- |
+-- Module      : FFICXX.Generate.Code.Cabal
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-----------------------------------------------------------------------------
 
-import Bindings.Cxx.Generate.Type.Class 
+module FFICXX.Generate.Code.Cabal where
+
+import FFICXX.Generate.Type.Class 
 
 cabalIndentation :: String 
 cabalIndentation = replicate 23 ' ' 

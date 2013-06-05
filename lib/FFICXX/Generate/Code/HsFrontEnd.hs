@@ -1,23 +1,29 @@
-module Bindings.Cxx.Generate.Code.HsFrontEnd where
+-----------------------------------------------------------------------------
+-- |
+-- Module      : FFICXX.Generate.Code.Cpp
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-----------------------------------------------------------------------------
 
-import qualified Data.Map as M
-import Data.Maybe
-
-
-import Bindings.Cxx.Generate.Type.Class
-import Bindings.Cxx.Generate.Type.Annotate
-import Bindings.Cxx.Generate.Type.Module
-
-
-import Bindings.Cxx.Generate.Util
-
-import Data.List
-
+module FFICXX.Generate.Code.HsFrontEnd where
 
 import Control.Monad.State
 import Control.Monad.Reader
-
+import Data.List
+import qualified Data.Map as M
+import Data.Maybe
 import System.FilePath ((<.>))
+-- 
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Annotate
+import FFICXX.Generate.Type.Module
+import FFICXX.Generate.Util
+
 
 mkComment :: Int -> String -> String
 mkComment indent str 

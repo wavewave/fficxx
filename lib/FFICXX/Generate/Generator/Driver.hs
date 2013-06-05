@@ -1,18 +1,16 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      : Bindings.Cxx.Generate.Generator.Driver
+-- Module      : FFICXX.Generate.Generator.Driver
 -- Copyright   : (c) 2011-2013 Ian-Woo Kim
 -- 
--- License     : GPL-3
+-- License     : BSD3
 -- Maintainer  : ianwookim@gmail.com
 -- Stability   : experimental
 -- Portability : GHC
 --
--- 
---
 -----------------------------------------------------------------------------
 
-module Bindings.Cxx.Generate.Generator.Driver where
+module FFICXX.Generate.Generator.Driver where
 
 import           Control.Applicative ((<$>))
 import           Control.Monad (when)
@@ -25,11 +23,11 @@ import           System.Process
 import           Text.StringTemplate
 -- import Text.StringTemplate.Helpers
 --
-import Bindings.Cxx.Generate.Type.Class
-import Bindings.Cxx.Generate.Type.Annotate
-import Bindings.Cxx.Generate.Type.PackageInterface 
-import Bindings.Cxx.Generate.Generator.ContentMaker 
-import Bindings.Cxx.Generate.Util
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Annotate
+import FFICXX.Generate.Type.PackageInterface 
+import FFICXX.Generate.Generator.ContentMaker 
+import FFICXX.Generate.Util
 
 
 

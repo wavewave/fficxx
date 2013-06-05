@@ -1,14 +1,27 @@
-module Bindings.Cxx.Generate.Code.Cpp where
+-----------------------------------------------------------------------------
+-- |
+-- Module      : FFICXX.Generate.Code.Cpp
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-----------------------------------------------------------------------------
+
+
+module FFICXX.Generate.Code.Cpp where
 
 import Data.Char 
 import Data.List
 import System.FilePath
 
-import Bindings.Cxx.Generate.Util
--- import Bindings.Cxx.Generate.Type.Method
-import Bindings.Cxx.Generate.Type.Class
-import Bindings.Cxx.Generate.Code.MethodDef
-import Bindings.Cxx.Generate.Code.Cabal
+import FFICXX.Generate.Util
+-- import FFICXX.Generate.Type.Method
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Code.MethodDef
+import FFICXX.Generate.Code.Cabal
 
 -- Class Declaration and Definition
 

@@ -4,9 +4,7 @@
 
 $rawtypeHeader$
 
--- import Foreign.Ptr
 import Foreign.ForeignPtr
--- import Foreign.Marshal.Array
-import Bindings.Cxx.Runtime.Cast  
+import FFICXX.Runtime.Cast  
 
 $rawtypeBody$

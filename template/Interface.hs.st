@@ -8,7 +8,7 @@ $ifaceHeader$
 
 import Data.Word
 import Foreign.ForeignPtr
-import Bindings.Cxx.Runtime.Cast
+import FFICXX.Runtime.Cast
 
 $ifaceImport$
 

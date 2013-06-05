@@ -1,4 +1,16 @@
-module Bindings.Cxx.Generate.Generator.ContentMaker where 
+-----------------------------------------------------------------------------
+-- |
+-- Module      : FFICXX.Generate.Generator.ContentMaker
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-----------------------------------------------------------------------------
+
+module FFICXX.Generate.Generator.ContentMaker where 
 
 import           Control.Applicative
 import           Control.Lens (set,at)
@@ -10,13 +22,13 @@ import           Data.Maybe
 import           System.FilePath 
 import           Text.StringTemplate hiding (render)
 -- 
-import           Bindings.Cxx.Generate.Code.Cpp
-import           Bindings.Cxx.Generate.Code.HsFFI 
-import           Bindings.Cxx.Generate.Code.HsFrontEnd
-import           Bindings.Cxx.Generate.Type.Annotate
-import           Bindings.Cxx.Generate.Type.Class
-import qualified Bindings.Cxx.Generate.Type.PackageInterface as T
-import           Bindings.Cxx.Generate.Util
+import           FFICXX.Generate.Code.Cpp
+import           FFICXX.Generate.Code.HsFFI 
+import           FFICXX.Generate.Code.HsFrontEnd
+import           FFICXX.Generate.Type.Annotate
+import           FFICXX.Generate.Type.Class
+import qualified FFICXX.Generate.Type.PackageInterface as T
+import           FFICXX.Generate.Util
 --
 
 srcDir :: FilePath -> FilePath

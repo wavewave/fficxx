@@ -1,6 +1,18 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Bindings.Cxx.Generate.Type.Class where
+-----------------------------------------------------------------------------
+-- |
+-- Module      : FFICXX.Generate.Type.Class
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-----------------------------------------------------------------------------
+
+module FFICXX.Generate.Type.Class where
 
 import Control.Applicative ((<$>),(<*>))
 import Data.Char
@@ -9,9 +21,9 @@ import Data.Monoid
 import qualified Data.Map as M
 import System.FilePath 
 -- 
--- import Bindings.Cxx.Generate.Type.CType
-import Bindings.Cxx.Generate.Util
--- import Bindings.Cxx.Generate.Type.Method
+-- import FFICXX.Generate.Type.CType
+import FFICXX.Generate.Util
+-- import FFICXX.Generate.Type.Method
 
 ---------
 

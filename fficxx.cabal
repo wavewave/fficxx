@@ -1,8 +1,8 @@
 Name:		fficxx
-Version:	0.0.999
+Version:	0.1
 Synopsis:	automatic C++ binding generation
 Description: 	automatic C++ binding generation 
-License:        GPL-3
+License:        BSD3
 License-file:	LICENSE
 Author:		Ian-Woo Kim
 Maintainer: 	Ian-Woo Kim <ianwookim@gmail.com>
@@ -40,22 +40,21 @@ Library
                  Cabal
 
   Exposed-Modules: 
-                   Bindings.Cxx.Generate.Type.Class
-                   Bindings.Cxx.Generate.Type.Module
-                   Bindings.Cxx.Generate.Type.PackageInterface
-                   Bindings.Cxx.Generate.Config
-                   Bindings.Cxx.Generate.Code.MethodDef
-                   Bindings.Cxx.Generate.Code.Cpp
-                   Bindings.Cxx.Generate.Code.HsFrontEnd
-                   Bindings.Cxx.Generate.Code.HsFFI
-                   Bindings.Cxx.Generate.Code.Cabal
-                   Bindings.Cxx.Generate.Code.Dependency
-                   Bindings.Cxx.Generate.Generator.Driver
-                   Bindings.Cxx.Generate.Generator.ContentMaker
-                   Bindings.Cxx.Generate.Util
-                   Bindings.Cxx.Generate.QQ.Verbatim
-                   Bindings.Cxx.Generate.Type.Annotate
---                    Bindings.Cxx.Runtime.Cast
+                   FFICXX.Generate.Type.Class
+                   FFICXX.Generate.Type.Module
+                   FFICXX.Generate.Type.PackageInterface
+                   FFICXX.Generate.Config
+                   FFICXX.Generate.Code.MethodDef
+                   FFICXX.Generate.Code.Cpp
+                   FFICXX.Generate.Code.HsFrontEnd
+                   FFICXX.Generate.Code.HsFFI
+                   FFICXX.Generate.Code.Cabal
+                   FFICXX.Generate.Code.Dependency
+                   FFICXX.Generate.Generator.Driver
+                   FFICXX.Generate.Generator.ContentMaker
+                   FFICXX.Generate.Util
+                   FFICXX.Generate.QQ.Verbatim
+                   FFICXX.Generate.Type.Annotate
                    Paths_fficxx
 
 --  Include-dirs:    csrc

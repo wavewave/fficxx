@@ -1,5 +1,18 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Bindings.Cxx.Generate.Type.PackageInterface where 
+
+-----------------------------------------------------------------------------
+-- |
+-- Module      : FFICXX.Generate.Type.PackageInterface
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-----------------------------------------------------------------------------
+
+module FFICXX.Generate.Type.PackageInterface where 
 
 import           Data.Hashable
 import qualified Data.HashMap.Strict as HM

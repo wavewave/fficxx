@@ -5,19 +5,19 @@ import System.FilePath ((</>))
 import System.Directory (getCurrentDirectory)
 import           Text.StringTemplate hiding (render)
 -- 
-import           Bindings.Cxx.Generate.Code.Cabal
-import           Bindings.Cxx.Generate.Code.Cpp
-import           Bindings.Cxx.Generate.Code.Dependency
-import           Bindings.Cxx.Generate.Config
-import           Bindings.Cxx.Generate.Code.Cpp
-import           Bindings.Cxx.Generate.Code.Dependency
-import           Bindings.Cxx.Generate.Config
-import           Bindings.Cxx.Generate.Generator.ContentMaker 
-import           Bindings.Cxx.Generate.Generator.Driver
-import           Bindings.Cxx.Generate.Type.Annotate
-import           Bindings.Cxx.Generate.Type.Class
-import           Bindings.Cxx.Generate.Type.PackageInterface
-import           Bindings.Cxx.Generate.Util
+import           FFICXX.Generate.Code.Cabal
+import           FFICXX.Generate.Code.Cpp
+import           FFICXX.Generate.Code.Dependency
+import           FFICXX.Generate.Config
+import           FFICXX.Generate.Code.Cpp
+import           FFICXX.Generate.Code.Dependency
+import           FFICXX.Generate.Config
+import           FFICXX.Generate.Generator.ContentMaker 
+import           FFICXX.Generate.Generator.Driver
+import           FFICXX.Generate.Type.Annotate
+import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.PackageInterface
+import           FFICXX.Generate.Util
 -- 
 import qualified Paths_fficxx as F
 

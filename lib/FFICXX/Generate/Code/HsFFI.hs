@@ -1,10 +1,21 @@
-module Bindings.Cxx.Generate.Code.HsFFI where
+-----------------------------------------------------------------------------
+-- |
+-- Module      : FFICXX.Generate.Code.HsFFI
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-----------------------------------------------------------------------------
+module FFICXX.Generate.Code.HsFFI where
 
 
-import Bindings.Cxx.Generate.Util 
--- import Bindings.Cxx.Generate.Type.Method
-import Bindings.Cxx.Generate.Type.Class
--- import Bindings.Cxx.Generate.Generator.Templates
+import FFICXX.Generate.Util 
+-- import FFICXX.Generate.Type.Method
+import FFICXX.Generate.Type.Class
+-- import FFICXX.Generate.Generator.Templates
 
 genHsFFI :: ClassImportHeader -> String 
 genHsFFI header =

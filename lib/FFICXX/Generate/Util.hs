@@ -1,4 +1,17 @@
-module Bindings.Cxx.Generate.Util where
+-----------------------------------------------------------------------------
+-- |
+-- Module      : FFICXX.Generate.Util
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-----------------------------------------------------------------------------
+
+
+module FFICXX.Generate.Util where
 
 
 -- 
@@ -7,7 +20,7 @@ import           Data.List
 import           Data.List.Split 
 import qualified Text.StringTemplate as ST
 -- 
--- import           Bindings.Cxx.Generate.Type.CType 
+-- import           FFICXX.Generate.Type.CType 
 -- 
 
 moduleDirFile :: String -> (String,String)

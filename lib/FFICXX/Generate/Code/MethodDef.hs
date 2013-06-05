@@ -1,9 +1,21 @@
-module Bindings.Cxx.Generate.Code.MethodDef where
+-----------------------------------------------------------------------------
+-- |
+-- Module      : FFICXX.Generate.Code.MethodDef
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-----------------------------------------------------------------------------
 
--- import Bindings.Cxx.Generate.Type.CType
--- import Bindings.Cxx.Generate.Type.Method
-import Bindings.Cxx.Generate.Type.Class
-import Bindings.Cxx.Generate.Util 
+module FFICXX.Generate.Code.MethodDef where
+
+-- import FFICXX.Generate.Type.CType
+-- import FFICXX.Generate.Type.Method
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Util 
 
 
 -- Function Declaration and Definition
