@@ -1,5 +1,5 @@
 Name:		fficxx
-Version:	0.1
+Version:	0.1.0
 Synopsis:	automatic C++ binding generation
 Description: 	automatic C++ binding generation 
 License:        BSD3
@@ -15,6 +15,13 @@ Data-files: template/*.h.st
             template/*.hs-boot.st
             template/*.cpp.st
             template/Pkg.cabal.st
+            sample/cxxlib/build.sh
+            sample/cxxlib/include/*.h
+            sample/cxxlib/src/*.cpp
+            sample/cxxlib/src/Makefile
+            sample/mysample-generator/MySampleGen.hs
+            sample/mysample-generator/use_mysample.hs
+
 
 Source-repository head
   type: git
@@ -24,7 +31,7 @@ Library
   hs-source-dirs: lib
   ghc-options: 	-Wall -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
-  Build-Depends: base>4, 
+  Build-Depends: base == 4.* , 
                  mtl>2, 
                  containers, 
                  filepath>1, 
