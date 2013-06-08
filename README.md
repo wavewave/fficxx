@@ -46,7 +46,11 @@ bar
 You should see that the C++ library is successfully called as above. 
 
 
-Object-Oriented Programming Model in fficxx
-===========================================
+OOP Model in fficxx
+===================
 
-To be explained 
+I will explain the OOP model in fficxx soon. 
+For the time being, to see how to use generated haskell library, check examples in HROOT library. 
+
+
+
