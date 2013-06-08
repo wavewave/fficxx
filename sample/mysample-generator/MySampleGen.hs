@@ -19,7 +19,7 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.PackageInterface
 import           FFICXX.Generate.Util
 -- 
-import qualified Paths_fficxx as F
+import qualified FFICXX.Paths_fficxx as F
 
 mysampleclasses = [ ] 
 

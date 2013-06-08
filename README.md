@@ -49,8 +49,9 @@ You should see that the C++ library is successfully called as above.
 OOP Model in fficxx
 ===================
 
-I will explain the OOP model in fficxx soon. 
-For the time being, to see how to use generated haskell library, check examples in HROOT library. 
+I will explain the OOP model in fficxx soon in detail.
+
+For the time being, to see how to use generated haskell library, check examples for HROOT : [http://ianwookim.org/HROOT/gallery.html](http://ianwookim.org/HROOT/gallery.html) (if you click examples, then you can see the source code for them. ) 
 
 
 
