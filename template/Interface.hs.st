@@ -7,6 +7,8 @@
 $ifaceHeader$
 
 import Data.Word
+import Foreign.C
+import Foreign.Ptr
 import Foreign.ForeignPtr
 import FFICXX.Runtime.Cast
 

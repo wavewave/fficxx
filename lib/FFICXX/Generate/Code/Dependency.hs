@@ -25,13 +25,11 @@ import FFICXX.Generate.Type.Class
 mkPkgHeaderFileName ::Class -> String 
 mkPkgHeaderFileName c = 
     (cabal_cheaderprefix.class_cabal) c ++ class_name c <.> "h" 
-    -- pkgname ++ (class_name c) ++ ".h"   
 
 -- | 
 mkPkgCppFileName ::Class -> String 
 mkPkgCppFileName c = 
     (cabal_cheaderprefix.class_cabal) c ++ class_name c <.> "cpp"
-    -- pkgname ++ (class_name c) ++ ".cpp"
 
 -- | 
 mkPkgIncludeHeadersInH :: Class -> [String] 
@@ -41,7 +39,6 @@ mkPkgIncludeHeadersInH c =
         extheaders = nub . map ((++"Type.h") .  cabal_pkgname . class_cabal) $ extclasses  
     in map mkPkgHeaderFileName (class_allparents c) ++ extheaders
 
-    -- (map mkPkgHeaderFileName . class_allparents) c 
                            
 
 -- | 
@@ -49,11 +46,7 @@ mkPkgIncludeHeadersInCPP :: Class -> [String]
 mkPkgIncludeHeadersInCPP = map mkPkgHeaderFileName . mkModuleDepCpp 
 
 
--- mkModuleDepFFI4One
-
--- mkModuleDepHigh -- class_allparents 
-
-
+-- | 
 mkCIH :: (Class->([Namespace],[String]))  -- ^ (mk namespace and include headers)  
       -> Class 
       -> ClassImportHeader
@@ -64,7 +57,7 @@ mkCIH mkNSandIncHdrs c = let r = ClassImportHeader c
                                    (mkPkgIncludeHeadersInH c) 
                                    (mkPkgIncludeHeadersInCPP c)
                                    ((snd . mkNSandIncHdrs) c)
-                         in r -- trace (show r) r 
+                         in r 
 
 
 -- |
@@ -80,17 +73,9 @@ extractClassFromType (CPT (CPTClassRef c) _) = Just c
 data Dep4Func = Dep4Func { returnDependency :: Maybe Class 
                          , argumentDependency :: [Class] }
 
-{- 
--- | 
-data Dep4Interface = Dep4Interface 
-                     { parentDependency :: [Class] 
-                     , interfaceDependency :: [Class] 
-                     , typeDependecny :: [Class] 
-                     } 
--}
 
 -- | 
-extractClassDep :: Function -> Dep4Func {- ([Class],[Class])  -- ^ (rettypedep,argtypedep)  -} 
+extractClassDep :: Function -> Dep4Func 
 extractClassDep (Constructor args)  = Dep4Func Nothing (catMaybes (map (extractClassFromType.fst) args))
 extractClassDep (Virtual ret _ args) = 
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
@@ -106,7 +91,7 @@ extractClassDep Destructor =
 -- | 
 mkModuleDepRaw :: Class -> [Class] 
 mkModuleDepRaw c = (nub . filter (/= c) . mapMaybe (returnDependency.extractClassDep) . class_funcs) c
-        -- ++ concatMap (snd.extractClassDep) fs        
+
 
 -- | 
 mkModuleDepHighNonSource :: Class -> [Class] 
@@ -154,7 +139,7 @@ mkModuleDepFFI c =
 mkClassModule :: (String,Class->([Namespace],[String]))
               -> Class 
               -> ClassModule 
-mkClassModule (pkgname,mkincheaders) c = 
+mkClassModule (_pkgname,mkincheaders) c = 
     let r = (ClassModule <$> getClassModuleBase  
                  <*> pure
                  <*> return . mkCIH mkincheaders
@@ -163,7 +148,7 @@ mkClassModule (pkgname,mkincheaders) c =
                  <*> highs_source
                  <*> ffis 
             ) c
-    in r -- trace (show r) r 
+    in r 
     
   where highs_nonsource = map getClassModuleBase . mkModuleDepHighNonSource
         raws = map getClassModuleBase . mkModuleDepRaw 

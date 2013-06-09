@@ -62,7 +62,7 @@ funcToDef c func
           (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
                                     ++">(("++str++"*)"++callstr++");" 
             where str = class_name c' 
-          (CPT (CPTClassRef c') _) -> "return ((*)"++callstr++");" 
+          (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | otherwise = 
     let declstr = funcToDecl c func
@@ -78,7 +78,7 @@ funcToDef c func
           (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
                                     ++">(("++str++"*)"++callstr++");"
              where str = class_name c'
-          (CPT (CPTClassRef c') _) -> "return ((*)"++callstr++");" 
+          (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
 
 

@@ -27,7 +27,17 @@ import FFICXX.Generate.Util
 
 ---------
 
-data CTypes = CTString | CTInt | CTDouble | CTBool | CTDoubleStar | CTVoidStar | CTIntStar | CTCharStarStar | CTUInt
+data CTypes = CTString 
+            | CTChar 
+            | CTInt 
+            | CTUInt
+            | CTDouble 
+            | CTBool 
+            | CTDoubleStar 
+            | CTVoidStar 
+            | CTIntStar 
+            | CTCharStarStar 
+            | CPointer CTypes 
             deriving Show 
 
 data CPPTypes = CPTClass Class 
@@ -50,6 +60,7 @@ ctypToStr :: CTypes -> IsConst -> String
 ctypToStr ctyp isconst = 
   let typword = case ctyp of 
         CTString -> "char *"
+        CTChar   -> "char " 
         CTInt    -> "int " 
         CTUInt   -> "unsigned int "
         CTDouble -> "double" 
@@ -58,6 +69,7 @@ ctypToStr ctyp isconst =
         CTVoidStar -> "void *"
         CTIntStar -> "int *"
         CTCharStarStar -> "char **"
+        CPointer s -> ctypToStr s isconst ++ "*"  
   in case isconst of 
         Const   -> "const" `connspace` typword 
         NoConst -> typword 
@@ -77,6 +89,12 @@ int_     = CT CTInt    NoConst
 
 uint_ :: Types
 uint_ = CT CTUInt NoConst
+
+cchar_ :: Types 
+cchar_ = CT CTChar Const
+
+char_ :: Types
+char_ = CT CTChar NoConst 
 
 short_ :: Types
 short_ = int_
@@ -108,6 +126,13 @@ intp_ = CT CTIntStar NoConst
 charpp_ :: Types
 charpp_ = CT CTCharStarStar NoConst
 
+
+star_ :: CTypes -> Types 
+star_ t = CT (CPointer t) NoConst
+
+cstar_ :: CTypes -> Types 
+cstar_ t = CT (CPointer t) Const  
+
 self :: String -> (Types, String)
 self var = (self_, var)
 
@@ -125,6 +150,12 @@ int     var = (int_     , var)
 
 uint :: String -> (Types,String)
 uint var = (uint_ , var)
+
+cchar :: String -> (Types,String)
+cchar var = (cchar_ , var) 
+
+char :: String -> (Types,String)
+char var = (char_ , var)
 
 short :: String -> (Types,String)
 short = int
@@ -150,6 +181,13 @@ intp var = (intp_ , var)
 charpp :: String -> (Types, String)
 charpp var = (charpp_, var)
 
+star :: CTypes -> String -> (Types, String)
+star t var = (star_ t, var) 
+
+cstar :: CTypes -> String -> (Types, String)
+cstar t var = (cstar_ t, var) 
+
+
 cppclass_ :: Class -> Types
 cppclass_ c =  CPT (CPTClass c) NoConst
 
@@ -168,6 +206,7 @@ cppclassref c vname = (cppclassref_ c, vname)
 
 hsCTypeName :: CTypes -> String 
 hsCTypeName CTString = "CString" 
+hsCTypeName CTChar   = "CChar" 
 hsCTypeName CTInt    = "CInt"
 hsCTypeName CTUInt   = "CUInt" 
 hsCTypeName CTDouble = "CDouble"
@@ -176,7 +215,7 @@ hsCTypeName CTBool   = "CInt"
 hsCTypeName CTVoidStar = "(Ptr ())"
 hsCTypeName CTIntStar = "(Ptr CInt)"
 hsCTypeName CTCharStarStar = "(Ptr (CString))"
-
+hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")" 
 
 
 hsCppTypeName :: CPPTypes -> String
@@ -386,12 +425,14 @@ ctypeToHsType c SelfType = class_name c
 ctypeToHsType _c (CT CTString _) = "String"
 ctypeToHsType _c (CT CTInt _) = "Int" 
 ctypeToHsType _c (CT CTUInt _) = "Word"
+ctypeToHsType _c (CT CTChar _) = "Word8" 
 ctypeToHsType _c (CT CTDouble _) = "Double"
 ctypeToHsType _c (CT CTBool _ ) = "Int"
 ctypeToHsType _c (CT CTDoubleStar _) = "[Double]"
 ctypeToHsType _c (CT CTVoidStar _) = "(Ptr ())"
 ctypeToHsType _c (CT CTIntStar _) = "[Int]" 
 ctypeToHsType _c (CT CTCharStarStar _) = "[String]"
+ctypeToHsType _c (CT (CPointer t) _) = hsCTypeName (CPointer t) 
 ctypeToHsType _c (CPT (CPTClass c') _) = class_name c'
 ctypeToHsType _c (CPT (CPTClassRef c') _) = class_name c'
 
