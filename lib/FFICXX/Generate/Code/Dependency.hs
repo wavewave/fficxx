@@ -13,6 +13,7 @@
 module FFICXX.Generate.Code.Dependency where
 
 import Control.Applicative
+import Data.Function (on)
 import Data.List 
 import Data.Maybe
 import System.FilePath 
@@ -88,6 +89,12 @@ extractClassDep (AliasVirtual ret _ args _) =
 extractClassDep Destructor = 
     Dep4Func Nothing [] 
 
+extractClassDepForTopLevelFunction :: TopLevelFunction -> Dep4Func 
+extractClassDepForTopLevelFunction f = 
+    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
+  where ret = toplevelfunc_ret f 
+        args = toplevelfunc_args f 
+
 -- | 
 mkModuleDepRaw :: Class -> [Class] 
 mkModuleDepRaw c = (nub . filter (/= c) . mapMaybe (returnDependency.extractClassDep) . class_funcs) c
@@ -136,10 +143,10 @@ mkModuleDepFFI c =
   in  alldeps
 
                     
-mkClassModule :: (String,Class->([Namespace],[String]))
+mkClassModule :: (Class->([Namespace],[String]))
               -> Class 
               -> ClassModule 
-mkClassModule (_pkgname,mkincheaders) c = 
+mkClassModule mkincheaders c = 
     let r = (ClassModule <$> getClassModuleBase  
                  <*> pure
                  <*> return . mkCIH mkincheaders
@@ -156,14 +163,23 @@ mkClassModule (_pkgname,mkincheaders) c =
         ffis = map getClassModuleBase . mkModuleDepFFI 
 
  
-mkAllClassModulesAndCIH :: (String,Class->([Namespace],[String])) -- ^ (package name,mkIncludeHeaders)
-                        -> [Class] 
-                        -> ([ClassModule],[ClassImportHeader])
-mkAllClassModulesAndCIH (pkgname,mkNSandIncHdrs) cs = 
-  let ms = map (mkClassModule (pkgname,mkNSandIncHdrs)) cs 
+mkAll_ClassModules_CIH_TIH :: (String,Class->([Namespace],[String])) -- ^ (package name,mkIncludeHeaders)
+                        -> ([Class],[TopLevelFunction]) 
+                        -> ([ClassModule],[ClassImportHeader],TopLevelImportHeader)
+mkAll_ClassModules_CIH_TIH (pkgname,mkNSandIncHdrs) (cs,fs) = 
+  let ms = map (mkClassModule mkNSandIncHdrs) cs 
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
-  in (ms,cihs)
+      -- for toplevel 
+      tl_cs1 = concatMap (argumentDependency . extractClassDepForTopLevelFunction) fs 
+      tl_cs2 = mapMaybe (returnDependency . extractClassDepForTopLevelFunction) fs 
+      tl_cs = nubBy ((==) `on` class_name) (tl_cs1 ++ tl_cs2)
+      tl_cihs = catMaybes $ 
+        foldr (\c acc-> (find (\x -> (class_name . cihClass) x == class_name c) cihs):acc) [] tl_cs 
+      -- 
+      tih = TopLevelImportHeader (pkgname ++ "TopLevel") tl_cihs 
+  in (ms,cihs,tih)
+
 
 mkHSBOOTCandidateList :: [ClassModule] -> [String]
 mkHSBOOTCandidateList ms = nub (concatMap cmImportedModulesHighSource ms)

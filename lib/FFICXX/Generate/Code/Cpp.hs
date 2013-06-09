@@ -146,9 +146,6 @@ genModuleIncludeHeader headers =
   let strlst = map ((\x->"#include \""++x++"\"") . cihSelfHeader) headers 
   in  intercalate "\n" strlst 
 
------
-
-  
 ----
 
 genIncludeFiles :: String        -- ^ package name 
@@ -164,8 +161,8 @@ genIncludeFiles pkgname cmods =
       includeFileStrs = map (\x->indent++x) selfheaders
   in  unlines ((indent++pkgname++"Type.h") : includeFileStrs)
 
-genCsrcFiles :: [ClassModule] -> String
-genCsrcFiles cmods =
+genCsrcFiles :: (TopLevelImportHeader,[ClassModule]) -> String
+genCsrcFiles (tih,cmods) =
   let indent = cabalIndentation 
       selfheaders' = do 
         x <- cmods
@@ -177,19 +174,57 @@ genCsrcFiles cmods =
         y <- cmCIH x 
         return (cihSelfCpp y)
       selfcpp = nub selfcpp' 
-      includeFileStrsWithCsrc = map (\x->indent++"csrc"</>x) selfheaders
-      cppFilesWithCsrc = map (\x->indent++"csrc"</>x) selfcpp
+      tlh = tihHeaderFileName tih <.> "h"
+      tlcpp = tihHeaderFileName tih <.> "cpp"
+      includeFileStrsWithCsrc = map (\x->indent++"csrc"</>x) (tlh:selfheaders)
+      cppFilesWithCsrc = map (\x->indent++"csrc"</>x) (tlcpp:selfcpp)
+      
   in  unlines (includeFileStrsWithCsrc ++ cppFilesWithCsrc)
 
-genCppFiles :: [ClassModule] -> String 
-genCppFiles cmods = 
+genCppFiles :: (TopLevelImportHeader,[ClassModule]) -> String 
+genCppFiles (tih,cmods) = 
   let indent = cabalIndentation 
       selfcpp' = do 
         x <- cmods
         y <- cmCIH x
         return (cihSelfCpp y) 
       selfcpp = nub selfcpp'
-      cppFileStrs = map (\x->indent++ "csrc" </> x) selfcpp
+      tlcpp = tihHeaderFileName tih <.> "cpp"
+      cppFileStrs = map (\x->indent++ "csrc" </> x) (tlcpp:selfcpp)
   in  unlines cppFileStrs 
+
+
+
+-------------------------
+-- TOP LEVEL FUNCTIONS --
+-------------------------
+
+genTopLevelFuncCppHeader :: TopLevelFunction -> String 
+genTopLevelFuncCppHeader f =  
+    let tmpl = "$returntype$ $funcname$ ( $args$ );" 
+    in  render tmpl [ ("returntype", rettypeToString (toplevelfunc_ret f))  
+                    , ("funcname", "TopLevel_" ++ maybe (toplevelfunc_name f) id (toplevelfunc_alias f))
+                    , ("args", argsToStringNoSelf (toplevelfunc_args f)) ] 
+
+genTopLevelFuncCppDefinition :: TopLevelFunction -> String 
+genTopLevelFuncCppDefinition f =  
+    let tmpl = "$returntype$ $funcname$ ( $args$ ) { \\\n  $funcbody$\\\n}" 
+        callstr = toplevelfunc_name f ++ "("
+                  ++ argsToCallString (toplevelfunc_args f)   
+                  ++ ")"
+        returnstr = case toplevelfunc_ret f of          
+          Void -> callstr ++ ";"
+          SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
+          (CT _ctyp _isconst) -> "return "++callstr++";" 
+          (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
+                                    ++">(("++str++"*)"++callstr++");" 
+            where str = class_name c' 
+          (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
+        funcDefStr = returnstr 
+    in  render tmpl [ ("returntype", rettypeToString (toplevelfunc_ret f))  
+                    , ("funcname", "TopLevel_" ++ maybe (toplevelfunc_name f) id (toplevelfunc_alias f))
+                    , ("args", argsToStringNoSelf (toplevelfunc_args f)) 
+                    , ("funcbody", funcDefStr )
+                    ] 
 
 

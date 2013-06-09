@@ -13,7 +13,7 @@
 module FFICXX.Generate.Generator.Driver where
 
 import           Control.Applicative ((<$>))
-import           Control.Monad (when)
+import           Control.Monad (when, forM_)
 import qualified Data.ByteString.Lazy.Char8 as L
 import           Data.Digest.Pure.MD5
 import           System.Directory 
@@ -60,11 +60,39 @@ writeDeclHeaders templates wdir typemacroprefix cprefix header = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkDeclHeader templates typemacroprefix cprefix header)
 
+-- | 
+writeTopLevelFunctionHeaders :: STGroup String  
+                             -> FilePath 
+                             -> TypeMacro 
+                             -> String  -- ^ c prefix 
+                             -> (TopLevelImportHeader,[TopLevelFunction])
+                             -> IO () 
+writeTopLevelFunctionHeaders templates wdir typemacroprefix cprefix (tih,fs) = do 
+  let fn = wdir </> tihHeaderFileName tih <.> "h"
+  withFile fn WriteMode $ \h -> 
+    hPutStrLn h (mkTopLevelFunctionHeader templates typemacroprefix cprefix (tih,fs))
+
+
+
+
 writeCppDef :: STGroup String -> FilePath -> ClassImportHeader -> IO () 
 writeCppDef templates wdir header = do 
   let fn = wdir </> cihSelfCpp header
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkDefMain templates header)
+
+
+-- | 
+writeTopLevelFunctionCppDef :: STGroup String  
+                            -> FilePath 
+                            -> TypeMacro 
+                            -> String  -- ^ c prefix 
+                            -> (TopLevelImportHeader,[TopLevelFunction])
+                            -> IO () 
+writeTopLevelFunctionCppDef templates wdir typemacroprefix cprefix (tih,fs) = do 
+  let fn = wdir </> tihHeaderFileName tih <.> "cpp"
+  withFile fn WriteMode $ \h -> hPutStrLn h (mkTopLevelFunctionCppDef templates cprefix (tih,fs))
+
 
 -- | 
 writeRawTypeHs :: STGroup String -> FilePath -> ClassModule -> IO ()
@@ -131,23 +159,17 @@ writeModuleHs templates wdir m = do
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkModuleHs templates m)
 
+-- | 
 writePkgHs :: String -- ^ summary module 
            -> STGroup String 
            -> FilePath 
            -> [ClassModule] 
+           -> (TopLevelImportHeader,[TopLevelFunction])
            -> IO () 
-writePkgHs modname templates wdir mods = do 
+writePkgHs modname templates wdir mods (tih,tfns) = do 
   let fn = wdir </> modname <.> "hs"
-      exportListStr = intercalateWith (conn "\n, ") ((\x->"module " ++ x).cmModule) mods 
-      importListStr = intercalateWith connRet ((\x->"import " ++ x).cmModule) mods
-      str = renderTemplateGroup 
-              templates 
-              [ ("summarymod", modname)
-              , ("exportList", exportListStr) 
-              , ("importList", importListStr) ]
-              "Pkg.hs"
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h str
+      str = mkPkgHs modname templates mods (tih,tfns) 
+  withFile fn WriteMode $ \h -> hPutStrLn h str
 
 
 notExistThenCreate :: FilePath -> IO () 
@@ -176,14 +198,21 @@ copyFileWithMD5Check src tgt = do
     else copyFile src tgt  
 
 
-copyCppFiles :: FilePath -> FilePath -> String -> ClassImportHeader -> IO ()
-copyCppFiles wdir ddir cprefix header = do 
+copyCppFiles :: FilePath -> FilePath -> String -> (TopLevelImportHeader,[ClassImportHeader]) -> IO ()
+copyCppFiles wdir ddir cprefix (tih,cihs) = do 
   let thfile = cprefix ++ "Type.h"
-      hfile = cihSelfHeader header
-      cppfile = cihSelfCpp header
+      tlhfile = tihHeaderFileName tih <.> "h"
+      tlcppfile = tihHeaderFileName tih <.> "cpp"
   copyFileWithMD5Check (wdir </> thfile) (ddir </> thfile) 
-  copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
-  copyFileWithMD5Check (wdir </> cppfile) (ddir </> cppfile)
+  doesFileExist (wdir </> tlhfile) 
+    >>= flip when (copyFileWithMD5Check (wdir </> tlhfile) (ddir </> tlhfile))
+  doesFileExist (wdir </> tlcppfile) 
+    >>= flip when (copyFileWithMD5Check (wdir </> tlcppfile) (ddir </> tlcppfile))
+  forM_ cihs $ \header-> do 
+    let hfile = cihSelfHeader header
+        cppfile = cihSelfCpp header
+    copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
+    copyFileWithMD5Check (wdir </> cppfile) (ddir </> cppfile)
 
 copyModule :: FilePath -> FilePath -> String -> ClassModule -> IO ()
 copyModule wdir ddir summarymod m = do 

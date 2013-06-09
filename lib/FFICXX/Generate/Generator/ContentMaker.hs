@@ -15,6 +15,7 @@ module FFICXX.Generate.Generator.ContentMaker where
 import           Control.Applicative
 import           Control.Lens (set,at)
 import           Control.Monad.Trans.Reader
+import           Data.Function (on)
 import qualified Data.Map as M
 import           Data.List 
 import           Data.List.Split (splitOn) 
@@ -36,6 +37,9 @@ srcDir installbasedir = installbasedir </> "src"
 
 csrcDir :: FilePath -> FilePath
 csrcDir installbasedir = installbasedir </> "csrc" 
+
+pkgModuleTemplate :: String
+pkgModuleTemplate = "Pkg.hs"
 
 moduleTemplate :: String 
 moduleTemplate = "module.hs"
@@ -216,8 +220,52 @@ mkDefMain templates header =
         templates 
         [ ("header" , headerStr ) 
         , ("namespace", namespaceStr ) 
-        , ("cppbody", cppBody ) 
-        , ("modname", class_name (cihClass header)) ] 
+        , ("cppbody", cppBody )  
+        ] 
+        -- , ("modname", class_name (cihClass header)) ] 
+        definitionTemplate
+
+
+-- | 
+mkTopLevelFunctionHeader :: STGroup String 
+                         -> T.TypeMacro  -- ^ typemacro prefix 
+                         -> String     -- ^ C prefix 
+                         -> (TopLevelImportHeader,[TopLevelFunction])
+                         -> String 
+mkTopLevelFunctionHeader templates (T.TypMcro typemacroprefix) cprefix (tih,fs) =
+  let typemacrostr = typemacroprefix ++ "TOPLEVEL" ++ "__" 
+      declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"")
+                      . map cihSelfHeader . tihClassDep $ tih
+      declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader fs
+  in  renderTemplateGroup 
+        templates 
+        [ ("typemacro", typemacrostr)
+        , ("cprefix", cprefix)
+        , ("declarationheader", declHeaderStr ) 
+        , ("declarationbody", declBodyStr ) ] 
+        declarationTemplate
+
+
+-- | 
+mkTopLevelFunctionCppDef :: STGroup String 
+                         -> String     -- ^ C prefix 
+                         -> (TopLevelImportHeader,[TopLevelFunction])
+                         -> String 
+mkTopLevelFunctionCppDef templates cprefix (tih,fs) =
+  let cihs = tihClassDep tih
+      declHeaderStr = (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
+                      `connRet2`
+                      ((intercalateWith connRet (\x->"#include \""++x++"\"") . map cihSelfHeader) cihs)
+      allns = nubBy ((==) `on` unNamespace) (tihClassDep tih >>= cihNamespace)
+      namespaceStr = do ns <- allns 
+                        ("using namespace " ++ unNamespace ns ++ ";\n")
+      declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition fs
+
+  in  renderTemplateGroup 
+        templates 
+        [ ("header", declHeaderStr)
+        , ("namespace", namespaceStr)
+        , ("cppbody", declBodyStr ) ] 
         definitionTemplate
 
 -- | 
@@ -394,6 +442,37 @@ mkModuleHs templates m =
                 ]
                 moduleTemplate 
     in str
+
+
+-- | 
+mkPkgHs :: String -> STGroup String -> [ClassModule] -> (TopLevelImportHeader,[TopLevelFunction]) 
+        -> String 
+mkPkgHs modname templates mods (tih,tfns) = 
+    let exportListStr = intercalateWith (conn "\n, ") ((\x->"module " ++ x).cmModule) mods 
+        importListStr = intercalateWith connRet ((\x->"import " ++ x).cmModule) mods
+                        ++ if null tfns 
+                           then "" 
+                           else "" `connRet2` "import Foreign.C" `connRet` "import Foreign.Ptr"
+                                `connRet` "import FFICXX.Runtime.Cast" 
+                                `connRet`
+                                intercalateWith connRet 
+                                  ((\x->"import " ++ modname ++ "." ++ x ++ ".RawType")
+                                   .class_name.cihClass) (tihClassDep tih)
+        topLevelDefStr = intercalateWith connRet (genTopLevelFuncFFI tih) tfns 
+                         `connRet2`
+                         intercalateWith connRet genTopLevelFuncDef tfns
+        str = renderTemplateGroup 
+                templates 
+                [ ("summarymod", modname)
+                , ("exportList", exportListStr) 
+                , ("importList", importListStr) 
+                , ("topLevelDef", topLevelDefStr) 
+                ]
+                pkgModuleTemplate
+    in str 
+       
+
+
   
 -- |
 mkPackageInterface :: T.PackageInterface 

@@ -21,30 +21,48 @@ import           FFICXX.Generate.Util
 -- 
 import qualified FFICXX.Paths_fficxx as F
 
-mysampleclasses = [ ] 
+snappyclasses = [ ] 
 
-mycabal = Cabal { cabal_pkgname = "MySample" 
-                , cabal_cheaderprefix = "MySample"
-                , cabal_moduleprefix = "MySample" }
+mycabal = Cabal { cabal_pkgname = "Snappy" 
+                , cabal_cheaderprefix = "Snappy"
+                , cabal_moduleprefix = "Snappy" }
 
-myclass = Class mycabal 
+-- myclass = Class mycabal 
 
-a :: Class 
-a = myclass "A" [] mempty 
-    [ Constructor [] 
-    , Virtual void_ "Foo" [ ] 
-    ] 
+source :: Class 
+source = 
+  Class mycabal "Source" [] mempty 
+  [ Virtual ulong_ "Available" []  
+  , Virtual (cstar_ CTChar) "Peek" [ star CTULong "len" ] 
+  , Virtual void_ "Skip" [ ulong "n" ] 
+  ]
 
-b :: Class 
-b = myclass "B" [a] mempty 
-    [ Constructor [] 
-    , Virtual void_ "Bar" [] 
-    ] 
+sink :: Class 
+sink = 
+  Class mycabal "Sink" [] mempty 
+  [ Virtual void_ "Append" [ cstar CTChar "bytes", ulong "n" ] 
+  , Virtual (cstar_ CTChar) "GetAppendBuffer" [ ulong "len", star CTChar "scratch" ] 
+  ] 
 
-myclasses = [ a, b] 
+byteArraySource :: Class
+byteArraySource = 
+  Class mycabal "ByteArraySource" [source] mempty 
+  [ Constructor [ cstar CTChar "p", ulong "n" ] 
+  ] 
 
-toplevelfunctions = [ ] 
+uncheckedByteArraySink :: Class 
+uncheckedByteArraySink = 
+  Class mycabal "UncheckedByteArraySink" [sink] mempty
+  [ Constructor [ star CTChar "dest" ]
+  , NonVirtual (star_ CTChar) "CurrentDestination" [] 
+  ] 
 
+myclasses = [ source, sink, byteArraySource, uncheckedByteArraySink] 
+
+toplevelfunctions =
+  [ TopLevelFunction ulong_ "Compress" [cppclass source "src", cppclass sink "snk"] Nothing   
+
+  ]  
 
 -- | 
 cabalTemplate :: String 
@@ -54,27 +72,27 @@ cabalTemplate = "Pkg.cabal"
 -- | 
 mkCabalFile :: FFICXXConfig
             -> STGroup String  
-            -> [ClassModule]
+            -> (TopLevelImportHeader,[ClassModule])
             -> FilePath  
             -> IO () 
-mkCabalFile config templates classmodules cabalfile = do 
+mkCabalFile config templates (tih,classmodules) cabalfile = do 
   cpath <- getCurrentDirectory 
-
+ 
   let str = renderTemplateGroup 
               templates 
-              [ ("pkgname", "MySample") 
+              [ ("pkgname", "Snappy") 
               , ("version",  "0.0") 
               , ("license", "" ) 
               , ("buildtype", "Simple")
               , ("deps", "" ) 
-              , ("csrcFiles", genCsrcFiles classmodules)
-              , ("includeFiles", genIncludeFiles "MySample" classmodules) 
-              , ("cppFiles", genCppFiles classmodules)
-              , ("exposedModules", genExposedModules "MySample" classmodules) 
+              , ("csrcFiles", genCsrcFiles (tih,classmodules))
+              , ("includeFiles", genIncludeFiles "Snappy" classmodules) 
+              , ("cppFiles", genCppFiles (tih,classmodules))
+              , ("exposedModules", genExposedModules "Snappy" classmodules) 
               , ("otherModules", genOtherModules classmodules)
-              , ("extralibdirs", cpath </> ".." </> "cxxlib" </> "lib" )  -- this need to be changed 
-              , ("extraincludedirs", cpath </> ".." </> "cxxlib" </> "include" )  -- this need to be changed 
-              , ("extralib", ", mysample")
+              , ("extralibdirs", "" )  
+              , ("extraincludedirs", "" )  
+              , ("extralib", ", snappy")
               , ("cabalIndentation", cabalIndentation)
               ]
               cabalTemplate 
@@ -85,21 +103,23 @@ mkCabalFile config templates classmodules cabalfile = do
 
 main :: IO ()
 main = do 
-  putStrLn "generate mysample" 
+  putStrLn "generate snappy" 
   cwd <- getCurrentDirectory 
 
   let cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd 
                           , fficxxconfig_workingDir = cwd </> "working"
-                          , fficxxconfig_installBaseDir = cwd </> "MySample"  
+                          , fficxxconfig_installBaseDir = cwd </> "Snappy"  
                           } 
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg 
-      pkgname = "MySample" 
-      (mods,cihs) = mkAllClassModulesAndCIH ("MySample", (\c->([],[class_name c ++ ".h"]))) myclasses
+      pkgname = "Snappy" 
+      (mods,cihs,tih) = mkAll_ClassModules_CIH_TIH 
+                          ("Snappy", (const ([NS "snappy"],["snappy-sinksource.h","snappy.h"]))) 
+                          (myclasses, toplevelfunctions)
       hsbootlst = mkHSBOOTCandidateList mods 
       cglobal = mkGlobal myclasses 
-      summarymodule = "MySample" 
-      cabalFileName = "MySample.cabal"
+      summarymodule = "Snappy" 
+      cabalFileName = "Snappy.cabal"
   templateDir <- F.getDataDir >>= return . (</> "template")
   (templates :: STGroup String) <- directoryGroup templateDir 
   -- 
@@ -109,14 +129,17 @@ main = do
   notExistThenCreate (installDir </> "csrc")
   -- 
   putStrLn "cabal file generation" 
-  mkCabalFile cfg templates mods (workingDir </> cabalFileName)
+  mkCabalFile cfg templates (tih,mods) (workingDir </> cabalFileName)
   -- 
   putStrLn "header file generation"
-  writeTypeDeclHeaders templates workingDir (TypMcro "__MYSAMPLE__") pkgname cihs
-  mapM_ (writeDeclHeaders templates workingDir (TypMcro "__MYSAMPLE__") pkgname) cihs
+  let typmacro = TypMcro "__SNAPPY__"
+  writeTypeDeclHeaders templates workingDir typmacro pkgname cihs
+  mapM_ (writeDeclHeaders templates workingDir typmacro pkgname) cihs
+  writeTopLevelFunctionHeaders templates workingDir typmacro pkgname (tih,toplevelfunctions) 
   -- 
   putStrLn "cpp file generation" 
   mapM_ (writeCppDef templates workingDir) cihs
+  writeTopLevelFunctionCppDef templates workingDir typmacro pkgname (tih,toplevelfunctions)
   -- 
   putStrLn "RawType.hs file generation" 
   mapM_ (writeRawTypeHs templates workingDir) mods 
@@ -140,12 +163,12 @@ main = do
   mapM_ (writeModuleHs templates workingDir) mods
   -- 
   putStrLn "summary module generation generation"
-  writePkgHs summarymodule templates workingDir mods toplevelfunctions 
+  writePkgHs summarymodule templates workingDir mods (tih,toplevelfunctions)
   -- 
   putStrLn "copying"
   copyFileWithMD5Check (workingDir </> cabalFileName)  (installDir </> cabalFileName) 
   -- copyPredefined templateDir (srcDir ibase) pkgname
-  mapM_ (copyCppFiles workingDir (csrcDir installDir) pkgname) cihs
+  copyCppFiles workingDir (csrcDir installDir) pkgname (tih,cihs)
   mapM_ (copyModule workingDir (srcDir installDir) summarymodule) mods 
 
 

@@ -35,8 +35,4 @@ ToType& to_nonconstref(FromType& x) {
 
 $cppbody$
 
-void dummy$modname$ ( void ) 
-{
-  
-}
 

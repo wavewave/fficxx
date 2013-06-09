@@ -12,8 +12,6 @@
 
 module FFICXX.Generate.Code.MethodDef where
 
--- import FFICXX.Generate.Type.CType
--- import FFICXX.Generate.Type.Method
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Util 
 

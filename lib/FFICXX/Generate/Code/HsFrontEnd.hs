@@ -14,6 +14,7 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import Control.Monad.State
 import Control.Monad.Reader
+import Data.Char (toLower)
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
@@ -85,16 +86,16 @@ genHsFrontDecl c = do
                                     , ("funcann", mkComment 4 mann)  
                                     ] 
       prefixstr func =  
-        let prefixlst = (snd . mkHsFuncArgType c . genericFuncArgs) func
-                        ++ (snd . mkHsFuncRetType c ) func
+        let prefixlst = (snd . mkHsFuncArgType . genericFuncArgs) func
+                        ++ (snd . mkHsFuncRetType . genericFuncRet ) func
         in  if null prefixlst
               then "" 
               else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
                   
       argstr func = intercalateWith connArrow id $
                       [ "a" ] 
-                      ++ fst (mkHsFuncArgType c (genericFuncArgs func))
-                      ++ ["IO " ++ fst (mkHsFuncRetType c func)]  
+                      ++ fst (mkHsFuncArgType (genericFuncArgs func))
+                      ++ ["IO " ++ (fst . mkHsFuncRetType . genericFuncRet) func]  
       bodylines = map bodyline . virtualFuncs 
                       $ (class_funcs c) 
   return $ intercalateWith connRet id (header : bodylines) 
@@ -103,8 +104,6 @@ genHsFrontDecl c = do
 
 genAllHsFrontDecl :: [Class] -> Reader AnnotateMap String 
 genAllHsFrontDecl = intercalateWithM connRet2 genHsFrontDecl
-
---   fmap (intercalateWith connRet2)  genHsFrontDecl
 
 -------------------
 
@@ -120,14 +119,6 @@ genHsFrontInst parent child
   | otherwise = ""
         
 
-{-   
-genAllHsFrontInst :: [Class] -> DaughterMap -> String 
-genAllHsFrontInst cs m = 
-  let selflst = map (\x->(getClassModuleBase x,[x])) cs 
-      lst = selflst ++ M.toList m  
-      f (x,ys) = intercalateWith connRet2 (genHsFrontInst x) ys
-  in intercalateWith connRet2 f lst
--}
       
 ---------------------
 
@@ -135,10 +126,6 @@ hsClassInstExistCommonTmpl :: String
 hsClassInstExistCommonTmpl = "instance FPtr (Exist $highname$) where\n  type Raw (Exist $highname$) = $rawname$\n  get_fptr ($existConstructor$ obj) = castForeignPtr (get_fptr obj)\n  cast_fptr_to_obj fptr = $existConstructor$ (cast_fptr_to_obj (fptr :: ForeignPtr $rawname$) :: $highname$)" 
 
 
-{- -- old 
-hsClassInstExistCommonTmpl :: String 
-hsClassInstExistCommonTmpl = "instance FPtr (Exist $highname$) where\n  type Raw (Exist $highname$) = $rawname$\n  get_fptr ($existConstructor$ obj) = castForeignPtr (get_fptr obj)\n  cast_fptr_to_obj fptr = $existConstructor$ (cast_fptr_to_obj (fptr :: ForeignPtr $rawname$) :: $highname$)\n\ninstance Castable (Exist $highname$) (Ptr $rawname$) where\n  cast = unsafeForeignPtrToPtr . get_fptr\n  uncast = cast_fptr_to_obj . unsafePerformIO . newForeignPtr_" 
--}
 genHsFrontInstExistCommon :: Class -> String 
 genHsFrontInstExistCommon c = render hsClassInstExistCommonTmpl tmplName
   where (highname,rawname) = hsClassName c
@@ -252,8 +239,6 @@ genHsFrontInstStatic c
 
 -----
 
-
-
 genHsFrontInstCastable :: Class -> String 
 genHsFrontInstCastable c 
   | (not.isAbstractClass) c = 
@@ -313,27 +298,6 @@ hsClassExistType c = render existableInstance tmplName
                    , ("interfacename",iname)
                    ]
 
-{-
-hsClassType :: Class -> String 
-hsClassType c = let decl = render rawToHighDecl tmplName
-                    inst1 = render rawToHighInstance tmplName
-                    exist1 = render existableInstance tmplName
-                in  decl `connRet` inst1 `connRet` exist1
-  where (highname,rawname) = hsClassName c
-        iname = typeclassName c 
-        ename = existConstructorName c
-        tmplName = [ ("rawname",rawname)
-                   , ("highname",highname)
-                   , ("interfacename",iname)
-                   , ("existConstructor",ename)
-                   ] 
--}
-
-{-            
-mkRawTypes :: [Class] -> String 
-mkRawTypes = intercalateWith connRet2 hsClassRawType
--}
-
 hsClassDeclFuncTmpl :: String
 hsClassDeclFuncTmpl = "$funcann$\n    $funcname$ :: $args$ "
 
@@ -341,14 +305,14 @@ hsClassDeclFuncTmpl = "$funcann$\n    $funcname$ :: $args$ "
 hsArgs :: Class -> Args -> String
 hsArgs c = intercalateWith connArrow (ctypeToHsType c. fst) 
 
-mkHsFuncArgType :: Class -> Args -> ([String],[String]) 
-mkHsFuncArgType c lst = 
+mkHsFuncArgType :: Args -> ([String],[String]) 
+mkHsFuncArgType lst = 
   let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
   in   (args,fst st)
   where mkFuncArgTypeWorker (typ,_var) = 
           case typ of                  
             SelfType -> return "a"
-            CT _ _   -> return $ ctypeToHsType c typ 
+            CT _ _   -> return $ ctypToHsTyp Nothing typ 
             CPT (CPTClass c') _ -> do 
               (prefix,n) <- get 
               let cname = class_name c' 
@@ -369,14 +333,13 @@ mkHsFuncArgType c lst =
               return newname
             _ -> error ("No such c type : " ++ show typ)  
 
-mkHsFuncRetType :: Class -> Function -> (String,[String])
-mkHsFuncRetType c func = 
-  let rtyp = genericFuncRet func
-  in case rtyp of 
+mkHsFuncRetType :: Types -> (String,[String])
+mkHsFuncRetType rtyp = 
+  case rtyp of 
     SelfType -> ("a",[])
     CPT (CPTClass c') _ -> (cname,[]) where cname = class_name c' 
     CPT (CPTClassRef c') _ -> (cname,[]) where cname = class_name c' 
-    _ -> (ctypeToHsType c rtyp,[])
+    _ -> (ctypToHsTyp Nothing rtyp,[])
 
       
 ----------                        
@@ -427,7 +390,6 @@ hsUpcastClassTmpl =  "upcast$classname$ :: (FPtr a, $ifacename$ a) => a -> $clas
 
 genHsFrontDowncastClass :: Class -> Reader AnnotateMap String
 genHsFrontDowncastClass c = do 
-  -- amap <- ask 
   let (highname,rawname) = hsClassName c
       downcaststr = render hsDowncastClassTmpl [ ("classname", highname) 
                                                , ("ifacename", typeclassName c)
@@ -484,12 +446,6 @@ genExportStatic c =
 genExportList :: [Class] -> String 
 genExportList = concatMap genExport 
 
---  let cs = filter (\x->class_name x  == modname) all_classes
---  in  if null cs 
---        then error $ "no such class :" ++ modname 
---        else let c = head cs 
-
-
 importOneClass :: String -> String -> String 
 importOneClass mname typ = "import " ++ mname <.> typ 
 
@@ -500,7 +456,7 @@ importSOURCEOneClass mname typ = "import {-# SOURCE #-} " ++ mname <.> typ
 genImportInModule :: [Class] -> String 
 genImportInModule cs = 
   let genImportOneClass c = 
-        let n = getClassModuleBase c -- class_name c 
+        let n = getClassModuleBase c 
         in  intercalateWith connRet (importOneClass n) $
               ["RawType", "Interface", "Implementation"]
   in  intercalate "\n" (map genImportOneClass cs)
@@ -579,3 +535,30 @@ genImportInExistential dmap m =
 
 
 
+------------------------
+-- Top Level Function --
+------------------------
+
+genTopLevelFuncDef :: TopLevelFunction -> String 
+genTopLevelFuncDef tfn = 
+    let (x:xs) = maybe (toplevelfunc_name tfn) id (toplevelfunc_alias tfn) 
+        fname = toLower x : xs 
+        cfname = "c_" ++ toLowers fname 
+        args = toplevelfunc_args tfn 
+        ret = toplevelfunc_ret tfn 
+        xformerstr = let len = length args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
+        prefixstr =  
+          let prefixlst = (snd . mkHsFuncArgType . toplevelfunc_args) tfn
+                        ++ (snd . mkHsFuncRetType . toplevelfunc_ret) tfn
+          in  if null prefixlst
+              then "" 
+              else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
+
+        argstr = intercalateWith connArrow id $
+                      (fst . mkHsFuncArgType . toplevelfunc_args) tfn 
+                      ++ ["IO " ++ (fst . mkHsFuncRetType . toplevelfunc_ret) tfn]  
+
+        {- argstr = intercalateWith connArrow id $ 
+                   map (ctypToHsTyp Nothing . fst) args ++ ["IO " ++ ctypToHsTyp Nothing ret ]  -}
+        defstr = fname ++ " = " ++ xformerstr ++ " " ++ cfname
+    in fname ++ " :: " ++ prefixstr ++ argstr ++ "\n" ++ defstr 

@@ -31,6 +31,7 @@ data CTypes = CTString
             | CTChar 
             | CTInt 
             | CTUInt
+            | CTULong
             | CTDouble 
             | CTBool 
             | CTDoubleStar 
@@ -59,17 +60,18 @@ cvarToStr ctyp isconst varname = (ctypToStr ctyp isconst) `connspace` varname
 ctypToStr :: CTypes -> IsConst -> String
 ctypToStr ctyp isconst = 
   let typword = case ctyp of 
-        CTString -> "char *"
-        CTChar   -> "char " 
-        CTInt    -> "int " 
-        CTUInt   -> "unsigned int "
+        CTString -> "char*"
+        CTChar   -> "char" 
+        CTInt    -> "int" 
+        CTUInt   -> "unsigned int"
+        CTULong  -> "long unsigned int"
         CTDouble -> "double" 
         CTBool   -> "int"              -- Currently available solution
         CTDoubleStar -> "double *"
-        CTVoidStar -> "void *"
-        CTIntStar -> "int *"
-        CTCharStarStar -> "char **"
-        CPointer s -> ctypToStr s isconst ++ "*"  
+        CTVoidStar -> "void*"
+        CTIntStar -> "int*"
+        CTCharStarStar -> "char**"
+        CPointer s -> ctypToStr s NoConst ++ "*"  
   in case isconst of 
         Const   -> "const" `connspace` typword 
         NoConst -> typword 
@@ -89,6 +91,12 @@ int_     = CT CTInt    NoConst
 
 uint_ :: Types
 uint_ = CT CTUInt NoConst
+
+ulong_ :: Types
+ulong_ = CT CTULong NoConst
+
+culong_ :: Types
+culong_ = CT CTULong Const
 
 cchar_ :: Types 
 cchar_ = CT CTChar Const
@@ -151,6 +159,12 @@ int     var = (int_     , var)
 uint :: String -> (Types,String)
 uint var = (uint_ , var)
 
+ulong :: String -> (Types,String)
+ulong var = (ulong_ , var)
+
+culong :: String -> (Types,String)
+culong var = (culong_ , var)
+
 cchar :: String -> (Types,String)
 cchar var = (cchar_ , var) 
 
@@ -209,6 +223,7 @@ hsCTypeName CTString = "CString"
 hsCTypeName CTChar   = "CChar" 
 hsCTypeName CTInt    = "CInt"
 hsCTypeName CTUInt   = "CUInt" 
+hsCTypeName CTULong  = "CULong" 
 hsCTypeName CTDouble = "CDouble"
 hsCTypeName CTDoubleStar = "(Ptr CDouble)"
 hsCTypeName CTBool   = "CInt"
@@ -243,7 +258,16 @@ data Function = Constructor { func_args :: Args }
               | Destructor  
               deriving Show
 
---               | Protected { func_name :: String } 
+
+data TopLevelFunction = TopLevelFunction { toplevelfunc_ret :: Types 
+                                         , toplevelfunc_name :: String
+                                         , toplevelfunc_args :: Args 
+                                         , toplevelfunc_alias :: Maybe String 
+                                         }
+                      deriving Show 
+
+data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String 
+                                                 , tihClassDep :: [ClassImportHeader] } 
 
 
   
@@ -418,14 +442,15 @@ mkDaughterSelfMap = foldl worker M.empty
                               f (Just cs)  = Just (c:cs)    
                           in  M.alter f p m
 
-       
+-- | this function will be deprecated        
 ctypeToHsType :: Class -> Types -> String
 ctypeToHsType _c Void = "()" 
 ctypeToHsType c SelfType = class_name c
 ctypeToHsType _c (CT CTString _) = "String"
 ctypeToHsType _c (CT CTInt _) = "Int" 
 ctypeToHsType _c (CT CTUInt _) = "Word"
-ctypeToHsType _c (CT CTChar _) = "Word8" 
+ctypeToHsType _c (CT CTChar _) = "Word8"
+ctypeToHsType _c (CT CTULong _) = "CULong" 
 ctypeToHsType _c (CT CTDouble _) = "Double"
 ctypeToHsType _c (CT CTBool _ ) = "Int"
 ctypeToHsType _c (CT CTDoubleStar _) = "[Double]"
@@ -435,6 +460,26 @@ ctypeToHsType _c (CT CTCharStarStar _) = "[String]"
 ctypeToHsType _c (CT (CPointer t) _) = hsCTypeName (CPointer t) 
 ctypeToHsType _c (CPT (CPTClass c') _) = class_name c'
 ctypeToHsType _c (CPT (CPTClassRef c') _) = class_name c'
+
+-- | 
+ctypToHsTyp :: Maybe Class -> Types -> String
+ctypToHsTyp _c Void = "()" 
+ctypToHsTyp (Just c) SelfType = class_name c
+ctypToHsTyp Nothing SelfType = error "ctypToHsTyp : SelfType but no class " 
+ctypToHsTyp _c (CT CTString _) = "String"
+ctypToHsTyp _c (CT CTInt _) = "Int" 
+ctypToHsTyp _c (CT CTUInt _) = "Word"
+ctypToHsTyp _c (CT CTChar _) = "Word8"
+ctypToHsTyp _c (CT CTULong _) = "CULong" 
+ctypToHsTyp _c (CT CTDouble _) = "Double"
+ctypToHsTyp _c (CT CTBool _ ) = "Int"
+ctypToHsTyp _c (CT CTDoubleStar _) = "[Double]"
+ctypToHsTyp _c (CT CTVoidStar _) = "(Ptr ())"
+ctypToHsTyp _c (CT CTIntStar _) = "[Int]" 
+ctypToHsTyp _c (CT CTCharStarStar _) = "[String]"
+ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t) 
+ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
+ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
 
 
 typeclassName :: Class -> String
@@ -451,6 +496,7 @@ hsClassName c =
 existConstructorName :: Class -> String 
 existConstructorName c = 'E' : class_name c
 
+-- | this is for FFI type.
 hsFuncTyp :: Class -> Function -> String
 hsFuncTyp c f = let args = genericFuncArgs f 
                     ret  = genericFuncRet f 
@@ -468,7 +514,8 @@ hsFuncTyp c f = let args = genericFuncArgs f
         hsrettype SelfType = "IO " ++ selfstr
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
         hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x 
-        
+
+-- | this is for FFI
 hsFuncTypNoSelf :: Class -> Function -> String
 hsFuncTypNoSelf c f = let args = genericFuncArgs f 
                           ret  = genericFuncRet f 
