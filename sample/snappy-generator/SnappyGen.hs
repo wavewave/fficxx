@@ -61,7 +61,14 @@ myclasses = [ source, sink, byteArraySource, uncheckedByteArraySink]
 
 toplevelfunctions =
   [ TopLevelFunction ulong_ "Compress" [cppclass source "src", cppclass sink "snk"] Nothing   
-
+  , TopLevelFunction bool_ "GetUncompressedLength" [cppclass source "src", star CTUInt "result"] Nothing 
+  -- , TopLevelFunction ulong_ "Compress" [cstar CTChar "input", ulong_ "input_length", 
+  , TopLevelFunction void_ "RawCompress" [cstar CTChar "input", ulong "input_length", star CTChar "compresseed", star CTULong "compressed_length" ] Nothing
+  , TopLevelFunction bool_ "RawUncompress" [cstar CTChar "compressed", ulong "compressed_length", star CTChar "uncompressed"] Nothing 
+  , TopLevelFunction bool_ "RawUncompress" [cppclass source "src", star CTChar "uncompressed"] (Just "rawUncompress_1")
+  , TopLevelFunction ulong_ "MaxCompressedLength" [ ulong "source_bytes" ] Nothing
+  , TopLevelFunction bool_ "GetUncompressedLength" [ cstar CTChar "compressed", ulong "compressed_length", star CTULong "result" ] (Just "getUncompressedLength_1")
+  , TopLevelFunction bool_ "IsValidCompressedBuffer" [ cstar CTChar "compressed", ulong "compressed_length" ] Nothing 
   ]  
 
 -- | 

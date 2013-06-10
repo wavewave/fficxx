@@ -1,5 +1,5 @@
 Name:		fficxx
-Version:	0.1.999 
+Version:	0.2
 Synopsis:	automatic C++ binding generation
 Description: 	automatic C++ binding generation 
 License:        BSD3
@@ -21,6 +21,7 @@ Data-files: template/*.h.st
             sample/cxxlib/src/Makefile
             sample/mysample-generator/MySampleGen.hs
             sample/mysample-generator/use_mysample.hs
+            sample/snappy-generator/SnappyGen.hs
 
 
 Source-repository head
