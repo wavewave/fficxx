@@ -541,8 +541,9 @@ genImportInExistential dmap m =
 
 genTopLevelFuncDef :: TopLevelFunction -> String 
 genTopLevelFuncDef tfn = 
-    let (x:xs) = maybe (toplevelfunc_name tfn) id (toplevelfunc_alias tfn) 
-        fname = toLower x : xs 
+    let -- (x:xs) = maybe (toplevelfunc_name tfn) id (toplevelfunc_alias tfn) 
+        -- fname = toLower x : xs 
+        fname = hsFrontNameForTopLevelFunction tfn 
         cfname = "c_" ++ toLowers fname 
         args = toplevelfunc_args tfn 
         ret = toplevelfunc_ret tfn 
@@ -557,8 +558,5 @@ genTopLevelFuncDef tfn =
         argstr = intercalateWith connArrow id $
                       (fst . mkHsFuncArgType . toplevelfunc_args) tfn 
                       ++ ["IO " ++ (fst . mkHsFuncRetType . toplevelfunc_ret) tfn]  
-
-        {- argstr = intercalateWith connArrow id $ 
-                   map (ctypToHsTyp Nothing . fst) args ++ ["IO " ++ ctypToHsTyp Nothing ret ]  -}
         defstr = fname ++ " = " ++ xformerstr ++ " " ++ cfname
     in fname ++ " :: " ++ prefixstr ++ argstr ++ "\n" ++ defstr 

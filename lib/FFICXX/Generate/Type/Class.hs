@@ -266,8 +266,16 @@ data TopLevelFunction = TopLevelFunction { toplevelfunc_ret :: Types
                                          }
                       deriving Show 
 
+hsFrontNameForTopLevelFunction :: TopLevelFunction -> String 
+hsFrontNameForTopLevelFunction tfn = 
+    let (x:xs) = maybe (toplevelfunc_name tfn) id (toplevelfunc_alias tfn) 
+    in toLower x : xs 
+
+
 data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String 
-                                                 , tihClassDep :: [ClassImportHeader] } 
+                                                 , tihClassDep :: [ClassImportHeader] 
+                                                 , tihFuncs :: [TopLevelFunction] 
+                                                 } 
 
 
   

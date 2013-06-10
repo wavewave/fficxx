@@ -135,11 +135,11 @@ main = do
   let typmacro = TypMcro "__SNAPPY__"
   writeTypeDeclHeaders templates workingDir typmacro pkgname cihs
   mapM_ (writeDeclHeaders templates workingDir typmacro pkgname) cihs
-  writeTopLevelFunctionHeaders templates workingDir typmacro pkgname (tih,toplevelfunctions) 
+  writeTopLevelFunctionHeaders templates workingDir typmacro pkgname tih
   -- 
   putStrLn "cpp file generation" 
   mapM_ (writeCppDef templates workingDir) cihs
-  writeTopLevelFunctionCppDef templates workingDir typmacro pkgname (tih,toplevelfunctions)
+  writeTopLevelFunctionCppDef templates workingDir typmacro pkgname tih
   -- 
   putStrLn "RawType.hs file generation" 
   mapM_ (writeRawTypeHs templates workingDir) mods 
@@ -163,7 +163,7 @@ main = do
   mapM_ (writeModuleHs templates workingDir) mods
   -- 
   putStrLn "summary module generation generation"
-  writePkgHs summarymodule templates workingDir mods (tih,toplevelfunctions)
+  writePkgHs summarymodule templates workingDir mods tih
   -- 
   putStrLn "copying"
   copyFileWithMD5Check (workingDir </> cabalFileName)  (installDir </> cabalFileName) 

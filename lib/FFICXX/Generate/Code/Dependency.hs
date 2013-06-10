@@ -177,7 +177,7 @@ mkAll_ClassModules_CIH_TIH (pkgname,mkNSandIncHdrs) (cs,fs) =
       tl_cihs = catMaybes $ 
         foldr (\c acc-> (find (\x -> (class_name . cihClass) x == class_name c) cihs):acc) [] tl_cs 
       -- 
-      tih = TopLevelImportHeader (pkgname ++ "TopLevel") tl_cihs 
+      tih = TopLevelImportHeader (pkgname ++ "TopLevel") tl_cihs fs 
   in (ms,cihs,tih)
 
 

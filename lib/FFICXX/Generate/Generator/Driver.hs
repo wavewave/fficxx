@@ -65,12 +65,12 @@ writeTopLevelFunctionHeaders :: STGroup String
                              -> FilePath 
                              -> TypeMacro 
                              -> String  -- ^ c prefix 
-                             -> (TopLevelImportHeader,[TopLevelFunction])
+                             -> TopLevelImportHeader
                              -> IO () 
-writeTopLevelFunctionHeaders templates wdir typemacroprefix cprefix (tih,fs) = do 
+writeTopLevelFunctionHeaders templates wdir typemacroprefix cprefix tih = do 
   let fn = wdir </> tihHeaderFileName tih <.> "h"
   withFile fn WriteMode $ \h -> 
-    hPutStrLn h (mkTopLevelFunctionHeader templates typemacroprefix cprefix (tih,fs))
+    hPutStrLn h (mkTopLevelFunctionHeader templates typemacroprefix cprefix tih)
 
 
 
@@ -87,11 +87,11 @@ writeTopLevelFunctionCppDef :: STGroup String
                             -> FilePath 
                             -> TypeMacro 
                             -> String  -- ^ c prefix 
-                            -> (TopLevelImportHeader,[TopLevelFunction])
+                            -> TopLevelImportHeader
                             -> IO () 
-writeTopLevelFunctionCppDef templates wdir typemacroprefix cprefix (tih,fs) = do 
+writeTopLevelFunctionCppDef templates wdir typemacroprefix cprefix tih = do 
   let fn = wdir </> tihHeaderFileName tih <.> "cpp"
-  withFile fn WriteMode $ \h -> hPutStrLn h (mkTopLevelFunctionCppDef templates cprefix (tih,fs))
+  withFile fn WriteMode $ \h -> hPutStrLn h (mkTopLevelFunctionCppDef templates cprefix tih)
 
 
 -- | 
@@ -164,11 +164,11 @@ writePkgHs :: String -- ^ summary module
            -> STGroup String 
            -> FilePath 
            -> [ClassModule] 
-           -> (TopLevelImportHeader,[TopLevelFunction])
+           -> TopLevelImportHeader
            -> IO () 
-writePkgHs modname templates wdir mods (tih,tfns) = do 
+writePkgHs modname templates wdir mods tih = do 
   let fn = wdir </> modname <.> "hs"
-      str = mkPkgHs modname templates mods (tih,tfns) 
+      str = mkPkgHs modname templates mods tih
   withFile fn WriteMode $ \h -> hPutStrLn h str
 
 

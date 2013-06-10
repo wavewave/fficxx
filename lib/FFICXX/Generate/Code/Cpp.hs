@@ -176,8 +176,10 @@ genCsrcFiles (tih,cmods) =
       selfcpp = nub selfcpp' 
       tlh = tihHeaderFileName tih <.> "h"
       tlcpp = tihHeaderFileName tih <.> "cpp"
-      includeFileStrsWithCsrc = map (\x->indent++"csrc"</>x) (tlh:selfheaders)
-      cppFilesWithCsrc = map (\x->indent++"csrc"</>x) (tlcpp:selfcpp)
+      includeFileStrsWithCsrc = map (\x->indent++"csrc"</>x) 
+                                 (if (null.tihFuncs) tih then selfheaders else tlh:selfheaders)
+      cppFilesWithCsrc = map (\x->indent++"csrc"</>x) 
+                           (if (null.tihFuncs) tih then selfcpp else tlcpp:selfcpp)
       
   in  unlines (includeFileStrsWithCsrc ++ cppFilesWithCsrc)
 
@@ -190,7 +192,8 @@ genCppFiles (tih,cmods) =
         return (cihSelfCpp y) 
       selfcpp = nub selfcpp'
       tlcpp = tihHeaderFileName tih <.> "cpp"
-      cppFileStrs = map (\x->indent++ "csrc" </> x) (tlcpp:selfcpp)
+      cppFileStrs = map (\x->indent++ "csrc" </> x) 
+                      (if (null.tihFuncs) tih then selfcpp else tlcpp:selfcpp)
   in  unlines cppFileStrs 
 
 

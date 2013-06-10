@@ -230,13 +230,13 @@ mkDefMain templates header =
 mkTopLevelFunctionHeader :: STGroup String 
                          -> T.TypeMacro  -- ^ typemacro prefix 
                          -> String     -- ^ C prefix 
-                         -> (TopLevelImportHeader,[TopLevelFunction])
+                         -> TopLevelImportHeader
                          -> String 
-mkTopLevelFunctionHeader templates (T.TypMcro typemacroprefix) cprefix (tih,fs) =
+mkTopLevelFunctionHeader templates (T.TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix ++ "TOPLEVEL" ++ "__" 
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"")
                       . map cihSelfHeader . tihClassDep $ tih
-      declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader fs
+      declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
   in  renderTemplateGroup 
         templates 
         [ ("typemacro", typemacrostr)
@@ -249,9 +249,9 @@ mkTopLevelFunctionHeader templates (T.TypMcro typemacroprefix) cprefix (tih,fs) 
 -- | 
 mkTopLevelFunctionCppDef :: STGroup String 
                          -> String     -- ^ C prefix 
-                         -> (TopLevelImportHeader,[TopLevelFunction])
+                         -> TopLevelImportHeader
                          -> String 
-mkTopLevelFunctionCppDef templates cprefix (tih,fs) =
+mkTopLevelFunctionCppDef templates cprefix tih =
   let cihs = tihClassDep tih
       declHeaderStr = (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
                       `connRet2`
@@ -259,7 +259,7 @@ mkTopLevelFunctionCppDef templates cprefix (tih,fs) =
       allns = nubBy ((==) `on` unNamespace) (tihClassDep tih >>= cihNamespace)
       namespaceStr = do ns <- allns 
                         ("using namespace " ++ unNamespace ns ++ ";\n")
-      declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition fs
+      declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
   in  renderTemplateGroup 
         templates 
@@ -445,10 +445,13 @@ mkModuleHs templates m =
 
 
 -- | 
-mkPkgHs :: String -> STGroup String -> [ClassModule] -> (TopLevelImportHeader,[TopLevelFunction]) 
-        -> String 
-mkPkgHs modname templates mods (tih,tfns) = 
-    let exportListStr = intercalateWith (conn "\n, ") ((\x->"module " ++ x).cmModule) mods 
+mkPkgHs :: String -> STGroup String -> [ClassModule] -> TopLevelImportHeader -> String 
+mkPkgHs modname templates mods tih = 
+    let tfns = tihFuncs tih 
+        exportListStr = intercalateWith (conn "\n, ") ((\x->"module " ++ x).cmModule) mods 
+                        ++ if null tfns 
+                           then "" 
+                           else "\n, " ++ intercalateWith (conn "\n, ") hsFrontNameForTopLevelFunction tfns 
         importListStr = intercalateWith connRet ((\x->"import " ++ x).cmModule) mods
                         ++ if null tfns 
                            then "" 
