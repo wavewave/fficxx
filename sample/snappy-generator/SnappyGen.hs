@@ -29,6 +29,15 @@ mycabal = Cabal { cabal_pkgname = "Snappy"
 
 -- myclass = Class mycabal 
 
+-- this is standard string library
+{- string :: Class 
+string = 
+  Class mycabal "String" [] mempty
+  [ 
+  ]  
+  Nothing 
+-}
+
 source :: Class 
 source = 
   Class mycabal "Source" [] mempty 
@@ -36,6 +45,7 @@ source =
   , Virtual (cstar_ CTChar) "Peek" [ star CTULong "len" ] 
   , Virtual void_ "Skip" [ ulong "n" ] 
   ]
+  Nothing
 
 sink :: Class 
 sink = 
@@ -43,12 +53,14 @@ sink =
   [ Virtual void_ "Append" [ cstar CTChar "bytes", ulong "n" ] 
   , Virtual (cstar_ CTChar) "GetAppendBuffer" [ ulong "len", star CTChar "scratch" ] 
   ] 
+  Nothing
 
 byteArraySource :: Class
 byteArraySource = 
   Class mycabal "ByteArraySource" [source] mempty 
   [ Constructor [ cstar CTChar "p", ulong "n" ] 
   ] 
+  Nothing
 
 uncheckedByteArraySink :: Class 
 uncheckedByteArraySink = 
@@ -56,8 +68,9 @@ uncheckedByteArraySink =
   [ Constructor [ star CTChar "dest" ]
   , NonVirtual (star_ CTChar) "CurrentDestination" [] 
   ] 
+  Nothing
 
-myclasses = [ source, sink, byteArraySource, uncheckedByteArraySink] 
+myclasses = [ source, sink, byteArraySource, uncheckedByteArraySink {- , string -}] 
 
 toplevelfunctions =
   [ TopLevelFunction ulong_ "Compress" [cppclass source "src", cppclass sink "snk"] Nothing   

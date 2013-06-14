@@ -180,7 +180,7 @@ mkDeclHeader templates (T.TypMcro typemacroprefix) cprefix header =
                       `connRet2`
                        genAllCppDefTmplNonVirtual classes
       -- dsmap         = cgDaughterSelfMap cglobal
-      classDeclsStr = if class_name aclass /= "Deletable"
+      classDeclsStr = if (fst.hsClassName) aclass /= "Deletable"
                         then mkParentDef genCppHeaderInstVirtual aclass 
                              `connRet2`
                              genCppHeaderInstVirtual (aclass, aclass)
@@ -222,7 +222,6 @@ mkDefMain templates header =
         , ("namespace", namespaceStr ) 
         , ("cppbody", cppBody )  
         ] 
-        -- , ("modname", class_name (cihClass header)) ] 
         definitionTemplate
 
 
@@ -372,16 +371,16 @@ mkExistentialEach :: STGroup String
                   -> String 
 mkExistentialEach templates mother daughters =   
   let makeOneDaughterGADTBody daughter = render hsExistentialGADTBodyTmpl 
-                                                [ ( "mother", class_name mother ) 
-                                                , ( "daughter", class_name daughter ) ] 
+                                                [ ( "mother", (fst.hsClassName) mother ) 
+                                                , ( "daughter",(fst.hsClassName) daughter ) ] 
       makeOneDaughterCastBody daughter = render hsExistentialCastBodyTmpl
-                                                [ ( "mother", class_name mother ) 
-                                                , ( "daughter", class_name daughter) ] 
+                                                [ ( "mother", (fst.hsClassName) mother ) 
+                                                , ( "daughter", (fst.hsClassName) daughter) ] 
       gadtBody = intercalate "\n" (map makeOneDaughterGADTBody daughters)
       castBody = intercalate "\n" (map makeOneDaughterCastBody daughters)
       str = renderTemplateGroup 
               templates 
-              [ ( "mother" , class_name mother ) 
+              [ ( "mother" , (fst.hsClassName) mother ) 
               , ( "GADTbody" , gadtBody ) 
               , ( "castbody" , castBody ) ]
               "ExistentialEach.hs" 
@@ -460,7 +459,7 @@ mkPkgHs modname templates mods tih =
                                 `connRet`
                                 intercalateWith connRet 
                                   ((\x->"import " ++ modname ++ "." ++ x ++ ".RawType")
-                                   .class_name.cihClass) (tihClassDep tih)
+                                   .fst.hsClassName.cihClass) (tihClassDep tih)
         topLevelDefStr = intercalateWith connRet (genTopLevelFuncFFI tih) tfns 
                          `connRet2`
                          intercalateWith connRet genTopLevelFuncDef tfns

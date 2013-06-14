@@ -234,8 +234,8 @@ hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")"
 
 
 hsCppTypeName :: CPPTypes -> String
-hsCppTypeName (CPTClass c) =  "(Ptr Raw"++name++")"  where name = class_name c 
-hsCppTypeName (CPTClassRef c) = "(Ptr Raw"++name++")" where name = class_name c 
+hsCppTypeName (CPTClass c) =  "(Ptr "++rawname++")"  where rawname = snd (hsClassName c)
+hsCppTypeName (CPTClassRef c) = "(Ptr "++rawname++")" where rawname = snd (hsClassName c)
 
 -------------
 
@@ -367,12 +367,16 @@ data Class = Class { class_cabal :: Cabal
                    , class_parents :: [Class] 
                    , class_protected :: ProtectedMethod
                    , class_funcs :: [Function] 
+                   , class_alias :: Maybe String 
                    }
            | AbstractClass { class_cabal :: Cabal 
                            , class_name :: String
                            , class_parents :: [Class]
                            , class_protected :: ProtectedMethod
-                           , class_funcs :: [Function] }
+                           , class_funcs :: [Function] 
+                           , class_alias :: Maybe String 
+                           }
+
 
 newtype Namespace = NS { unNamespace :: String } deriving (Show)
 
@@ -404,8 +408,8 @@ data ClassGlobal = ClassGlobal
 -- | Check abstract class
 
 isAbstractClass :: Class -> Bool 
-isAbstractClass (Class _ _ _ _ _) = False 
-isAbstractClass (AbstractClass _ _ _ _ _ ) = True            
+isAbstractClass (Class _ _ _ _ _ _) = False 
+isAbstractClass (AbstractClass _ _ _ _ _ _) = True            
 
 instance Show Class where
   show x = show (class_name x)
@@ -426,7 +430,7 @@ class_allparents c = let ps = class_parents c
 
 
 getClassModuleBase :: Class -> String 
-getClassModuleBase = (<.>) <$> (cabal_moduleprefix.class_cabal) <*> class_name 
+getClassModuleBase = (<.>) <$> (cabal_moduleprefix.class_cabal) <*> (fst.hsClassName)
 
 
 
@@ -453,7 +457,7 @@ mkDaughterSelfMap = foldl worker M.empty
 -- | this function will be deprecated        
 ctypeToHsType :: Class -> Types -> String
 ctypeToHsType _c Void = "()" 
-ctypeToHsType c SelfType = class_name c
+ctypeToHsType c SelfType = (fst.hsClassName) c
 ctypeToHsType _c (CT CTString _) = "String"
 ctypeToHsType _c (CT CTInt _) = "Int" 
 ctypeToHsType _c (CT CTUInt _) = "Word"
@@ -472,7 +476,7 @@ ctypeToHsType _c (CPT (CPTClassRef c') _) = class_name c'
 -- | 
 ctypToHsTyp :: Maybe Class -> Types -> String
 ctypToHsTyp _c Void = "()" 
-ctypToHsTyp (Just c) SelfType = class_name c
+ctypToHsTyp (Just c) SelfType = (fst.hsClassName) c
 ctypToHsTyp Nothing SelfType = error "ctypToHsTyp : SelfType but no class " 
 ctypToHsTyp _c (CT CTString _) = "String"
 ctypToHsTyp _c (CT CTInt _) = "Int" 
@@ -491,18 +495,18 @@ ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
 
 
 typeclassName :: Class -> String
-typeclassName c = 'I' : class_name c
+typeclassName c = 'I' : fst (hsClassName c)
 
 typeclassNameFromStr :: String -> String 
 typeclassNameFromStr = ('I':)
 
 hsClassName :: Class -> (String, String)  -- ^ High-level, 'Raw'-level
 hsClassName c = 
-  let cname = class_name c
+  let cname = maybe (class_name c) id (class_alias c)
   in (cname, "Raw" ++ cname) 
 
 existConstructorName :: Class -> String 
-existConstructorName c = 'E' : class_name c
+existConstructorName c = 'E' : (fst.hsClassName) c 
 
 -- | this is for FFI type.
 hsFuncTyp :: Class -> Function -> String
@@ -601,10 +605,10 @@ cppFuncName c f =   case f of
     Destructor -> destructorName
 
 constructorName :: Class -> String
-constructorName c = "new" ++ (class_name c) 
+constructorName c = "new" ++ (fst.hsClassName) c 
  
 nonvirtualName :: Class -> String -> String
-nonvirtualName c str = firstLower (class_name c) ++ str 
+nonvirtualName c str = (firstLower.fst.hsClassName) c ++ str 
 
 destructorName :: String 
 destructorName = "delete" 

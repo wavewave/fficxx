@@ -111,7 +111,7 @@ genAllHsFrontDecl = intercalateWithM connRet2 genHsFrontDecl
 genHsFrontInst :: Class -> Class -> String 
 genHsFrontInst parent child  
   | (not.isAbstractClass) child = 
-    let headline = "instance " ++ typeclassName parent ++ " " ++ class_name child ++ " where" 
+    let headline = "instance " ++ typeclassName parent ++ " " ++ (fst.hsClassName) child ++ " where" 
         defline func = "  " ++ hsFuncName child func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
         deflines = (map defline) . virtualFuncs . class_funcs $ parent 
 
@@ -157,7 +157,7 @@ genHsFrontInstExistVirtual p c = render hsClassInstExistVirtualTmpl tmplName
   where methodstr = intercalateWith connRet (genHsFrontInstExistVirtualMethod p c)  
                                             (virtualFuncs.class_funcs $ p)
         tmplName = [ ("Iparent",typeclassName p)
-                   , ("child",class_name c)
+                   , ("child", (fst.hsClassName) c)
                    , ("method", methodstr )
                    ] 
 
@@ -190,10 +190,10 @@ genHsFrontInstNew c = do
     then return Nothing
     else do 
       let newfunc = head newfuncs
-          cann = maybe "" id $ M.lookup (PkgMethod, "new" ++ class_name c) amap
+          cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
           newfuncann = mkComment 0 cann
-          newlinehead = "new" ++ class_name c ++ " :: " ++ argstr newfunc 
-          newlinebody = "new" ++ class_name c ++ " = " 
+          newlinehead = constructorName c ++ " :: " ++ argstr newfunc 
+          newlinebody = constructorName c ++ " = " 
                               ++ hsFuncXformer newfunc ++ " " 
                               ++ hscFuncName c newfunc 
           argstr func = intercalateWith connArrow id $
@@ -213,7 +213,7 @@ genHsFrontInstNonVirtual c
     let header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
         body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
         argstr func = intercalateWith connArrow id $ 
-                        [class_name c]  
+                        [(fst.hsClassName) c]  
                         ++ map (ctypeToHsType c.fst) (genericFuncArgs func)
                         ++ ["IO " ++ (ctypeToHsType c . genericFuncRet) func] 
     in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
@@ -315,7 +315,7 @@ mkHsFuncArgType lst =
             CT _ _   -> return $ ctypToHsTyp Nothing typ 
             CPT (CPTClass c') _ -> do 
               (prefix,n) <- get 
-              let cname = class_name c' 
+              let cname = (fst.hsClassName) c' 
                   iname = typeclassNameFromStr cname 
                   newname = 'c' : show n
                   newprefix1 = iname ++ " " ++ newname    
@@ -324,7 +324,7 @@ mkHsFuncArgType lst =
               return newname
             CPT (CPTClassRef c') _ -> do 
               (prefix,n) <- get 
-              let cname = class_name c' 
+              let cname = (fst.hsClassName) c' 
                   iname = typeclassNameFromStr cname 
                   newname = 'c' : show n
                   newprefix1 = iname ++ " " ++ newname    
@@ -337,8 +337,8 @@ mkHsFuncRetType :: Types -> (String,[String])
 mkHsFuncRetType rtyp = 
   case rtyp of 
     SelfType -> ("a",[])
-    CPT (CPTClass c') _ -> (cname,[]) where cname = class_name c' 
-    CPT (CPTClassRef c') _ -> (cname,[]) where cname = class_name c' 
+    CPT (CPTClass c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
+    CPT (CPTClassRef c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
     _ -> (ctypToHsTyp Nothing rtyp,[])
 
       
@@ -414,11 +414,11 @@ genExport c =
                       then ""
                       else "(..)"
     in if isAbstractClass c 
-         then "    " ++ ('I' : class_name c) ++ methodstr 
-         else "    " ++ class_name c ++ "(..)\n  , " 
-                     ++ ('I' : class_name c) ++ methodstr
-                     ++ "\n  , upcast" ++ class_name c 
-                     ++ "\n  , downcast" ++ class_name c 
+         then "    " ++ typeclassName c ++ methodstr 
+         else "    " ++ (fst.hsClassName) c ++ "(..)\n  , " 
+                     ++ typeclassName c ++ methodstr
+                     ++ "\n  , upcast" ++ (fst.hsClassName) c 
+                     ++ "\n  , downcast" ++ (fst.hsClassName) c 
                      ++ "\n" ++ genExportConstructorAndNonvirtual c 
                      ++ "\n" ++ genExportStatic c 
 
