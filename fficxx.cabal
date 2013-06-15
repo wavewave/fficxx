@@ -52,6 +52,7 @@ Library
                  Cabal
 
   Exposed-Modules: 
+                   FFICXX.Generate.Builder 
                    FFICXX.Generate.Type.Class
                    FFICXX.Generate.Type.Module
                    FFICXX.Generate.Type.PackageInterface
