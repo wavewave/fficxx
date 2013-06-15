@@ -30,13 +30,12 @@ mycabal = Cabal { cabal_pkgname = "Snappy"
 -- myclass = Class mycabal 
 
 -- this is standard string library
-{- string :: Class 
+string :: Class 
 string = 
-  Class mycabal "String" [] mempty
+  Class mycabal "string" [] mempty
   [ 
   ]  
-  Nothing 
--}
+  (Just "CppString")
 
 source :: Class 
 source = 
@@ -70,12 +69,13 @@ uncheckedByteArraySink =
   ] 
   Nothing
 
-myclasses = [ source, sink, byteArraySource, uncheckedByteArraySink {- , string -}] 
+myclasses = [ source, sink, byteArraySource, uncheckedByteArraySink, string ] 
 
 toplevelfunctions =
   [ TopLevelFunction ulong_ "Compress" [cppclass source "src", cppclass sink "snk"] Nothing   
   , TopLevelFunction bool_ "GetUncompressedLength" [cppclass source "src", star CTUInt "result"] Nothing 
-  -- , TopLevelFunction ulong_ "Compress" [cstar CTChar "input", ulong_ "input_length", 
+  , TopLevelFunction ulong_ "Compress" [cstar CTChar "input", ulong "input_length", cppclass string "output"] (Just "compress_1")
+  , TopLevelFunction bool_ "Uncompress" [cstar CTChar "compressed", ulong "compressed_length", cppclass string "uncompressed"] Nothing 
   , TopLevelFunction void_ "RawCompress" [cstar CTChar "input", ulong "input_length", star CTChar "compresseed", star CTULong "compressed_length" ] Nothing
   , TopLevelFunction bool_ "RawUncompress" [cstar CTChar "compressed", ulong "compressed_length", star CTChar "uncompressed"] Nothing 
   , TopLevelFunction bool_ "RawUncompress" [cppclass source "src", star CTChar "uncompressed"] (Just "rawUncompress_1")
