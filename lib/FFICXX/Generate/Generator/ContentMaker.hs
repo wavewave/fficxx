@@ -252,7 +252,9 @@ mkTopLevelFunctionCppDef :: STGroup String
                          -> String 
 mkTopLevelFunctionCppDef templates cprefix tih =
   let cihs = tihClassDep tih
-      declHeaderStr = (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
+      declHeaderStr = "#include \"" ++ tihHeaderFileName tih <.> "h" ++ "\""
+                      `connRet2`
+                      (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
                       `connRet2`
                       ((intercalateWith connRet (\x->"#include \""++x++"\"") . map cihSelfHeader) cihs)
       allns = nubBy ((==) `on` unNamespace) (tihClassDep tih >>= cihNamespace)
