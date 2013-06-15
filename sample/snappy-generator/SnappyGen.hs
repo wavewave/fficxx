@@ -32,42 +32,41 @@ mycabal = Cabal { cabal_pkgname = "Snappy"
 -- this is standard string library
 string :: Class 
 string = 
-  Class mycabal "string" [] mempty
+  Class mycabal "string" [] mempty  (Just "CppString")
   [ 
   ]  
-  (Just "CppString")
+
 
 source :: Class 
 source = 
-  Class mycabal "Source" [] mempty 
-  [ Virtual ulong_ "Available" []  
-  , Virtual (cstar_ CTChar) "Peek" [ star CTULong "len" ] 
-  , Virtual void_ "Skip" [ ulong "n" ] 
+  Class mycabal "Source" [] mempty  Nothing
+  [ Virtual ulong_ "Available" []  Nothing 
+  , Virtual (cstar_ CTChar) "Peek" [ star CTULong "len" ] Nothing 
+  , Virtual void_ "Skip" [ ulong "n" ] Nothing
   ]
-  Nothing
+
 
 sink :: Class 
 sink = 
-  Class mycabal "Sink" [] mempty 
-  [ Virtual void_ "Append" [ cstar CTChar "bytes", ulong "n" ] 
-  , Virtual (cstar_ CTChar) "GetAppendBuffer" [ ulong "len", star CTChar "scratch" ] 
+  Class mycabal "Sink" [] mempty  Nothing
+  [ Virtual void_ "Append" [ cstar CTChar "bytes", ulong "n" ] Nothing 
+  , Virtual (cstar_ CTChar) "GetAppendBuffer" [ ulong "len", star CTChar "scratch" ] Nothing
   ] 
-  Nothing
 
 byteArraySource :: Class
 byteArraySource = 
-  Class mycabal "ByteArraySource" [source] mempty 
-  [ Constructor [ cstar CTChar "p", ulong "n" ] 
+  Class mycabal "ByteArraySource" [source] mempty  Nothing
+  [ Constructor [ cstar CTChar "p", ulong "n" ] Nothing 
   ] 
-  Nothing
+
 
 uncheckedByteArraySink :: Class 
 uncheckedByteArraySink = 
-  Class mycabal "UncheckedByteArraySink" [sink] mempty
-  [ Constructor [ star CTChar "dest" ]
-  , NonVirtual (star_ CTChar) "CurrentDestination" [] 
+  Class mycabal "UncheckedByteArraySink" [sink] mempty  Nothing
+  [ Constructor [ star CTChar "dest" ] Nothing 
+  , NonVirtual (star_ CTChar) "CurrentDestination" [] Nothing 
   ] 
-  Nothing
+
 
 myclasses = [ source, sink, byteArraySource, uncheckedByteArraySink, string ] 
 

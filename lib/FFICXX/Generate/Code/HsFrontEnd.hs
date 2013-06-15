@@ -164,8 +164,8 @@ genHsFrontInstExistVirtual p c = render hsClassInstExistVirtualTmpl tmplName
 genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> String 
 genHsFrontInstExistVirtualMethod p c f =
     case f of
-      Constructor _ -> error "error in genHsFrontInstExistVirtualMethod"  
-      Destructor -> render hsClassInstExistVirtualMethodNoSelfTmpl tmplName
+      Constructor _  _ -> error "error in genHsFrontInstExistVirtualMethod"  
+      Destructor _ -> render hsClassInstExistVirtualMethodNoSelfTmpl tmplName
       _ -> case func_ret f of
              SelfType -> render hsClassInstExistVirtualMethodSelfTmpl (tmplName++args)
              _ -> render hsClassInstExistVirtualMethodNoSelfTmpl tmplName

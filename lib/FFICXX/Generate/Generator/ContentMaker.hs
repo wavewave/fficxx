@@ -462,9 +462,9 @@ mkPkgHs modname templates mods tih =
                                 intercalateWith connRet 
                                   ((\x->"import " ++ modname ++ "." ++ x ++ ".RawType")
                                    .fst.hsClassName.cihClass) (tihClassDep tih)
-        topLevelDefStr = intercalateWith connRet (genTopLevelFuncFFI tih) tfns 
+        topLevelDefStr = intercalateWith connRet2 (genTopLevelFuncFFI tih) tfns 
                          `connRet2`
-                         intercalateWith connRet genTopLevelFuncDef tfns
+                         intercalateWith connRet2 genTopLevelFuncDef tfns
         str = renderTemplateGroup 
                 templates 
                 [ ("summarymod", modname)

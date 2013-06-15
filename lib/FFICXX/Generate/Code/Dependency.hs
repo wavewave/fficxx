@@ -77,16 +77,16 @@ data Dep4Func = Dep4Func { returnDependency :: Maybe Class
 
 -- | 
 extractClassDep :: Function -> Dep4Func 
-extractClassDep (Constructor args)  = Dep4Func Nothing (catMaybes (map (extractClassFromType.fst) args))
-extractClassDep (Virtual ret _ args) = 
+extractClassDep (Constructor args _)  = Dep4Func Nothing (catMaybes (map (extractClassFromType.fst) args))
+extractClassDep (Virtual ret _ args _) = 
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
-extractClassDep (NonVirtual ret _ args) =
+extractClassDep (NonVirtual ret _ args _) =
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
-extractClassDep (Static ret _ args) = 
+extractClassDep (Static ret _ args _) = 
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
-extractClassDep (AliasVirtual ret _ args _) = 
-    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
-extractClassDep Destructor = 
+{- extractClassDep (AliasVirtual ret _ args _) = 
+    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args) -}
+extractClassDep (Destructor _) = 
     Dep4Func Nothing [] 
 
 extractClassDepForTopLevelFunction :: TopLevelFunction -> Dep4Func 

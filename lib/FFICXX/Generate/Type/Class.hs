@@ -21,12 +21,9 @@ import Data.Monoid
 import qualified Data.Map as M
 import System.FilePath 
 -- 
--- import FFICXX.Generate.Type.CType
 import FFICXX.Generate.Util
--- import FFICXX.Generate.Type.Method
 
----------
-
+-- | C types
 data CTypes = CTString 
             | CTChar 
             | CTInt 
@@ -41,10 +38,12 @@ data CTypes = CTString
             | CPointer CTypes 
             deriving Show 
 
+-- | C++ types 
 data CPPTypes = CPTClass Class 
               | CPTClassRef Class 
               deriving Show
 
+-- | const flag
 data IsConst = Const | NoConst
              deriving Show
 
@@ -241,21 +240,29 @@ hsCppTypeName (CPTClassRef c) = "(Ptr "++rawname++")" where rawname = snd (hsCla
 
 type Args = [(Types,String)]
 
-data Function = Constructor { func_args :: Args } 
+data Function = Constructor { func_args :: Args 
+                            , func_alias :: Maybe String 
+                            } 
               | Virtual { func_ret :: Types
                         , func_name :: String
-                        , func_args :: Args } 
+                        , func_args :: Args 
+                        , func_alias :: Maybe String 
+                        } 
               | NonVirtual { func_ret :: Types 
                            , func_name :: String
-                           , func_args :: Args }
+                           , func_args :: Args 
+                           , func_alias :: Maybe String 
+                           }
               | Static     { func_ret :: Types 
                            , func_name :: String
-                           , func_args :: Args }
-              | AliasVirtual { func_ret :: Types 
+                           , func_args :: Args 
+                           , func_alias :: Maybe String 
+                           }
+{-              | AliasVirtual { func_ret :: Types 
                              , func_name :: String
                              , func_args :: Args 
-                             , func_alias :: String }
-              | Destructor  
+                             , func_alias :: String } -}
+              | Destructor  { func_alias :: Maybe String } 
               deriving Show
 
 
@@ -280,21 +287,21 @@ data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String
 
   
 isNewFunc :: Function -> Bool 
-isNewFunc (Constructor _ ) = True 
+isNewFunc (Constructor _ _) = True 
 isNewFunc _ = False
 
 isDeleteFunc :: Function -> Bool 
-isDeleteFunc Destructor = True 
+isDeleteFunc (Destructor _) = True 
 isDeleteFunc _ = False
        
 isVirtualFunc :: Function -> Bool 
-isVirtualFunc (Destructor)           = True
-isVirtualFunc (Virtual _ _ _)        = True 
-isVirtualFunc (AliasVirtual _ _ _ _) = True 
+isVirtualFunc (Destructor _)           = True
+isVirtualFunc (Virtual _ _ _ _)        = True 
+-- isVirtualFunc (AliasVirtual _ _ _ _) = True 
 isVirtualFunc _ = False 
 
 isStaticFunc :: Function -> Bool 
-isStaticFunc (Static _ _ _) = True
+isStaticFunc (Static _ _ _ _) = True
 isStaticFunc _ = False
 
 virtualFuncs :: [Function] -> [Function] 
@@ -366,15 +373,15 @@ data Class = Class { class_cabal :: Cabal
                    , class_name :: String
                    , class_parents :: [Class] 
                    , class_protected :: ProtectedMethod
-                   , class_funcs :: [Function] 
                    , class_alias :: Maybe String 
+                   , class_funcs :: [Function] 
                    }
            | AbstractClass { class_cabal :: Cabal 
                            , class_name :: String
                            , class_parents :: [Class]
                            , class_protected :: ProtectedMethod
-                           , class_funcs :: [Function] 
                            , class_alias :: Maybe String 
+                           , class_funcs :: [Function] 
                            }
 
 
@@ -555,11 +562,11 @@ hsFuncName c f = let (x:xs) = aliasedFuncName c f
                  in (toLower x) : xs
                   
 hsFuncXformer :: Function -> String 
-hsFuncXformer func@(Constructor _) = let len = length (genericFuncArgs func) 
-                                     in if len > 0
-                                        then "xform" ++ show (len - 1)
-                                        else "xformnull" 
-hsFuncXformer func@(Static _ _ _) = 
+hsFuncXformer func@(Constructor _ _) = let len = length (genericFuncArgs func) 
+                                       in if len > 0
+                                          then "xform" ++ show (len - 1)
+                                          else "xformnull" 
+hsFuncXformer func@(Static _ _ _ _) = 
   let len = length (genericFuncArgs func) 
   in if len > 0
      then "xform" ++ show (len - 1)
@@ -571,38 +578,38 @@ hsFuncXformer func = let len = length (genericFuncArgs func)
 genericFuncRet :: Function -> Types 
 genericFuncRet f = 
   case f of                        
-    Constructor _ -> self_ 
-    Virtual t _ _ -> t 
-    NonVirtual t _ _ -> t
-    Static t _ _ -> t
-    AliasVirtual t _ _ _ -> t
-    Destructor -> void_
+    Constructor _ _ -> self_ 
+    Virtual t _ _ _ -> t 
+    NonVirtual t _ _ _-> t
+    Static t _ _ _ -> t
+    -- AliasVirtual t _ _ _ -> t
+    Destructor _ -> void_
 
 genericFuncArgs :: Function -> Args 
-genericFuncArgs Destructor = []
+genericFuncArgs (Destructor _) = []
 genericFuncArgs f = func_args f
                         
 aliasedFuncName :: Class -> Function -> String 
 aliasedFuncName c f = 
   case f of 
-    Constructor _ -> constructorName c   
-    Virtual _ str _ -> str 
-    NonVirtual _ str _ -> nonvirtualName c str 
-    Static _ str _ -> nonvirtualName c str 
-    AliasVirtual _ _  _ alias -> alias 
-    Destructor -> destructorName  
+    Constructor _ a -> maybe (constructorName c) id a 
+    Virtual _ str _ a -> maybe str id a
+    NonVirtual _ str _ a-> maybe (nonvirtualName c str) id a
+    Static _ str _ a -> maybe (nonvirtualName c str) id a
+    -- AliasVirtual _ _  _ alias -> alias 
+    Destructor a -> maybe destructorName id a
 
 cppStaticName :: Class -> Function -> String 
 cppStaticName c f = class_name c ++ "::" ++ func_name f
 
 cppFuncName :: Class -> Function -> String 
 cppFuncName c f =   case f of 
-    Constructor _ -> "new"
-    Virtual _ _  _ -> func_name f 
-    NonVirtual _ _ _ -> func_name f  
-    Static _ _ _ -> cppStaticName c f 
-    AliasVirtual _ _  _ _ -> func_name f 
-    Destructor -> destructorName
+    Constructor _ _ -> "new"
+    Virtual _ _  _ _ -> func_name f 
+    NonVirtual _ _ _ _-> func_name f  
+    Static _ _ _ _-> cppStaticName c f 
+    -- AliasVirtual _ _  _ _ _ -> func_name f 
+    Destructor _ -> destructorName
 
 constructorName :: Class -> String
 constructorName c = "new" ++ (fst.hsClassName) c 

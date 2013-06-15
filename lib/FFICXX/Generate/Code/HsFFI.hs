@@ -25,7 +25,7 @@ genHsFFI header =
       allfns = concatMap (virtualFuncs . class_funcs) 
                          (class_allparents c)
                ++ (class_funcs c) 
-  in  intercalateWith connRet (hsFFIClassFunc h c) allfns  
+  in  intercalateWith connRet2 (hsFFIClassFunc h c) allfns  
 
 genAllHsFFI :: [ClassImportHeader] -> String 
 genAllHsFFI = intercalateWith connRet2 genHsFFI 
