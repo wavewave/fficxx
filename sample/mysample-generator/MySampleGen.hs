@@ -30,15 +30,15 @@ mycabal = Cabal { cabal_pkgname = "MySample"
 myclass = Class mycabal 
 
 a :: Class 
-a = myclass "A" [] mempty 
-    [ Constructor [] 
-    , Virtual void_ "Foo" [ ] 
+a = myclass "A" [] mempty Nothing 
+    [ Constructor [] Nothing
+    , Virtual void_ "Foo" [ ] Nothing
     ] 
 
 b :: Class 
-b = myclass "B" [a] mempty 
-    [ Constructor [] 
-    , Virtual void_ "Bar" [] 
+b = myclass "B" [a] mempty Nothing
+    [ Constructor [] Nothing
+    , Virtual void_ "Bar" [] Nothing
     ] 
 
 myclasses = [ a, b] 
@@ -54,10 +54,10 @@ cabalTemplate = "Pkg.cabal"
 -- | 
 mkCabalFile :: FFICXXConfig
             -> STGroup String  
-            -> [ClassModule]
+            -> (TopLevelImportHeader,[ClassModule])
             -> FilePath  
             -> IO () 
-mkCabalFile config templates classmodules cabalfile = do 
+mkCabalFile config templates (tih,classmodules) cabalfile = do 
   cpath <- getCurrentDirectory 
 
   let str = renderTemplateGroup 
@@ -67,9 +67,9 @@ mkCabalFile config templates classmodules cabalfile = do
               , ("license", "" ) 
               , ("buildtype", "Simple")
               , ("deps", "" ) 
-              , ("csrcFiles", genCsrcFiles classmodules)
+              , ("csrcFiles", genCsrcFiles (tih,classmodules))
               , ("includeFiles", genIncludeFiles "MySample" classmodules) 
-              , ("cppFiles", genCppFiles classmodules)
+              , ("cppFiles", genCppFiles (tih,classmodules))
               , ("exposedModules", genExposedModules "MySample" classmodules) 
               , ("otherModules", genOtherModules classmodules)
               , ("extralibdirs", cpath </> ".." </> "cxxlib" </> "lib" )  -- this need to be changed 
@@ -95,7 +95,7 @@ main = do
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg 
       pkgname = "MySample" 
-      (mods,cihs) = mkAllClassModulesAndCIH ("MySample", (\c->([],[class_name c ++ ".h"]))) myclasses
+      (mods,cihs,tih) = mkAll_ClassModules_CIH_TIH ("MySample", (\c->([],[class_name c ++ ".h"]))) (myclasses,toplevelfunctions)
       hsbootlst = mkHSBOOTCandidateList mods 
       cglobal = mkGlobal myclasses 
       summarymodule = "MySample" 
@@ -109,7 +109,7 @@ main = do
   notExistThenCreate (installDir </> "csrc")
   -- 
   putStrLn "cabal file generation" 
-  mkCabalFile cfg templates mods (workingDir </> cabalFileName)
+  mkCabalFile cfg templates (tih,mods) (workingDir </> cabalFileName)
   -- 
   putStrLn "header file generation"
   writeTypeDeclHeaders templates workingDir (TypMcro "__MYSAMPLE__") pkgname cihs
@@ -140,12 +140,12 @@ main = do
   mapM_ (writeModuleHs templates workingDir) mods
   -- 
   putStrLn "summary module generation generation"
-  writePkgHs summarymodule templates workingDir mods toplevelfunctions 
+  writePkgHs summarymodule templates workingDir mods tih
   -- 
   putStrLn "copying"
   copyFileWithMD5Check (workingDir </> cabalFileName)  (installDir </> cabalFileName) 
   -- copyPredefined templateDir (srcDir ibase) pkgname
-  mapM_ (copyCppFiles workingDir (csrcDir installDir) pkgname) cihs
+  copyCppFiles workingDir (csrcDir installDir) pkgname (tih,cihs)
   mapM_ (copyModule workingDir (srcDir installDir) summarymodule) mods 
 
 
