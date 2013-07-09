@@ -33,6 +33,7 @@ a :: Class
 a = myclass "A" [] mempty Nothing 
     [ Constructor [] Nothing
     , Virtual void_ "Foo" [ ] Nothing
+    , Virtual void_ "Foo2" [ long "t" ] Nothing
     ] 
 
 b :: Class 

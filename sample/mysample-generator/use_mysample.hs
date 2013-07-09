@@ -11,5 +11,6 @@ main = do
   foo (upcastA b) 
 
   bar b 
-
+  
+  foo2 a 3
 

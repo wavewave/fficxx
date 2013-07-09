@@ -7,6 +7,7 @@ public:
   A(); 
   virtual void Foo( void );
 
+  virtual void Foo2( long t );
 }; 
 
 #endif // __A__

@@ -28,6 +28,7 @@ data CTypes = CTString
             | CTChar 
             | CTInt 
             | CTUInt
+            | CTLong
             | CTULong
             | CTDouble 
             | CTBool 
@@ -63,6 +64,7 @@ ctypToStr ctyp isconst =
         CTChar   -> "char" 
         CTInt    -> "int" 
         CTUInt   -> "unsigned int"
+        CTLong   -> "signed long"
         CTULong  -> "long unsigned int"
         CTDouble -> "double" 
         CTBool   -> "int"              -- Currently available solution
@@ -94,8 +96,14 @@ uint_ = CT CTUInt NoConst
 ulong_ :: Types
 ulong_ = CT CTULong NoConst
 
+long_ :: Types
+long_ = CT CTLong NoConst
+
 culong_ :: Types
 culong_ = CT CTULong Const
+
+clong_ :: Types
+clong_ = CT CTLong Const
 
 cchar_ :: Types 
 cchar_ = CT CTChar Const
@@ -158,8 +166,14 @@ int     var = (int_     , var)
 uint :: String -> (Types,String)
 uint var = (uint_ , var)
 
+long :: String -> (Types,String)
+long var = (long_, var)
+
 ulong :: String -> (Types,String)
 ulong var = (ulong_ , var)
+
+clong :: String -> (Types,String)
+clong var = (clong_, var)
 
 culong :: String -> (Types,String)
 culong var = (culong_ , var)
@@ -221,7 +235,8 @@ hsCTypeName :: CTypes -> String
 hsCTypeName CTString = "CString" 
 hsCTypeName CTChar   = "CChar" 
 hsCTypeName CTInt    = "CInt"
-hsCTypeName CTUInt   = "CUInt" 
+hsCTypeName CTUInt   = "CUInt"
+hsCTypeName CTLong   = "CLong" 
 hsCTypeName CTULong  = "CULong" 
 hsCTypeName CTDouble = "CDouble"
 hsCTypeName CTDoubleStar = "(Ptr CDouble)"
@@ -469,6 +484,7 @@ ctypeToHsType _c (CT CTString _) = "String"
 ctypeToHsType _c (CT CTInt _) = "Int" 
 ctypeToHsType _c (CT CTUInt _) = "Word"
 ctypeToHsType _c (CT CTChar _) = "Word8"
+ctypeToHsType _c (CT CTLong _) = "CLong"
 ctypeToHsType _c (CT CTULong _) = "CULong" 
 ctypeToHsType _c (CT CTDouble _) = "Double"
 ctypeToHsType _c (CT CTBool _ ) = "Int"
@@ -489,6 +505,7 @@ ctypToHsTyp _c (CT CTString _) = "String"
 ctypToHsTyp _c (CT CTInt _) = "Int" 
 ctypToHsTyp _c (CT CTUInt _) = "Word"
 ctypToHsTyp _c (CT CTChar _) = "Word8"
+ctypToHsTyp _c (CT CTLong _) = "CLong"
 ctypToHsTyp _c (CT CTULong _) = "CULong" 
 ctypToHsTyp _c (CT CTDouble _) = "Double"
 ctypToHsTyp _c (CT CTBool _ ) = "Int"
