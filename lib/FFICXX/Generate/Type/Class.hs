@@ -24,148 +24,163 @@ import System.FilePath
 import FFICXX.Generate.Util
 
 -- | C types
-data CTypes = CTString 
-            | CTChar 
-            | CTInt 
-            | CTUInt
-            | CTLong
-            | CTULong
-            | CTDouble 
-            | CTBool 
-            | CTDoubleStar 
-            | CTVoidStar 
-            | CTIntStar 
-            | CTCharStarStar 
-            | CPointer CTypes 
-            deriving Show 
-
--- | C++ types 
-data CPPTypes = CPTClass Class 
-              | CPTClassRef Class 
-              deriving Show
-
--- | const flag
-data IsConst = Const | NoConst
-             deriving Show
-
-data Types = Void 
-           | SelfType
-           | CT  CTypes IsConst 
-           | CPT CPPTypes IsConst
-           deriving Show
-
-cvarToStr :: CTypes -> IsConst -> String -> String
-cvarToStr ctyp isconst varname = (ctypToStr ctyp isconst) `connspace` varname 
-
-ctypToStr :: CTypes -> IsConst -> String
-ctypToStr ctyp isconst = 
-  let typword = case ctyp of 
-        CTString -> "char*"
-        CTChar   -> "char" 
-        CTInt    -> "int" 
-        CTUInt   -> "unsigned int"
-        CTLong   -> "signed long"
-        CTULong  -> "long unsigned int"
-        CTDouble -> "double" 
-        CTBool   -> "int"              -- Currently available solution
-        CTDoubleStar -> "double *"
-        CTVoidStar -> "void*"
-        CTIntStar -> "int*"
-        CTCharStarStar -> "char**"
-        CPointer s -> ctypToStr s NoConst ++ "*"  
-  in case isconst of 
-        Const   -> "const" `connspace` typword 
-        NoConst -> typword 
+data PrimitiveTypes c = CPTChar
+                      | CPTInt
+                      | CPTLong
+                      | CPTUChar
+                      | CPTUInt
+                      | CPTULong
+                      | CPTLongLong
+                      | CPTULongLong
+                      | CPTDouble
+                      | CPTLongDouble
+                      | CPTBool
+                      | CPTVoid
+                      | CPTClass c   -- String
+                    deriving (Show, Eq)
+nsa
+data CPPType c = Ptr        (CPPType c) -- ^ Pointer to a type
+               | Ref        (CPPType c) -- ^ Reference to a type
+               | Arr        Int       (CPPType c) -- ^ Array of a type
+               | Fun        [CPPType c] (CPPType c) -- ^ A function
+               | QConst     (CPPType c) -- ^ const type
+               | QVolatile  (CPPType c) -- ^ volatile type
+               | QRestrict  (CPPType c) -- ^ restrict type, not supported, will give an error if passed such type
+               | MPtr       c    (CPPType c) -- ^ Member pointer to class
+               | PrimType   PrimitiveTypes -- ^ Primitive c/c++ types
+               deriving (Show, Eq)
 
 
-self_ :: Types 
-self_ = SelfType
+type SimpleCPPType = CPPType String
 
-cstring_ :: Types
-cstring_ = CT CTString Const 
+type FullCPPType = CPPType Class
 
-cint_ :: Types
-cint_    = CT CTInt    Const
+class CPPNameable c where
+  cppname :: c -> String
 
-int_ :: Types 
-int_     = CT CTInt    NoConst
+cvarToStr :: (CPPNameable c) => CPPType c -> String -> String
+cvarToStr t varname = (ctypToStr t) `connspace` varname 
 
-uint_ :: Types
-uint_ = CT CTUInt NoConst
+ctypToStr :: (CPPNameable c) => CPPType c -> String
+ctypToStr (Ptr t) = ctypToStr t ++ "*"
+ctypToStr (Ref t) = ctypToStr t ++ "&"
+ctypToStr (Arr n t) = ctypToStr t ++ "[" ++ show n ++ "]"
+ctypToStr (Fun ts t) = "(" ++ ctypToStr t ++ "*) (" ++ ((intercalate "," . map ctypToStr) ts)  
+ctypToStr (QConst t) = "const " ++ ctypToStr t 
+ctypToStr (QVolatile t) = "volatile " ++ ctypToStr t
+ctypToStr (QRestrict t) = "restrict " ++ ctypToStr t
+ctypToStr (MPtr s t) = ctypToStr t ++ " " ++ cppname s + "::*r" 
+ctypToStr (PrimiType prim) = 
+  case prim of 
+    CPTChar -> "char"
+    CPTInt -> "int"
+    CPTLong -> "long"
+    CPTUChar -> "unsigned char"
+    CPTUInt -> "unsigned int"
+    CPTULong -> "unsinged long"
+    CPTLongLong -> "long long"
+    CPTDouble -> "double"
+    CPTLongDouble -> "long double"
+    CPTBool -> "bool"
+    CPTVoid -> "void"
+    CPTClass str -> cppname str -- template class may have problem here.
 
-ulong_ :: Types
-ulong_ = CT CTULong NoConst
 
-long_ :: Types
-long_ = CT CTLong NoConst
+-- self_ :: Types 
+-- self_ = SelfType
 
-culong_ :: Types
-culong_ = CT CTULong Const
+-- | const char* type
+cstring_ :: CPPType
+cstring_ = QConst (Ptr CPTChar) 
 
-clong_ :: Types
-clong_ = CT CTLong Const
+-- | const int type
+cint_ :: CPPType
+cint_ = QConst CPThInt
 
-cchar_ :: Types 
-cchar_ = CT CTChar Const
+int_ :: CPPType
+int_ = CPTInt
 
-char_ :: Types
+uint_ :: CPPType
+uint_ = CPTUInt
+
+ulong_ :: CPPType
+ulong_ = CPTULong 
+
+long_ :: CPPType
+long_ = CPTLong 
+
+culong_ :: CPPType
+culong_ = QConst CPTULong
+
+clong_ :: CPPType
+clong_ = QConst CPTLong 
+
+cchar_ :: CPPType
+cchar_ = QConst CPTChar 
+
+char_ :: CPPType
 char_ = CT CTChar NoConst 
 
-short_ :: Types
-short_ = int_
+-- unimplemented 
+-- short_ :: CPPType
+-- short_ = int_
 
-cdouble_ :: Types
-cdouble_ = CT CTDouble Const
+cdouble_ :: CPPType
+cdouble_ = QConst CPTDouble 
 
-double_ :: Types
-double_  = CT CTDouble NoConst
+double_ :: CPPType
+double_  = CPTDouble
 
-doublep_ :: Types
-doublep_ = CT CTDoubleStar NoConst
+-- doublep_ :: CPPType
+-- doublep_ = CT CTDoubleStar NoConst
 
-float_ :: Types
-float_ = double_
+-- not implemented yet
+-- float_ :: CPPType
+-- float_ = double_
 
-bool_ :: Types 
-bool_    = CT CTBool   NoConst 
+bool_ :: CPPType 
+bool_ = CPTBool 
 
-void_ :: Types
-void_ = Void 
+void_ :: CPPType
+void_ = CPTVoid 
 
-voidp_ :: Types 
-voidp_ = CT CTVoidStar NoConst
+-- voidp_ :: CPPType
+-- voidp_ = CT CTVoidStar NoConst
 
-intp_ :: Types 
-intp_ = CT CTIntStar NoConst
+-- intp_ :: CPPType
+-- intp_ = CT CTIntStar NoConst
 
-charpp_ :: Types
-charpp_ = CT CTCharStarStar NoConst
+-- charpp_ :: CPPType
+-- charpp_ = CT CTCharStarStar NoConst
 
 
-star_ :: CTypes -> Types 
-star_ t = CT (CPointer t) NoConst
+-- star_ :: CTypes -> Types 
+-- star_ t = CT (CPointer t) NoConst
 
-cstar_ :: CTypes -> Types 
-cstar_ t = CT (CPointer t) Const  
+-- cstar_ :: CTypes -> Types 
+-- cstar_ t = CT (CPointer t) Cons
+s
+-- self :: String -> (Types, String)
+-- self var = (self_, var)
 
-self :: String -> (Types, String)
-self var = (self_, var)
+makeTypVar :: CPPType -> String -> (CPPType,String) 
 
-voidp :: String -> (Types,String) 
-voidp var = (voidp_ , var)
+-- voidp :: String -> (CPPType,String) 
+-- voidp = makeTypVar void
 
-cstring :: String -> (Types,String)
-cstring var = (cstring_ , var)
+cstring :: String -> (CPPType,String)
+cstring = makeTypeVar cstring_ 
 
-cint :: String -> (Types,String)
-cint    var = (cint_    , var) 
+cint :: String -> (CPPType,String)
+cint = makeTypeVar cint_   
 
-int :: String -> (Types,String)
-int     var = (int_     , var)
+int :: String -> (CPPType,String)
+int = makeTypeVar int_  
 
-uint :: String -> (Types,String)
-uint var = (uint_ , var)
+uint :: String -> (CPPType,String)
+uint = makeTypeVar uint_ 
 
+{-
 long :: String -> (Types,String)
 long var = (long_, var)
 
@@ -180,7 +195,7 @@ culong var = (culong_ , var)
 
 cchar :: String -> (Types,String)
 cchar var = (cchar_ , var) 
-
+aIio
 char :: String -> (Types,String)
 char var = (char_ , var)
 
@@ -213,8 +228,9 @@ star t var = (star_ t, var)
 
 cstar :: CTypes -> String -> (Types, String)
 cstar t var = (cstar_ t, var) 
+-}
 
-
+{-
 cppclass_ :: Class -> Types
 cppclass_ c =  CPT (CPTClass c) NoConst
 
@@ -229,9 +245,36 @@ cppclassref_ c = CPT (CPTClassRef c) NoConst
 
 cppclassref :: Class -> String -> (Types, String) 
 cppclassref c vname = (cppclassref_ c, vname)
+-}
+
+-- | haskell representation of C++ types
+hsCPPTypeName :: CPPType Class -> String 
+hsCPPTypeName (PrimType prim) = 
+  case prim of 
+    CPTChar -> "CChar"
+    CPTInt -> "CInt"
+    CPTLong -> "CLong"
+    CPTUChar -> "CUChar"
+    CPTUInt -> "CUInt"
+    CPTULong -> "CULong"
+    CPTLongLong -> "CLLong"
+    CPTDouble -> "CDouble"
+    CPTLongDouble -> "CDouble" -- not long double.. maybe problematic 
+    CPTBool -> "CInt"
+    CPTVoid -> "()"
+    CPTClass c -> "(Ptr "++rawname++")"  where rawname = snd (hsClassName c)
+    
+mkFullCPPType :: SomeGlobalNameMap -> CPPType String -> FFICXXMONAD (CPPType Class)
+
+    
+    strTy -- template class may have problem here.                             
+
+hsCppTypeName :: CPPTypes -> String
+hsCppTypeName (CPTClass c) =  
+hsCppTypeName (CPTClassRef c) = "(Ptr "++rawname++")" where rawname = snd (hsClassName c)
 
 
-hsCTypeName :: CTypes -> String 
+{-
 hsCTypeName CTString = "CString" 
 hsCTypeName CTChar   = "CChar" 
 hsCTypeName CTInt    = "CInt"
@@ -245,11 +288,8 @@ hsCTypeName CTVoidStar = "(Ptr ())"
 hsCTypeName CTIntStar = "(Ptr CInt)"
 hsCTypeName CTCharStarStar = "(Ptr (CString))"
 hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")" 
+-}
 
-
-hsCppTypeName :: CPPTypes -> String
-hsCppTypeName (CPTClass c) =  "(Ptr "++rawname++")"  where rawname = snd (hsClassName c)
-hsCppTypeName (CPTClassRef c) = "(Ptr "++rawname++")" where rawname = snd (hsClassName c)
 
 -------------
 
@@ -263,7 +303,7 @@ data Function = Constructor { func_args :: Args
                         , func_args :: Args 
                         , func_alias :: Maybe String 
                         } 
-              | NonVirtual { func_ret :: Types 
+              | NonVirtual { func_ret :: Types hicic
                            , func_name :: String
                            , func_args :: Args 
                            , func_alias :: Maybe String 
@@ -636,3 +676,7 @@ nonvirtualName c str = (firstLower.fst.hsClassName) c ++ str
 
 destructorName :: String 
 destructorName = "delete" 
+
+
+
+
