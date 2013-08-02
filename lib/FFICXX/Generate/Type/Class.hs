@@ -23,40 +23,95 @@ import System.FilePath
 --
 import FFICXX.Generate.Util
 
+{-
+  Types are represented by a base type (e.g., "int") and a collection of
+  type operators applied to the base (e.g., pointers, arrays, etc...).
+
+  Encoding:
+
+  Types are encoded as strings of type constructors such as follows:
+
+         String Encoding                 C Example
+         ---------------                 ---------
+         p.p.int                         int  *
+         a(300).a(400).int               int [300][400]
+         p.q(const).char                 char const  
+
+  All type constructors are denoted by a trailing '.':
+
+   'p.'                = Pointer (*)
+   'r.'                = Reference (&)
+   'a(n).'             = Array of size n  [n]
+   'f(..,..).'         = Function with arguments  (args)
+   'q(str).'           = Qualifier (such as const or volatile) (const, volatile)
+   'm(qual).'          = Pointer to member (qual::*)
+
+  The encoding follows the order that you might describe a type in words.
+  For example "p.a(200).int" is "A pointer to array of int's" and
+  "p.q(const).char" is "a pointer to a const char".
+
+  This representation of types is fairly convenient because ordinary string
+  operations can be used for type manipulation. For example, a type could be
+  formed by combining two strings such as the following:
+
+         "p.p." + "a(400).int" = "p.p.a(400).int"
+
+  Similarly, one could strip a 'const' declaration from a type doing something
+  like this:
+
+         Replace(t,"q(const).","",DOH_REPLACE_ANY)
+
+  For the most part, this module tries to minimize the use of special
+  characters (*, [, <, etc...) in its type encoding.  One reason for this
+  is that SWIG might be extended to encode data in formats such as XML
+  where you might want to do this:
+
+       <function>
+          <type>p.p.int</type>
+          ...
+       </function>
+
+  Or alternatively,
+
+       <function type="p.p.int" ...>blah</function>
+
+  In either case, it's probably best to avoid characters such as '&', '*', or '<'.
+-}
 -- | C types
-data PrimitiveTypes c = CPTChar
-                      | CPTInt
-                      | CPTLong
-                      | CPTUChar
-                      | CPTUInt
-                      | CPTULong
-                      | CPTLongLong
-                      | CPTULongLong
-                      | CPTDouble
-                      | CPTLongDouble
-                      | CPTBool
-                      | CPTVoid
-                      | CPTClass c   -- String
+data PrimitiveTypes = CPTChar
+                    | CPTInt
+                    | CPTLong
+                    | CPTUChar
+                    | CPTUInt
+                    | CPTULong
+                    | CPTLongLong
+                    | CPTULongLong
+                    | CPTDouble
+                    | CPTLongDouble
+                    | CPTBool
+                    | CPTVoid
+                    | CPTClass CPPClass   -- String
                     deriving (Show, Eq)
-nsa
-data CPPType c = Ptr        (CPPType c) -- ^ Pointer to a type
-               | Ref        (CPPType c) -- ^ Reference to a type
-               | Arr        Int       (CPPType c) -- ^ Array of a type
-               | Fun        [CPPType c] (CPPType c) -- ^ A function
-               | QConst     (CPPType c) -- ^ const type
-               | QVolatile  (CPPType c) -- ^ volatile type
-               | QRestrict  (CPPType c) -- ^ restrict type, not supported, will give an error if passed such type
-               | MPtr       c    (CPPType c) -- ^ Member pointer to class
-               | PrimType   PrimitiveTypes -- ^ Primitive c/c++ types
-               deriving (Show, Eq)
 
+data CPPType = Ptr        CPPType -- ^ Pointer to a type
+             | Ref        CPPType -- ^ Reference to a type
+             | Arr        Int       CPPType -- ^ Array of a type
+             | Fun        [CPPType] CPPType -- ^ A function
+             | QConst     CPPType -- ^ const type
+             | QVolatile  CPPType -- ^ volatile type
+             | QRestrict  CPPType -- ^ restrict type, not supported, will give an error if passed such type
+             | MPtr       CPPClass    CPPType -- ^ Member pointer to class
+             | PrimType   PrimitiveTypes -- ^ Primitive c/c++ types
+             deriving (Show, Eq)
 
-type SimpleCPPType = CPPType String
-
-type FullCPPType = CPPType Class
-
+data CPPClass = ClassName String
+              | ClassDef Class
 class CPPNameable c where
   cppname :: c -> String
+
+instance CPPNameable CPPClass where
+  cppname (ClassName c) = c
+  cppname (ClassDef c) = class_name c
 
 cvarToStr :: (CPPNameable c) => CPPType c -> String -> String
 cvarToStr t varname = (ctypToStr t) `connspace` varname
