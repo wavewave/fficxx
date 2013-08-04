@@ -75,8 +75,8 @@ mkCabalFile config templates cabal (tih,classmodules) cabalfile = do
 macrofy :: String -> String 
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
-simpleBuilder :: (Cabal,[Class],[TopLevelFunction]) ->  IO ()
-simpleBuilder (cabal,myclasses, toplevelfunctions) = do 
+simpleBuilder :: String -> (Cabal,[Class],[TopLevelFunction]) ->  IO ()
+simpleBuilder nspace (cabal,myclasses, toplevelfunctions) = do 
   putStrLn "generate snappy" 
   cwd <- getCurrentDirectory 
 
@@ -88,7 +88,7 @@ simpleBuilder (cabal,myclasses, toplevelfunctions) = do
       installDir = fficxxconfig_installBaseDir cfg 
       pkgname = "Snappy" 
       (mods,cihs,tih) = mkAll_ClassModules_CIH_TIH 
-                          ("Snappy", (const ([NS "snappy"],["snappy-sinksource.h","snappy.h"]))) 
+                          ("Snappy", (const ([NS nspace],["snappy-sinksource.h","snappy.h"]))) 
                           (myclasses, toplevelfunctions)
       hsbootlst = mkHSBOOTCandidateList mods 
       cglobal = mkGlobal myclasses 

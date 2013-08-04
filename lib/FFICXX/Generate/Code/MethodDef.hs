@@ -16,6 +16,8 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Util 
 
 
+{-
+
 -- Function Declaration and Definition
 
 funcToDecl :: Class -> Function -> String 
@@ -84,7 +86,7 @@ funcToDef c func
 funcsToDefs :: Class -> [Function] -> String
 funcsToDefs c = intercalateWith connBSlash (funcToDef c)
 
-
+-}
 
 
 

@@ -21,7 +21,44 @@ import FFICXX.Generate.Util
 -- import FFICXX.Generate.Type.Method
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Code.MethodDef
-import FFICXX.Generate.Code.Cabal
+-- import FFICXX.Generate.Code.Cabal
+
+
+-------------------------
+-- TOP LEVEL FUNCTIONS --
+-------------------------
+
+genTopLevelFuncCppHeader :: (CPPNameable c) => TopLevelFunction c -> String 
+genTopLevelFuncCppHeader f =  
+    let tmpl = "$returntype$ $funcname$ ( $args$ );" 
+    in  render tmpl [ ("returntype", rettypeToString (toplevelfunc_ret f))  
+                    , ("funcname", "TopLevel_" ++ maybe (toplevelfunc_name f) id (toplevelfunc_alias f))
+                    , ("args", intercalateWith conncomma argToString (toplevelfunc_args f)) ] 
+
+genTopLevelFuncCppDefinition :: (CPPNameable c) => TopLevelFunction c -> String 
+genTopLevelFuncCppDefinition f =  
+    let tmpl = "$returntype$ $funcname$ ( $args$ ) { \\\n  $funcbody$\\\n}" 
+        callstr = toplevelfunc_name f ++ "("
+                  ++ intercalateWith conncomma argToCallString (toplevelfunc_args f)   
+                  ++ ")"
+        returnstr = case toplevelfunc_ret f of          
+          PrimType CPTVoid -> callstr ++ ";"
+          PrimType (CPTClass c) -> "return to_nonconst<"++cppname c++"_t,"++cppname c
+                                    ++">(("++cppname c++"*)"++callstr++");"
+          Ptr (PrimType (CPTClass c)) -> "return to_nonconst<"++cppname c++"_t,"++cppname c
+                                    ++">(("++cppname c++"*)"++callstr++");"
+          Ref (PrimType (CPTClass c)) -> "return ((*)"++callstr++");"
+          _ -> "return "++callstr++";" 
+        funcDefStr = returnstr 
+    in  render tmpl [ ("returntype", rettypeToString (toplevelfunc_ret f))  
+                    , ("funcname", "TopLevel_" ++ maybe (toplevelfunc_name f) id (toplevelfunc_alias f))
+                    , ("args", intercalateWith conncomma argToString (toplevelfunc_args f)) 
+                    , ("funcbody", funcDefStr )
+                    ] 
+
+
+
+{-
 
 -- Class Declaration and Definition
 
@@ -196,38 +233,6 @@ genCppFiles (tih,cmods) =
                       (if (null.tihFuncs) tih then selfcpp else tlcpp:selfcpp)
   in  unlines cppFileStrs 
 
-
-
--------------------------
--- TOP LEVEL FUNCTIONS --
--------------------------
-
-genTopLevelFuncCppHeader :: TopLevelFunction -> String 
-genTopLevelFuncCppHeader f =  
-    let tmpl = "$returntype$ $funcname$ ( $args$ );" 
-    in  render tmpl [ ("returntype", rettypeToString (toplevelfunc_ret f))  
-                    , ("funcname", "TopLevel_" ++ maybe (toplevelfunc_name f) id (toplevelfunc_alias f))
-                    , ("args", argsToStringNoSelf (toplevelfunc_args f)) ] 
-
-genTopLevelFuncCppDefinition :: TopLevelFunction -> String 
-genTopLevelFuncCppDefinition f =  
-    let tmpl = "$returntype$ $funcname$ ( $args$ ) { \\\n  $funcbody$\\\n}" 
-        callstr = toplevelfunc_name f ++ "("
-                  ++ argsToCallString (toplevelfunc_args f)   
-                  ++ ")"
-        returnstr = case toplevelfunc_ret f of          
-          Void -> callstr ++ ";"
-          SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
-          (CT _ctyp _isconst) -> "return "++callstr++";" 
-          (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
-                                    ++">(("++str++"*)"++callstr++");" 
-            where str = class_name c' 
-          (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
-        funcDefStr = returnstr 
-    in  render tmpl [ ("returntype", rettypeToString (toplevelfunc_ret f))  
-                    , ("funcname", "TopLevel_" ++ maybe (toplevelfunc_name f) id (toplevelfunc_alias f))
-                    , ("args", argsToStringNoSelf (toplevelfunc_args f)) 
-                    , ("funcbody", funcDefStr )
-                    ] 
+-}
 
 

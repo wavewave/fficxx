@@ -146,52 +146,87 @@ instance (CPPNameable c) => CPPNameable (CPPType c) where
   cppname (PrimType prim) = cppname prim
   
   
-{-  
-ctypToStr :: SimpleCPPType -> String
-ctypToStr (Ptr t) = ctypToStr t ++ "*"
-ctypToStr (Ref t) = ctypToStr t ++ "&"
-ctypToStr (Arr n t) = ctypToStr t ++ "[" ++ (show n) ++ "]"
-ctypToStr (Fun ts t) = "(" ++ ctypToStr t ++ "*) (" ++ ((intercalate "," . map ctypToStr) ts)
-ctypToStr (QConst t) = "const " ++ ctypToStr t
-ctypToStr (QVolatile t) = "volatile " ++ ctypToStr t
-ctypToStr (QRestrict t) = "restrict " ++ ctypToStr t
-ctypToStr (MPtr s t) = cppname t ++ " " ++ cppname s ++ "::*"
-ctypToStr (PrimType prim) = cppname prim
+data StaticExtern = Static | Extern 
+                  deriving Show 
+
+type Args c = [(CPPType c,String)]
+
+data TopLevelFunction c = TopLevelFunction { toplevelfunc_ret :: CPPType c
+                                           , toplevelfunc_name :: String
+                                           , toplevelfunc_args :: Args c
+                                           , toplevelfunc_alias :: Maybe String
+                                           , toplevelfunc_staticextern :: Maybe StaticExtern  
+                                           }
+                        deriving Show
+
+cvarToStr :: (CPPNameable c) => CPPType c -> String -> String
+cvarToStr t varname = (cppname t) `connspace` varname
+
+
+-- | return type for haskell-C interface. special treatment to C++-only type
+rettypeToString :: (CPPNameable c) => CPPType c -> String
+rettypeToString (PrimType (CPTClass c)) = cppname c ++ "_p" 
+rettypeToString (Ptr (PrimType (CPTClass c))) = cppname c ++ "_p"
+rettypeToString (Ref (PrimType (CPTClass c))) = cppname c ++ "_p"
+rettypeToString t = cppname t 
+  
+
+-- | Convert a function argument type to C syntax string
+argToString :: (CPPNameable c) => (CPPType c,String) -> String
+argToString (t, varname) = rettypeToString t `connspace` varname
+                           
+-- | function argument in C++ call
+argToCallString :: (CPPNameable c) => (CPPType c,String) -> String
+argToCallString (PrimType (CPTClass c),varname) =
+    "to_nonconst<"++cppname c++","++cppname c++"_t>("++varname++")" 
+argToCallString (Ptr (PrimType (CPTClass c)),varname) =
+    "to_nonconstref<"++cppname c++","++cppname c++"_t>(*"++varname++")" 
+argToCallString (_,varname) = varname
+
+
+{-                           
+argsToString :: (CPPNameable c) => Args c -> String
+argsToString args =   
+  let args' = (SelfType, "p") : args
+  in  intercalateWith conncomma argToString args'
 -}
 
+
 {-
-data CPPClass = ClassName String
-              | ClassDef Class
-              deriving (Show, Eq)
+argsToCallString :: (CPPNameable c) => Args c -> String
+argsToCallString = intercalateWith conncomma argToCallString
 -}
 
+{-                           
+                           case isconst of
+    Const   -> "const_" ++ cname ++ "_p " ++ varname
+    NoConst -> cname ++ "_p " ++ varname
+  where cname = class_name c
+argToString (t, varname) = cvarToStr t varname
+argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of
+    Const   -> "const_" ++ cname ++ "_p " ++ varname
+    NoConst -> cname ++ "_p " ++ varname
+  where cname = class_name c
+argToString _ = error "undefined argToString"
+
+
+
+argsToStringNoSelf :: (CPPNameable c) => Args c -> String
+argsToStringNoSelf = intercalateWith conncomma argToString
+ 
+-}
+
+
+
+
+
+-- cvarToStr :: CPPType -> String -> String
+-- cvarToStr t varname = (ctypToStr t) `connspace` varname
+
+
+
+
 {-
-class CPPNameable c where -- ^ CPPType that can be identified by names
-  cppname :: c -> String
-
-instance CPPNameable CPPClass where
-  cppname (ClassName c) = c
-  cppname (ClassDef c) = class_name c
-
-instance CPPNameable PrimitiveTypes where
-  cppname CPTChar = "char"
-  cppname CPTInt = "int"
-  cppname CPTLong = "long int"
-  cppname CPTLongLong = "long long"
-  cppname CPTULong = "unsigned long"
-  cppname CPTUChar = "unsigned char"
-  cppname CPTUInt = "unsigned int"
-  cppname CPTULongLong = "unsigned long long"
-  cppname CPTDouble = "double"
-  cppname CPTLongDouble = "long double"
-  cppname CPTBool = "bool"
-  cppname CPTVoid = "void"
-  cppname (CPTClass c) = cppname c
-
-cvarToStr :: CPPType -> String -> String
-cvarToStr t varname = (ctypToStr t) `connspace` varname
-
-
 
 
 
@@ -245,8 +280,8 @@ hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")"
                                                    
 {-
 
-type Args = [(CPPType,String)]
 
+-- | Member function 
 data Function = Constructor { func_args :: Args
                             , func_alias :: Maybe String
                             }
@@ -273,12 +308,6 @@ data Function = Constructor { func_args :: Args
               deriving Show
 
 
-data TopLevelFunction = TopLevelFunction { toplevelfunc_ret :: CPPType
-                                         , toplevelfunc_name :: String
-                                         , toplevelfunc_args :: Args
-                                         , toplevelfunc_alias :: Maybe String
-                                         }
-                      deriving Show
 
 hsFrontNameForTopLevelFunction :: TopLevelFunction -> String
 hsFrontNameForTopLevelFunction tfn =
@@ -324,48 +353,6 @@ nonVirtualNotNewFuncs =
 staticFuncs :: [Function] -> [Function]
 staticFuncs = filter isStaticFunc
 
--- | Convert a function argument type to C syntax string
-argToString :: (CPPType,String) -> String
-argToString (t, varname) = cvarToStr t varname
-argToString (SelfType, varname) = "Type ## _p " ++ varname
-argToString (CPT (CPTClass c) isconst, varname) = case isconst of
-    Const   -> "const_" ++ cname ++ "_p " ++ varname
-    NoConst -> cname ++ "_p " ++ varname
-  where cname = class_name c
-argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of
-    Const   -> "const_" ++ cname ++ "_p " ++ varname
-    NoConst -> cname ++ "_p " ++ varname
-  where cname = class_name c
-argToString _ = error "undefined argToString"
-
-argsToString :: Args -> String
-argsToString args =
-  let args' = (SelfType, "p") : args
-  in  intercalateWith conncomma argToString args'
-
-argsToStringNoSelf :: Args -> String
-argsToStringNoSelf = intercalateWith conncomma argToString
-
-
-argToCallString :: (CPPType,String) -> String
-argToCallString (CPT (CPTClass c) _,varname) =
-    "to_nonconst<"++str++","++str++"_t>("++varname++")" where str = class_name c
-argToCallString (CPT (CPTClassRef c) _,varname) =
-    "to_nonconstref<"++str++","++str++"_t>(*"++varname++")" where str = class_name c
-argToCallString (_,varname) = varname
-
-argsToCallString :: Args -> String
-argsToCallString = intercalateWith conncomma argToCallString
-
-
-rettypeToString :: CPPType -> String
-rettypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
-rettypeToString Void = "void"
-rettypeToString SelfType = "Type ## _p"
-rettypeToString (CPT (CPTClass c) _) = str ++ "_p"
-  where str = class_name c
-rettypeToString (CPT (CPTClassRef c) _) = str ++ "_p"
-  where str = class_name c
 
 --------
 
