@@ -77,36 +77,95 @@ import FFICXX.Generate.Util
 
   In either case, it's probably best to avoid characters such as '&', '*', or '<'.
 -}
-data CPPType = Ptr        CPPType -- ^ Pointer to a type
-             | Ref        CPPType -- ^ Reference to a type
-             | Arr        Int       CPPType -- ^ Array of a type
-             | Fun        [CPPType] CPPType -- ^ A function
-             | QConst     CPPType -- ^ const type
-             | QVolatile  CPPType -- ^ volatile type
-             | QRestrict  CPPType -- ^ restrict type, not supported, will give an error if passed such type
-             | MPtr       CPPClass CPPType -- ^ Member pointer to class, the `CPPType` here should be a primitive type
-             | PrimType   PrimitiveTypes -- ^ Primitive c/c++ types
+
+data CPPType c = Ptr        (CPPType c) -- ^ Pointer to a type
+               | Ref        (CPPType c) -- ^ Reference to a type
+               | Arr        Int       (CPPType c) -- ^ Array of a type
+               | Fun        [CPPType c] (CPPType c) -- ^ A function
+               | QConst     (CPPType c) -- ^ const type
+               | QVolatile  (CPPType c) -- ^ volatile type
+               | QRestrict  (CPPType c) -- ^ restrict type, not supported, will give an error if passed such type
+               | MPtr       c (PrimitiveTypes c) -- ^ Member pointer to class, the `CPPType` here should be a primitive type
+             | PrimType  (PrimitiveTypes c) -- ^ Primitive c/c++ types
              deriving (Show, Eq)
 
-data PrimitiveTypes = CPTChar
-                    | CPTInt
-                    | CPTLong
-                    | CPTUChar
-                    | CPTUInt
-                    | CPTULong
-                    | CPTLongLong
-                    | CPTULongLong
-                    | CPTDouble
-                    | CPTLongDouble
-                    | CPTBool
-                    | CPTVoid
-                    | CPTClass CPPClass -- ^ The name of a class or templete, the `CPPClass` here should be ClassName
+data PrimitiveTypes c = CPTChar
+                      | CPTInt
+                      | CPTLong
+                      | CPTUChar
+                      | CPTUInt
+                      | CPTULong
+                      | CPTLongLong
+                      | CPTULongLong
+                      | CPTDouble
+                      | CPTLongDouble
+                      | CPTBool
+                      | CPTVoid
+                      | CPTClass c  -- ^ c denotes classes or templates
                     deriving (Show, Eq)
 
+newtype ClassName = ClassName { unClassName :: String }
+
+type SimpleCPPType = CPPType ClassName 
+
+class CPPNameable c where -- ^ CPPType that can be identified by names
+  cppname :: c -> String
+
+instance CPPNameable ClassName where
+  cppname = unClassName
+
+instance (CPPNameable c) => CPPNameable (PrimitiveTypes c) where
+  cppname CPTChar = "char"
+  cppname CPTInt = "int"
+  cppname CPTLong = "long int"
+  cppname CPTLongLong = "long long"
+  cppname CPTULong = "unsigned long"
+  cppname CPTUChar = "unsigned char"
+  cppname CPTUInt = "unsigned int"
+  cppname CPTULongLong = "unsigned long long"
+  cppname CPTDouble = "double"
+  cppname CPTLongDouble = "long double"
+  cppname CPTBool = "bool"
+  cppname CPTVoid = "void"
+  cppname (CPTClass c) = cppname c
+
+
+instance (CPPNameable c) => CPPNameable (CPPType c) where
+  cppname (Ptr fun@(Fun _ _)) = cppname fun
+  cppname (Ptr t) = cppname t ++ "*"
+  cppname (Ref t) = cppname t ++ "&"
+  cppname (Arr n t) = cppname t ++ "[" ++ (show n) ++ "]"
+  cppname (Fun ts t) = "(" ++ cppname t ++ ")" ++ " (*)(" ++ ((intercalate "," . map cppname) ts) ++ ")"
+  cppname (QConst p@(Ptr _)) = cppname p ++ " const"
+  cppname (QConst t) = "const " ++ cppname t
+  cppname (QVolatile p@(Ptr _)) = cppname p ++ " volatile"
+  cppname (QVolatile t) = "volatile " ++ cppname t
+  cppname (QRestrict p@(Ptr _)) = cppname p ++ " restrict"
+  cppname (QRestrict t) = "restrict " ++ cppname t
+  cppname (MPtr s t) = cppname t ++ " " ++ cppname s ++ "::*"
+  cppname (PrimType prim) = cppname prim
+  
+  
+{-  
+ctypToStr :: SimpleCPPType -> String
+ctypToStr (Ptr t) = ctypToStr t ++ "*"
+ctypToStr (Ref t) = ctypToStr t ++ "&"
+ctypToStr (Arr n t) = ctypToStr t ++ "[" ++ (show n) ++ "]"
+ctypToStr (Fun ts t) = "(" ++ ctypToStr t ++ "*) (" ++ ((intercalate "," . map ctypToStr) ts)
+ctypToStr (QConst t) = "const " ++ ctypToStr t
+ctypToStr (QVolatile t) = "volatile " ++ ctypToStr t
+ctypToStr (QRestrict t) = "restrict " ++ ctypToStr t
+ctypToStr (MPtr s t) = cppname t ++ " " ++ cppname s ++ "::*"
+ctypToStr (PrimType prim) = cppname prim
+-}
+
+{-
 data CPPClass = ClassName String
               | ClassDef Class
               deriving (Show, Eq)
+-}
 
+{-
 class CPPNameable c where -- ^ CPPType that can be identified by names
   cppname :: c -> String
 
@@ -132,16 +191,6 @@ instance CPPNameable PrimitiveTypes where
 cvarToStr :: CPPType -> String -> String
 cvarToStr t varname = (ctypToStr t) `connspace` varname
 
-ctypToStr :: CPPType -> String
-ctypToStr (Ptr t) = ctypToStr t ++ "*"
-ctypToStr (Ref t) = ctypToStr t ++ "&"
-ctypToStr (Arr n t) = ctypToStr t ++ "[" ++ show n ++ "]"
-ctypToStr (Fun ts t) = "(" ++ ctypToStr t ++ "*) (" ++ ((intercalate "," . map ctypToStr) ts)
-ctypToStr (QConst t) = "const " ++ ctypToStr t
-ctypToStr (QVolatile t) = "volatile " ++ ctypToStr t
-ctypToStr (QRestrict t) = "restrict " ++ ctypToStr t
-ctypToStr (MPtr s t) = ctypToStr t ++ " " ++ cppname s + "::*"
-ctypToStr (PrimType prim) = cppname prim
 
 
 
@@ -185,8 +234,16 @@ hsCTypeName CTCharStarStar = "(Ptr (CString))"
 hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")"
 -}
 
+-}
 
 -------------
+-------------
+-------------
+-- From here on, I haven't changed at all. 
+-------------
+-------------
+                                                   
+{-
 
 type Args = [(CPPType,String)]
 
@@ -573,6 +630,6 @@ nonvirtualName c str = (firstLower.fst.hsClassName) c ++ str
 destructorName :: String
 destructorName = "delete"
 
-
+-}
 
 
