@@ -1,5 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Code.Cpp
 
 testTypes :: [PrimitiveTypes ClassName]
 testTypes = [ CPTChar
@@ -50,3 +51,9 @@ main = do
   putStrLn ""
   putStrLn "argToCallString:"
   mapM_ (putStrLn . argToCallString . (,"argName")) testCPPTypes
+  putStrLn ""
+  putStrLn "genTopLevelFuncCppHeader:"
+  mapM_ (putStrLn . genTopLevelFuncCppHeader) testTopLevelFunctions
+  putStrLn ""
+  putStrLn "genTopLevelFuncCppDefinition:"
+  mapM_ (putStrLn . genTopLevelFuncCppDefinition) testTopLevelFunctions
