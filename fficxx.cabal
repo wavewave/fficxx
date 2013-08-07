@@ -67,7 +67,7 @@ Library
 --                   FFICXX.Generate.Code.Dependency
 --                   FFICXX.Generate.Generator.Driver
 --                   FFICXX.Generate.Generator.ContentMaker
---                   FFICXX.Generate.Util
+                   FFICXX.Generate.Util
 --                   FFICXX.Generate.QQ.Verbatim
 --                   FFICXX.Generate.Type.Annotate
 --                   FFICXX.Paths_fficxx
