@@ -41,6 +41,24 @@ cabalTemplate :: String
 cabalTemplate = "Pkg.cabal"
 
 
+cabalFileTemplate :: String -> TopLevelImportHeader -> [ClassModule] -> [(String, String)]
+cabalFileTemplate pkgname tih classmodules =
+  [ ("pkgname", pkgname
+  , ("version",  "0.0") 
+  , ("license", "" ) 
+  , ("buildtype", "Simple")
+  , ("deps", "" ) 
+  , ("csrcFiles", genCsrcFiles (tih,classmodules))
+  , ("includeFiles", genIncludeFiles pkgname classmodules) 
+  , ("cppFiles", genCppFiles (tih,classmodules))
+  , ("exposedModules", genExposedModules pkgname classmodules) 
+  , ("otherModules", genOtherModules classmodules)
+  , ("extralibdirs", "" )  
+  , ("extraincludedirs", "" )  
+  , ("extralib", ", snappy")
+  , ("cabalIndentation", cabalIndentation)
+  ]
+
 -- | 
 mkCabalFile :: FFICXXConfig
             -> STGroup String  
@@ -49,35 +67,17 @@ mkCabalFile :: FFICXXConfig
             -> FilePath  
             -> IO () 
 mkCabalFile config templates cabal (tih,classmodules) cabalfile = do 
-  cpath <- getCurrentDirectory 
- 
-  let str = renderTemplateGroup 
-              templates 
-              [ ("pkgname", cabal_pkgname cabal) 
-              , ("version",  "0.0") 
-              , ("license", "" ) 
-              , ("buildtype", "Simple")
-              , ("deps", "" ) 
-              , ("csrcFiles", genCsrcFiles (tih,classmodules))
-              , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) classmodules) 
-              , ("cppFiles", genCppFiles (tih,classmodules))
-              , ("exposedModules", genExposedModules (cabal_pkgname cabal) classmodules) 
-              , ("otherModules", genOtherModules classmodules)
-              , ("extralibdirs", "" )  
-              , ("extraincludedirs", "" )  
-              , ("extralib", ", snappy")
-              , ("cabalIndentation", cabalIndentation)
-              ]
-              cabalTemplate 
-  writeFile cabalfile str
+  cpath <- getCurrentDirectory -- TODO: Remove this
+  let str = renderTemplateGroup templates cabalFileTemplate cabalTemplate 
+  in writeFile cabalfile str
 
 
 macrofy :: String -> String 
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
-simpleBuilder :: String -> (Cabal,[Class],[TopLevelFunction]) ->  IO ()
-simpleBuilder nspace (cabal,myclasses, toplevelfunctions) = do 
-  putStrLn "generate snappy" 
+simpleBuilder :: String -> (Cabal,[Class],[TopLevelFunction], [String]) ->  IO ()
+simpleBuilder nspace (cabal,myclasses, toplevelfunctions, incHeaders) = do 
+  putStrLn "generate " ++ pkgname
   cwd <- getCurrentDirectory 
 
   let cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd 
@@ -86,14 +86,14 @@ simpleBuilder nspace (cabal,myclasses, toplevelfunctions) = do
                           } 
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg 
-      pkgname = "Snappy" 
+      pkgname = cabal_pkgname cabal
       (mods,cihs,tih) = mkAll_ClassModules_CIH_TIH 
-                          ("Snappy", (const ([NS nspace],["snappy-sinksource.h","snappy.h"]))) 
+                          (pkgname, (const ([NS nspace],incHeaders))) 
                           (myclasses, toplevelfunctions)
       hsbootlst = mkHSBOOTCandidateList mods 
       cglobal = mkGlobal myclasses 
-      summarymodule = "Snappy" 
-      cabalFileName = "Snappy.cabal"
+      summarymodule = pkgname
+      cabalFileName = pkgname ++ ".cabal"
   templateDir <- F.getDataDir >>= return . (</> "template")
   (templates :: STGroup String) <- directoryGroup templateDir 
   -- 
