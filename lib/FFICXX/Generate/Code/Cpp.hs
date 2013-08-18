@@ -13,15 +13,13 @@
 
 module FFICXX.Generate.Code.Cpp where
 
-import Data.Char 
-import Data.List
-import System.FilePath
-
+import Data.Char (toUpper)
+--
 import FFICXX.Generate.Util
--- import FFICXX.Generate.Type.Method
-import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Code.MethodDef
--- import FFICXX.Generate.Code.Cabal
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Internal
+import FFICXX.Generate.Code.Cabal
 
 
 -------------------------
@@ -47,7 +45,7 @@ genTopLevelFuncCppDefinition f =
                                     ++">(("++cppname c++"*)"++callstr++");"
           Ptr (PrimType (CPTClass c)) -> "return to_nonconst<"++cppname c++"_t,"++cppname c
                                     ++">(("++cppname c++"*)"++callstr++");"
-          Ref (PrimType (CPTClass c)) -> "return ((*)"++callstr++");"
+          Ref (PrimType (CPTClass _)) -> "return ((*)"++callstr++");"
           _ -> "return "++callstr++";" 
         funcDefStr = returnstr 
     in  render tmpl [ ("returntype", rettypeToString (toplevelfunc_ret f))  
@@ -56,9 +54,6 @@ genTopLevelFuncCppDefinition f =
                     , ("funcbody", funcDefStr )
                     ] 
 
-
-
-{-
 
 -- Class Declaration and Definition
 
@@ -233,6 +228,5 @@ genCppFiles (tih,cmods) =
                       (if (null.tihFuncs) tih then selfcpp else tlcpp:selfcpp)
   in  unlines cppFileStrs 
 
--}
 
 

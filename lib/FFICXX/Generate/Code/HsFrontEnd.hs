@@ -14,13 +14,13 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import Control.Monad.State
 import Control.Monad.Reader
-import Data.Char (toLower)
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
 import System.FilePath ((<.>))
 -- 
 import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Internal
 import FFICXX.Generate.Type.Annotate
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Util
@@ -97,7 +97,7 @@ genHsFrontDecl c = do
                       ++ fst (mkHsFuncArgType (genericFuncArgs func))
                       ++ ["IO " ++ (fst . mkHsFuncRetType . genericFuncRet) func]  
       bodylines = map bodyline . virtualFuncs 
-                      $ (class_funcs c) 
+                      $ (classFuncs c) 
   return $ intercalateWith connRet id (header : bodylines) 
 
 
@@ -113,7 +113,7 @@ genHsFrontInst parent child
   | (not.isAbstractClass) child = 
     let headline = "instance " ++ typeclassName parent ++ " " ++ (fst.hsClassName) child ++ " where" 
         defline func = "  " ++ hsFuncName child func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
-        deflines = (map defline) . virtualFuncs . class_funcs $ parent 
+        deflines = (map defline) . virtualFuncs . classFuncs $ parent 
 
     in  intercalateWith connRet id (headline : deflines) 
   | otherwise = ""
@@ -155,23 +155,23 @@ hsClassInstExistVirtualMethodSelfTmpl = "  $methodname$ ($exist$ x) $args$ = ret
 genHsFrontInstExistVirtual :: Class -> Class -> String 
 genHsFrontInstExistVirtual p c = render hsClassInstExistVirtualTmpl tmplName
   where methodstr = intercalateWith connRet (genHsFrontInstExistVirtualMethod p c)  
-                                            (virtualFuncs.class_funcs $ p)
+                                            (virtualFuncs.classFuncs $ p)
         tmplName = [ ("Iparent",typeclassName p)
                    , ("child", (fst.hsClassName) c)
                    , ("method", methodstr )
                    ] 
 
-genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> String 
+genHsFrontInstExistVirtualMethod :: Class -> Class -> MethodMemberType c -> String 
 genHsFrontInstExistVirtualMethod p c f =
     case f of
-      Constructor _  _ -> error "error in genHsFrontInstExistVirtualMethod"  
-      Destructor _ -> render hsClassInstExistVirtualMethodNoSelfTmpl tmplName
+      Constructor _ _ _  -> error "error in genHsFrontInstExistVirtualMethod"  
+      Destructor _ _ _ _ -> render hsClassInstExistVirtualMethodNoSelfTmpl tmplName
       _ -> case func_ret f of
-             SelfType -> render hsClassInstExistVirtualMethodSelfTmpl (tmplName++args)
+             {-SelfType -> render hsClassInstExistVirtualMethodSelfTmpl (tmplName++args)-}
              _ -> render hsClassInstExistVirtualMethodNoSelfTmpl tmplName
   where tmplName = [ ("methodname", hsFuncName p f)
                    , ("exist", existConstructorName c) ]
-        args  = [ ("args", intercalate " " (take (length (func_args f)) (map (\x -> 'a':(show x)) ([1..] :: [Int]) )))]
+        {-args  = [ ("args", intercalate " " (take (length (func_args f)) (map (\x -> 'a':(show x)) ([1..] :: [Int]) )))]-}
 
 genAllHsFrontInstExistVirtual :: [Class] -> DaughterMap -> String 
 genAllHsFrontInstExistVirtual cs _dmap = intercalateWith connRet2 allinstances cs
@@ -197,11 +197,11 @@ genHsFrontInstNew c = do
                               ++ hsFuncXformer newfunc ++ " " 
                               ++ hscFuncName c newfunc 
           argstr func = intercalateWith connArrow id $
-                          map (ctypeToHsType c.fst) (genericFuncArgs func)
-                          ++ ["IO " ++ (ctypeToHsType c.genericFuncRet) func]
+                          map (hsCPPTypeName .fst) (genericFuncArgs func)
+                          ++ ["IO " ++ (hsCPPTypeName .genericFuncRet) func]
           newline = newfuncann ++ "\n" ++ newlinehead ++ "\n" ++ newlinebody 
       return (Just newline)
-  where newfuncs = filter isNewFunc (class_funcs c)  
+  where newfuncs = filter isNewFunc (classFuncs c)  
 
 genAllHsFrontInstNew :: [Class]    -- ^ only concrete class 
                      -> Reader AnnotateMap String 
@@ -214,11 +214,11 @@ genHsFrontInstNonVirtual c
         body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
         argstr func = intercalateWith connArrow id $ 
                         [(fst.hsClassName) c]  
-                        ++ map (ctypeToHsType c.fst) (genericFuncArgs func)
-                        ++ ["IO " ++ (ctypeToHsType c . genericFuncRet) func] 
+                        ++ map (hsCPPTypeName .fst) (genericFuncArgs func)
+                        ++ ["IO " ++ (hsCPPTypeName . genericFuncRet) func] 
     in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
   | otherwise = Nothing   
- where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
+ where nonvirtualFuncs = nonVirtualNotNewFuncs (classFuncs c)
 
 genAllHsFrontInstNonVirtual :: [Class] -> String 
 genAllHsFrontInstNonVirtual = intercalate "\n\n" . map fromJust . filter isJust . map genHsFrontInstNonVirtual
@@ -231,11 +231,11 @@ genHsFrontInstStatic c
     let header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
         body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
         argstr f = intercalateWith connArrow id $ 
-                     map (ctypeToHsType c.fst) (genericFuncArgs f)
-                     ++ ["IO " ++ (ctypeToHsType c . genericFuncRet) f] 
+                     map (hsCPPTypeName .fst) (genericFuncArgs f)
+                     ++ ["IO " ++ (hsCPPTypeName . genericFuncRet) f] 
     in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) fs
   | otherwise = Nothing   
- where fs = staticFuncs (class_funcs c)
+ where fs = staticFuncs (classFuncs c)
 
 -----
 
@@ -302,18 +302,17 @@ hsClassDeclFuncTmpl :: String
 hsClassDeclFuncTmpl = "$funcann$\n    $funcname$ :: $args$ "
 
 
-hsArgs :: Class -> Args -> String
-hsArgs c = intercalateWith connArrow (ctypeToHsType c. fst) 
+hsArgs :: CPPNameable c => Class -> Args c -> String
+hsArgs _ = intercalateWith connArrow (hsCPPTypeName . fst) 
 
-mkHsFuncArgType :: Args -> ([String],[String]) 
+mkHsFuncArgType :: Args Class -> ([String],[String]) 
 mkHsFuncArgType lst = 
   let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
   in   (args,fst st)
   where mkFuncArgTypeWorker (typ,_var) = 
           case typ of                  
-            SelfType -> return "a"
-            CT _ _   -> return $ ctypToHsTyp Nothing typ 
-            CPT (CPTClass c') _ -> do 
+            {-SelfType -> return "a"-}
+            PrimType (CPTClass c') -> do 
               (prefix,n) <- get 
               let cname = (fst.hsClassName) c' 
                   iname = typeclassNameFromStr cname 
@@ -322,7 +321,7 @@ mkHsFuncArgType lst =
                   newprefix2 = "FPtr " ++ newname
               put (newprefix1:newprefix2:prefix,n+1)
               return newname
-            CPT (CPTClassRef c') _ -> do 
+            Ref (PrimType (CPTClass c')) -> do 
               (prefix,n) <- get 
               let cname = (fst.hsClassName) c' 
                   iname = typeclassNameFromStr cname 
@@ -331,15 +330,16 @@ mkHsFuncArgType lst =
                   newprefix2 = "FPtr " ++ newname
               put (newprefix1:newprefix2:prefix,n+1)
               return newname
-            _ -> error ("No such c type : " ++ show typ)  
+            _ -> return $ hsCPPTypeName typ 
+            {-_ -> error ("No such c type : " ++ show typ)  -}
 
-mkHsFuncRetType :: Types -> (String,[String])
+mkHsFuncRetType :: CPPType Class -> (String,[String])
 mkHsFuncRetType rtyp = 
   case rtyp of 
-    SelfType -> ("a",[])
-    CPT (CPTClass c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
-    CPT (CPTClassRef c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
-    _ -> (ctypToHsTyp Nothing rtyp,[])
+    {-SelfType -> ("a",[])-}
+    PrimType (CPTClass c') -> (cname,[]) where cname = (fst.hsClassName) c' 
+    Ref (PrimType (CPTClass c')) -> (cname,[]) where cname = (fst.hsClassName) c' 
+    _ -> (hsCPPTypeName rtyp,[])
 
       
 ----------                        
@@ -410,7 +410,7 @@ hsDowncastClassTmpl =  "downcast$classname$ :: (FPtr a, $ifacename$ a) => $class
 
 genExport :: Class -> String 
 genExport c =
-    let methodstr = if null . (filter isVirtualFunc) $ (class_funcs c) 
+    let methodstr = if null . (filter isVirtualFunc) $ (classFuncs c) 
                       then ""
                       else "(..)"
     in if isAbstractClass c 
@@ -427,7 +427,7 @@ genExportConstructorAndNonvirtual :: Class -> String
 genExportConstructorAndNonvirtual c =         
     intercalateWith connRet (\x->indent++", "++x) fns
   where indent = replicate 2 ' ' 
-        fs = class_funcs c
+        fs = classFuncs c
         fns = map (aliasedFuncName c) (constructorFuncs fs 
                                        ++ nonVirtualNotNewFuncs fs)
 
@@ -436,7 +436,7 @@ genExportStatic :: Class -> String
 genExportStatic c =         
     intercalateWith connRet (\x->indent++", "++x) fns
   where indent = replicate 2 ' ' 
-        fs = class_funcs c
+        fs = classFuncs c
         fns = map (aliasedFuncName c) (staticFuncs fs) 
 
 
@@ -539,14 +539,14 @@ genImportInExistential dmap m =
 -- Top Level Function --
 ------------------------
 
-genTopLevelFuncDef :: TopLevelFunction -> String 
+genTopLevelFuncDef :: TopLevelFunction Class -> String 
 genTopLevelFuncDef tfn = 
     let -- (x:xs) = maybe (toplevelfunc_name tfn) id (toplevelfunc_alias tfn) 
         -- fname = toLower x : xs 
         fname = hsFrontNameForTopLevelFunction tfn 
         cfname = "c_" ++ toLowers fname 
         args = toplevelfunc_args tfn 
-        ret = toplevelfunc_ret tfn 
+        {-ret = toplevelfunc_ret tfn -}
         xformerstr = let len = length args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
         prefixstr =  
           let prefixlst = (snd . mkHsFuncArgType . toplevelfunc_args) tfn

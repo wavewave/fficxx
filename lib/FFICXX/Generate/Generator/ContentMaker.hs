@@ -28,6 +28,7 @@ import           FFICXX.Generate.Code.HsFFI
 import           FFICXX.Generate.Code.HsFrontEnd
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.Internal
 import qualified FFICXX.Generate.Type.PackageInterface as T
 import           FFICXX.Generate.Util
 --

@@ -8,6 +8,9 @@ public:
   B();
   virtual void Foo(void); 
   virtual void Bar(void);   
+protected:
+  int Bar2();
+  char Bar3;
 }; 
 
 #endif // __B__

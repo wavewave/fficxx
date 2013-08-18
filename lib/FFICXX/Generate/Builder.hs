@@ -68,7 +68,10 @@ mkCabalFile :: FFICXXConfig
             -> IO () 
 mkCabalFile config templates cabal (tih,classmodules) cabalfile = do 
   cpath <- getCurrentDirectory -- TODO: Remove this
-  let str = renderTemplateGroup templates cabalFileTemplate cabalTemplate 
+  let str = renderTemplateGroup
+              templates
+              (cabalFileTemplate (cabal_pkgname cabal) tih classmodules)
+              cabalTemplate 
   in writeFile cabalfile str
 
 

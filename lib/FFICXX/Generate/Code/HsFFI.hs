@@ -16,6 +16,7 @@ import System.FilePath ((<.>))
 -- 
 import FFICXX.Generate.Util 
 import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Internal
 
 
 genHsFFI :: ClassImportHeader -> String 
@@ -41,7 +42,7 @@ ffiTemplate :: String
 ffiTemplate = "foreign import ccall \"$headerfilename$ $funcname$\" $hsfuncname$ \n  :: $hsargs$"
 
 
-hsFFIClassFunc :: FilePath -> Class -> Function -> String 
+hsFFIClassFunc :: CPPNameable c => FilePath -> Class -> MethodMemberType c -> String 
 hsFFIClassFunc headerfilename c f = if isAbstractClass c 
                        then ""
                        else if (isNewFunc f || isStaticFunc f)
@@ -62,7 +63,7 @@ hsFFIClassFunc headerfilename c f = if isAbstractClass c
 -- for top level function -- 
 ----------------------------
 
-genTopLevelFuncFFI :: TopLevelImportHeader -> TopLevelFunction -> String 
+genTopLevelFuncFFI :: CPPNameable c => TopLevelImportHeader c -> TopLevelFunction c -> String 
 genTopLevelFuncFFI header tfn = 
     let fname = maybe (toplevelfunc_name tfn) id (toplevelfunc_alias tfn)
         (x:xs)  = fname
@@ -77,14 +78,12 @@ genTopLevelFuncFFI header tfn =
          , ("funcname", "TopLevel_" ++ fname)
          , ("hsfuncname",cfname)
          , ("hsargs", argstr) ] 
-  where hsargtype (CT ctype _) = hsCTypeName ctype
-        hsargtype (CPT x _) = hsCppTypeName x 
-        hsargtype SelfType = "genTopLevelFuncFFI : no self for top level function " 
-        hsargtype _ = error "undefined hsargtype"
+  where hsargtype ctype = hsCPPTypeName ctype
+        {-hsargtype SelfType = "genTopLevelFuncFFI : no self for top level function " -}
 
-        hsrettype Void = "IO ()"
-        hsrettype SelfType = "genTopLevelFuncFFI : no self for top level function "
-        hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
-        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x 
+        {-hsrettype SelfType = "genTopLevelFuncFFI : no self for top level function "-}
+        {-hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype-}
+        {-hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x -}
+        hsrettype ctype = "IO " ++ hsCPPTypeName ctype
 
 
