@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -17,11 +16,10 @@ module FFICXX.Generate.Type.Class where
 import Control.Applicative ((<$>),(<*>))
 import Data.Char
 import Data.List
-import Data.Monoid
-import qualified Data.Map as M
 import System.FilePath
 --
 import FFICXX.Generate.Util
+import FFICXX.Generate.Type.Internal
 
 {-
   CPPType are represented by a base type (e.g., "int") and a collection of
@@ -35,7 +33,7 @@ import FFICXX.Generate.Util
          ---------------                 ---------
          p.p.int                         int  *
          a(300).a(400).int               int [300][400]
-         p.q(const).char                 char const  
+         p.q(const).char                 char const
 
   All type constructors are denoted by a trailing '.':
 
@@ -78,38 +76,6 @@ import FFICXX.Generate.Util
   In either case, it's probably best to avoid characters such as '&', '*', or '<'.
 -}
 
-data CPPType c = Ptr        (CPPType c) -- ^ Pointer to a type
-               | Ref        (CPPType c) -- ^ Reference to a type
-               | Arr        Int       (CPPType c) -- ^ Array of a type
-               | Fun        [CPPType c] (CPPType c) -- ^ A function
-               | QConst     (CPPType c) -- ^ const type
-               | QVolatile  (CPPType c) -- ^ volatile type
-               | QRestrict  (CPPType c) -- ^ restrict type, not supported, will give an error if passed such type
-               | MPtr       c (PrimitiveTypes c) -- ^ Member pointer to class, the `CPPType` here should be a primitive type
-             | PrimType  (PrimitiveTypes c) -- ^ Primitive c/c++ types
-             deriving (Show, Eq)
-
-data PrimitiveTypes c = CPTChar
-                      | CPTInt
-                      | CPTLong
-                      | CPTUChar
-                      | CPTUInt
-                      | CPTULong
-                      | CPTLongLong
-                      | CPTULongLong
-                      | CPTDouble
-                      | CPTLongDouble
-                      | CPTBool
-                      | CPTVoid
-                      | CPTClass c  -- ^ c denotes classes or templates
-                    deriving (Show, Eq)
-
-newtype ClassName = ClassName { unClassName :: String }
-
-type SimpleCPPType = CPPType ClassName 
-
-class CPPNameable c where -- ^ CPPType that can be identified by names
-  cppname :: c -> String
 
 instance CPPNameable ClassName where
   cppname = unClassName
@@ -144,20 +110,7 @@ instance (CPPNameable c) => CPPNameable (CPPType c) where
   cppname (QRestrict t) = "restrict " ++ cppname t
   cppname (MPtr s t) = cppname t ++ " " ++ cppname s ++ "::*"
   cppname (PrimType prim) = cppname prim
-  
-  
-data StaticExtern = Static | Extern 
-                  deriving Show 
 
-type Args c = [(CPPType c,String)]
-
-data TopLevelFunction c = TopLevelFunction { toplevelfunc_ret :: CPPType c
-                                           , toplevelfunc_name :: String
-                                           , toplevelfunc_args :: Args c
-                                           , toplevelfunc_alias :: Maybe String
-                                           , toplevelfunc_staticextern :: Maybe StaticExtern  
-                                           }
-                        deriving Show
 
 cvarToStr :: (CPPNameable c) => CPPType c -> String -> String
 cvarToStr t varname = (cppname t) `connspace` varname
@@ -165,28 +118,28 @@ cvarToStr t varname = (cppname t) `connspace` varname
 
 -- | return type for haskell-C interface. special treatment to C++-only type
 rettypeToString :: (CPPNameable c) => CPPType c -> String
-rettypeToString (PrimType (CPTClass c)) = cppname c ++ "_p" 
+rettypeToString (PrimType (CPTClass c)) = cppname c ++ "_p"
 rettypeToString (Ptr (PrimType (CPTClass c))) = cppname c ++ "_p"
 rettypeToString (Ref (PrimType (CPTClass c))) = cppname c ++ "_p"
-rettypeToString t = cppname t 
-  
+rettypeToString t = cppname t
+
 
 -- | Convert a function argument type to C syntax string
 argToString :: (CPPNameable c) => (CPPType c,String) -> String
 argToString (t, varname) = rettypeToString t `connspace` varname
-                           
+
 -- | function argument in C++ call
 argToCallString :: (CPPNameable c) => (CPPType c,String) -> String
 argToCallString (PrimType (CPTClass c),varname) =
-    "to_nonconst<"++cppname c++","++cppname c++"_t>("++varname++")" 
+    "to_nonconst<"++cppname c++","++cppname c++"_t>("++varname++")"
 argToCallString (Ptr (PrimType (CPTClass c)),varname) =
-    "to_nonconstref<"++cppname c++","++cppname c++"_t>(*"++varname++")" 
+    "to_nonconstref<"++cppname c++","++cppname c++"_t>(*"++varname++")"
 argToCallString (_,varname) = varname
 
 
-{-                           
+{-
 argsToString :: (CPPNameable c) => Args c -> String
-argsToString args =   
+argsToString args =
   let args' = (SelfType, "p") : args
   in  intercalateWith conncomma argToString args'
 -}
@@ -197,7 +150,7 @@ argsToCallString :: (CPPNameable c) => Args c -> String
 argsToCallString = intercalateWith conncomma argToCallString
 -}
 
-{-                           
+{-
                            case isconst of
     Const   -> "const_" ++ cname ++ "_p " ++ varname
     NoConst -> cname ++ "_p " ++ varname
@@ -213,7 +166,7 @@ argToString _ = error "undefined argToString"
 
 argsToStringNoSelf :: (CPPNameable c) => Args c -> String
 argsToStringNoSelf = intercalateWith conncomma argToString
- 
+
 -}
 
 
@@ -274,14 +227,14 @@ hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")"
 -------------
 -------------
 -------------
--- From here on, I haven't changed at all. 
+-- From here on, I haven't changed at all.
 -------------
 -------------
-                                                   
+
 {-
 
 
--- | Member function 
+-- | Member function
 data Function = Constructor { func_args :: Args
                             , func_alias :: Maybe String
                             }
@@ -356,56 +309,7 @@ staticFuncs = filter isStaticFunc
 
 --------
 
-newtype ProtectedMethod = Protected { unProtected :: [String] }
-    deriving (Monoid)
-
-data Cabal = Cabal { cabal_pkgname :: String
-                   , cabal_cheaderprefix :: String
-                   , cabal_moduleprefix :: String }
-
-
-data Class = Class { class_cabal :: Cabal
-                   , class_name :: String
-                   , class_parents :: [Class]
-                   , class_protected :: ProtectedMethod
-                   , class_alias :: Maybe String
-                   , class_funcs :: [Function]
-                   }
-           | AbstractClass { class_cabal :: Cabal
-                           , class_name :: String
-                           , class_parents :: [Class]
-                           , class_protected :: ProtectedMethod
-                           , class_alias :: Maybe String
-                           , class_funcs :: [Function]
-                           }
-
-
-newtype Namespace = NS { unNamespace :: String } deriving (Show)
-
-data ClassImportHeader = ClassImportHeader
-                       { cihClass :: Class
-                       , cihSelfHeader :: String
-                       , cihNamespace :: [Namespace]
-                       , cihSelfCpp :: String
-                       , cihIncludedHPkgHeadersInH :: [String]
-                       , cihIncludedHPkgHeadersInCPP :: [String]
-                       , cihIncludedCPkgHeaders :: [String]
-                       } deriving (Show)
-
-data ClassModule = ClassModule
-                   { cmModule :: String
-                   , cmClass :: [Class]
-                   , cmCIH :: [ClassImportHeader]
-                   , cmImportedModulesHighNonSource :: [String]
-                   , cmImportedModulesRaw :: [String]
-                   , cmImportedModulesHighSource :: [String]
-                   , cmImportedModulesForFFI :: [String]
-                   } deriving (Show)
-
-data ClassGlobal = ClassGlobal
-                   { cgDaughterSelfMap :: DaughterMap
-                   , cgDaughterMap :: DaughterMap
-                   }
+-}
 
 -- | Check abstract class
 
@@ -422,7 +326,6 @@ instance Eq Class where
 instance Ord Class where
   compare x y = compare (class_name x) (class_name y)
 
-type DaughterMap = M.Map String [Class]
 
 class_allparents :: Class -> [Class]
 class_allparents c = let ps = class_parents c
@@ -455,7 +358,7 @@ mkDaughterSelfMap = foldl worker M.empty
         addToList c m p = let f Nothing = Just [c]
                               f (Just cs)  = Just (c:cs)
                           in  M.alter f p m
-
+{-
 -- | this function will be deprecated
 ctypeToHsType :: Class -> CPPType -> String
 ctypeToHsType _c Void = "()"
@@ -496,7 +399,7 @@ ctypToHsTyp _c (CT CTCharStarStar _) = "[String]"
 ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
 ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
-
+-}
 
 typeclassName :: Class -> String
 typeclassName c = 'I' : fst (hsClassName c)
@@ -512,6 +415,7 @@ hsClassName c =
 existConstructorName :: Class -> String
 existConstructorName c = 'E' : (fst.hsClassName) c
 
+{-
 -- | this is for FFI type.
 hsFuncTyp :: Class -> Function -> String
 hsFuncTyp c f = let args = genericFuncArgs f
@@ -530,6 +434,7 @@ hsFuncTyp c f = let args = genericFuncArgs f
         hsrettype SelfType = "IO " ++ selfstr
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
         hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
+-}
 
 -- | this is for FFI
 hsFuncTypNoSelf :: Class -> Function -> String

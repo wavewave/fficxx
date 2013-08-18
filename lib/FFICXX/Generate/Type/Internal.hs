@@ -105,8 +105,8 @@ data ClassGlobal = ClassGlobal
 type Function = SimpleCPPType
 
 -- | static and extern keywords
-data StaticExtern = Static | Extern 
-                  deriving Show 
+data StaticExtern = Static | Extern
+                  deriving Show
 
 -- | Function arguments, used in both top-level and member functions
 type Args c = [(CPPType c,String)]
@@ -116,7 +116,7 @@ data TopLevelFunction c = TopLevelFunction { toplevelfunc_ret :: CPPType c
                                            , toplevelfunc_name :: String
                                            , toplevelfunc_args :: Args c
                                            , toplevelfunc_alias :: Maybe String
-                                           , toplevelfunc_staticextern :: Maybe StaticExtern  
+                                           , toplevelfunc_staticextern :: Maybe StaticExtern
                                            }
                         deriving Show
 
