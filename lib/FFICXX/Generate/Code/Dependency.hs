@@ -19,6 +19,7 @@ import Data.Maybe
 import System.FilePath 
 --
 import FFICXX.Generate.Type.Class 
+import FFICXX.Generate.Type.Internal
 --
 -- import Debug.Trace 
 
@@ -61,35 +62,34 @@ mkCIH mkNSandIncHdrs c = let r = ClassImportHeader c
                          in r 
 
 
+-- | Get a class definition from a CPPType
+extractClassFromType ::  CPPType a -> Maybe a
+extractClassFromType (PrimType (CPTClass c)) = Just c
+extractClassFromType _ = Nothing
+
 -- |
-extractClassFromType :: Types -> Maybe Class
-extractClassFromType Void = Nothing
-extractClassFromType SelfType = Nothing
-extractClassFromType (CT _ _) = Nothing
-extractClassFromType (CPT (CPTClass c) _) = Just c
-extractClassFromType (CPT (CPTClassRef c) _) = Just c
+{-extractClassFromType :: Types -> Maybe Class-}
+{-extractClassFromType Void = Nothing-}
+{-extractClassFromType SelfType = Nothing-}
+{-extractClassFromType (CT _ _) = Nothing-}
+{-extractClassFromType (CPT (CPTClass c) _) = Just c-}
+{-extractClassFromType (CPT (CPTClassRef c) _) = Just c-}
 
 
 -- | class dependency for a given function 
 data Dep4Func = Dep4Func { returnDependency :: Maybe Class 
                          , argumentDependency :: [Class] }
 
-
 -- | 
-extractClassDep :: Function -> Dep4Func 
-extractClassDep (Constructor args _)  = Dep4Func Nothing (catMaybes (map (extractClassFromType.fst) args))
-extractClassDep (Virtual ret _ args _) = 
+-- FIXME: 'extractClassDep' is a confusing name, should it be extractFuncDep?
+extractClassDep :: MethodMemberType Class -> Dep4Func 
+extractClassDep (Constructor _ args _)  =
+  Dep4Func Nothing (catMaybes (map (extractClassFromType.fst) args))
+extractClassDep (Destructor _ _ _ _) = Dep4Func Nothing [] 
+extractClassDep (NormalMethod _ _ args ret _) =
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
-extractClassDep (NonVirtual ret _ args _) =
-    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
-extractClassDep (Static ret _ args _) = 
-    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
-{- extractClassDep (AliasVirtual ret _ args _) = 
-    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args) -}
-extractClassDep (Destructor _) = 
-    Dep4Func Nothing [] 
 
-extractClassDepForTopLevelFunction :: TopLevelFunction -> Dep4Func 
+extractClassDepForTopLevelFunction :: TopLevelFunction Class -> Dep4Func 
 extractClassDepForTopLevelFunction f = 
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
   where ret = toplevelfunc_ret f 
@@ -98,12 +98,13 @@ extractClassDepForTopLevelFunction f =
 -- | 
 mkModuleDepRaw :: Class -> [Class] 
 mkModuleDepRaw c = (nub . filter (/= c) . mapMaybe (returnDependency.extractClassDep) . class_funcs) c
+  where class_funcs = classFuncs
 
 
 -- | 
 mkModuleDepHighNonSource :: Class -> [Class] 
 mkModuleDepHighNonSource c = 
-  let fs = class_funcs c 
+  let fs = classFuncs c 
       pkgname = (cabal_pkgname . class_cabal) c 
       extclasses = (filter (\x-> x /= c && ((/= pkgname) . cabal_pkgname . class_cabal) x) . concatMap (argumentDependency.extractClassDep)) fs
       parents = class_parents c 
@@ -113,14 +114,14 @@ mkModuleDepHighNonSource c =
 -- | 
 mkModuleDepHighSource :: Class -> [Class] 
 mkModuleDepHighSource c = 
-  let fs = class_funcs c 
+  let fs = classFuncs c 
       pkgname = (cabal_pkgname . class_cabal) c 
   in  nub . filter (\x-> x /= c && not (x `elem` class_parents c) && (((== pkgname) . cabal_pkgname . class_cabal) x)) . concatMap (argumentDependency.extractClassDep) $ fs
 
 -- | 
 mkModuleDepCpp :: Class -> [Class] 
 mkModuleDepCpp c = 
-  let fs = class_funcs c 
+  let fs = classFuncs c 
   in  nub . filter (/= c)  $ 
         mapMaybe (returnDependency.extractClassDep) fs   
         ++ concatMap (argumentDependency.extractClassDep) fs
@@ -129,7 +130,7 @@ mkModuleDepCpp c =
 -- | 
 mkModuleDepFFI4One :: Class -> [Class] 
 mkModuleDepFFI4One c = 
-  let fs = class_funcs c 
+  let fs = classFuncs c 
   in  (++) <$> mapMaybe (returnDependency.extractClassDep)  
            <*> concatMap (argumentDependency.extractClassDep) 
       $ fs
@@ -163,9 +164,10 @@ mkClassModule mkincheaders c =
         ffis = map getClassModuleBase . mkModuleDepFFI 
 
  
-mkAll_ClassModules_CIH_TIH :: (String,Class->([Namespace],[String])) -- ^ (package name,mkIncludeHeaders)
-                        -> ([Class],[TopLevelFunction]) 
-                        -> ([ClassModule],[ClassImportHeader],TopLevelImportHeader)
+type PackageIncludeHeaders = (String,Class->([Namespace],[String])) -- ^ (package name,mkIncludeHeaders)
+mkAll_ClassModules_CIH_TIH :: PackageIncludeHeaders
+                        -> ([Class],[TopLevelFunction Class]) 
+                        -> ([ClassModule],[ClassImportHeader],TopLevelImportHeader Class)
 mkAll_ClassModules_CIH_TIH (pkgname,mkNSandIncHdrs) (cs,fs) = 
   let ms = map (mkClassModule mkNSandIncHdrs) cs 
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)

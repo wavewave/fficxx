@@ -3,7 +3,10 @@
 module FFICXX.Generate.Type.Internal where
 
 import Data.Monoid
+import Data.List (intercalate)
 import qualified Data.Map as M
+
+-- TODO: Add support for class templates
 
 newtype ProtectedMethod = Protected { unProtected :: [String] }
     deriving (Show, Monoid)
@@ -42,6 +45,7 @@ data PrimitiveTypes c = CPTChar
                       | CPTClass c  -- ^ c denotes classes or templates
                     deriving (Show, Eq)
 
+-- C++ class ADTs
 -- | The name of a class
 newtype ClassName = ClassName { unClassName :: String }
                   deriving (Show)
@@ -50,8 +54,13 @@ newtype ClassName = ClassName { unClassName :: String }
 -- it only contains the name of the class
 type SimpleCPPType = CPPType ClassName
 
-class CPPNameable c where -- ^ CPPType that can be identified by names
+-- | CPPType that can be identified by names
+class CPPNameable c where
   cppname :: c -> String
+
+-- | Convert a primitive C/C++ type to corresponding Haskell CType name
+class HSCPPTypeNameable c where
+  hsCPPTypeName :: c -> String
 
 -- | Class definition
 data Class = Class { class_cabal :: Cabal
@@ -59,21 +68,23 @@ data Class = Class { class_cabal :: Cabal
                    , class_parents :: [Class]
                    , class_protected :: ProtectedMethod
                    , class_alias :: Maybe String
-                   , class_funcs :: [Function]
+                   , class_members :: [ClassMember Class] -- ^ Class data members and methods
                    }
            | AbstractClass { class_cabal :: Cabal
                            , class_name :: String
                            , class_parents :: [Class]
                            , class_protected :: ProtectedMethod
                            , class_alias :: Maybe String
-                           , class_funcs :: [Function]
+                           , class_members :: [ClassMember Class] -- ^ Class data members and methods
                            }
-            deriving (Show)
-
 
 -- | A wrapper for C++ namespaces
 newtype Namespace = NS { unNamespace :: String } deriving (Show)
 
+data TopLevelImportHeader c = TopLevelImportHeader { tihHeaderFileName :: String
+                                                 , tihClassDep :: [ClassImportHeader]
+                                                 , tihFuncs :: [TopLevelFunction c]
+                                                 }
 data ClassImportHeader = ClassImportHeader
                        { cihClass :: Class
                        , cihSelfHeader :: String
@@ -84,7 +95,8 @@ data ClassImportHeader = ClassImportHeader
                        , cihIncludedCPkgHeaders :: [String]
                        } deriving (Show)
 
--- | A class module indicates a separate module in Haskell, it contains all related info of a C++ class
+-- | A class module indicates a separate module in Haskell,
+-- it contains all related info of a C++ class
 data ClassModule = ClassModule
                    { cmModule :: String
                    , cmClass :: [Class]
@@ -100,23 +112,54 @@ data ClassGlobal = ClassGlobal
                    { cgDaughterSelfMap :: DaughterMap
                    , cgDaughterMap :: DaughterMap
                    }
--- ==== Funtion related types ===
--- | Member function type
-type Function = SimpleCPPType
 
--- | static and extern keywords
-data StaticExtern = Static | Extern
+-- | Storage classes in C++, note that 'auto' and 'register' have no effects in
+-- the generation, so we omit them.
+data StorageClass = Auto    -- ^ auto can only be used for non-member data, auto rules out all other storage classes below
+                  | Extern  -- ^ extern can only be used for non-member data
+                  | Static  -- ^ static can used for both member and non-member data
+                  | Virtual -- ^ virtual can only be used for member functions
+                  | Friend  -- ^ friend can only be used in class definition
                   deriving Show
 
--- | Function arguments, used in both top-level and member functions
+-- | A declaration of a class member. We treat constructors and destructors differently from other members
+data ClassMember c = DataMember  (DataMamberType c)
+                   | MethodMember (MethodMemberType c)
+                   deriving Show
+
+-- | A data member of a class
+data DataMamberType c = DataMemberType { mem_storage :: StorageClass,
+                                         mem_name :: String,
+                                         mem_cdelc :: Args c}
+                      deriving Show
+
+-- | A member function of a class
+data MethodMemberType c = Constructor { func_name :: String,
+                                        func_args :: Args c, -- ^ arguments
+                                        func_alias :: Maybe String }
+                        | Destructor  { func_name :: String,
+                                        func_storage :: StorageClass , -- ^ virtual or non-virtual, others are invalid
+                                        func_args :: Args c,
+                                        func_alias :: Maybe String }
+                        | NormalMethod { func_storage :: StorageClass,
+                                         func_name :: String,   -- ^ Original function name
+                                         func_args :: Args c,
+                                         func_ret :: CPPType c,
+                                         func_alias :: Maybe String }
+                      deriving Show
+
+-- ==== Funtion related types ===
+
+-- | Function arguments, used in both top-level and member functions, it contains both argument type and name(identifier)
 type Args c = [(CPPType c,String)]
+type SimpleArgs = Args ClassName
 
 -- | ADT used for only top-level functions
 data TopLevelFunction c = TopLevelFunction { toplevelfunc_ret :: CPPType c
                                            , toplevelfunc_name :: String
                                            , toplevelfunc_args :: Args c
                                            , toplevelfunc_alias :: Maybe String
-                                           , toplevelfunc_staticextern :: Maybe StaticExtern
+                                           , toplevelfunc_staticextern :: StorageClass
                                            }
                         deriving Show
 
@@ -124,3 +167,82 @@ data TopLevelFunction c = TopLevelFunction { toplevelfunc_ret :: CPPType c
 type DaughterMap = M.Map
                    String -- ^ Class name
                    [Class] -- ^ subclasses
+
+-- Instances
+
+instance Show Class where
+  show x = show (class_name x)
+
+instance Eq Class where
+  (==) x y = class_name x == class_name y
+
+instance Ord Class where
+  compare x y = compare (class_name x) (class_name y)
+
+instance CPPNameable ClassName where
+  cppname = unClassName
+
+instance CPPNameable Class where
+  cppname = class_name
+
+instance (CPPNameable c) => CPPNameable (PrimitiveTypes c) where
+  cppname CPTChar       = "char"
+  cppname CPTInt        = "int"
+  cppname CPTLong       = "long int"
+  cppname CPTLongLong   = "long long"
+  cppname CPTULong      = "unsigned long"
+  cppname CPTUChar      = "unsigned char"
+  cppname CPTUInt       = "unsigned int"
+  cppname CPTULongLong  = "unsigned long long"
+  cppname CPTDouble     = "double"
+  cppname CPTLongDouble = "long double"
+  cppname CPTBool       = "bool"
+  cppname CPTVoid       = "void"
+  cppname (CPTClass c)  = cppname c
+
+
+instance (CPPNameable c) => CPPNameable (CPPType c) where
+  cppname (Ptr fun@(Fun _ _))   = cppname fun
+  cppname (Ptr t)               = cppname t ++ "*"
+  cppname (Ref t)               = cppname t ++ "&"
+  cppname (Arr n t)             = cppname t ++ "[" ++ (show n) ++ "]"
+  cppname (Fun ts t)            = "(" ++ cppname t ++ ")" ++ " (*)(" ++ ((intercalate "," . map cppname) ts) ++ ")"
+  cppname (QConst p@(Ptr _))    = cppname p ++ " const"
+  cppname (QConst t)            = "const " ++ cppname t
+  cppname (QVolatile p@(Ptr _)) = cppname p ++ " volatile"
+  cppname (QVolatile t)         = "volatile " ++ cppname t
+  cppname (QRestrict p@(Ptr _)) = cppname p ++ " restrict"
+  cppname (QRestrict t)         = "restrict " ++ cppname t
+  cppname (MPtr s t)            = cppname t ++ " " ++ cppname s ++ "::*"
+  cppname (PrimType prim)       = cppname prim
+
+-- Be careful of bool type: In ANSI C, bool is not definied. In C99, bool is defined as
+-- an equivlant type of int, but in Visual C++ 5.0 and later, bool is defined as 1 byte.
+-- And the size of bool varies in different platforms.
+instance (CPPNameable c) => HSCPPTypeNameable (CPPType c) where
+  -- Pointers
+  hsCPPTypeName (Ptr (PrimType CPTChar))                  = "CString"
+  hsCPPTypeName (Ptr (QConst (PrimType CPTChar)))         = "CString"
+  hsCPPTypeName (Ptr (QVolatile (PrimType CPTChar)))      = "CString"
+  hsCPPTypeName (Ptr (QRestrict (PrimType CPTChar)))      = "CString"
+  hsCPPTypeName (Ptr cpt@(PrimType _))                    = "(Ptr " ++ hsCPPTypeName cpt ++ ")"
+  -- References
+  hsCPPTypeName (Ref (PrimType CPTChar))                  = "CString"
+  hsCPPTypeName (Ref (QConst (PrimType CPTChar)))         = "CString"
+  hsCPPTypeName (Ref (QVolatile (PrimType CPTChar)))      = "CString"
+  hsCPPTypeName (Ref (QRestrict (PrimType CPTChar)))      = "CString"
+  hsCPPTypeName (Ref cpt@(PrimType _))                    = "(Ref " ++ hsCPPTypeName cpt ++ ")"
+  -- Arrays
+  hsCPPTypeName (Arr _ (PrimType CPTChar))                = "CString"
+  hsCPPTypeName (Arr _ cpt@(PrimType _))                  = "Ptr " ++ hsCPPTypeName cpt
+  -- Primitive types
+  hsCPPTypeName (PrimType CPTInt)                         = "CInt"
+  hsCPPTypeName (PrimType CPTUInt)                        = "CUInt"
+  hsCPPTypeName (PrimType CPTLong)                        = "CLong"
+  hsCPPTypeName (PrimType CPTULong)                       = "CULong"
+  hsCPPTypeName (PrimType CPTDouble)                      = "CDouble"
+  hsCPPTypeName (PrimType CPTVoid)                        = "()"
+  hsCPPTypeName (PrimType CPTBool)                        = "CInt"
+  hsCPPTypeName (PrimType (CPTClass c))                   = cppname c
+  hsCPPTypeName _                                         = error "Error: a non-convertable type passed to hsCPPTypeName"
+

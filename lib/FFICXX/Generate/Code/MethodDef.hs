@@ -13,14 +13,13 @@
 module FFICXX.Generate.Code.MethodDef where
 
 import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Internal
 import FFICXX.Generate.Util 
 
 
-{-
-
 -- Function Declaration and Definition
 
-funcToDecl :: Class -> Function -> String 
+funcToDecl :: Class -> MethodMemberType c -> String 
 funcToDecl c func 
   | isNewFunc func || isStaticFunc func = 
     let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
@@ -85,9 +84,4 @@ funcToDef c func
 
 funcsToDefs :: Class -> [Function] -> String
 funcsToDefs c = intercalateWith connBSlash (funcToDef c)
-
--}
-
-
-
 

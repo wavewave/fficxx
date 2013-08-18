@@ -12,7 +12,7 @@
 
 module FFICXX.Generate.Code.Cabal where
 
-import FFICXX.Generate.Type.Class 
+import FFICXX.Generate.Type.Internal (ClassModule(..))
 
 cabalIndentation :: String 
 cabalIndentation = replicate 23 ' ' 
