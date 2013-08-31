@@ -221,14 +221,14 @@ mkFuncCallStr f = let argstr = (mkCallArgs . funcArgs) f
                       callstr = funcName f ++ "(" ++ argstr ++ ")"
                       str = if (S.null retconv) 
                             then "return " ++ callstr  
-                            else mkVarDecl (Var rettypbef "retval_b")  
+                            else mkVarDecl (Var rettypbef "retval_o")  
                                  ++ ";\n"
-                                 ++ mkVarDecl (Var rettypaft  "retval_a") 
+                                 ++ mkVarDecl (Var rettypaft  "retval_p") 
                                  ++ ";\n"
-                                 ++ "retval_a = " ++ callstr ++ ";\n"
-                                 ++ "retval_b = " ++ mkRevConvStr "retval_a" (funcRet f)
+                                 ++ "retval_o = " ++ callstr ++ ";\n"
+                                 ++ "retval_p = " ++ mkRevConvStr "retval_o" (funcRet f)
                                  ++ ";\n"
-                                 ++ "return retval_b;"  
+                                 ++ "return retval_p;"  
                   in str
 
 

@@ -120,12 +120,25 @@ test9 = do
 
   print ((cp_conv . mkCPPair) typ6)
 
+{-
+  B_o* retval_o; 
+  B_p retval_p;
+  retval_o = &(test((*(reinterpret_cast<A*> x)), y));
+  //
+  // special marshaling operation can be added here 
+  //
+
+  retval_p = (reinterpret_cast<B_t*> (retval_o));
+  return retval_p;
+-}
+
 
 
 test10 = do 
   let typ1 = CSimple (SOpaq "A") :: Composite String 
       typ2 = (CSimple (SPrim PrimInt)) :: Composite String
-      typ3 = (CSimple (SOpaq "B")) :: Composite String -- CSimple (SPrim PrimVoid)
+      -- typ3 = (CPtr (CPtr (CSimple (SOpaq "B")))) :: Composite String -- CSimple (SPrim PrimVoid)
+      typ3 = CSimple (SOpaq "B")
 
       proj1 = (cp_after.mkCPPair) typ1
       proj2 = (cp_after.mkCPPair) typ2
