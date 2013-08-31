@@ -52,25 +52,27 @@ Library
                  Cabal
 
   Exposed-Modules: 
-                   FFICXX.Generate.Type.Class
-                   FFICXX.Generate.Code.Cpp
-                   FFICXX.Generate.Type.Internal
+                   FFIC
+
+--                   FFICXX.Generate.Type.Class
+--                   FFICXX.Generate.Code.Cpp
+--                   FFICXX.Generate.Type.Internal
 
 
-                   FFICXX.Generate.Builder 
-                   FFICXX.Generate.Type.Module
-                   FFICXX.Generate.Type.PackageInterface
-                   FFICXX.Generate.Config
-                   FFICXX.Generate.Code.MethodDef
-                   FFICXX.Generate.Code.HsFrontEnd
-                   FFICXX.Generate.Code.HsFFI
-                   FFICXX.Generate.Code.Cabal
-                   FFICXX.Generate.Code.Dependency
-                   FFICXX.Generate.Generator.Driver
-                   FFICXX.Generate.Generator.ContentMaker
-                   FFICXX.Generate.Util
-                   FFICXX.Generate.QQ.Verbatim
-                   FFICXX.Generate.Type.Annotate
+--                   FFICXX.Generate.Builder 
+--                   FFICXX.Generate.Type.Module
+--                   FFICXX.Generate.Type.PackageInterface
+--                   FFICXX.Generate.Config
+--                   FFICXX.Generate.Code.MethodDef
+--                   FFICXX.Generate.Code.HsFrontEnd
+--                   FFICXX.Generate.Code.HsFFI
+--                   FFICXX.Generate.Code.Cabal
+--                   FFICXX.Generate.Code.Dependency
+--                   FFICXX.Generate.Generator.Driver
+--                   FFICXX.Generate.Generator.ContentMaker
+--                   FFICXX.Generate.Util
+--                   FFICXX.Generate.QQ.Verbatim
+--                   FFICXX.Generate.Type.Annotate
                    FFICXX.Paths_fficxx
   Other-Modules:
                    Paths_fficxx
