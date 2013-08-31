@@ -163,7 +163,60 @@ test10 = do
 
 
 
-main = test10
+test11 = do 
+  let typ1 = CPtr (CSimple (SOpaq "A")) :: Composite String 
+      typ2 = (CSimple (SPrim PrimInt)) :: Composite String
+      -- typ3 = (CPtr (CPtr (CSimple (SOpaq "B")))) :: Composite String -- CSimple (SPrim PrimVoid)
+      typ3 = CSimple (SOpaq "B")
+
+      utyp = UF (FuncPtr typ3 [typ1,typ2])
+
+      utyp_p = fmap (cp_after . mkCPPair) utyp
+
+  putStrLn (represent utyp) 
+  putStrLn (represent utyp_p)
+
+{-
+
+suppose we have a function pointer orig
+
+B (*orig)(A*,int);
+
+
+we need to create a function proj
+which is declared as 
+B_p (*proj)(A_p,int); 
+
+B_p (*proj)(A_p x, int y) {
+  the same as our previous Function definition
+
+}
+
+
+
+void f (  B(*orig)(A*,int) ) ; 
+
+
+void f_p ( B_p (*proj)(A*,int) ); 
+
+void f_p ( B_p (*proj)(A*,int) ) { 
+  struct FP_orig {
+   static B* operator()(A* x ,int y ) {
+         (*proj) ( reinterpret_cast<A_t*> x, y ) 
+   }
+  };
+
+  B* (*orig)(A* x, int y) = &FP_orig::operator();
+
+  f( orig ) ; 
+
+}
+
+
+-}
+
+
+main = test11
 
 
 main'  = do 

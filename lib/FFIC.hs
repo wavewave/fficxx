@@ -49,11 +49,52 @@ data Composite c = CPtr (Composite c)
 
 deriving instance (Show c) => Show (Composite c)
 
+
+data TypeUniverse t = U1 t 
+                    | UF (FuncPtr t)
+
+deriving instance Functor TypeUniverse 
+
+type CompType c = TypeUniverse (Composite c)
+type ProjType c = TypeUniverse (Projected c)
+ 
+type CompProjPairType c = TypeUniverse (CompProjPair c)
+
+
+
+
+
+-- data CompType c = C1 (Composite c)
+--                | CFPtr (FuncPtr (Composite c)) 
+
+data FuncPtr t = FuncPtr { fptrRet  :: t
+                         , fptrArgs :: [t] 
+                         } 
+
+deriving instance Functor FuncPtr 
+
 -- | type for simplifying class, class reference and class pointer
 data Projected c = PPtr (Projected c) 
                  | PSimple (Simple c)
 
+
 deriving instance (Show c) => Show (Projected c)
+
+-- data ProjType c = P1 (Projected c)
+--                | PFPtr (FuncPtr (Projected c))
+
+
+-- | type with both before and after conversion  
+data CompProjPair c = CPPair { cp_before :: Composite c
+                             , cp_after :: Projected c 
+                             , cp_conv :: Seq (ConversionPrimitive c) } 
+
+mkCPPair :: Composite c -> CompProjPair c 
+mkCPPair x = let (t,mc) = project x
+             in CPPair x t (maybe empty id mc)
+
+
+
 
 
 data Function t = Function { funcName :: String
@@ -68,22 +109,8 @@ data ConversionPrimitive c = ReinterpretCast c
                            | ApplyAmp
                            deriving Show 
 
--- deriving instance (Show c) => Show (ConversionPrim c)
-
--- type Conversion c = [ConvPrim c] -> [ConvPrim c]  
-
  
 -- | project composite type to projected type
-{-
-project :: (Functor m, Monad m) => 
-           Composite c -> StateT (Seq (ConversionPrimitive c)) m (Projected c) 
-project (CSimple (SPrim x)) = pure (PSimple (SPrim x))
-project (CSimple (SOpaq x)) = modify ( (|> ApplyStar) .  (|> ReinterpretCast x) ) *> pure (PSimple (SOpaq x))
-project (CPtr (CSimple (SOpaq x))) = modify (ReinterpretCast x <|) *> pure (PSimple (SOpaq x))
-project (CPtr x) = modify ( ApplyStar <|) >> PPtr <$> project x
-project (CRef x) = modify ( id ) *> project (CPtr x) 
--}
-
 project :: Composite c -> (Projected c, Maybe (Seq (ConversionPrimitive c))) 
 project (CSimple (SPrim x)) = (PSimple (SPrim x), Nothing)
 project (CSimple (SOpaq x)) = (PSimple (SOpaq x), Just (empty |> ReinterpretCast x |> ApplyStar))
@@ -92,17 +119,9 @@ project (CPtr x) = let (p,s) = project x in (PPtr p, liftM ((ApplyStar <|) . (|>
 project (CRef x) = let (p,s) = project (CPtr x) in (PPtr p, liftM (|> ApplyStar) s)
 
 
-
-
--- | type with both before and after conversion  
-data CompProjPair c = CPPair { cp_before :: Composite c
-                             , cp_after :: Projected c 
-                             , cp_conv :: Seq (ConversionPrimitive c) } 
-
-mkCPPair :: Composite c -> CompProjPair c 
-mkCPPair x = let (t,mc) = project x
-             in CPPair x t (maybe empty id mc)
-
+-- | 
+projectUniverse :: TypeUniverse (Composite c) -> TypeUniverse (CompProjPair c)
+projectUniverse = fmap mkCPPair
 
 
 -- | 
@@ -160,6 +179,17 @@ instance CTypeable (Projected String) where
 
 instance CTypeable Primitive where
   mkCType = mkCTypeFromPrimitive 
+
+
+
+represent :: (CTypeable t) => TypeUniverse t -> String 
+represent (U1 t) = mkCType t
+represent (UF p) = (mkCType.fptrRet) p ++ "*(" ++ (intercalate "," . map mkCType . fptrArgs) p ++ ")"  
+
+
+
+
+
 
 instance CallArguable (Var (CompProjPair String)) where 
   mkCallArg v = let t = varType v 
