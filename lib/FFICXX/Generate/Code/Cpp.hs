@@ -45,7 +45,7 @@ genAllCppHeaderTmplType = intercalateWith connRet2 (genCppHeaderTmplType)
 
 genCppHeaderTmplVirtual :: Class -> String 
 genCppHeaderTmplVirtual aclass =  
-  let tmpl = "#undef ROOT_$classname$_DECLARATIONVIRT\\\n#define ROOT_$classname$_DECLARATIONVIRT(Type) \\\\\\\n$funcdecl$" 
+  let tmpl = "#undef $classname$_DECL_VIRT\\\n#define $classname$_DECL_VIRT(Type) \\\\\\\n$funcdecl$" 
       declBodyStr = render tmpl [ ("classname", map toUpper (class_name aclass) ) 
                                  , ("funcdecl" , funcDeclStr ) ] 
       funcDeclStr = (funcsToDecls aclass) . virtualFuncs . class_funcs $ aclass
@@ -58,7 +58,7 @@ genAllCppHeaderTmplVirtual = intercalateWith connRet2 genCppHeaderTmplVirtual
 
 genCppHeaderTmplNonVirtual :: Class -> String
 genCppHeaderTmplNonVirtual c = 
-  let tmpl = "#undef ROOT_$classname$_DECLARATIONNONVIRT\\\n#define ROOT_$classname$_DECLARATIONNONVIRT(Type) \\\\\\\n$funcdecl$" 
+  let tmpl = "#undef $classname$_DECL_NONVIRT\\\n#define $classname$_DECL_NONVIRT(Type) \\\\\\\n$funcdecl$" 
       declBodyStr = render tmpl [ ("classname", map toUpper (class_name c) ) 
                                  , ("funcdecl" , funcDeclStr ) ] 
       funcDeclStr = (funcsToDecls c) . filter (not.isVirtualFunc) 
@@ -73,12 +73,12 @@ genAllCppHeaderTmplNonVirtual = intercalateWith connRet genCppHeaderTmplNonVirtu
 genCppHeaderInstVirtual :: (Class,Class) -> String 
 genCppHeaderInstVirtual (p,c) = 
   let strc = map toUpper (class_name p) 
-  in  "ROOT_"++strc++"_DECLARATIONVIRT(" ++ class_name c ++ ");\n"
+  in  strc++"_DECL_VIRT(" ++ class_name c ++ ");\n"
 
 genCppHeaderInstNonVirtual :: Class -> String 
 genCppHeaderInstNonVirtual c = 
   let strx = map toUpper (class_name c) 
-  in  "ROOT_"++strx++"_DECLARATIONNONVIRT(" ++ class_name c ++ ");\n" 
+  in  strx++"_DECL_NONVIRT(" ++ class_name c ++ ");\n" 
 
 genAllCppHeaderInstNonVirtual :: [Class] -> String 
 genAllCppHeaderInstNonVirtual = 
@@ -93,7 +93,7 @@ genAllCppHeaderInstNonVirtual =
 
 genCppDefTmplVirtual :: Class -> String 
 genCppDefTmplVirtual aclass =  
-  let tmpl = "#undef ROOT_$classname$_DEFINITIONVIRT\\\n#define ROOT_$classname$_DEFINITIONVIRT(Type)\\\\\\\n$funcdef$" 
+  let tmpl = "#undef $classname$_DEF_VIRT\\\n#define $classname$_DEF_VIRT(Type)\\\\\\\n$funcdef$" 
       defBodyStr = render tmpl [ ("classname", map toUpper (class_name aclass) ) 
                                , ("funcdef" , funcDefStr ) ] 
       funcDefStr = (funcsToDefs aclass) . virtualFuncs . class_funcs $ aclass
@@ -106,7 +106,7 @@ genAllCppDefTmplVirtual = intercalateWith connRet2 genCppDefTmplVirtual
 
 genCppDefTmplNonVirtual :: Class -> String 
 genCppDefTmplNonVirtual aclass =  
-  let tmpl = "#undef ROOT_$classname$_DEFINITIONNONVIRT\\\n#define ROOT_$classname$_DEFINITIONNONVIRT(Type)\\\\\\\n$funcdef$" 
+  let tmpl = "#undef $classname$_DEF_NONVIRT\\\n#define $classname$_DEF_NONVIRT(Type)\\\\\\\n$funcdef$" 
       defBodyStr = render tmpl [ ("classname", map toUpper (class_name aclass) ) 
                                , ("funcdef" , funcDefStr ) ] 
       funcDefStr = (funcsToDefs aclass) . filter (not.isVirtualFunc) 
@@ -121,11 +121,11 @@ genAllCppDefTmplNonVirtual = intercalateWith connRet2 genCppDefTmplNonVirtual
 genCppDefInstVirtual :: (Class,Class) -> String 
 genCppDefInstVirtual (p,c) = 
   let strc = map toUpper (class_name p) 
-  in  "ROOT_"++strc++"_DEFINITIONVIRT(" ++ class_name c ++ ")\n"
+  in  strc++"_DEF_VIRT(" ++ class_name c ++ ")\n"
 
 genCppDefInstNonVirtual :: Class -> String
 genCppDefInstNonVirtual c = 
-  let tmpl = "ROOT_$capitalclassname$_DEFINITIONNONVIRT($classname$)" 
+  let tmpl = "$capitalclassname$_DEF_NONVIRT($classname$)" 
   in  render tmpl [ ("capitalclassname", toUppers (class_name c))
                   , ("classname", class_name c) ] 
 
