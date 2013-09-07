@@ -32,11 +32,14 @@ import FFICXX.Generate.Code.Cabal
 ---- "Class Type Declaration" Instances
 
 genCppHeaderTmplType :: Class -> String 
-genCppHeaderTmplType c = let tmpl = "ROOT_TYPE_DECLARATION($classname$);" 
-                     in  render tmpl [ ("classname", class_name c) ] 
+genCppHeaderTmplType c = let tmpl = "// Opaque type definition for $classname$ \n\
+                                    \typedef struct $classname$_tag $classname$_t; \n\
+                                    \typedef $classname$_t * $classname$_p; \n\
+                                    \typedef $classname$_t const* const_$classname$_p; \n"
+                      in  render tmpl [ ("classname", class_name c) ] 
 
 genAllCppHeaderTmplType :: [Class] -> String
-genAllCppHeaderTmplType = intercalateWith connRet (genCppHeaderTmplType) 
+genAllCppHeaderTmplType = intercalateWith connRet2 (genCppHeaderTmplType) 
 
 ---- "Class Declaration Virtual" Declaration 
 
