@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -286,11 +287,16 @@ data TopLevelFunction = TopLevelFunction { toplevelfunc_ret :: Types
                                          , toplevelfunc_args :: Args 
                                          , toplevelfunc_alias :: Maybe String 
                                          }
+                      | TopLevelVariable { toplevelvar_ret :: Types
+                                         , toplevelvar_name :: String 
+                                         , toplevelvar_alias :: Maybe String }
                       deriving Show 
 
 hsFrontNameForTopLevelFunction :: TopLevelFunction -> String 
 hsFrontNameForTopLevelFunction tfn = 
-    let (x:xs) = maybe (toplevelfunc_name tfn) id (toplevelfunc_alias tfn) 
+    let (x:xs) = case tfn of 
+                   TopLevelFunction {..} -> maybe toplevelfunc_name id toplevelfunc_alias
+                   TopLevelVariable {..} -> maybe toplevelvar_name id toplevelvar_alias 
     in toLower x : xs 
 
 

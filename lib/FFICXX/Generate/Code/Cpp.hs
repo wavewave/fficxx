@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Cpp
@@ -9,7 +11,6 @@
 -- Portability : GHC
 --
 -----------------------------------------------------------------------------
-
 
 module FFICXX.Generate.Code.Cpp where
 
@@ -206,19 +207,26 @@ genCppFiles (tih,cmods) =
 -------------------------
 
 genTopLevelFuncCppHeader :: TopLevelFunction -> String 
-genTopLevelFuncCppHeader f =  
+genTopLevelFuncCppHeader TopLevelFunction {..} = 
     let tmpl = "$returntype$ $funcname$ ( $args$ );" 
-    in  render tmpl [ ("returntype", rettypeToString (toplevelfunc_ret f))  
-                    , ("funcname", "TopLevel_" ++ maybe (toplevelfunc_name f) id (toplevelfunc_alias f))
-                    , ("args", argsToStringNoSelf (toplevelfunc_args f)) ] 
+    in  render tmpl [ ("returntype", rettypeToString toplevelfunc_ret)  
+                    , ("funcname", "TopLevel_" 
+                                   ++ maybe toplevelfunc_name id toplevelfunc_alias)
+                    , ("args", argsToStringNoSelf toplevelfunc_args) ] 
+genTopLevelFuncCppHeader TopLevelVariable {..} = 
+    let tmpl = "$returntype$ $funcname$ ( );" 
+    in  render tmpl [ ("returntype", rettypeToString toplevelvar_ret)  
+                    , ("funcname", "TopLevel_" 
+                                   ++ maybe toplevelvar_name id toplevelvar_alias)
+                    ] 
 
 genTopLevelFuncCppDefinition :: TopLevelFunction -> String 
-genTopLevelFuncCppDefinition f =  
+genTopLevelFuncCppDefinition TopLevelFunction {..} =  
     let tmpl = "$returntype$ $funcname$ ( $args$ ) { \\\n  $funcbody$\\\n}" 
-        callstr = toplevelfunc_name f ++ "("
-                  ++ argsToCallString (toplevelfunc_args f)   
+        callstr = toplevelfunc_name ++ "("
+                  ++ argsToCallString toplevelfunc_args   
                   ++ ")"
-        returnstr = case toplevelfunc_ret f of          
+        returnstr = case toplevelfunc_ret of          
           Void -> callstr ++ ";"
           SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
           (CT _ctyp _isconst) -> "return "++callstr++";" 
@@ -227,9 +235,27 @@ genTopLevelFuncCppDefinition f =
             where str = class_name c' 
           (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
         funcDefStr = returnstr 
-    in  render tmpl [ ("returntype", rettypeToString (toplevelfunc_ret f))  
-                    , ("funcname", "TopLevel_" ++ maybe (toplevelfunc_name f) id (toplevelfunc_alias f))
-                    , ("args", argsToStringNoSelf (toplevelfunc_args f)) 
+    in  render tmpl [ ("returntype", rettypeToString toplevelfunc_ret)  
+                    , ("funcname", "TopLevel_" 
+                                   ++ maybe toplevelfunc_name id toplevelfunc_alias)
+                    , ("args", argsToStringNoSelf toplevelfunc_args) 
+                    , ("funcbody", funcDefStr )
+                    ] 
+genTopLevelFuncCppDefinition TopLevelVariable {..} =  
+    let tmpl = "$returntype$ $funcname$ ( ) { \\\n  $funcbody$\\\n}" 
+        callstr = toplevelvar_name
+        returnstr = case toplevelvar_ret of          
+          Void -> callstr ++ ";"
+          SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
+          (CT _ctyp _isconst) -> "return "++callstr++";" 
+          (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
+                                    ++">(("++str++"*)"++callstr++");" 
+            where str = class_name c' 
+          (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
+        funcDefStr = returnstr 
+    in  render tmpl [ ("returntype", rettypeToString toplevelvar_ret)  
+                    , ("funcname", "TopLevel_" 
+                                   ++ maybe toplevelvar_name id toplevelvar_alias)
                     , ("funcbody", funcDefStr )
                     ] 
 

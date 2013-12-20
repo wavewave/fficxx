@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Cpp
@@ -540,23 +542,37 @@ genImportInExistential dmap m =
 ------------------------
 
 genTopLevelFuncDef :: TopLevelFunction -> String 
-genTopLevelFuncDef tfn = 
-    let -- (x:xs) = maybe (toplevelfunc_name tfn) id (toplevelfunc_alias tfn) 
-        -- fname = toLower x : xs 
-        fname = hsFrontNameForTopLevelFunction tfn 
+genTopLevelFuncDef f@TopLevelFunction {..} = 
+    let fname = hsFrontNameForTopLevelFunction f
         cfname = "c_" ++ toLowers fname 
-        args = toplevelfunc_args tfn 
-        ret = toplevelfunc_ret tfn 
+        args = toplevelfunc_args
+        ret = toplevelfunc_ret 
         xformerstr = let len = length args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
         prefixstr =  
-          let prefixlst = (snd . mkHsFuncArgType . toplevelfunc_args) tfn
-                        ++ (snd . mkHsFuncRetType . toplevelfunc_ret) tfn
+          let prefixlst = (snd . mkHsFuncArgType) toplevelfunc_args
+                        ++ (snd . mkHsFuncRetType) toplevelfunc_ret
           in  if null prefixlst
               then "" 
               else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
 
         argstr = intercalateWith connArrow id $
-                      (fst . mkHsFuncArgType . toplevelfunc_args) tfn 
-                      ++ ["IO " ++ (fst . mkHsFuncRetType . toplevelfunc_ret) tfn]  
+                      (fst . mkHsFuncArgType) toplevelfunc_args 
+                      ++ ["IO " ++ (fst . mkHsFuncRetType) toplevelfunc_ret]  
         defstr = fname ++ " = " ++ xformerstr ++ " " ++ cfname
     in fname ++ " :: " ++ prefixstr ++ argstr ++ "\n" ++ defstr 
+genTopLevelFuncDef v@TopLevelVariable {..} = 
+    let fname = hsFrontNameForTopLevelFunction v
+        cfname = "c_" ++ toLowers fname 
+        args = []
+        ret = toplevelvar_ret 
+        xformerstr = let len = length args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
+        prefixstr =  
+          let prefixlst = (snd . mkHsFuncRetType) toplevelvar_ret
+          in  if null prefixlst
+              then "" 
+              else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
+
+        argstr = intercalateWith connArrow id $ ["IO " ++ (fst . mkHsFuncRetType) toplevelvar_ret]  
+        defstr = fname ++ " = " ++ xformerstr ++ " " ++ cfname
+    in fname ++ " :: " ++ prefixstr ++ argstr ++ "\n" ++ defstr 
+

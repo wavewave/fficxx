@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Dependency
@@ -92,8 +94,12 @@ extractClassDep (Destructor _) =
 extractClassDepForTopLevelFunction :: TopLevelFunction -> Dep4Func 
 extractClassDepForTopLevelFunction f = 
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
-  where ret = toplevelfunc_ret f 
-        args = toplevelfunc_args f 
+  where ret = case f of 
+                TopLevelFunction {..} -> toplevelfunc_ret
+                TopLevelVariable {..} -> toplevelvar_ret
+        args = case f of
+                 TopLevelFunction {..} -> toplevelfunc_args
+                 TopLevelVariable {..} -> [] 
 
 -- | 
 mkModuleDepRaw :: Class -> [Class] 
