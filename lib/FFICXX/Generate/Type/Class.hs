@@ -477,45 +477,23 @@ mkDaughterSelfMap = foldl worker M.empty
                               f (Just cs)  = Just (c:cs)    
                           in  M.alter f p m
 
-{-
--- | this function will be deprecated        
-ctypeToHsType :: Class -> Types -> String
-ctypeToHsType _c Void = "()" 
-ctypeToHsType c SelfType = (fst.hsClassName) c
-ctypeToHsType _c (CT CTString _) = "String"
-ctypeToHsType _c (CT CTInt _) = "CInt" 
-ctypeToHsType _c (CT CTUInt _) = "CUInt"
-ctypeToHsType _c (CT CTChar _) = "CChar"
-ctypeToHsType _c (CT CTLong _) = "CLong"
-ctypeToHsType _c (CT CTULong _) = "CULong" 
-ctypeToHsType _c (CT CTDouble _) = "CDouble"
-ctypeToHsType _c (CT CTBool _ ) = "CInt"
-ctypeToHsType _c (CT CTDoubleStar _) = "[CDouble]"
-ctypeToHsType _c (CT CTVoidStar _) = "(Ptr ())"
-ctypeToHsType _c (CT CTIntStar _) = "[CInt]" 
-ctypeToHsType _c (CT CTCharStarStar _) = "[String]"
-ctypeToHsType _c (CT (CPointer t) _) = hsCTypeName (CPointer t) 
-ctypeToHsType _c (CPT (CPTClass c') _) = class_name c'
-ctypeToHsType _c (CPT (CPTClassRef c') _) = class_name c'
--}
-
 -- | 
 ctypToHsTyp :: Maybe Class -> Types -> String
 ctypToHsTyp _c Void = "()" 
 ctypToHsTyp (Just c) SelfType = (fst.hsClassName) c
 ctypToHsTyp Nothing SelfType = error "ctypToHsTyp : SelfType but no class " 
-ctypToHsTyp _c (CT CTString _) = "String"
-ctypToHsTyp _c (CT CTInt _) = "Int" 
-ctypToHsTyp _c (CT CTUInt _) = "Word"
-ctypToHsTyp _c (CT CTChar _) = "Word8"
+ctypToHsTyp _c (CT CTString _) = "CString"
+ctypToHsTyp _c (CT CTInt _) = "CInt" 
+ctypToHsTyp _c (CT CTUInt _) = "CUInt"
+ctypToHsTyp _c (CT CTChar _) = "CChar"
 ctypToHsTyp _c (CT CTLong _) = "CLong"
 ctypToHsTyp _c (CT CTULong _) = "CULong" 
-ctypToHsTyp _c (CT CTDouble _) = "Double"
-ctypToHsTyp _c (CT CTBool _ ) = "Int"
-ctypToHsTyp _c (CT CTDoubleStar _) = "[Double]"
+ctypToHsTyp _c (CT CTDouble _) = "CDouble"
+ctypToHsTyp _c (CT CTBool _ ) = "CInt"
+ctypToHsTyp _c (CT CTDoubleStar _) = "(Ptr CDouble)"
 ctypToHsTyp _c (CT CTVoidStar _) = "(Ptr ())"
-ctypToHsTyp _c (CT CTIntStar _) = "[Int]" 
-ctypToHsTyp _c (CT CTCharStarStar _) = "[String]"
+ctypToHsTyp _c (CT CTIntStar _) = "(Ptr CInt)" 
+ctypToHsTyp _c (CT CTCharStarStar _) = "(Ptr CString)"
 ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t) 
 ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
