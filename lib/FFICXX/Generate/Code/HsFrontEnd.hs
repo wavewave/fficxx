@@ -50,25 +50,27 @@ mkPostComment str
                         
 ----------------
 
+-- |
 hsModuleDeclTmpl :: String 
 hsModuleDeclTmpl = "module $moduleName$ $moduleExp$ where"
 
+-- |
 genModuleDecl :: Module -> Reader AnnotateMap String 
 genModuleDecl m = do 
-  -- amap <- ask 
   let modheader = render hsModuleDeclTmpl [ ("moduleName", module_name m) 
                                           , ("moduleExp", mkModuleExports m) ] 
   return (modheader)
 
 
 ----------------
-
+-- |
 classprefix :: Class -> String 
 classprefix c = let ps = (map typeclassName . class_parents) c
                 in  if null ps 
                     then "" 
                     else "(" ++ intercalate "," (map (++ " a") ps) ++ ") => "
 
+-- |
 hsClassDeclHeaderTmpl :: String
 hsClassDeclHeaderTmpl = "$classann$\nclass $constraint$$classname$ a where"
 
@@ -199,8 +201,8 @@ genHsFrontInstNew c = do
                               ++ hsFuncXformer newfunc ++ " " 
                               ++ hscFuncName c newfunc 
           argstr func = intercalateWith connArrow id $
-                          map (ctypeToHsType c.fst) (genericFuncArgs func)
-                          ++ ["IO " ++ (ctypeToHsType c.genericFuncRet) func]
+                          map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
+                          ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func]
           newline = newfuncann ++ "\n" ++ newlinehead ++ "\n" ++ newlinebody 
       return (Just newline)
   where newfuncs = filter isNewFunc (class_funcs c)  
@@ -216,8 +218,8 @@ genHsFrontInstNonVirtual c
         body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
         argstr func = intercalateWith connArrow id $ 
                         [(fst.hsClassName) c]  
-                        ++ map (ctypeToHsType c.fst) (genericFuncArgs func)
-                        ++ ["IO " ++ (ctypeToHsType c . genericFuncRet) func] 
+                        ++ map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
+                        ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func] 
     in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
   | otherwise = Nothing   
  where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
@@ -233,8 +235,8 @@ genHsFrontInstStatic c
     let header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
         body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
         argstr f = intercalateWith connArrow id $ 
-                     map (ctypeToHsType c.fst) (genericFuncArgs f)
-                     ++ ["IO " ++ (ctypeToHsType c . genericFuncRet) f] 
+                     map (ctypToHsTyp (Just c) . fst) (genericFuncArgs f)
+                     ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) f] 
     in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) fs
   | otherwise = Nothing   
  where fs = staticFuncs (class_funcs c)
@@ -305,7 +307,7 @@ hsClassDeclFuncTmpl = "$funcann$\n    $funcname$ :: $args$ "
 
 
 hsArgs :: Class -> Args -> String
-hsArgs c = intercalateWith connArrow (ctypeToHsType c. fst) 
+hsArgs c = intercalateWith connArrow (ctypToHsTyp (Just c) . fst) 
 
 mkHsFuncArgType :: Args -> ([String],[String]) 
 mkHsFuncArgType lst = 

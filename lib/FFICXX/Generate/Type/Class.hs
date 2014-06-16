@@ -274,10 +274,6 @@ data Function = Constructor { func_args :: Args
                            , func_args :: Args 
                            , func_alias :: Maybe String 
                            }
-{-              | AliasVirtual { func_ret :: Types 
-                             , func_name :: String
-                             , func_args :: Args 
-                             , func_alias :: String } -}
               | Destructor  { func_alias :: Maybe String } 
               deriving Show
 
@@ -318,7 +314,6 @@ isDeleteFunc _ = False
 isVirtualFunc :: Function -> Bool 
 isVirtualFunc (Destructor _)           = True
 isVirtualFunc (Virtual _ _ _ _)        = True 
--- isVirtualFunc (AliasVirtual _ _ _ _) = True 
 isVirtualFunc _ = False 
 
 isStaticFunc :: Function -> Bool 
@@ -482,25 +477,27 @@ mkDaughterSelfMap = foldl worker M.empty
                               f (Just cs)  = Just (c:cs)    
                           in  M.alter f p m
 
+{-
 -- | this function will be deprecated        
 ctypeToHsType :: Class -> Types -> String
 ctypeToHsType _c Void = "()" 
 ctypeToHsType c SelfType = (fst.hsClassName) c
 ctypeToHsType _c (CT CTString _) = "String"
-ctypeToHsType _c (CT CTInt _) = "Int" 
-ctypeToHsType _c (CT CTUInt _) = "Word"
-ctypeToHsType _c (CT CTChar _) = "Word8"
+ctypeToHsType _c (CT CTInt _) = "CInt" 
+ctypeToHsType _c (CT CTUInt _) = "CUInt"
+ctypeToHsType _c (CT CTChar _) = "CChar"
 ctypeToHsType _c (CT CTLong _) = "CLong"
 ctypeToHsType _c (CT CTULong _) = "CULong" 
-ctypeToHsType _c (CT CTDouble _) = "Double"
-ctypeToHsType _c (CT CTBool _ ) = "Int"
-ctypeToHsType _c (CT CTDoubleStar _) = "[Double]"
+ctypeToHsType _c (CT CTDouble _) = "CDouble"
+ctypeToHsType _c (CT CTBool _ ) = "CInt"
+ctypeToHsType _c (CT CTDoubleStar _) = "[CDouble]"
 ctypeToHsType _c (CT CTVoidStar _) = "(Ptr ())"
-ctypeToHsType _c (CT CTIntStar _) = "[Int]" 
+ctypeToHsType _c (CT CTIntStar _) = "[CInt]" 
 ctypeToHsType _c (CT CTCharStarStar _) = "[String]"
 ctypeToHsType _c (CT (CPointer t) _) = hsCTypeName (CPointer t) 
 ctypeToHsType _c (CPT (CPTClass c') _) = class_name c'
 ctypeToHsType _c (CPT (CPTClassRef c') _) = class_name c'
+-}
 
 -- | 
 ctypToHsTyp :: Maybe Class -> Types -> String
