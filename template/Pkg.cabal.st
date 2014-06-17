@@ -3,7 +3,8 @@ Version:	$version$
 Synopsis:	$synopsis$
 Description: 	$description$
 Homepage:       $homepage$
-$license$
+License:        $license$
+License-file:   $licensefile$
 Author:		$author$
 Maintainer: 	$maintainer$
 Category:       $category$
