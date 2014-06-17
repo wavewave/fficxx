@@ -8,7 +8,7 @@ License-file:   $licensefile$
 Author:		$author$
 Maintainer: 	$maintainer$
 Category:       $category$
-Tested-with:    GHC >= 7.0
+Tested-with:    GHC >= 7.6
 Build-Type: 	$buildtype$
 cabal-version:  >=1.10
 Extra-source-files: 
