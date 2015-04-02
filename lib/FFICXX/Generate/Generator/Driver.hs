@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Generator.Driver
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2014 Ian-Woo Kim
 -- 
 -- License     : BSD3
 -- Maintainer  : ianwookim@gmail.com
@@ -21,15 +21,12 @@ import           System.FilePath
 import           System.IO
 import           System.Process
 import           Text.StringTemplate
--- import Text.StringTemplate.Helpers
 --
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Annotate
 import FFICXX.Generate.Type.PackageInterface 
 import FFICXX.Generate.Generator.ContentMaker 
 import FFICXX.Generate.Util
-
-
 
 ----
 ---- Header and Cpp file
