@@ -14,11 +14,12 @@
 
 module FFICXX.Generate.Builder where 
 
-import Data.Char (toUpper)
-import Data.Monoid (mempty)
-import System.FilePath ((</>))
-import System.Directory (getCurrentDirectory)
-import           Text.StringTemplate hiding (render)
+import          Data.Char (toUpper)
+import          Data.Monoid (mempty)
+import          System.FilePath ((</>))
+import          System.Directory (getCurrentDirectory)
+import          System.Process (readProcess)
+import          Text.StringTemplate hiding (render)
 --
 import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Code.Cpp
@@ -55,7 +56,8 @@ mkCabalFile config templates cabal (tih,classmodules) cabalfile = do
               templates 
               [ ("pkgname", cabal_pkgname cabal) 
               , ("version",  "0.0") 
-              , ("license", "" ) 
+              , ("license", "mit" )
+	      , ("licensefile", "LICENSE" )
               , ("buildtype", "Simple")
               , ("deps", "" ) 
               , ("csrcFiles", genCsrcFiles (tih,classmodules))
@@ -140,10 +142,20 @@ simpleBuilder (cabal,myclasses, toplevelfunctions) = do
   writePkgHs summarymodule templates workingDir mods tih
   -- 
   putStrLn "copying"
-  copyFileWithMD5Check (workingDir </> cabalFileName)  (installDir </> cabalFileName) 
+  touch (workingDir </> "LICENSE")  
+  copyFileWithMD5Check (workingDir </> cabalFileName)  (installDir </> cabalFileName)
+  copyFileWithMD5Check (workingDir </> "LICENSE") (installDir </> "LICENSE")
   -- copyPredefined templateDir (srcDir ibase) pkgname
+   
   copyCppFiles workingDir (csrcDir installDir) pkgname (tih,cihs)
   mapM_ (copyModule workingDir (srcDir installDir) summarymodule) mods 
 
 
+-- | some dirty hack. later, we will do it with more proper approcah. 
+
+touch :: FilePath -> IO ()
+touch fp = do
+    readProcess "touch" [fp] ""
+    return ()
+  
 
