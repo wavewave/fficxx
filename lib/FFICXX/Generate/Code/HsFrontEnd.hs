@@ -1,9 +1,10 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 -- |
--- Module      : FFICXX.Generate.Code.Cpp
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Module      : FFICXX.Generate.Code.HsFrontEnd
+-- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>

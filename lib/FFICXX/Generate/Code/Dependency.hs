@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Dependency
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -21,8 +21,7 @@ import Data.Maybe
 import System.FilePath 
 --
 import FFICXX.Generate.Type.Class 
---
--- import Debug.Trace 
+
 
 -- | 
 mkPkgHeaderFileName ::Class -> String 
