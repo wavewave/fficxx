@@ -15,10 +15,10 @@ Data-files: template/*.h.st
             template/*.hs-boot.st
             template/*.cpp.st
             template/Pkg.cabal.st
-            sample/cxxlib/build.sh
+            -- sample/cxxlib/build.sh
             sample/cxxlib/include/*.h
             sample/cxxlib/src/*.cpp
-            sample/cxxlib/src/Makefile
+            sample/cxxlib/Makefile
             sample/mysample-generator/MySampleGen.hs
             sample/mysample-generator/use_mysample.hs
             sample/snappy-generator/SnappyGen.hs
