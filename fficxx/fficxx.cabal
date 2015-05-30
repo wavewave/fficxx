@@ -1,7 +1,7 @@
 Name:		fficxx
 Version:	0.2.999
 Synopsis:	automatic C++ binding generation
-Description: 	automatic C++ binding generation 
+Description: 	automatic C++ binding generation
 License:        BSD3
 License-file:	LICENSE
 Author:		Ian-Woo Kim
@@ -31,27 +31,28 @@ Library
   hs-source-dirs: lib
   ghc-options: 	-Wall -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
-  Build-Depends: base == 4.*, 
-                 mtl>2, 
-                 containers, 
-                 filepath>1, 
-                 directory, 
-                 HStringTemplate, 
+  Build-Depends: base == 4.*,
+                 data-default,
+                 mtl>2,
+                 containers,
+                 filepath>1,
+                 directory,
+                 HStringTemplate,
                  split,
                  process,
-                 transformers >= 0.3, 
-                 template-haskell,  
+                 transformers >= 0.3,
+                 template-haskell,
                  hashable,
                  unordered-containers,
                  lens > 3,
-                 either, 
+                 either,
                  errors < 2.0,
                  bytestring,
-                 pureMD5,  
+                 pureMD5,
                  Cabal
 
-  Exposed-Modules: 
-                   FFICXX.Generate.Builder 
+  Exposed-Modules:
+                   FFICXX.Generate.Builder
                    FFICXX.Generate.Type.Class
                    FFICXX.Generate.Type.Module
                    FFICXX.Generate.Type.PackageInterface
