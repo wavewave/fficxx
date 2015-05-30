@@ -5,7 +5,7 @@ let newghcpkgs = pkgs.callPackage <nixpkgs/pkgs/development/haskell-modules> {
       packageSetConfig = pkgs.callPackage <nixpkgs/pkgs/development/haskell-modules/configuration-ghc-7.10.x.nix> {};
       overrides = import ./override.nix { inherit pkgs; };
     };
-    hsenv = newghcpkgs.ghcWithPackages (pkgs: with pkgs; [fficxx fficxx-runtime]); 
+    hsenv = newghcpkgs.ghcWithPackages (pkgs: with pkgs; [fficxx fficxx-runtime cabal-install]); 
 in pkgs.stdenv.mkDerivation {
      name = "fficxx-use-env";
      buildInputs = [ hsenv pkgs.snappy ];

@@ -17,7 +17,7 @@ module FFICXX.Generate.Builder where
 import           Data.Char (toUpper)
 import qualified Data.HashMap.Strict as HM
 import           Data.Monoid (mempty)
-import           System.FilePath ((</>))
+import           System.FilePath ((</>), (<.>))
 import           System.Directory (getCurrentDirectory)
 import           System.Process (readProcess)
 import           Text.StringTemplate hiding (render)
@@ -94,8 +94,8 @@ simpleBuilder pkgname m (cabal,myclasses, toplevelfunctions) = do
                           (myclasses, toplevelfunctions)
       hsbootlst = mkHSBOOTCandidateList mods 
       cglobal = mkGlobal myclasses 
-      summarymodule = "Snappy" 
-      cabalFileName = "Snappy.cabal"
+      summarymodule = pkgname -- "Snappy" 
+      cabalFileName = pkgname <.> "cabal" -- "Snappy.cabal"
   templateDir <- F.getDataDir >>= return . (</> "template")
   (templates :: STGroup String) <- directoryGroup templateDir 
   -- 

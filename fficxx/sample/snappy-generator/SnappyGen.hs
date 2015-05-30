@@ -2,6 +2,7 @@ import Data.Monoid (mempty)
 --
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.PackageInterface
 
 snappyclasses = [ ] 
 
@@ -65,8 +66,13 @@ toplevelfunctions =
   , TopLevelFunction bool_ "IsValidCompressedBuffer" [ cstar CTChar "compressed", ulong "compressed_length" ] Nothing 
   ]  
 
+
+
+headerMap = [ ("Sink"  , ([NS "snappy"], [HdrName "snappy-sinksource.h", HdrName "snappy.h"]))
+            , ("Source", ([NS "snappy"], [HdrName "snappy-sinksource.h", HdrName "snappy.h"]))  ]
+
 main :: IO ()
 main = do 
-  simpleBuilder (mycabal,myclasses,toplevelfunctions)
+  simpleBuilder "Snappy" headerMap (mycabal,myclasses,toplevelfunctions)
 
 
