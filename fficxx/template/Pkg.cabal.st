@@ -3,15 +3,15 @@ Version:	$version$
 Synopsis:	$synopsis$
 Description: 	$description$
 Homepage:       $homepage$
-License:        $license$
-License-file:   $licensefile$
+$licenseField$
+$licenseFileField$
 Author:		$author$
 Maintainer: 	$maintainer$
 Category:       $category$
 Tested-with:    GHC >= 7.6
 Build-Type: 	$buildtype$
 cabal-version:  >=1.10
-Extra-source-files: 
+Extra-source-files:
 $cabalIndentation$CHANGES
 $cabalIndentation$Config.hs
 $csrcFiles$
@@ -26,17 +26,17 @@ Library
   cc-options: $ccOptions$
   Build-Depends:      base>4 && < 5, fficxx-runtime >= 0.2 $deps$
   Exposed-Modules:
-$exposedModules$  
+$exposedModules$
   Other-Modules:
 $otherModules$
   extra-lib-dirs: $extralibdirs$
   extra-libraries:    stdc++ $extralib$
-  Include-dirs:       csrc $extraincludedirs$ 
-  Install-includes:   
+  Include-dirs:       csrc $extraincludedirs$
+  Install-includes:
 $includeFiles$
-  C-sources:          
+  C-sources:
 $cppFiles$
 
-   
+
 
 

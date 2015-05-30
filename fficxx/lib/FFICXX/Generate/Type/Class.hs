@@ -17,78 +17,79 @@ module FFICXX.Generate.Type.Class where
 
 import Control.Applicative ((<$>),(<*>))
 import Data.Char
-import Data.List 
-import Data.Monoid 
+import Data.Default (Default(def))
+import Data.List
+import Data.Monoid
 import qualified Data.Map as M
-import System.FilePath 
--- 
+import System.FilePath
+--
 import FFICXX.Generate.Util
 
 -- | C types
-data CTypes = CTString 
-            | CTChar 
-            | CTInt 
+data CTypes = CTString
+            | CTChar
+            | CTInt
             | CTUInt
             | CTLong
             | CTULong
-            | CTDouble 
-            | CTBool 
-            | CTDoubleStar 
-            | CTVoidStar 
-            | CTIntStar 
-            | CTCharStarStar 
-            | CPointer CTypes 
-            deriving Show 
+            | CTDouble
+            | CTBool
+            | CTDoubleStar
+            | CTVoidStar
+            | CTIntStar
+            | CTCharStarStar
+            | CPointer CTypes
+            deriving Show
 
--- | C++ types 
-data CPPTypes = CPTClass Class 
-              | CPTClassRef Class 
+-- | C++ types
+data CPPTypes = CPTClass Class
+              | CPTClassRef Class
               deriving Show
 
 -- | const flag
 data IsConst = Const | NoConst
              deriving Show
 
-data Types = Void 
+data Types = Void
            | SelfType
-           | CT  CTypes IsConst 
+           | CT  CTypes IsConst
            | CPT CPPTypes IsConst
            deriving Show
 
 cvarToStr :: CTypes -> IsConst -> String -> String
-cvarToStr ctyp isconst varname = (ctypToStr ctyp isconst) `connspace` varname 
+cvarToStr ctyp isconst varname = (ctypToStr ctyp isconst) `connspace` varname
 
 ctypToStr :: CTypes -> IsConst -> String
-ctypToStr ctyp isconst = 
-  let typword = case ctyp of 
+ctypToStr ctyp isconst =
+  let typword = case ctyp of
         CTString -> "char*"
-        CTChar   -> "char" 
-        CTInt    -> "int" 
+        CTChar   -> "char"
+        CTInt    -> "int"
         CTUInt   -> "unsigned int"
         CTLong   -> "signed long"
         CTULong  -> "long unsigned int"
-        CTDouble -> "double" 
+        CTDouble -> "double"
         CTBool   -> "int"              -- Currently available solution
         CTDoubleStar -> "double *"
         CTVoidStar -> "void*"
         CTIntStar -> "int*"
         CTCharStarStar -> "char**"
-        CPointer s -> ctypToStr s NoConst ++ "*"  
-  in case isconst of 
-        Const   -> "const" `connspace` typword 
-        NoConst -> typword 
+        CPointer s -> ctypToStr s NoConst ++ "*"
+  in case isconst of
+        Const   -> "const" `connspace` typword
+        NoConst -> typword
 
 
-self_ :: Types 
+self_ :: Types
 self_ = SelfType
 
 cstring_ :: Types
-cstring_ = CT CTString Const 
+cstring_ = CT CTString Const
 
 cint_ :: Types
 cint_    = CT CTInt    Const
 
-int_ :: Types 
+int_ :: Types
 int_     = CT CTInt    NoConst
 
 uint_ :: Types
@@ -106,11 +107,11 @@ culong_ = CT CTULong Const
 clong_ :: Types
 clong_ = CT CTLong Const
 
-cchar_ :: Types 
+cchar_ :: Types
 cchar_ = CT CTChar Const
 
 char_ :: Types
-char_ = CT CTChar NoConst 
+char_ = CT CTChar NoConst
 
 short_ :: Types
 short_ = int_
@@ -127,39 +128,39 @@ doublep_ = CT CTDoubleStar NoConst
 float_ :: Types
 float_ = double_
 
-bool_ :: Types 
-bool_    = CT CTBool   NoConst 
+bool_ :: Types
+bool_    = CT CTBool   NoConst
 
 void_ :: Types
-void_ = Void 
+void_ = Void
 
-voidp_ :: Types 
+voidp_ :: Types
 voidp_ = CT CTVoidStar NoConst
 
-intp_ :: Types 
+intp_ :: Types
 intp_ = CT CTIntStar NoConst
 
 charpp_ :: Types
 charpp_ = CT CTCharStarStar NoConst
 
 
-star_ :: CTypes -> Types 
+star_ :: CTypes -> Types
 star_ t = CT (CPointer t) NoConst
 
-cstar_ :: CTypes -> Types 
-cstar_ t = CT (CPointer t) Const  
+cstar_ :: CTypes -> Types
+cstar_ t = CT (CPointer t) Const
 
 self :: String -> (Types, String)
 self var = (self_, var)
 
-voidp :: String -> (Types,String) 
+voidp :: String -> (Types,String)
 voidp var = (voidp_ , var)
 
 cstring :: String -> (Types,String)
 cstring var = (cstring_ , var)
 
 cint :: String -> (Types,String)
-cint    var = (cint_    , var) 
+cint    var = (cint_    , var)
 
 int :: String -> (Types,String)
 int     var = (int_     , var)
@@ -180,7 +181,7 @@ culong :: String -> (Types,String)
 culong var = (culong_ , var)
 
 cchar :: String -> (Types,String)
-cchar var = (cchar_ , var) 
+cchar var = (cchar_ , var)
 
 char :: String -> (Types,String)
 char var = (char_ , var)
@@ -203,17 +204,17 @@ float = double
 bool :: String -> (Types,String)
 bool    var = (bool_    , var)
 
-intp :: String -> (Types, String) 
+intp :: String -> (Types, String)
 intp var = (intp_ , var)
 
 charpp :: String -> (Types, String)
 charpp var = (charpp_, var)
 
 star :: CTypes -> String -> (Types, String)
-star t var = (star_ t, var) 
+star t var = (star_ t, var)
 
 cstar :: CTypes -> String -> (Types, String)
-cstar t var = (cstar_ t, var) 
+cstar t var = (cstar_ t, var)
 
 
 cppclass_ :: Class -> Types
@@ -222,30 +223,30 @@ cppclass_ c =  CPT (CPTClass c) NoConst
 cppclass :: Class -> String -> (Types, String)
 cppclass c vname = ( cppclass_ c, vname)
 
-cppclassconst :: Class -> String -> (Types, String) 
+cppclassconst :: Class -> String -> (Types, String)
 cppclassconst c vname = ( CPT (CPTClass c) Const, vname)
 
-cppclassref_ :: Class -> Types 
-cppclassref_ c = CPT (CPTClassRef c) NoConst 
+cppclassref_ :: Class -> Types
+cppclassref_ c = CPT (CPTClassRef c) NoConst
 
-cppclassref :: Class -> String -> (Types, String) 
+cppclassref :: Class -> String -> (Types, String)
 cppclassref c vname = (cppclassref_ c, vname)
 
 
-hsCTypeName :: CTypes -> String 
-hsCTypeName CTString = "CString" 
-hsCTypeName CTChar   = "CChar" 
+hsCTypeName :: CTypes -> String
+hsCTypeName CTString = "CString"
+hsCTypeName CTChar   = "CChar"
 hsCTypeName CTInt    = "CInt"
 hsCTypeName CTUInt   = "CUInt"
-hsCTypeName CTLong   = "CLong" 
-hsCTypeName CTULong  = "CULong" 
+hsCTypeName CTLong   = "CLong"
+hsCTypeName CTULong  = "CULong"
 hsCTypeName CTDouble = "CDouble"
 hsCTypeName CTDoubleStar = "(Ptr CDouble)"
 hsCTypeName CTBool   = "CInt"
 hsCTypeName CTVoidStar = "(Ptr ())"
 hsCTypeName CTIntStar = "(Ptr CInt)"
 hsCTypeName CTCharStarStar = "(Ptr (CString))"
-hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")" 
+hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")"
 
 
 hsCppTypeName :: CPPTypes -> String
@@ -256,109 +257,109 @@ hsCppTypeName (CPTClassRef c) = "(Ptr "++rawname++")" where rawname = snd (hsCla
 
 type Args = [(Types,String)]
 
-data Function = Constructor { func_args :: Args 
-                            , func_alias :: Maybe String 
-                            } 
+data Function = Constructor { func_args :: Args
+                            , func_alias :: Maybe String
+                            }
               | Virtual { func_ret :: Types
                         , func_name :: String
-                        , func_args :: Args 
-                        , func_alias :: Maybe String 
-                        } 
-              | NonVirtual { func_ret :: Types 
+                        , func_args :: Args
+                        , func_alias :: Maybe String
+                        }
+              | NonVirtual { func_ret :: Types
                            , func_name :: String
-                           , func_args :: Args 
-                           , func_alias :: Maybe String 
+                           , func_args :: Args
+                           , func_alias :: Maybe String
                            }
-              | Static     { func_ret :: Types 
+              | Static     { func_ret :: Types
                            , func_name :: String
-                           , func_args :: Args 
-                           , func_alias :: Maybe String 
+                           , func_args :: Args
+                           , func_alias :: Maybe String
                            }
-              | Destructor  { func_alias :: Maybe String } 
+              | Destructor  { func_alias :: Maybe String }
               deriving Show
 
 
-data TopLevelFunction = TopLevelFunction { toplevelfunc_ret :: Types 
+data TopLevelFunction = TopLevelFunction { toplevelfunc_ret :: Types
                                          , toplevelfunc_name :: String
-                                         , toplevelfunc_args :: Args 
-                                         , toplevelfunc_alias :: Maybe String 
+                                         , toplevelfunc_args :: Args
+                                         , toplevelfunc_alias :: Maybe String
                                          }
                       | TopLevelVariable { toplevelvar_ret :: Types
-                                         , toplevelvar_name :: String 
+                                         , toplevelvar_name :: String
                                          , toplevelvar_alias :: Maybe String }
-                      deriving Show 
+                      deriving Show
 
-hsFrontNameForTopLevelFunction :: TopLevelFunction -> String 
-hsFrontNameForTopLevelFunction tfn = 
-    let (x:xs) = case tfn of 
+hsFrontNameForTopLevelFunction :: TopLevelFunction -> String
+hsFrontNameForTopLevelFunction tfn =
+    let (x:xs) = case tfn of
                    TopLevelFunction {..} -> maybe toplevelfunc_name id toplevelfunc_alias
-                   TopLevelVariable {..} -> maybe toplevelvar_name id toplevelvar_alias 
-    in toLower x : xs 
+                   TopLevelVariable {..} -> maybe toplevelvar_name id toplevelvar_alias
+    in toLower x : xs
 
 
-data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String 
-                                                 , tihClassDep :: [ClassImportHeader] 
-                                                 , tihFuncs :: [TopLevelFunction] 
-                                                 } 
+data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String
+                                                 , tihClassDep :: [ClassImportHeader]
+                                                 , tihFuncs :: [TopLevelFunction]
+                                                 }
 
 
-  
-isNewFunc :: Function -> Bool 
-isNewFunc (Constructor _ _) = True 
+
+isNewFunc :: Function -> Bool
+isNewFunc (Constructor _ _) = True
 isNewFunc _ = False
 
-isDeleteFunc :: Function -> Bool 
-isDeleteFunc (Destructor _) = True 
+isDeleteFunc :: Function -> Bool
+isDeleteFunc (Destructor _) = True
 isDeleteFunc _ = False
-       
-isVirtualFunc :: Function -> Bool 
-isVirtualFunc (Destructor _)           = True
-isVirtualFunc (Virtual _ _ _ _)        = True 
-isVirtualFunc _ = False 
 
-isStaticFunc :: Function -> Bool 
+isVirtualFunc :: Function -> Bool
+isVirtualFunc (Destructor _)           = True
+isVirtualFunc (Virtual _ _ _ _)        = True
+isVirtualFunc _ = False
+
+isStaticFunc :: Function -> Bool
 isStaticFunc (Static _ _ _ _) = True
 isStaticFunc _ = False
 
-virtualFuncs :: [Function] -> [Function] 
-virtualFuncs = filter isVirtualFunc 
+virtualFuncs :: [Function] -> [Function]
+virtualFuncs = filter isVirtualFunc
 
 constructorFuncs :: [Function] -> [Function]
 constructorFuncs = filter isNewFunc
 
 nonVirtualNotNewFuncs :: [Function] -> [Function]
-nonVirtualNotNewFuncs = 
+nonVirtualNotNewFuncs =
   filter (\x -> (not.isVirtualFunc) x && (not.isNewFunc) x && (not.isDeleteFunc) x && (not.isStaticFunc) x )
 
-staticFuncs :: [Function] -> [Function] 
+staticFuncs :: [Function] -> [Function]
 staticFuncs = filter isStaticFunc
 
-argToString :: (Types,String) -> String 
-argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname 
+argToString :: (Types,String) -> String
+argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
 argToString (SelfType, varname) = "Type ## _p " ++ varname
-argToString (CPT (CPTClass c) isconst, varname) = case isconst of 
-    Const   -> "const_" ++ cname ++ "_p " ++ varname 
+argToString (CPT (CPTClass c) isconst, varname) = case isconst of
+    Const   -> "const_" ++ cname ++ "_p " ++ varname
     NoConst -> cname ++ "_p " ++ varname
-  where cname = class_name c 
-argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of 
-    Const   -> "const_" ++ cname ++ "_p " ++ varname 
+  where cname = class_name c
+argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of
+    Const   -> "const_" ++ cname ++ "_p " ++ varname
     NoConst -> cname ++ "_p " ++ varname
-  where cname = class_name c  
+  where cname = class_name c
 argToString _ = error "undefined argToString"
 
-argsToString :: Args -> String 
-argsToString args = 
-  let args' = (SelfType, "p") : args 
+argsToString :: Args -> String
+argsToString args =
+  let args' = (SelfType, "p") : args
   in  intercalateWith conncomma argToString args'
 
-argsToStringNoSelf :: Args -> String 
-argsToStringNoSelf = intercalateWith conncomma argToString 
+argsToStringNoSelf :: Args -> String
+argsToStringNoSelf = intercalateWith conncomma argToString
 
 
 argToCallString :: (Types,String) -> String
-argToCallString (CPT (CPTClass c) _,varname) = 
+argToCallString (CPT (CPTClass c) _,varname) =
     "to_nonconst<"++str++","++str++"_t>("++varname++")" where str = class_name c
-argToCallString (CPT (CPTClassRef c) _,varname) = 
+argToCallString (CPT (CPTClassRef c) _,varname) =
     "to_nonconstref<"++str++","++str++"_t>(*"++varname++")" where str = class_name c
 argToCallString (_,varname) = varname
 
@@ -366,73 +367,86 @@ argsToCallString :: Args -> String
 argsToCallString = intercalateWith conncomma argToCallString
 
 
-rettypeToString :: Types -> String 
+rettypeToString :: Types -> String
 rettypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
 rettypeToString Void = "void"
 rettypeToString SelfType = "Type ## _p"
 rettypeToString (CPT (CPTClass c) _) = str ++ "_p"
-  where str = class_name c 
-rettypeToString (CPT (CPTClassRef c) _) = str ++ "_p" 
-  where str = class_name c 
+  where str = class_name c
+rettypeToString (CPT (CPTClassRef c) _) = str ++ "_p"
+  where str = class_name c
 
 --------
 
-newtype ProtectedMethod = Protected { unProtected :: [String] } 
-    deriving (Monoid) 
+newtype ProtectedMethod = Protected { unProtected :: [String] }
+    deriving (Monoid)
 
-data Cabal = Cabal { cabal_pkgname :: String
-                   , cabal_cheaderprefix :: String
-                   , cabal_moduleprefix :: String } 
+data Cabal = Cabal  { cabal_pkgname :: String
+                    , cabal_cheaderprefix :: String
+                    , cabal_moduleprefix :: String
+                    , cabal_attr :: CabalAttr
+                    }
 
+data CabalAttr = CabalAttr  { cabal_attr_license :: Maybe String
+                            , cabal_attr_licensefile :: Maybe String
+                            }
 
-data Class = Class { class_cabal :: Cabal 
+cabal_license = cabal_attr_license . cabal_attr
+cabal_licensefile = cabal_attr_licensefile . cabal_attr
+
+instance Default CabalAttr where
+    def = CabalAttr { cabal_attr_license = Nothing
+                    , cabal_attr_licensefile = Nothing
+                    }
+
+data Class = Class { class_cabal :: Cabal
                    , class_name :: String
-                   , class_parents :: [Class] 
+                   , class_parents :: [Class]
                    , class_protected :: ProtectedMethod
-                   , class_alias :: Maybe String 
-                   , class_funcs :: [Function] 
+                   , class_alias :: Maybe String
+                   , class_funcs :: [Function]
                    }
-           | AbstractClass { class_cabal :: Cabal 
+           | AbstractClass { class_cabal :: Cabal
                            , class_name :: String
                            , class_parents :: [Class]
                            , class_protected :: ProtectedMethod
-                           , class_alias :: Maybe String 
-                           , class_funcs :: [Function] 
+                           , class_alias :: Maybe String
+                           , class_funcs :: [Function]
                            }
 
 
 newtype Namespace = NS { unNamespace :: String } deriving (Show)
 
 data ClassImportHeader = ClassImportHeader
-                       { cihClass :: Class 
-                       , cihSelfHeader :: String 
-                       , cihNamespace :: [Namespace] 
+                       { cihClass :: Class
+                       , cihSelfHeader :: String
+                       , cihNamespace :: [Namespace]
                        , cihSelfCpp :: String
-                       , cihIncludedHPkgHeadersInH :: [String] 
-                       , cihIncludedHPkgHeadersInCPP :: [String] 
-                       , cihIncludedCPkgHeaders :: [String] 
+                       , cihIncludedHPkgHeadersInH :: [String]
+                       , cihIncludedHPkgHeadersInCPP :: [String]
+                       , cihIncludedCPkgHeaders :: [String]
                        } deriving (Show)
 
-data ClassModule = ClassModule 
+data ClassModule = ClassModule
                    { cmModule :: String
-                   , cmClass :: [Class] 
-                   , cmCIH :: [ClassImportHeader] 
+                   , cmClass :: [Class]
+                   , cmCIH :: [ClassImportHeader]
                    , cmImportedModulesHighNonSource :: [String]
-                   , cmImportedModulesRaw :: [String] 
+                   , cmImportedModulesRaw :: [String]
                    , cmImportedModulesHighSource :: [String]
                    , cmImportedModulesForFFI :: [String]
                    } deriving (Show)
 
-data ClassGlobal = ClassGlobal 
-                   { cgDaughterSelfMap :: DaughterMap 
+data ClassGlobal = ClassGlobal
+                   { cgDaughterSelfMap :: DaughterMap
                    , cgDaughterMap :: DaughterMap
-                   } 
+                   }
 
 -- | Check abstract class
 
-isAbstractClass :: Class -> Bool 
-isAbstractClass (Class _ _ _ _ _ _) = False 
-isAbstractClass (AbstractClass _ _ _ _ _ _) = True            
+isAbstractClass :: Class -> Bool
+isAbstractClass (Class _ _ _ _ _ _) = False
+isAbstractClass (AbstractClass _ _ _ _ _ _) = True
 
 instance Show Class where
   show x = show (class_name x)
@@ -443,58 +457,58 @@ instance Eq Class where
 instance Ord Class where
   compare x y = compare (class_name x) (class_name y)
 
-type DaughterMap = M.Map String [Class] 
+type DaughterMap = M.Map String [Class]
 
-class_allparents :: Class -> [Class] 
+class_allparents :: Class -> [Class]
 class_allparents c = let ps = class_parents c
-                     in  if null ps 
+                     in  if null ps
                            then []
                            else nub (ps ++ (concatMap class_allparents ps))
 
 
-getClassModuleBase :: Class -> String 
+getClassModuleBase :: Class -> String
 getClassModuleBase = (<.>) <$> (cabal_moduleprefix.class_cabal) <*> (fst.hsClassName)
 
 
 
 -- | Daughter map not including itself
-mkDaughterMap :: [Class] -> DaughterMap 
-mkDaughterMap = foldl mkDaughterMapWorker M.empty  
+mkDaughterMap :: [Class] -> DaughterMap
+mkDaughterMap = foldl mkDaughterMapWorker M.empty
   where mkDaughterMapWorker m c = let ps = map getClassModuleBase (class_allparents c)
-                                  in  foldl (addmeToYourDaughterList c) m ps 
+                                  in  foldl (addmeToYourDaughterList c) m ps
         addmeToYourDaughterList c m p = let f Nothing = Just [c]
-                                            f (Just cs)  = Just (c:cs)    
+                                            f (Just cs)  = Just (c:cs)
                                         in  M.alter f p m
 
 
 
 -- | Daughter Map including itself as a daughter
 mkDaughterSelfMap :: [Class] -> DaughterMap
-mkDaughterSelfMap = foldl worker M.empty  
+mkDaughterSelfMap = foldl worker M.empty
   where worker m c = let ps = map getClassModuleBase (c:class_allparents c)
-                     in  foldl (addToList c) m ps 
+                     in  foldl (addToList c) m ps
         addToList c m p = let f Nothing = Just [c]
-                              f (Just cs)  = Just (c:cs)    
+                              f (Just cs)  = Just (c:cs)
                           in  M.alter f p m
 
--- | 
+-- |
 ctypToHsTyp :: Maybe Class -> Types -> String
-ctypToHsTyp _c Void = "()" 
+ctypToHsTyp _c Void = "()"
 ctypToHsTyp (Just c) SelfType = (fst.hsClassName) c
-ctypToHsTyp Nothing SelfType = error "ctypToHsTyp : SelfType but no class " 
+ctypToHsTyp Nothing SelfType = error "ctypToHsTyp : SelfType but no class "
 ctypToHsTyp _c (CT CTString _) = "CString"
-ctypToHsTyp _c (CT CTInt _) = "CInt" 
+ctypToHsTyp _c (CT CTInt _) = "CInt"
 ctypToHsTyp _c (CT CTUInt _) = "CUInt"
 ctypToHsTyp _c (CT CTChar _) = "CChar"
 ctypToHsTyp _c (CT CTLong _) = "CLong"
-ctypToHsTyp _c (CT CTULong _) = "CULong" 
+ctypToHsTyp _c (CT CTULong _) = "CULong"
 ctypToHsTyp _c (CT CTDouble _) = "CDouble"
 ctypToHsTyp _c (CT CTBool _ ) = "CInt"
 ctypToHsTyp _c (CT CTDoubleStar _) = "(Ptr CDouble)"
 ctypToHsTyp _c (CT CTVoidStar _) = "(Ptr ())"
-ctypToHsTyp _c (CT CTIntStar _) = "(Ptr CInt)" 
+ctypToHsTyp _c (CT CTIntStar _) = "(Ptr CInt)"
 ctypToHsTyp _c (CT CTCharStarStar _) = "(Ptr CString)"
-ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t) 
+ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
 ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
 
@@ -502,118 +516,118 @@ ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
 typeclassName :: Class -> String
 typeclassName c = 'I' : fst (hsClassName c)
 
-typeclassNameFromStr :: String -> String 
+typeclassNameFromStr :: String -> String
 typeclassNameFromStr = ('I':)
 
 hsClassName :: Class -> (String, String)  -- ^ High-level, 'Raw'-level
-hsClassName c = 
+hsClassName c =
   let cname = maybe (class_name c) id (class_alias c)
-  in (cname, "Raw" ++ cname) 
+  in (cname, "Raw" ++ cname)
 
-existConstructorName :: Class -> String 
-existConstructorName c = 'E' : (fst.hsClassName) c 
+existConstructorName :: Class -> String
+existConstructorName c = 'E' : (fst.hsClassName) c
 
 -- | this is for FFI type.
 hsFuncTyp :: Class -> Function -> String
-hsFuncTyp c f = let args = genericFuncArgs f 
-                    ret  = genericFuncRet f 
-                in  selfstr ++ " -> " ++ concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
-                    
+hsFuncTyp c f = let args = genericFuncArgs f
+                    ret  = genericFuncRet f
+                in  selfstr ++ " -> " ++ concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret
+
   where (_hcname,rcname) = hsClassName c
-        selfstr = "(Ptr " ++ rcname ++ ")" 
+        selfstr = "(Ptr " ++ rcname ++ ")"
 
         hsargtype (CT ctype _) = hsCTypeName ctype
-        hsargtype (CPT x _) = hsCppTypeName x 
-        hsargtype SelfType = selfstr 
+        hsargtype (CPT x _) = hsCppTypeName x
+        hsargtype SelfType = selfstr
         hsargtype _ = error "undefined hsargtype"
-        
+
         hsrettype Void = "IO ()"
         hsrettype SelfType = "IO " ++ selfstr
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
-        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x 
+        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
 
 -- | this is for FFI
 hsFuncTypNoSelf :: Class -> Function -> String
-hsFuncTypNoSelf c f = let args = genericFuncArgs f 
-                          ret  = genericFuncRet f 
-                      in  intercalateWith connArrow id $ map (hsargtype . fst) args ++ [hsrettype ret]  
-                          
+hsFuncTypNoSelf c f = let args = genericFuncArgs f
+                          ret  = genericFuncRet f
+                      in  intercalateWith connArrow id $ map (hsargtype . fst) args ++ [hsrettype ret]
+
   where (_hcname,rcname) = hsClassName c
-        selfstr = "(Ptr " ++ rcname ++ ")" 
+        selfstr = "(Ptr " ++ rcname ++ ")"
 
         hsargtype (CT ctype _) = hsCTypeName ctype
-        hsargtype (CPT x _) = hsCppTypeName x 
+        hsargtype (CPT x _) = hsCppTypeName x
         hsargtype SelfType = selfstr
         hsargtype _ = error "undefined hsargtype"
-        
+
         hsrettype Void = "IO ()"
         hsrettype SelfType = "IO " ++ selfstr
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
-        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x 
+        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
 
 
-hscFuncName :: Class -> Function -> String         
+hscFuncName :: Class -> Function -> String
 hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (aliasedFuncName c f)
-        
-hsFuncName :: Class -> Function -> String 
-hsFuncName c f = let (x:xs) = aliasedFuncName c f 
+
+hsFuncName :: Class -> Function -> String
+hsFuncName c f = let (x:xs) = aliasedFuncName c f
                  in (toLower x) : xs
-                  
-hsFuncXformer :: Function -> String 
-hsFuncXformer func@(Constructor _ _) = let len = length (genericFuncArgs func) 
+
+hsFuncXformer :: Function -> String
+hsFuncXformer func@(Constructor _ _) = let len = length (genericFuncArgs func)
                                        in if len > 0
                                           then "xform" ++ show (len - 1)
-                                          else "xformnull" 
-hsFuncXformer func@(Static _ _ _ _) = 
-  let len = length (genericFuncArgs func) 
+                                          else "xformnull"
+hsFuncXformer func@(Static _ _ _ _) =
+  let len = length (genericFuncArgs func)
   in if len > 0
      then "xform" ++ show (len - 1)
-     else "xformnull" 
-hsFuncXformer func = let len = length (genericFuncArgs func) 
+     else "xformnull"
+hsFuncXformer func = let len = length (genericFuncArgs func)
                      in "xform" ++ show len
 
 
-genericFuncRet :: Function -> Types 
-genericFuncRet f = 
-  case f of                        
-    Constructor _ _ -> self_ 
-    Virtual t _ _ _ -> t 
+genericFuncRet :: Function -> Types
+genericFuncRet f =
+  case f of
+    Constructor _ _ -> self_
+    Virtual t _ _ _ -> t
     NonVirtual t _ _ _-> t
     Static t _ _ _ -> t
     -- AliasVirtual t _ _ _ -> t
     Destructor _ -> void_
 
-genericFuncArgs :: Function -> Args 
+genericFuncArgs :: Function -> Args
 genericFuncArgs (Destructor _) = []
 genericFuncArgs f = func_args f
-                        
-aliasedFuncName :: Class -> Function -> String 
-aliasedFuncName c f = 
-  case f of 
-    Constructor _ a -> maybe (constructorName c) id a 
+
+aliasedFuncName :: Class -> Function -> String
+aliasedFuncName c f =
+  case f of
+    Constructor _ a -> maybe (constructorName c) id a
     Virtual _ str _ a -> maybe str id a
     NonVirtual _ str _ a-> maybe (nonvirtualName c str) id a
     Static _ str _ a -> maybe (nonvirtualName c str) id a
-    -- AliasVirtual _ _  _ alias -> alias 
+    -- AliasVirtual _ _  _ alias -> alias
     Destructor a -> maybe destructorName id a
 
-cppStaticName :: Class -> Function -> String 
+cppStaticName :: Class -> Function -> String
 cppStaticName c f = class_name c ++ "::" ++ func_name f
 
-cppFuncName :: Class -> Function -> String 
-cppFuncName c f =   case f of 
+cppFuncName :: Class -> Function -> String
+cppFuncName c f =   case f of
     Constructor _ _ -> "new"
-    Virtual _ _  _ _ -> func_name f 
-    NonVirtual _ _ _ _-> func_name f  
-    Static _ _ _ _-> cppStaticName c f 
-    -- AliasVirtual _ _  _ _ _ -> func_name f 
+    Virtual _ _  _ _ -> func_name f
+    NonVirtual _ _ _ _-> func_name f
+    Static _ _ _ _-> cppStaticName c f
+    -- AliasVirtual _ _  _ _ _ -> func_name f
     Destructor _ -> destructorName
 
 constructorName :: Class -> String
-constructorName c = "new" ++ (fst.hsClassName) c 
- 
-nonvirtualName :: Class -> String -> String
-nonvirtualName c str = (firstLower.fst.hsClassName) c ++ str 
+constructorName c = "new" ++ (fst.hsClassName) c
 
-destructorName :: String 
-destructorName = "delete" 
+nonvirtualName :: Class -> String -> String
+nonvirtualName c str = (firstLower.fst.hsClassName) c ++ str
+
+destructorName :: String
+destructorName = "delete"
