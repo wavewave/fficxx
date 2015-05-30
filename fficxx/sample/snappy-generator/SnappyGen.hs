@@ -69,7 +69,10 @@ toplevelfunctions =
 
 
 headerMap = [ ("Sink"  , ([NS "snappy"], [HdrName "snappy-sinksource.h", HdrName "snappy.h"]))
-            , ("Source", ([NS "snappy"], [HdrName "snappy-sinksource.h", HdrName "snappy.h"]))  ]
+            , ("Source", ([NS "snappy"], [HdrName "snappy-sinksource.h", HdrName "snappy.h"]))
+            , ("ByteArraySource", ([NS "snappy"], [HdrName "snappy-sinksource.h", HdrName "snappy.h"]))
+	    , ("UncheckedByteArraySink", ([NS "snappy"], [HdrName "snappy-sinksource.h", HdrName "snappy.h"]))
+            ]
 
 main :: IO ()
 main = do 
