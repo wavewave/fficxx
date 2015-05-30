@@ -1,0 +1,29 @@
+Name:		fficxx-runtime
+Version:	0.2
+Synopsis:	Runtime for fficxx-generated library
+Description: 	Runtime for fficxx-generated library
+License:        BSD3
+License-file:	LICENSE
+Author:		Ian-Woo Kim
+Maintainer: 	Ian-Woo Kim <ianwookim@gmail.com>
+Build-Type: 	Simple
+Category:       FFI Tools
+Cabal-Version:  >= 1.8
+Data-files: 
+
+Source-repository head
+  type: git
+  location: http://www.github.com/wavewave/fficxx-runtime
+
+Library
+  hs-source-dirs: lib
+  ghc-options: 	-Wall -funbox-strict-fields -fno-warn-unused-do-bind
+  ghc-prof-options: -caf-all -auto-all
+  Build-Depends: 
+                   base == 4.*
+
+  Exposed-Modules: 
+                   FFICXX.Runtime.Cast
+
+  Include-dirs:    csrc
+  Install-includes: MacroPatternMatch.h
