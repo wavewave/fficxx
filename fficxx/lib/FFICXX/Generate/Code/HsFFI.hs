@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.HsFFI
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -11,6 +11,7 @@
 -- Portability : GHC
 --
 -----------------------------------------------------------------------------
+
 module FFICXX.Generate.Code.HsFFI where
 
 import Data.Char (toLower)
@@ -18,7 +19,7 @@ import System.FilePath ((<.>))
 -- 
 import FFICXX.Generate.Util 
 import FFICXX.Generate.Type.Class
-
+import FFICXX.Generate.Type.PackageInterface
 
 genHsFFI :: ClassImportHeader -> String 
 genHsFFI header =
@@ -43,18 +44,18 @@ ffiTemplate :: String
 ffiTemplate = "foreign import ccall \"$headerfilename$ $funcname$\" $hsfuncname$ \n  :: $hsargs$"
 
 
-hsFFIClassFunc :: FilePath -> Class -> Function -> String 
+hsFFIClassFunc :: HeaderName -> Class -> Function -> String 
 hsFFIClassFunc headerfilename c f = if isAbstractClass c 
                        then ""
                        else if (isNewFunc f || isStaticFunc f)
                               then render ffistub 
-                                       [ ("headerfilename",headerfilename) 
+                                       [ ("headerfilename",(unHdrName headerfilename))
                                        , ("classname",class_name c)
                                        , ("funcname", aliasedFuncName c f)
                                        , ("hsfuncname",hscFuncName c f)
                                        , ("hsargs", hsFuncTypNoSelf c f) ] 
                               else render ffistub 
-                                       [ ("headerfilename",headerfilename) 
+                                       [ ("headerfilename",(unHdrName headerfilename))
                                        , ("classname",class_name c)
                                        , ("funcname", aliasedFuncName c f)
                                        , ("hsfuncname",hscFuncName c f)

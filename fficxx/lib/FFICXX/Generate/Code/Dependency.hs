@@ -14,19 +14,21 @@
 
 module FFICXX.Generate.Code.Dependency where
 
-import Control.Applicative
-import Data.Function (on)
-import Data.List 
-import Data.Maybe
-import System.FilePath 
+import           Control.Applicative
+import           Data.Function (on)
+import           Data.List 
+import           Data.Maybe
+import qualified Data.HashMap.Strict as HM
+import           System.FilePath 
 --
-import FFICXX.Generate.Type.Class 
+import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.PackageInterface
 
 
 -- | 
-mkPkgHeaderFileName ::Class -> String 
+mkPkgHeaderFileName ::Class -> HeaderName
 mkPkgHeaderFileName c = 
-    (cabal_cheaderprefix.class_cabal) c ++ class_name c <.> "h" 
+    HdrName ((cabal_cheaderprefix.class_cabal) c ++ class_name c <.> "h")
 
 -- | 
 mkPkgCppFileName ::Class -> String 
@@ -34,22 +36,22 @@ mkPkgCppFileName c =
     (cabal_cheaderprefix.class_cabal) c ++ class_name c <.> "cpp"
 
 -- | 
-mkPkgIncludeHeadersInH :: Class -> [String] 
+mkPkgIncludeHeadersInH :: Class -> [HeaderName]
 mkPkgIncludeHeadersInH c =
     let pkgname = (cabal_pkgname . class_cabal) c
         extclasses = (filter ((/= pkgname) . cabal_pkgname . class_cabal) . mkModuleDepCpp) c
         extheaders = nub . map ((++"Type.h") .  cabal_pkgname . class_cabal) $ extclasses  
-    in map mkPkgHeaderFileName (class_allparents c) ++ extheaders
+    in map mkPkgHeaderFileName (class_allparents c) ++ map HdrName extheaders
 
                            
 
 -- | 
-mkPkgIncludeHeadersInCPP :: Class -> [String] 
+mkPkgIncludeHeadersInCPP :: Class -> [HeaderName]
 mkPkgIncludeHeadersInCPP = map mkPkgHeaderFileName . mkModuleDepCpp 
 
 
 -- | 
-mkCIH :: (Class->([Namespace],[String]))  -- ^ (mk namespace and include headers)  
+mkCIH :: (Class->([Namespace],[HeaderName]))  -- ^ (mk namespace and include headers)  
       -> Class 
       -> ClassImportHeader
 mkCIH mkNSandIncHdrs c = let r = ClassImportHeader c 
@@ -85,8 +87,6 @@ extractClassDep (NonVirtual ret _ args _) =
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
 extractClassDep (Static ret _ args _) = 
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
-{- extractClassDep (AliasVirtual ret _ args _) = 
-    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args) -}
 extractClassDep (Destructor _) = 
     Dep4Func Nothing [] 
 
@@ -148,7 +148,7 @@ mkModuleDepFFI c =
   in  alldeps
 
                     
-mkClassModule :: (Class->([Namespace],[String]))
+mkClassModule :: (Class->([Namespace],[HeaderName]))
               -> Class 
               -> ClassModule 
 mkClassModule mkincheaders c = 
@@ -167,8 +167,11 @@ mkClassModule mkincheaders c =
         highs_source = map getClassModuleBase . mkModuleDepHighSource
         ffis = map getClassModuleBase . mkModuleDepFFI 
 
- 
-mkAll_ClassModules_CIH_TIH :: (String,Class->([Namespace],[String])) -- ^ (package name,mkIncludeHeaders)
+
+mkClassNSHeaderFromMap :: HM.HashMap String ([Namespace],[HeaderName]) -> Class -> ([Namespace],[HeaderName])
+mkClassNSHeaderFromMap m c = fromMaybe ([],[]) (HM.lookup (class_name c) m)
+
+mkAll_ClassModules_CIH_TIH :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
                         -> ([Class],[TopLevelFunction]) 
                         -> ([ClassModule],[ClassImportHeader],TopLevelImportHeader)
 mkAll_ClassModules_CIH_TIH (pkgname,mkNSandIncHdrs) (cs,fs) = 

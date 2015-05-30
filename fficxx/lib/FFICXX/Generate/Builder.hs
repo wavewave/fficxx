@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Builder 
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -14,12 +14,13 @@
 
 module FFICXX.Generate.Builder where 
 
-import          Data.Char (toUpper)
-import          Data.Monoid (mempty)
-import          System.FilePath ((</>))
-import          System.Directory (getCurrentDirectory)
-import          System.Process (readProcess)
-import          Text.StringTemplate hiding (render)
+import           Data.Char (toUpper)
+import qualified Data.HashMap.Strict as HM
+import           Data.Monoid (mempty)
+import           System.FilePath ((</>))
+import           System.Directory (getCurrentDirectory)
+import           System.Process (readProcess)
+import           Text.StringTemplate hiding (render)
 --
 import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Code.Cpp
@@ -77,20 +78,19 @@ mkCabalFile config templates cabal (tih,classmodules) cabalfile = do
 macrofy :: String -> String 
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
-simpleBuilder :: (Cabal,[Class],[TopLevelFunction]) ->  IO ()
-simpleBuilder (cabal,myclasses, toplevelfunctions) = do 
-  putStrLn "generate snappy" 
+simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))] -> (Cabal,[Class],[TopLevelFunction]) ->  IO ()
+simpleBuilder pkgname m (cabal,myclasses, toplevelfunctions) = do
+  putStrLn ("generating " ++ pkgname)
   cwd <- getCurrentDirectory 
-
   let cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd 
                           , fficxxconfig_workingDir = cwd </> "working"
                           , fficxxconfig_installBaseDir = cwd </> (cabal_pkgname cabal)
                           } 
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg 
-      pkgname = "Snappy" 
+
       (mods,cihs,tih) = mkAll_ClassModules_CIH_TIH 
-                          ("Snappy", (const ([NS "snappy"],["snappy-sinksource.h","snappy.h"]))) 
+                          (pkgname, mkClassNSHeaderFromMap (HM.fromList m)) -- (const ([NS "snappy"],["snappy-sinksource.h","snappy.h"]))) 
                           (myclasses, toplevelfunctions)
       hsbootlst = mkHSBOOTCandidateList mods 
       cglobal = mkGlobal myclasses 

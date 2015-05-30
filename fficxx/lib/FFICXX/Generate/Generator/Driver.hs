@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Generator.Driver
--- Copyright   : (c) 2011-2014 Ian-Woo Kim
+-- Copyright   : (c) 2011-2015 Ian-Woo Kim
 -- 
 -- License     : BSD3
 -- Maintainer  : ianwookim@gmail.com
@@ -53,7 +53,7 @@ writeDeclHeaders :: STGroup String
                  -> ClassImportHeader
                  -> IO () 
 writeDeclHeaders templates wdir typemacroprefix cprefix header = do 
-  let fn = wdir </> cihSelfHeader header
+  let fn = wdir </> (unHdrName (cihSelfHeader header))
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkDeclHeader templates typemacroprefix cprefix header)
 
@@ -206,7 +206,7 @@ copyCppFiles wdir ddir cprefix (tih,cihs) = do
   doesFileExist (wdir </> tlcppfile) 
     >>= flip when (copyFileWithMD5Check (wdir </> tlcppfile) (ddir </> tlcppfile))
   forM_ cihs $ \header-> do 
-    let hfile = cihSelfHeader header
+    let hfile = unHdrName (cihSelfHeader header)
         cppfile = cihSelfCpp header
     copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
     copyFileWithMD5Check (wdir </> cppfile) (ddir </> cppfile)

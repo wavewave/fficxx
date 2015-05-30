@@ -173,7 +173,7 @@ mkDeclHeader templates (T.TypMcro typemacroprefix) cprefix header =
       aclass = cihClass header
       typemacrostr = typemacroprefix ++ class_name aclass ++ "__" 
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"") $
-                        cihIncludedHPkgHeadersInH header
+                        map T.unHdrName (cihIncludedHPkgHeadersInH header)
       declDefStr    = genAllCppHeaderTmplVirtual classes 
                       `connRet2`
                       genAllCppHeaderTmplNonVirtual classes 
@@ -206,7 +206,7 @@ mkDefMain :: STGroup String
           -> String 
 mkDefMain templates header =
   let classes = [cihClass header]
-      headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (cihSelfHeader header) ++ "\"" 
+      headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (T.unHdrName (cihSelfHeader header)) ++ "\"" 
       namespaceStr = (concatMap (\x->"using namespace " ++ unNamespace x ++ ";\n") . cihNamespace) header
       aclass = cihClass header
       cppBody = mkProtectedFunctionList (cihClass header) 
@@ -236,7 +236,7 @@ mkTopLevelFunctionHeader :: STGroup String
 mkTopLevelFunctionHeader templates (T.TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix ++ "TOPLEVEL" ++ "__" 
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"")
-                      . map cihSelfHeader . tihClassDep $ tih
+                      . map (T.unHdrName . cihSelfHeader) . tihClassDep $ tih
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
   in  renderTemplateGroup 
         templates 
@@ -258,7 +258,7 @@ mkTopLevelFunctionCppDef templates cprefix tih =
                       `connRet2`
                       (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
                       `connRet2`
-                      ((intercalateWith connRet (\x->"#include \""++x++"\"") . map cihSelfHeader) cihs)
+                      ((intercalateWith connRet (\x->"#include \""++x++"\"") . map (T.unHdrName . cihSelfHeader)) cihs)
       allns = nubBy ((==) `on` unNamespace) (tihClassDep tih >>= cihNamespace)
       namespaceStr = do ns <- allns 
                         ("using namespace " ++ unNamespace ns ++ ";\n")
@@ -489,5 +489,5 @@ mkPackageInterface pinfc pkgname = foldr f pinfc
   where f cih repo = 
           let name = (class_name . cihClass) cih 
               header = cihSelfHeader cih 
-          in set (at (pkgname,T.ClsName name)) (Just (T.HdrName header)) repo
+          in set (at (pkgname,T.ClsName name)) (Just header) repo
 

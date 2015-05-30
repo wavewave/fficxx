@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Cpp
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -19,10 +19,10 @@ import Data.List
 import System.FilePath
 
 import FFICXX.Generate.Util
--- import FFICXX.Generate.Type.Method
-import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Code.MethodDef
 import FFICXX.Generate.Code.Cabal
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.PackageInterface
 
 -- Class Declaration and Definition
 
@@ -142,12 +142,13 @@ genAllCppDefInstNonVirtual =
 genAllCppHeaderInclude :: ClassImportHeader -> String 
 genAllCppHeaderInclude header = 
     intercalateWith connRet (\x->"#include \""++x++"\"") $
-      cihIncludedHPkgHeadersInCPP header
-        ++ cihIncludedCPkgHeaders header
+      map unHdrName (cihIncludedHPkgHeadersInCPP header
+                     ++ cihIncludedCPkgHeaders header)
+
 
 genModuleIncludeHeader :: [ClassImportHeader] -> String 
 genModuleIncludeHeader headers =
-  let strlst = map ((\x->"#include \""++x++"\"") . cihSelfHeader) headers 
+  let strlst = map ((\x->"#include \""++x++"\"") . unHdrName . cihSelfHeader) headers 
   in  intercalate "\n" strlst 
 
 ----
@@ -162,7 +163,7 @@ genIncludeFiles pkgname cmods =
         y <- cmCIH x
         return (cihSelfHeader y) 
       selfheaders = nub selfheaders'
-      includeFileStrs = map (\x->indent++x) selfheaders
+      includeFileStrs = map ((indent++).unHdrName) selfheaders
   in  unlines ((indent++pkgname++"Type.h") : includeFileStrs)
 
 genCsrcFiles :: (TopLevelImportHeader,[ClassModule]) -> String
@@ -180,8 +181,8 @@ genCsrcFiles (tih,cmods) =
       selfcpp = nub selfcpp' 
       tlh = tihHeaderFileName tih <.> "h"
       tlcpp = tihHeaderFileName tih <.> "cpp"
-      includeFileStrsWithCsrc = map (\x->indent++"csrc"</>x) 
-                                 (if (null.tihFuncs) tih then selfheaders else tlh:selfheaders)
+      includeFileStrsWithCsrc = map (\x->indent++"csrc"</> x) 
+                                 (if (null.tihFuncs) tih then map unHdrName selfheaders else tlh:(map unHdrName selfheaders))
       cppFilesWithCsrc = map (\x->indent++"csrc"</>x) 
                            (if (null.tihFuncs) tih then selfcpp else tlcpp:selfcpp)
       

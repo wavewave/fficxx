@@ -13,7 +13,6 @@ let pkg = haskellngPackages.callPackage
                  base bytestring Cabal containers directory either errors filepath
                  hashable HStringTemplate lens mtl process pureMD5 split
                  template-haskell transformers unordered-containers
-		 fficxx-runtime
                ];
 	       buildTools = [ haskellngPackages.cabal-install pkgs.snappy ];
                description = "automatic C++ binding generation";

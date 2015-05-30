@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Type.Class
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -23,6 +23,15 @@ import qualified Data.Map as M
 import System.FilePath 
 -- 
 import FFICXX.Generate.Util
+import FFICXX.Generate.Type.PackageInterface
+
+-- some type aliases
+
+-- type HeaderFileName = String
+
+-- type ClassName = String
+
+
 
 -- | C types
 data CTypes = CTString 
@@ -405,12 +414,12 @@ newtype Namespace = NS { unNamespace :: String } deriving (Show)
 
 data ClassImportHeader = ClassImportHeader
                        { cihClass :: Class 
-                       , cihSelfHeader :: String 
+                       , cihSelfHeader :: HeaderName
                        , cihNamespace :: [Namespace] 
                        , cihSelfCpp :: String
-                       , cihIncludedHPkgHeadersInH :: [String] 
-                       , cihIncludedHPkgHeadersInCPP :: [String] 
-                       , cihIncludedCPkgHeaders :: [String] 
+                       , cihIncludedHPkgHeadersInH :: [HeaderName] -- [String] 
+                       , cihIncludedHPkgHeadersInCPP :: [HeaderName] -- [String] 
+                       , cihIncludedCPkgHeaders :: [HeaderName] 
                        } deriving (Show)
 
 data ClassModule = ClassModule 
