@@ -24,7 +24,7 @@ main = do
     app <- newQApplication p_argc p_argv 
     cstr <- newCString "Hello world"
     hello <- newQLabel cstr
-    qLabelshow hello 
-    qApplicationexec app 
+    show1 hello 
+    exec app 
 
 

@@ -10,34 +10,57 @@ mycabal = Cabal { cabal_pkgname = "qt5"
                 , cabal_cheaderprefix = "Qt5"
                 , cabal_moduleprefix = "Qt5" }
 
--- myclass = Class mycabal 
 
--- some hack
--- intAsClass :: Class 
--- intAsClass = 
---     Class mycabal "int" [] mempty  (Just "IntAsClass")
---    [ 
---     ]  
 
+qObject = 
+  Class mycabal "QObject" [] mempty Nothing
+  [ ] 
+
+qCoreApplication = 
+  Class mycabal "QCoreApplication" [qObject] mempty Nothing
+  [ ]
+
+qGuiApplication =
+  Class mycabal "QGuiApplication" [qCoreApplication] mempty Nothing
+  [ ]
 
 qApplication = 
-  Class mycabal "QApplication" [] mempty Nothing
+  Class mycabal "QApplication" [qGuiApplication] mempty Nothing
   [ Constructor [intref "argc", charpp "argv"]  Nothing 
-  , NonVirtual int_ "exec" [] Nothing 
+  , Virtual int_ "exec" [] Nothing 
   ]
 
-qLabel = 
-  Class mycabal "QLabel" [] mempty Nothing
-  [ Constructor [ cstring "text" ] Nothing
-  , NonVirtual void_ "show" [] Nothing ]
 
-myclasses = [ qApplication, qLabel ] 
+qWidget = 
+  Class mycabal "QWidget" [qObject] mempty Nothing
+  [ Virtual void_ "show" [] (Just "show1")
+  ]
+
+
+qFrame = 
+  Class mycabal "QFrame" [qWidget] mempty Nothing
+  [ ]
+
+qLabel = 
+  Class mycabal "QLabel" [qFrame] mempty Nothing
+  [ Constructor [ cstring "text" ] Nothing
+  ]
+
+myclasses = [ qObject, qCoreApplication, qGuiApplication, qApplication
+            , qWidget, qFrame
+            , qLabel ] 
 
 toplevelfunctions = []
 
-headerMap = [ ("QApplication", ([], [HdrName "QtWidgets/qapplication.h"]))
-            , ("QLabel"      , ([], [HdrName "QtWidgets/qlabel.h"]))
-            ]
+headerMap = 
+  [ ("QObject"         , ([], [HdrName "QtCore/qobject.h"]))
+  , ("QCoreApplication", ([], [HdrName "QtCore/qcoreapplication.h"]))
+  , ("QGuiApplication" , ([], [HdrName "QtGui/qguiapplication.h"]))
+  , ("QApplication"    , ([], [HdrName "QtWidgets/qapplication.h"]))
+  , ("QWidget"         , ([], [HdrName "QtWidgets/qwidget.h"]))
+  , ("QFrame"          , ([], [HdrName "QtWidgets/qframe.h"]))
+  , ("QLabel"          , ([], [HdrName "QtWidgets/qlabel.h"]))
+  ]
 
 mycabalattr = 
     CabalAttr 
