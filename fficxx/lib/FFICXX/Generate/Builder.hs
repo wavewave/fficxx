@@ -47,10 +47,11 @@ cabalTemplate = "Pkg.cabal"
 mkCabalFile :: FFICXXConfig
             -> STGroup String  
             -> Cabal
+            -> String
             -> (TopLevelImportHeader,[ClassModule])
             -> FilePath  
             -> IO () 
-mkCabalFile config templates cabal (tih,classmodules) cabalfile = do 
+mkCabalFile config templates cabal summarymodule (tih,classmodules) cabalfile = do 
   cpath <- getCurrentDirectory 
  
   let str = renderTemplateGroup 
@@ -64,7 +65,7 @@ mkCabalFile config templates cabal (tih,classmodules) cabalfile = do
               , ("csrcFiles", genCsrcFiles (tih,classmodules))
               , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) classmodules) 
               , ("cppFiles", genCppFiles (tih,classmodules))
-              , ("exposedModules", genExposedModules (cabal_pkgname cabal) classmodules) 
+              , ("exposedModules", genExposedModules summarymodule classmodules) 
               , ("otherModules", genOtherModules classmodules)
               , ("extralibdirs", "" )  
               , ("extraincludedirs", "" )  
@@ -79,22 +80,23 @@ macrofy :: String -> String
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
 simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))] -> (Cabal,[Class],[TopLevelFunction]) ->  IO ()
-simpleBuilder pkgname m (cabal,myclasses, toplevelfunctions) = do
+simpleBuilder summarymodule m (cabal,myclasses, toplevelfunctions) = do
+  let pkgname = cabal_pkgname cabal
   putStrLn ("generating " ++ pkgname)
   cwd <- getCurrentDirectory 
   let cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd 
                           , fficxxconfig_workingDir = cwd </> "working"
-                          , fficxxconfig_installBaseDir = cwd </> (cabal_pkgname cabal)
+                          , fficxxconfig_installBaseDir = cwd </> pkgname
                           } 
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg 
 
       (mods,cihs,tih) = mkAll_ClassModules_CIH_TIH 
-                          (pkgname, mkClassNSHeaderFromMap (HM.fromList m)) -- (const ([NS "snappy"],["snappy-sinksource.h","snappy.h"]))) 
+                          (pkgname, mkClassNSHeaderFromMap (HM.fromList m))
                           (myclasses, toplevelfunctions)
       hsbootlst = mkHSBOOTCandidateList mods 
       cglobal = mkGlobal myclasses 
-      summarymodule = pkgname -- "Snappy" 
+      -- summarymodule = -- pkgname -- "Snappy" 
       cabalFileName = pkgname <.> "cabal" -- "Snappy.cabal"
   templateDir <- F.getDataDir >>= return . (</> "template")
   (templates :: STGroup String) <- directoryGroup templateDir 
@@ -105,7 +107,7 @@ simpleBuilder pkgname m (cabal,myclasses, toplevelfunctions) = do
   notExistThenCreate (installDir </> "csrc")
   -- 
   putStrLn "cabal file generation" 
-  mkCabalFile cfg templates cabal (tih,mods) (workingDir </> cabalFileName)
+  mkCabalFile cfg templates cabal summarymodule (tih,mods) (workingDir </> cabalFileName)
   -- 
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")  {- "__SNAPPY__" -}
