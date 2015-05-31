@@ -24,11 +24,10 @@ import qualified FFICXX.Paths_fficxx as F
 
 mysampleclasses = [ ]
 
-mycabal = Cabal
-    { cabal_pkgname = "MySample"
-    , cabal_cheaderprefix = "MySample"
-    , cabal_moduleprefix = "MySample"
-    }
+mycabal = Cabal { cabal_pkgname = "MySample"
+                , cabal_cheaderprefix = "MySample"
+                , cabal_moduleprefix = "MySample"
+                }
 
 myclass = Class mycabal
 
