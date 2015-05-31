@@ -39,8 +39,16 @@ headerMap = [ ("QApplication", ([], [HdrName "QtWidgets/qapplication.h"]))
             , ("QLabel"      , ([], [HdrName "QtWidgets/qlabel.h"]))
             ]
 
+mycabalattr = 
+    CabalAttr 
+    { cabalattr_license = Nothing
+    , cabalattr_licensefile = Nothing
+    , cabalattr_extraincludedirs = ["/home/wavewave/.nix-profile/include"]
+    , cabalattr_extralibdirs = ["/home/wavewave/.nix-profile/lib"  ]
+    }
+
 main :: IO ()
 main = do 
-  simpleBuilder "Qt5" headerMap (mycabal,myclasses,toplevelfunctions) ["Qt5Widgets", "Qt5Gui", "Qt5Core"]
+  simpleBuilder "Qt5" headerMap (mycabal,mycabalattr,myclasses,toplevelfunctions) ["Qt5Widgets", "Qt5Gui", "Qt5Core"]
 
 

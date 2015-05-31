@@ -74,8 +74,16 @@ headerMap = [ ("Sink"  , ([NS "snappy"], [HdrName "snappy-sinksource.h", HdrName
 	    , ("UncheckedByteArraySink", ([NS "snappy"], [HdrName "snappy-sinksource.h", HdrName "snappy.h"]))
             ]
 
+mycabalattr = 
+    CabalAttr 
+    { cabalattr_license = Nothing
+    , cabalattr_licensefile = Nothing
+    , cabalattr_extraincludedirs = []
+    , cabalattr_extralibdirs = []
+    }
+
 main :: IO ()
 main = do 
-  simpleBuilder "Snappy" headerMap (mycabal,myclasses,toplevelfunctions)
+  simpleBuilder "Snappy" headerMap (mycabal,mycabalattr,myclasses,toplevelfunctions) [ "snappy" ]
 
 
