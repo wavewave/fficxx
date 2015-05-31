@@ -16,6 +16,7 @@ module FFICXX.Generate.Builder where
 
 import           Data.Char (toUpper)
 import qualified Data.HashMap.Strict as HM
+import           Data.List (intercalate)
 import           Data.Monoid (mempty)
 import           System.FilePath ((</>), (<.>))
 import           System.Directory (getCurrentDirectory)
@@ -49,9 +50,10 @@ mkCabalFile :: FFICXXConfig
             -> Cabal
             -> String
             -> (TopLevelImportHeader,[ClassModule])
+            -> [String] -- ^ extra libs
             -> FilePath  
             -> IO () 
-mkCabalFile config templates cabal summarymodule (tih,classmodules) cabalfile = do 
+mkCabalFile config templates cabal summarymodule (tih,classmodules) extralibs cabalfile = do 
   cpath <- getCurrentDirectory 
  
   let str = renderTemplateGroup 
@@ -69,7 +71,7 @@ mkCabalFile config templates cabal summarymodule (tih,classmodules) cabalfile = 
               , ("otherModules", genOtherModules classmodules)
               , ("extralibdirs", "" )  
               , ("extraincludedirs", "" )  
-              , ("extralib", ", snappy")
+              , ("extralib", ", " ++ intercalate ", " extralibs)
               , ("cabalIndentation", cabalIndentation)
               ]
               cabalTemplate 
@@ -79,8 +81,11 @@ mkCabalFile config templates cabal summarymodule (tih,classmodules) cabalfile = 
 macrofy :: String -> String 
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
-simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))] -> (Cabal,[Class],[TopLevelFunction]) ->  IO ()
-simpleBuilder summarymodule m (cabal,myclasses, toplevelfunctions) = do
+simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))] 
+              -> (Cabal,[Class],[TopLevelFunction]) 
+              -> [String] -- ^ extra libs
+              ->  IO ()
+simpleBuilder summarymodule m (cabal,myclasses, toplevelfunctions) extralibs = do
   let pkgname = cabal_pkgname cabal
   putStrLn ("generating " ++ pkgname)
   cwd <- getCurrentDirectory 
@@ -107,7 +112,7 @@ simpleBuilder summarymodule m (cabal,myclasses, toplevelfunctions) = do
   notExistThenCreate (installDir </> "csrc")
   -- 
   putStrLn "cabal file generation" 
-  mkCabalFile cfg templates cabal summarymodule (tih,mods) (workingDir </> cabalFileName)
+  mkCabalFile cfg templates cabal summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
   -- 
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")  {- "__SNAPPY__" -}

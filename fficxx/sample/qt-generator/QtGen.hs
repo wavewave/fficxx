@@ -41,6 +41,6 @@ headerMap = [ ("QApplication", ([], [HdrName "QtWidgets/qapplication.h"]))
 
 main :: IO ()
 main = do 
-  simpleBuilder "Qt5" headerMap (mycabal,myclasses,toplevelfunctions)
+  simpleBuilder "Qt5" headerMap (mycabal,myclasses,toplevelfunctions) ["Qt5Widgets", "Qt5Gui", "Qt5Core"]
 
 
