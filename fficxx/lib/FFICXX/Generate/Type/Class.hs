@@ -48,6 +48,7 @@ data CTypes = CTString
             | CTIntStar
             | CTCharStarStar
             | CPointer CTypes
+            | CRef CTypes
             deriving Show
 
 -- | C++ types
@@ -84,6 +85,7 @@ ctypToStr ctyp isconst =
         CTIntStar -> "int*"
         CTCharStarStar -> "char**"
         CPointer s -> ctypToStr s NoConst ++ "*"
+        CRef s -> ctypToStr s NoConst ++ "*"
   in case isconst of
         Const   -> "const" `connspace` typword
         NoConst -> typword
@@ -148,6 +150,10 @@ voidp_ = CT CTVoidStar NoConst
 
 intp_ :: Types
 intp_ = CT CTIntStar NoConst
+
+intref_ :: Types
+intref_ = CT (CRef CTInt) NoConst
+
 
 charpp_ :: Types
 charpp_ = CT CTCharStarStar NoConst
@@ -216,6 +222,9 @@ bool    var = (bool_    , var)
 intp :: String -> (Types, String)
 intp var = (intp_ , var)
 
+intref :: String -> (Types, String)
+intref var = (intref_, var)
+
 charpp :: String -> (Types, String)
 charpp var = (charpp_, var)
 
@@ -256,7 +265,7 @@ hsCTypeName CTVoidStar = "(Ptr ())"
 hsCTypeName CTIntStar = "(Ptr CInt)"
 hsCTypeName CTCharStarStar = "(Ptr (CString))"
 hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")"
-
+hsCTypeName (CRef t) = "(Ptr " ++ hsCTypeName t ++ ")"
 
 hsCppTypeName :: CPPTypes -> String
 hsCppTypeName (CPTClass c) =  "(Ptr "++rawname++")"  where rawname = snd (hsClassName c)
@@ -370,6 +379,7 @@ argToCallString (CPT (CPTClass c) _,varname) =
     "to_nonconst<"++str++","++str++"_t>("++varname++")" where str = class_name c
 argToCallString (CPT (CPTClassRef c) _,varname) =
     "to_nonconstref<"++str++","++str++"_t>(*"++varname++")" where str = class_name c
+argToCallString (CT (CRef _) _,varname) = "(*"++ varname++ ")"
 argToCallString (_,varname) = varname
 
 argsToCallString :: Args -> String
@@ -518,6 +528,7 @@ ctypToHsTyp _c (CT CTVoidStar _) = "(Ptr ())"
 ctypToHsTyp _c (CT CTIntStar _) = "(Ptr CInt)"
 ctypToHsTyp _c (CT CTCharStarStar _) = "(Ptr CString)"
 ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
+ctypToHsTyp _c (CT (CRef t) _) = hsCTypeName (CRef t)
 ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
 

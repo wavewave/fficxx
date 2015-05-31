@@ -12,17 +12,17 @@ mycabal = Cabal { cabal_pkgname = "qt5"
 
 -- myclass = Class mycabal 
 
--- this is standard string library
---string :: Class 
---string = 
---  Class mycabal "string" [] mempty  (Just "CppString")
---  [ 
---  ]  
+-- some hack
+-- intAsClass :: Class 
+-- intAsClass = 
+--     Class mycabal "int" [] mempty  (Just "IntAsClass")
+--    [ 
+--     ]  
 
 
 qApplication = 
   Class mycabal "QApplication" [] mempty Nothing
-  [ Constructor [int "argc", charpp "argv"]  Nothing 
+  [ Constructor [intref "argc", charpp "argv"]  Nothing 
   , NonVirtual int_ "exec" [] Nothing 
   ]
 

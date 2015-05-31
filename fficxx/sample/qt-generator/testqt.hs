@@ -8,9 +8,11 @@ import Foreign.Ptr
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc
 import Foreign.C.String
+import Foreign.C.Types
 import Foreign.ForeignPtr
 import Foreign.ForeignPtr.Unsafe
 import Foreign.StablePtr 
+import Foreign.Storable
 
 import System.IO
 import Qt5 
@@ -25,18 +27,21 @@ main = do
     -- alloca $ \argv -> do 
     -- c_set_string argv
     -- argv <- c_get_string
+  alloca $ \ptr -> do
+    poke ptr (0 :: CInt)
     cstr <- newCString "test"
     argv <- newArray [cstr] 
     
+    cstrhello <- newCString "Hello world"
     hFlush stdout
  
     putStrLn "point a"
     -- threadDelay 1000000
-    app <- newQApplication 0 nullPtr --- 1 argv  -- (castPtr (castStablePtrToPtr argv)) -- (argv :: Ptr CString)
+    app <- newQApplication ptr nullPtr --- 1 argv  -- (castPtr (castStablePtrToPtr argv)) -- (argv :: Ptr CString)
   
     putStrLn "point b"
 
-    hello <- newQLabel "Hello World"
+    hello <- newQLabel cstrhello
     qLabelshow hello 
     qApplicationexec app 
 
