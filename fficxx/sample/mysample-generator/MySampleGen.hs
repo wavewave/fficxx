@@ -24,11 +24,11 @@ import qualified FFICXX.Paths_fficxx as F
 
 mysampleclasses = [ ]
 
-mycabal = Cabal { cabal_pkgname = "MySample"
-                , cabal_cheaderprefix = "MySample"
-                , cabal_moduleprefix = "MySample"
-                , cabal_attr = def
-                }
+mycabal = Cabal
+    { cabal_pkgname = "MySample"
+    , cabal_cheaderprefix = "MySample"
+    , cabal_moduleprefix = "MySample"
+    }
 
 myclass = Class mycabal
 
@@ -55,18 +55,23 @@ main = do
   putStrLn "generate mysample"
   cwd <- getCurrentDirectory
 
-  let cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd
+  let mycabalattr = def
+          { cabalattr_extralibdirs     = [cwd </> ".." </> "cxxlib" </> "lib"]
+          , cabalattr_extraincludedirs = [cwd </> ".." </> "cxxlib" </> "include"]
+          }
+      cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd
                           , fficxxconfig_workingDir = cwd </> "working"
                           , fficxxconfig_installBaseDir = cwd </> "MySample"
                           }
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg
       pkgname = "MySample"
-      (mods,cihs,tih) = mkAll_ClassModules_CIH_TIH ("MySample", (\c->([],[class_name c ++ ".h"]))) (myclasses,toplevelfunctions)
+      (mods,cihs,tih) = mkAll_ClassModules_CIH_TIH ("MySample", (\c->([],[HdrName $ class_name c ++ ".h"]))) (myclasses,toplevelfunctions)
       hsbootlst = mkHSBOOTCandidateList mods
       cglobal = mkGlobal myclasses
       summarymodule = "MySample"
       cabalFileName = "MySample.cabal"
+      extralibs = ["mysample"]
   templateDir <- F.getDataDir >>= return . (</> "template")
   (templates :: STGroup String) <- directoryGroup templateDir
   --
@@ -76,7 +81,7 @@ main = do
   notExistThenCreate (installDir </> "csrc")
   --
   putStrLn "cabal file generation"
-  mkCabalFile cfg templates mycabal (tih,mods) (workingDir </> cabalFileName)
+  mkCabalFile cfg templates (mycabal, mycabalattr) summarymodule (tih, mods) extralibs (workingDir </> cabalFileName)
   --
   putStrLn "header file generation"
   writeTypeDeclHeaders templates workingDir (TypMcro "__MYSAMPLE__") pkgname cihs
@@ -114,5 +119,3 @@ main = do
   -- copyPredefined templateDir (srcDir ibase) pkgname
   copyCppFiles workingDir (csrcDir installDir) pkgname (tih,cihs)
   mapM_ (copyModule workingDir (srcDir installDir) summarymodule) mods
-
-

@@ -390,22 +390,22 @@ rettypeToString (CPT (CPTClassRef c) _) = str ++ "_p"
 newtype ProtectedMethod = Protected { unProtected :: [String] }
     deriving (Monoid)
 
-data Cabal = Cabal  { cabal_pkgname :: String
+data Cabal = Cabal  { cabal_pkgname       :: String
                     , cabal_cheaderprefix :: String
-                    , cabal_moduleprefix :: String
-                    , cabal_attr :: CabalAttr
+                    , cabal_moduleprefix  :: String
                     }
 
-data CabalAttr = CabalAttr  { cabal_attr_license :: Maybe String
-                            , cabal_attr_licensefile :: Maybe String
+data CabalAttr = CabalAttr  { cabalattr_license          :: Maybe String
+                            , cabalattr_licensefile      :: Maybe String
+                            , cabalattr_extraincludedirs :: [FilePath]
+                            , cabalattr_extralibdirs     :: [FilePath]
                             }
 
-cabal_license = cabal_attr_license . cabal_attr
-cabal_licensefile = cabal_attr_licensefile . cabal_attr
-
 instance Default CabalAttr where
-    def = CabalAttr { cabal_attr_license = Nothing
-                    , cabal_attr_licensefile = Nothing
+    def = CabalAttr { cabalattr_license          = Nothing
+                    , cabalattr_licensefile      = Nothing
+                    , cabalattr_extraincludedirs = []
+                    , cabalattr_extralibdirs     = []
                     }
 
 data Class = Class { class_cabal :: Cabal
@@ -454,8 +454,8 @@ data ClassGlobal = ClassGlobal
 -- | Check abstract class
 
 isAbstractClass :: Class -> Bool
-isAbstractClass (Class _ _ _ _ _ _) = False
-isAbstractClass (AbstractClass _ _ _ _ _ _) = True
+isAbstractClass Class{}         = False
+isAbstractClass AbstractClass{} = True
 
 instance Show Class where
   show x = show (class_name x)

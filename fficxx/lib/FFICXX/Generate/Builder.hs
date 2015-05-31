@@ -34,13 +34,12 @@ import           FFICXX.Generate.Generator.ContentMaker
 import           FFICXX.Generate.Generator.Driver
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class ( Cabal(..)
+                                            , CabalAttr(..)
                                             , Class
                                             , ClassModule
                                             , Namespace(NS)
                                             , TopLevelFunction
                                             , TopLevelImportHeader
-                                            , cabal_license
-                                            , cabal_licensefile
                                             )
 import           FFICXX.Generate.Type.PackageInterface
 import           FFICXX.Generate.Util
@@ -55,21 +54,28 @@ cabalTemplate = "Pkg.cabal"
 -- |
 mkCabalFile :: FFICXXConfig
             -> STGroup String
-            -> Cabal
+            -> (Cabal, CabalAttr)
             -> String
             -> (TopLevelImportHeader,[ClassModule])
             -> [String] -- ^ extra libs
             -> FilePath
             -> IO ()
-mkCabalFile config templates cabal summarymodule (tih,classmodules) extralibs cabalfile = do
+mkCabalFile config
+            templates
+            (cabal, cabalattr)
+            summarymodule
+            (tih,classmodules)
+            extralibs
+            cabalfile
+            = do
   cpath <- getCurrentDirectory
 
   let str = renderTemplateGroup
               templates
               ( [ ("licenseField", "license: " ++ license)
-                  | Just license <- [cabal_license cabal] ] ++
+                  | Just license <- [cabalattr_license cabalattr] ] ++
                 [ ("licenseFileField", "license-file: " ++ licensefile)
-                  | Just licensefile <- [cabal_licensefile cabal] ] ++
+                  | Just licensefile <- [cabalattr_licensefile cabalattr] ] ++
                 [ ("pkgname", cabal_pkgname cabal)
                 , ("version",  "0.0")
                 , ("buildtype", "Simple")
@@ -79,9 +85,9 @@ mkCabalFile config templates cabal summarymodule (tih,classmodules) extralibs ca
                 , ("cppFiles", genCppFiles (tih,classmodules))
                 , ("exposedModules", genExposedModules summarymodule classmodules)
                 , ("otherModules", genOtherModules classmodules)
-                , ("extralibdirs", "")
-                , ("extraincludedirs", "")
-                , ("extralib", ", " ++ intercalate ", " extralibs)
+                , ("extralibdirs", intercalate ", " $ cabalattr_extralibdirs cabalattr)
+                , ("extraincludedirs", intercalate ", " $ cabalattr_extraincludedirs cabalattr)
+                , ("extraLibraries", concatMap (", " ++) extralibs)
                 , ("cabalIndentation", cabalIndentation)
                 ]
               )
@@ -93,10 +99,10 @@ macrofy :: String -> String
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
 simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))]
-              -> (Cabal,[Class],[TopLevelFunction])
+              -> (Cabal, CabalAttr, [Class], [TopLevelFunction])
               -> [String] -- ^ extra libs
               ->  IO ()
-simpleBuilder summarymodule m (cabal,myclasses, toplevelfunctions) extralibs = do
+simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) extralibs = do
   let pkgname = cabal_pkgname cabal
   putStrLn ("generating " ++ pkgname)
   cwd <- getCurrentDirectory
@@ -123,7 +129,7 @@ simpleBuilder summarymodule m (cabal,myclasses, toplevelfunctions) extralibs = d
   notExistThenCreate (installDir </> "csrc")
   --
   putStrLn "cabal file generation"
-  mkCabalFile cfg templates cabal summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
+  mkCabalFile cfg templates (cabal, cabalattr) summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
   --
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")  {- "__SNAPPY__" -}

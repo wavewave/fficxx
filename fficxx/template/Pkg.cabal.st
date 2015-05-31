@@ -30,7 +30,7 @@ $exposedModules$
   Other-Modules:
 $otherModules$
   extra-lib-dirs: $extralibdirs$
-  extra-libraries:    stdc++ $extralib$
+  extra-libraries:    stdc++ $extraLibraries$
   Include-dirs:       csrc $extraincludedirs$
   Install-includes:
 $includeFiles$
