@@ -14,7 +14,6 @@
 
 module FFICXX.Generate.Code.Dependency where
 
-import           Control.Applicative
 import           Data.Function (on)
 import           Data.List 
 import           Data.Maybe
@@ -83,6 +82,8 @@ extractClassDep :: Function -> Dep4Func
 extractClassDep (Constructor args _)  = Dep4Func Nothing (catMaybes (map (extractClassFromType.fst) args))
 extractClassDep (Virtual ret _ args _) = 
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
+extractClassDep (TestVirtual _ _ _ _ ) = error "test"
+
 extractClassDep (NonVirtual ret _ args _) =
     Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
 extractClassDep (Static ret _ args _) = 

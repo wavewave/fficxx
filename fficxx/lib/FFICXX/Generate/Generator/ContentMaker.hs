@@ -14,7 +14,6 @@
 
 module FFICXX.Generate.Generator.ContentMaker where 
 
-import           Control.Applicative
 import           Control.Lens (set,at)
 import           Control.Monad.Trans.Reader
 import           Data.Function (on)
@@ -247,12 +246,12 @@ mkTopLevelFunctionHeader templates (T.TypMcro typemacroprefix) cprefix tih =
         declarationTemplate
 
 
+
 -- | 
 mkTopLevelFunctionCppDef :: STGroup String 
-                         -> String     -- ^ C prefix 
                          -> TopLevelImportHeader
                          -> String 
-mkTopLevelFunctionCppDef templates cprefix tih =
+mkTopLevelFunctionCppDef templates tih =  
   let cihs = tihClassDep tih
       declHeaderStr = "#include \"" ++ tihHeaderFileName tih <.> "h" ++ "\""
                       `connRet2`

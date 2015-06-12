@@ -17,27 +17,22 @@ module FFICXX.Generate.Builder where
 import           Data.Char (toUpper)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (intercalate)
-import           Data.Monoid (mempty)
 import           System.FilePath ((</>), (<.>))
 import           System.Directory (getCurrentDirectory)
 import           System.Process (readProcess)
 import           Text.StringTemplate hiding (render)
 --
 import           FFICXX.Generate.Code.Cabal
-import           FFICXX.Generate.Code.Cpp
 import           FFICXX.Generate.Code.Dependency
-import           FFICXX.Generate.Config
 import           FFICXX.Generate.Code.Cpp
-import           FFICXX.Generate.Code.Dependency
 import           FFICXX.Generate.Config
 import           FFICXX.Generate.Generator.ContentMaker
 import           FFICXX.Generate.Generator.Driver
-import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class ( Cabal(..)
                                             , CabalAttr(..)
                                             , Class
                                             , ClassModule
-                                            , Namespace(NS)
+                                            , Namespace(..)
                                             , TopLevelFunction
                                             , TopLevelImportHeader
                                             )
@@ -52,24 +47,20 @@ cabalTemplate = "Pkg.cabal"
 
 
 -- |
-mkCabalFile :: FFICXXConfig
-            -> STGroup String
+mkCabalFile :: STGroup String
             -> (Cabal, CabalAttr)
             -> String
             -> (TopLevelImportHeader,[ClassModule])
             -> [String] -- ^ extra libs
             -> FilePath
             -> IO ()
-mkCabalFile config
-            templates
+mkCabalFile templates
             (cabal, cabalattr)
             summarymodule
             (tih,classmodules)
             extralibs
             cabalfile
             = do
-  cpath <- getCurrentDirectory
-
   let str = renderTemplateGroup
               templates
               ( [ ("licenseField", "license: " ++ license)
@@ -117,9 +108,7 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
                           (pkgname, mkClassNSHeaderFromMap (HM.fromList m))
                           (myclasses, toplevelfunctions)
       hsbootlst = mkHSBOOTCandidateList mods
-      cglobal = mkGlobal myclasses
-      -- summarymodule = -- pkgname -- "Snappy"
-      cabalFileName = pkgname <.> "cabal" -- "Snappy.cabal"
+      cabalFileName = pkgname <.> "cabal"
   templateDir <- F.getDataDir >>= return . (</> "template")
   (templates :: STGroup String) <- directoryGroup templateDir
   --
@@ -129,17 +118,17 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
   notExistThenCreate (installDir </> "csrc")
   --
   putStrLn "cabal file generation"
-  mkCabalFile cfg templates (cabal, cabalattr) summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
+  mkCabalFile templates (cabal, cabalattr) summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
   --
   putStrLn "header file generation"
-  let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")  {- "__SNAPPY__" -}
+  let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")
   writeTypeDeclHeaders templates workingDir typmacro pkgname cihs
   mapM_ (writeDeclHeaders templates workingDir typmacro pkgname) cihs
   writeTopLevelFunctionHeaders templates workingDir typmacro pkgname tih
   --
   putStrLn "cpp file generation"
   mapM_ (writeCppDef templates workingDir) cihs
-  writeTopLevelFunctionCppDef templates workingDir typmacro pkgname tih
+  writeTopLevelFunctionCppDef templates workingDir tih
   --
   putStrLn "RawType.hs file generation"
   mapM_ (writeRawTypeHs templates workingDir) mods

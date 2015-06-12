@@ -12,7 +12,6 @@
 
 module FFICXX.Generate.Generator.Driver where
 
-import           Control.Applicative ((<$>))
 import           Control.Monad (when, forM_)
 import qualified Data.ByteString.Lazy.Char8 as L
 import           Data.Digest.Pure.MD5
@@ -70,8 +69,6 @@ writeTopLevelFunctionHeaders templates wdir typemacroprefix cprefix tih = do
     hPutStrLn h (mkTopLevelFunctionHeader templates typemacroprefix cprefix tih)
 
 
-
-
 writeCppDef :: STGroup String -> FilePath -> ClassImportHeader -> IO () 
 writeCppDef templates wdir header = do 
   let fn = wdir </> cihSelfCpp header
@@ -82,13 +79,11 @@ writeCppDef templates wdir header = do
 -- | 
 writeTopLevelFunctionCppDef :: STGroup String  
                             -> FilePath 
-                            -> TypeMacro 
-                            -> String  -- ^ c prefix 
                             -> TopLevelImportHeader
                             -> IO () 
-writeTopLevelFunctionCppDef templates wdir typemacroprefix cprefix tih = do 
+writeTopLevelFunctionCppDef templates wdir tih = do 
   let fn = wdir </> tihHeaderFileName tih <.> "cpp"
-  withFile fn WriteMode $ \h -> hPutStrLn h (mkTopLevelFunctionCppDef templates cprefix tih)
+  withFile fn WriteMode $ \h -> hPutStrLn h (mkTopLevelFunctionCppDef templates tih)
 
 
 -- | 

@@ -69,33 +69,33 @@ genTopLevelFuncFFI :: TopLevelImportHeader -> TopLevelFunction -> String
 genTopLevelFuncFFI header tfn =
     case tfn of
       TopLevelFunction {..} ->  
-	let fname = maybe toplevelfunc_name id toplevelfunc_alias
-	    (x:xs)  = fname
-	    headerfilename = tihHeaderFileName header <.> "h"
-	    hfname = toLower x : xs 
-	    cfname = "c_" ++ toLowers hfname 
-	    args = toplevelfunc_args 
-	    ret = toplevelfunc_ret         
-	    argstr = concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
-	in render ffiTemplate
-	     [ ("headerfilename",headerfilename) 
-	     , ("funcname", "TopLevel_" ++ fname)
-	     , ("hsfuncname",cfname)
-	     , ("hsargs", argstr) ] 
+        let fname = maybe toplevelfunc_name id toplevelfunc_alias
+            (x:xs)  = fname
+            headerfilename = tihHeaderFileName header <.> "h"
+            hfname = toLower x : xs 
+            cfname = "c_" ++ toLowers hfname 
+            args = toplevelfunc_args 
+            ret = toplevelfunc_ret         
+            argstr = concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
+        in render ffiTemplate
+             [ ("headerfilename",headerfilename) 
+             , ("funcname", "TopLevel_" ++ fname)
+             , ("hsfuncname",cfname)
+             , ("hsargs", argstr) ] 
       TopLevelVariable {..} ->  
-	let fname = maybe toplevelvar_name id toplevelvar_alias
-	    (x:xs)  = fname
-	    headerfilename = tihHeaderFileName header <.> "h"
-	    hfname = toLower x : xs 
-	    cfname = "c_" ++ toLowers hfname 
-	    args = [] 
-	    ret = toplevelvar_ret         
-	    argstr = concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
-	in render ffiTemplate
-	     [ ("headerfilename",headerfilename) 
-	     , ("funcname", "TopLevel_" ++ fname)
-	     , ("hsfuncname",cfname)
-	     , ("hsargs", argstr) ] 
+        let fname = maybe toplevelvar_name id toplevelvar_alias
+            (x:xs)  = fname
+            headerfilename = tihHeaderFileName header <.> "h"
+            hfname = toLower x : xs 
+            cfname = "c_" ++ toLowers hfname 
+            args = [] 
+            ret = toplevelvar_ret         
+            argstr = concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
+        in render ffiTemplate
+             [ ("headerfilename",headerfilename) 
+             , ("funcname", "TopLevel_" ++ fname)
+             , ("hsfuncname",cfname)
+             , ("hsargs", argstr) ] 
 
   where hsargtype (CT ctype _) = hsCTypeName ctype
         hsargtype (CPT x _) = hsCppTypeName x 

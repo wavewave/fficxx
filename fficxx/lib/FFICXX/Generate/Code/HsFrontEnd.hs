@@ -17,7 +17,6 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import Control.Monad.State
 import Control.Monad.Reader
-import Data.Char (toLower)
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
@@ -529,15 +528,11 @@ genImportInImplementation m =
 genImportInExistential :: DaughterMap -> ClassModule -> String
 genImportInExistential dmap m = 
   let daughters = concat . catMaybes $ (map (flip M.lookup dmap . getClassModuleBase)  (cmClass m))
-      alldaughters' = nub . map getClassModuleBase $ daughters
-      -- alldaughters = filter ((&&) <$> (/= "TClass") <*> (/= "TObject")) alldaughters'
-      alldaughters = alldaughters'
+      alldaughters = nub . map getClassModuleBase $ daughters
       getImportOneClass mname = 
           intercalateWith connRet (importOneClass mname) 
                           ["RawType", "Cast", "Interface", "Implementation"]
   in  intercalateWith connRet getImportOneClass alldaughters
-
-
 
 
 ------------------------
@@ -548,9 +543,9 @@ genTopLevelFuncDef :: TopLevelFunction -> String
 genTopLevelFuncDef f@TopLevelFunction {..} = 
     let fname = hsFrontNameForTopLevelFunction f
         cfname = "c_" ++ toLowers fname 
-        args = toplevelfunc_args
-        ret = toplevelfunc_ret 
-        xformerstr = let len = length args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
+        -- args = toplevelfunc_args
+        -- ret = toplevelfunc_ret 
+        xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
         prefixstr =  
           let prefixlst = (snd . mkHsFuncArgType) toplevelfunc_args
                         ++ (snd . mkHsFuncRetType) toplevelfunc_ret
@@ -567,7 +562,7 @@ genTopLevelFuncDef v@TopLevelVariable {..} =
     let fname = hsFrontNameForTopLevelFunction v
         cfname = "c_" ++ toLowers fname 
         args = []
-        ret = toplevelvar_ret 
+        -- ret = toplevelvar_ret 
         xformerstr = let len = length args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
         prefixstr =  
           let prefixlst = (snd . mkHsFuncRetType) toplevelvar_ret

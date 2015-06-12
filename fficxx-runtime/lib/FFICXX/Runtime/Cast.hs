@@ -8,11 +8,10 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Runtime.Cast
--- Copyright   : (c) 2011-2014 Ian-Woo Kim
+-- Copyright   : (c) 2011-2015 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -26,7 +25,6 @@ module FFICXX.Runtime.Cast where
 import Data.String
 import Data.Word
 import Foreign.C
-import Foreign.C.String
 import Foreign.Ptr
 import Foreign.ForeignPtr
 import Foreign.Marshal.Array

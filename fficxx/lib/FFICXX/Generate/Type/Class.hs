@@ -15,23 +15,14 @@
 
 module FFICXX.Generate.Type.Class where
 
-import Control.Applicative ((<$>),(<*>))
 import Data.Char
 import Data.Default (Default(def))
 import Data.List
-import Data.Monoid
 import qualified Data.Map as M
 import System.FilePath
 --
 import FFICXX.Generate.Util
 import FFICXX.Generate.Type.PackageInterface
-
--- some type aliases
-
--- type HeaderFileName = String
-
--- type ClassName = String
-
 
 
 -- | C types
@@ -283,6 +274,11 @@ data Function = Constructor { func_args :: Args
                         , func_args :: Args
                         , func_alias :: Maybe String
                         }
+              | TestVirtual { func_ret :: Types
+                            , func_name :: String
+                            , func_args :: Args
+                            , func_alias :: Maybe String
+                            }
               | NonVirtual { func_ret :: Types
                            , func_name :: String
                            , func_args :: Args
@@ -612,9 +608,9 @@ genericFuncRet f =
   case f of
     Constructor _ _ -> self_
     Virtual t _ _ _ -> t
+    TestVirtual _ _ _ _ -> error "test"
     NonVirtual t _ _ _-> t
     Static t _ _ _ -> t
-    -- AliasVirtual t _ _ _ -> t
     Destructor _ -> void_
 
 genericFuncArgs :: Function -> Args
@@ -626,9 +622,9 @@ aliasedFuncName c f =
   case f of
     Constructor _ a -> maybe (constructorName c) id a
     Virtual _ str _ a -> maybe str id a
+    TestVirtual _ _ _ _ -> error "test"
     NonVirtual _ str _ a-> maybe (nonvirtualName c str) id a
     Static _ str _ a -> maybe (nonvirtualName c str) id a
-    -- AliasVirtual _ _  _ alias -> alias
     Destructor a -> maybe destructorName id a
 
 cppStaticName :: Class -> Function -> String
@@ -638,6 +634,7 @@ cppFuncName :: Class -> Function -> String
 cppFuncName c f =   case f of
     Constructor _ _ -> "new"
     Virtual _ _  _ _ -> func_name f
+    TestVirtual _ _ _ _ -> error "test"
     NonVirtual _ _ _ _-> func_name f
     Static _ _ _ _-> cppStaticName c f
     -- AliasVirtual _ _  _ _ _ -> func_name f
