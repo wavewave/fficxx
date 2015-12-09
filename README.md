@@ -55,7 +55,13 @@ OOP Model in fficxx
 
 fficxx generates haskell codes at raw level (C wrapper and haskell foreign pointer  that are directly matched with C/C++ types) and at high level (newtype wrapper for raw level pointer and haskell typeclasses reflecting OOP class hierarchy). Haskell does not have a concept of subtyping, i.e. we do not provide any easy way to create a new subclass and overload member functions from existing classes on haskell side. However, fortunately, one can describe the OOP subclass relationship using a typeclass interface as a contract for a class `b` to be equal to or a subclass of `a`. In a sense, typeclasses are Interface Definition Language (IDL) for describing OOP classes. Thus, a C++ class is represented by both haskell concrete type (for a C++ class itself) and typeclass (a set of classes that can be equal to or a subclass of the C++ class).
 
-Assuming that there is a C++ class `A`. fficxx generates a haskell type `A`. This haskell type `A` is nothing but a newtype wrapping `ForeignPtr` tagged by `RawA`. `RawA` exists only for the purpose of a phantom type to be used as tags for `Ptr` in FFI imports (`foreign import` statements.) When programming with fficxx-generated code at high level, programmers should seldom encounter `Raw` types. An instance object of C++ class `A` is a value of haskell type `A`. To create an instance, ffixx provides a smart constructor (`newA`) if specified with a corresponding constructor.
+Assuming that there is a C++ class `A`. fficxx generates a haskell type `A`. This haskell type `A` is nothing but a newtype wrapping `ForeignPtr` tagged by `RawA`.
+```
+data RawA
+
+newtype A = A (ForeignPtr RawA)
+```
+`RawA` exists only for the purpose of a phantom type to be used as tags for `Ptr` in FFI imports (`foreign import` statements.) When programming with fficxx-generated code at high level, programmers should seldom encounter `Raw` types. An instance object of C++ class `A` is a value of haskell type `A`. To create an instance, ffixx provides a smart constructor (`newA`) if specified with a corresponding constructor.
 
 Therefore, one can create an instance from a concrete haskell type, and pass it to any functions which needs them. On Haskell side, member functions of a C++ class are nothing but functions whose first argument is the same as the corresponding haskell type to the class. For example, if the class `A` has a member function `foo` of signature `void A::foo( int param )`, then fficxx generates a high level function
 ```
