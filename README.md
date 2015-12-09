@@ -61,7 +61,7 @@ data RawA
 
 newtype A = A (ForeignPtr RawA)
 ```
-`RawA` exists only for the purpose of a phantom type to be used as tags for `Ptr` in FFI imports (`foreign import` statements.) When programming with fficxx-generated code at high level, programmers should seldom encounter `Raw` types. An instance object of C++ class `A` is a value of haskell type `A`. To create an instance, ffixx provides a smart constructor (`newA`) if specified with a corresponding constructor.
+`RawA` exists only for the purpose of a phantom type to be used as tags for `Ptr` in FFI imports (`foreign import` statements.) When programming with fficxx-generated code at high level, programmers should seldom encounter `Raw` types. An instance object of C++ class `A` is a value of haskell type `A`. To create an instance, fficxx provides a smart constructor (`newA`) if specified with a corresponding constructor.
 
 Therefore, one can create an instance from a concrete haskell type, and pass it to any functions which needs them. On Haskell side, member functions of a C++ class are nothing but functions whose first argument is the same as the corresponding haskell type to the class. For example, if the class `A` has a member function `foo` of signature `void A::foo( int param )`, then fficxx generates a high level function
 ```
