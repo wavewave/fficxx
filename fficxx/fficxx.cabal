@@ -46,7 +46,7 @@ Library
                  unordered-containers,
                  lens > 3,
                  either,
-                 errors < 2.0,
+                 errors,
                  bytestring,
                  pureMD5,
                  Cabal
