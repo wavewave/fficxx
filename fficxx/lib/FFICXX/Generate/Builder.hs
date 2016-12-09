@@ -118,8 +118,7 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
                           (myclasses, toplevelfunctions)
       hsbootlst = mkHSBOOTCandidateList mods
       cglobal = mkGlobal myclasses
-      -- summarymodule = -- pkgname -- "Snappy"
-      cabalFileName = pkgname <.> "cabal" -- "Snappy.cabal"
+      cabalFileName = pkgname <.> "cabal" 
   templateDir <- F.getDataDir >>= return . (</> "template")
   (templates :: STGroup String) <- directoryGroup templateDir
   --
@@ -132,7 +131,7 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
   mkCabalFile cfg templates (cabal, cabalattr) summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
   --
   putStrLn "header file generation"
-  let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")  {- "__SNAPPY__" -}
+  let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__") 
   writeTypeDeclHeaders templates workingDir typmacro pkgname cihs
   mapM_ (writeDeclHeaders templates workingDir typmacro pkgname) cihs
   writeTopLevelFunctionHeaders templates workingDir typmacro pkgname tih

@@ -6,6 +6,7 @@ with pkgs;
 let hsenv = haskellPackages.ghcWithPackages
       (p: with p; [ base-orphans cereal data-default dlist old-locale parallel parsec either errors lens 
                     HStringTemplate crypto-api pureMD5 syb split
+                    haskell-src-exts
        ] );
 in stdenv.mkDerivation {
      name = "fficxx-shell";
