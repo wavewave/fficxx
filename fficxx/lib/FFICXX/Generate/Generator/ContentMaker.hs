@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Generator.ContentMaker
--- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
+-- Copyright   : (c) 2011-2013,2015,2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -49,50 +49,14 @@ moduleTemplate = "module.hs"
 hsbootTemplate :: String
 hsbootTemplate = "Class.hs-boot"
 
--- cabalTemplate :: String 
--- cabalTemplate = "Pkg.cabal"
-
 declarationTemplate :: String
 declarationTemplate = "Module.h"
 
 typeDeclHeaderFileName :: String
 typeDeclHeaderFileName = "PkgType.h"
 
--- declbodyTemplate :: String
--- declbodyTemplate    = "declbody.h"
-
--- funcdeclTemplate :: String
--- funcdeclTemplate    = "funcdecl.h" 
-
 definitionTemplate :: String
 definitionTemplate = "Pkg.cpp"
-
--- classDefTemplate :: String
--- classDefTemplate   = "classdef.cpp"
-
--- functionTemplate :: String
--- functionTemplate   = "function.cpp" 
-
--- funcbodyTemplate :: String
--- funcbodyTemplate   = "functionbody.cpp"
-
--- headerFileName :: String
--- headerFileName = "Module.h"
-
--- cppFileName :: String
--- cppFileName = "Pkg.cpp" 
-
--- hscFileName :: String
--- hscFileName = "FFI.hsc"
-
--- hsFileName :: String
--- hsFileName  = "Implementation.hs"
-
--- typeHsFileName :: String
--- typeHsFileName = "Interface.hs"
-
--- existHsFileName :: String 
--- existHsFileName = "Existential.hs"
 
 rawtypeHsFileName :: String
 rawtypeHsFileName = "RawType.hs"
@@ -135,7 +99,6 @@ mkParentDef :: ((Class,Class)->String) -> Class -> String
 mkParentDef f cls = g (class_allparents cls,cls)
   where g (ps,c) = concatMap (\p -> f (p,c)) ps
 
-
 -- | 
 mkProtectedFunctionList :: Class -> String 
 mkProtectedFunctionList c = 
@@ -143,11 +106,8 @@ mkProtectedFunctionList c =
      . map (\x->"#define IS_" ++ class_name c ++ "_" ++ x ++ "_PROTECTED ()") 
      . unProtected . class_protected) c 
 
-
-
-
 -- |
-mkTypeDeclHeader :: STGroup String -- -> ClassGlobal 
+mkTypeDeclHeader :: STGroup String
                  -> T.TypeMacro -- ^ typemacro 
                  -> [Class]
                  -> String 
@@ -163,7 +123,6 @@ mkTypeDeclHeader templates (T.TypMcro typemacro) classes =
 
 -- | 
 mkDeclHeader :: STGroup String 
-             -- -> ClassGlobal 
              -> T.TypeMacro  -- ^ typemacro prefix 
              -> String     -- ^ C prefix 
              -> ClassImportHeader 
@@ -181,7 +140,6 @@ mkDeclHeader templates (T.TypMcro typemacroprefix) cprefix header =
                       genAllCppDefTmplVirtual classes
                       `connRet2`
                        genAllCppDefTmplNonVirtual classes
-      -- dsmap         = cgDaughterSelfMap cglobal
       classDeclsStr = if (fst.hsClassName) aclass /= "Deletable"
                         then mkParentDef genCppHeaderInstVirtual aclass 
                              `connRet2`
@@ -283,7 +241,6 @@ mkFFIHsc templates m =
                         , ("hsFunctionBody", genAllHsFFI headers) ]
                         ffiHscFileName
   where mname = cmModule m
-        -- classes = cmClass m
         headers = cmCIH m
         ffiHeaderStr = "module " ++ mname <.> "FFI where\n"
         ffiImportStr = "import " ++ mname <.> "RawType\n"
