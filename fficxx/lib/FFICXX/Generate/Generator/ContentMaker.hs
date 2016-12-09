@@ -58,41 +58,41 @@ declarationTemplate = "Module.h"
 typeDeclHeaderFileName :: String
 typeDeclHeaderFileName = "PkgType.h"
 
-declbodyTemplate :: String
-declbodyTemplate    = "declbody.h"
+-- declbodyTemplate :: String
+-- declbodyTemplate    = "declbody.h"
 
-funcdeclTemplate :: String
-funcdeclTemplate    = "funcdecl.h" 
+-- funcdeclTemplate :: String
+-- funcdeclTemplate    = "funcdecl.h" 
 
 definitionTemplate :: String
 definitionTemplate = "Pkg.cpp"
 
-classDefTemplate :: String
-classDefTemplate   = "classdef.cpp"
+-- classDefTemplate :: String
+-- classDefTemplate   = "classdef.cpp"
 
-functionTemplate :: String
-functionTemplate   = "function.cpp" 
+-- functionTemplate :: String
+-- functionTemplate   = "function.cpp" 
 
-funcbodyTemplate :: String
-funcbodyTemplate   = "functionbody.cpp"
+-- funcbodyTemplate :: String
+-- funcbodyTemplate   = "functionbody.cpp"
 
-headerFileName :: String
-headerFileName = "Module.h"
+-- headerFileName :: String
+-- headerFileName = "Module.h"
 
-cppFileName :: String
-cppFileName = "Pkg.cpp" 
+-- cppFileName :: String
+-- cppFileName = "Pkg.cpp" 
 
-hscFileName :: String
-hscFileName = "FFI.hsc"
+-- hscFileName :: String
+-- hscFileName = "FFI.hsc"
 
-hsFileName :: String
-hsFileName  = "Implementation.hs"
+-- hsFileName :: String
+-- hsFileName  = "Implementation.hs"
 
-typeHsFileName :: String
-typeHsFileName = "Interface.hs"
+-- typeHsFileName :: String
+-- typeHsFileName = "Interface.hs"
 
-existHsFileName :: String 
-existHsFileName = "Existential.hs"
+-- existHsFileName :: String 
+-- existHsFileName = "Existential.hs"
 
 rawtypeHsFileName :: String
 rawtypeHsFileName = "RawType.hs"
