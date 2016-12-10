@@ -45,7 +45,7 @@ genCppHeaderTmplType c = let tmpl = "// Opaque type definition for $classname \n
                                     \typedef struct ${classname}_tag ${classname}_t; \n\
                                     \typedef ${classname}_t * ${classname}_p; \n\
                                     \typedef ${classname}_t const* const_${classname}_p; \n"
-                      in TL.unpack $ substitute tmpl (context [ ("classname", class_name c) ])
+                      in subst tmpl (context [ ("classname", class_name c) ])
 
 genAllCppHeaderTmplType :: [Class] -> String
 genAllCppHeaderTmplType = intercalateWith connRet2 (genCppHeaderTmplType) 
@@ -56,10 +56,8 @@ genCppHeaderTmplVirtual :: Class -> String
 genCppHeaderTmplVirtual aclass =  
   let tmpl = "#undef ${classname}_DECL_VIRT \n#define ${classname}_DECL_VIRT(Type) \\\n${funcdecl}"
       funcDeclStr = (funcsToDecls aclass) . virtualFuncs . class_funcs $ aclass
-  in TL.unpack $ substitute tmpl
-                   (context [ ("classname", map toUpper (class_name aclass) ) 
-                              , ("funcdecl" , funcDeclStr )
-                            ]) 
+  in subst tmpl (context [ ("classname", map toUpper (class_name aclass) ) 
+                         , ("funcdecl" , funcDeclStr                     ) ]) 
       
 genAllCppHeaderTmplVirtual :: [Class] -> String 
 genAllCppHeaderTmplVirtual = intercalateWith connRet2 genCppHeaderTmplVirtual
@@ -69,9 +67,8 @@ genAllCppHeaderTmplVirtual = intercalateWith connRet2 genCppHeaderTmplVirtual
 genCppHeaderTmplNonVirtual :: Class -> String
 genCppHeaderTmplNonVirtual c = 
   let tmpl = "#undef ${classname}_DECL_NONVIRT \n#define ${classname}_DECL_NONVIRT(Type) \\\n$funcdecl" 
-      declBodyStr = TL.unpack $ substitute tmpl
-                                  (context [ ("classname", map toUpper (class_name c))
-                                           , ("funcdecl" , funcDeclStr )               ])
+      declBodyStr = subst tmpl (context [ ("classname", map toUpper (class_name c))
+                                        , ("funcdecl" , funcDeclStr               ) ])
       funcDeclStr = (funcsToDecls c) . filter (not.isVirtualFunc) 
                                      . class_funcs $ c
   in  declBodyStr 
@@ -105,9 +102,8 @@ genAllCppHeaderInstNonVirtual =
 genCppDefTmplVirtual :: Class -> String 
 genCppDefTmplVirtual aclass =  
   let tmpl = "#undef ${classname}_DEF_VIRT\n#define ${classname}_DEF_VIRT(Type)\\\n$funcdef" 
-      defBodyStr = TL.unpack $ substitute tmpl
-                                 (context [ ("classname", map toUpper (class_name aclass) ) 
-                                          , ("funcdef" , funcDefStr )                       ]) 
+      defBodyStr = subst tmpl (context [ ("classname", map toUpper (class_name aclass) ) 
+                                       , ("funcdef"  , funcDefStr                      ) ]) 
       funcDefStr = (funcsToDefs aclass) . virtualFuncs . class_funcs $ aclass
   in  defBodyStr 
       
@@ -119,9 +115,8 @@ genAllCppDefTmplVirtual = intercalateWith connRet2 genCppDefTmplVirtual
 genCppDefTmplNonVirtual :: Class -> String 
 genCppDefTmplNonVirtual aclass =  
   let tmpl = "#undef ${classname}_DEF_NONVIRT\n#define ${classname}_DEF_NONVIRT(Type)\\\n$funcdef" 
-      defBodyStr = TL.unpack $ substitute tmpl
-                                 (context [ ("classname", map toUpper (class_name aclass) ) 
-                                          , ("funcdef" , funcDefStr )                       ]) 
+      defBodyStr = subst tmpl (context [ ("classname", map toUpper (class_name aclass) ) 
+                                       , ("funcdef"  , funcDefStr                      ) ]) 
       funcDefStr = (funcsToDefs aclass) . filter (not.isVirtualFunc) 
                                         . class_funcs $ aclass
   in  defBodyStr 
@@ -138,14 +133,12 @@ genCppDefInstVirtual (p,c) =
 
 genCppDefInstNonVirtual :: Class -> String
 genCppDefInstNonVirtual c = 
-  let tmpl = "${capitalclassname}_DEF_NONVIRT(${classname})" 
-  in TL.unpack $ substitute tmpl
-                   (context [ ("capitalclassname", toUppers (class_name c))
-                            , ("classname", class_name c)                   ]) 
+  subst "${capitalclassname}_DEF_NONVIRT(${classname})"
+    (context [ ("capitalclassname", toUppers (class_name c))
+             , ("classname"       , class_name c           ) ]) 
 
 genAllCppDefInstNonVirtual :: [Class] -> String 
-genAllCppDefInstNonVirtual = 
-  intercalateWith connRet genCppDefInstNonVirtual
+genAllCppDefInstNonVirtual = intercalateWith connRet genCppDefInstNonVirtual
 
 -----------------
 
@@ -219,62 +212,54 @@ genCppFiles (tih,cmods) =
 
 genTopLevelFuncCppHeader :: TopLevelFunction -> String 
 genTopLevelFuncCppHeader TopLevelFunction {..} = 
-    let tmpl = "$returntype $funcname ( $args );" 
-    in TL.unpack $ substitute tmpl
-                     (context [ ("returntype", rettypeToString toplevelfunc_ret)  
-                              , ("funcname", "TopLevel_" 
-                                             ++ maybe toplevelfunc_name id toplevelfunc_alias)
-                              , ("args", argsToStringNoSelf toplevelfunc_args)
-                              ])
+  subst "$returntype $funcname ( $args );" 
+    (context [ ("returntype", rettypeToString toplevelfunc_ret                )  
+             , ("funcname"  , "TopLevel_" 
+                              ++ maybe toplevelfunc_name id toplevelfunc_alias)
+             , ("args"      , argsToStringNoSelf toplevelfunc_args            ) ])
 genTopLevelFuncCppHeader TopLevelVariable {..} = 
-    let tmpl = "$returntype $funcname ( );" 
-    in TL.unpack $ substitute tmpl
-                     (context [ ("returntype", rettypeToString toplevelvar_ret)  
-                              , ("funcname", "TopLevel_" 
-                                             ++ maybe toplevelvar_name id toplevelvar_alias)
-                              ]) 
+  subst "$returntype $funcname ( );"
+    (context [ ("returntype", rettypeToString toplevelvar_ret                )  
+             , ("funcname"  , "TopLevel_" 
+                               ++ maybe toplevelvar_name id toplevelvar_alias) ]) 
 
 genTopLevelFuncCppDefinition :: TopLevelFunction -> String 
 genTopLevelFuncCppDefinition TopLevelFunction {..} =  
-    let tmpl = "$returntype $funcname ( $args ) { \n  $funcbody\n}" 
-        callstr = toplevelfunc_name ++ "("
-                  ++ argsToCallString toplevelfunc_args   
-                  ++ ")"
-        returnstr = case toplevelfunc_ret of          
-          Void -> callstr ++ ";"
-          SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
-          (CT (CRef _) _) -> "return ((*)"++callstr++");"
-          (CT _ctyp _isconst) -> "return "++callstr++";" 
-          (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
-                                    ++">(("++str++"*)"++callstr++");" 
-            where str = class_name c' 
-          (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
-        funcDefStr = returnstr 
-    in TL.unpack $ substitute tmpl
-                     (context [ ("returntype", rettypeToString toplevelfunc_ret)  
-                              , ("funcname", "TopLevel_" 
-                                             ++ maybe toplevelfunc_name id toplevelfunc_alias)
-                              , ("args", argsToStringNoSelf toplevelfunc_args) 
-                              , ("funcbody", funcDefStr )
-                              ] )
+  let tmpl = "$returntype $funcname ( $args ) { \n  $funcbody\n}" 
+      callstr = toplevelfunc_name ++ "("
+                ++ argsToCallString toplevelfunc_args   
+                ++ ")"
+      returnstr = case toplevelfunc_ret of          
+        Void -> callstr ++ ";"
+        SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
+        (CT (CRef _) _) -> "return ((*)"++callstr++");"
+        (CT _ctyp _isconst) -> "return "++callstr++";" 
+        (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
+                                  ++">(("++str++"*)"++callstr++");" 
+          where str = class_name c' 
+        (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
+      funcDefStr = returnstr 
+  in subst tmpl (context [ ("returntype", rettypeToString toplevelfunc_ret                )  
+                         , ("funcname"  , "TopLevel_" 
+                                          ++ maybe toplevelfunc_name id toplevelfunc_alias)
+                         , ("args"      , argsToStringNoSelf toplevelfunc_args            ) 
+                         , ("funcbody"  , funcDefStr                                      ) ])
 genTopLevelFuncCppDefinition TopLevelVariable {..} =  
-    let tmpl = "$returntype $funcname ( ) { \n  $funcbody\n}" 
-        callstr = toplevelvar_name
-        returnstr = case toplevelvar_ret of          
-          Void -> callstr ++ ";"
-          SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
-          (CT _ctyp _isconst) -> "return "++callstr++";" 
-          (CT (CRef _) _) -> "return ((*)"++callstr++");"
-          (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
-                                    ++">(("++str++"*)"++callstr++");" 
-            where str = class_name c' 
-          (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
-        funcDefStr = returnstr 
-    in TL.unpack $ substitute tmpl
-                     (context [ ("returntype", rettypeToString toplevelvar_ret)  
-                              , ("funcname", "TopLevel_" 
-                                             ++ maybe toplevelvar_name id toplevelvar_alias)
-                              , ("funcbody", funcDefStr )
-                              ])
+  let tmpl = "$returntype $funcname ( ) { \n  $funcbody\n}" 
+      callstr = toplevelvar_name
+      returnstr = case toplevelvar_ret of          
+        Void -> callstr ++ ";"
+        SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
+        (CT _ctyp _isconst) -> "return "++callstr++";" 
+        (CT (CRef _) _) -> "return ((*)"++callstr++");"
+        (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
+                                  ++">(("++str++"*)"++callstr++");" 
+          where str = class_name c' 
+        (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
+      funcDefStr = returnstr 
+  in subst tmpl (context [ ("returntype", rettypeToString toplevelvar_ret               )  
+                         , ("funcname"  , "TopLevel_" 
+                                          ++ maybe toplevelvar_name id toplevelvar_alias)
+                         , ("funcbody"  , funcDefStr                                    ) ])
 
 

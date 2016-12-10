@@ -53,20 +53,20 @@ hsFFIClassFunc :: HeaderName -> Class -> Function -> String
 hsFFIClassFunc headerfilename c f = if isAbstractClass c 
                        then ""
                        else if (isNewFunc f || isStaticFunc f)
-                              then TL.unpack $ substitute ffistub 
-                                       (context [ ("headerfilename",(unHdrName headerfilename))
-                                                , ("classname",class_name c)
-                                                , ("funcname", aliasedFuncName c f)
-                                                , ("hsfuncname",hscFuncName c f)
-                                                , ("hsargs", hsFuncTypNoSelf c f)
-                                                ]) 
-                              else TL.unpack $ substitute ffistub 
-                                       (context [ ("headerfilename",(unHdrName headerfilename))
-                                                , ("classname",class_name c)
-                                                , ("funcname", aliasedFuncName c f)
-                                                , ("hsfuncname",hscFuncName c f)
-                                                , ("hsargs", hsFuncTyp c f)
-                                                ]) 
+                              then subst ffistub
+                                     (context [ ("headerfilename",(unHdrName headerfilename))
+                                              , ("classname",class_name c)
+                                              , ("funcname", aliasedFuncName c f)
+                                              , ("hsfuncname",hscFuncName c f)
+                                              , ("hsargs", hsFuncTypNoSelf c f)
+                                              ]) 
+                              else subst ffistub 
+                                     (context [ ("headerfilename",(unHdrName headerfilename))
+                                              , ("classname",class_name c)
+                                              , ("funcname", aliasedFuncName c f)
+                                              , ("hsfuncname",hscFuncName c f)
+                                              , ("hsargs", hsFuncTyp c f)
+                                              ]) 
 
 ----------------------------
 -- for top level function -- 
@@ -84,12 +84,10 @@ genTopLevelFuncFFI header tfn =
 	    args = toplevelfunc_args 
 	    ret = toplevelfunc_ret         
 	    argstr = concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
-        in TL.unpack $ substitute ffiTemplate
-                         (context [ ("headerfilename",headerfilename) 
-                                  , ("funcname", "TopLevel_" ++ fname)
-                                  , ("hsfuncname",cfname)
-                                  , ("hsargs", argstr)
-                                  ]) 
+        in subst ffiTemplate (context [ ("headerfilename", headerfilename      ) 
+                                      , ("funcname"      , "TopLevel_" ++ fname)
+                                      , ("hsfuncname"    , cfname              )
+                                      , ("hsargs"        , argstr              ) ]) 
       TopLevelVariable {..} ->  
         let fname = maybe toplevelvar_name id toplevelvar_alias
 	    (x:xs)  = fname
@@ -99,12 +97,10 @@ genTopLevelFuncFFI header tfn =
 	    args = [] 
             ret = toplevelvar_ret         
             argstr = concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret 
-        in TL.unpack $ substitute ffiTemplate
-                         (context [ ("headerfilename",headerfilename) 
-                                  , ("funcname", "TopLevel_" ++ fname)
-                                  , ("hsfuncname",cfname)
-                                  , ("hsargs", argstr)
-                                  ]) 
+        in subst ffiTemplate (context [ ("headerfilename", headerfilename      ) 
+                                      , ("funcname"      , "TopLevel_" ++ fname)
+                                      , ("hsfuncname"    , cfname              )
+                                      , ("hsargs"        , argstr              ) ]) 
 
   where hsargtype (CT ctype _) = hsCTypeName ctype
         hsargtype (CPT x _) = hsCppTypeName x 

@@ -29,18 +29,16 @@ funcToDecl :: Class -> Function -> String
 funcToDecl c func 
   | isNewFunc func || isStaticFunc func = 
     let tmpl = "$returntype Type ## _$funcname ( $args )" 
-    in TL.unpack $ substitute tmpl
-                     (context [ ("returntype", rettypeToString (genericFuncRet func))  
-                              , ("funcname",  aliasedFuncName c func) 
-                              , ("args", argsToStringNoSelf (genericFuncArgs func))
-                              ])
+    in subst tmpl (context [ ("returntype", rettypeToString (genericFuncRet func))  
+                           , ("funcname",  aliasedFuncName c func) 
+                           , ("args", argsToStringNoSelf (genericFuncArgs func))
+                           ])
   | otherwise =  
     let tmpl = "$returntype Type ## _$funcname ( $args )" 
-    in TL.unpack $ substitute tmpl
-                     (context [ ("returntype", rettypeToString (genericFuncRet func))  
-                              , ("funcname", aliasedFuncName c func) 
-                              , ("args", argsToString (genericFuncArgs func))
-                              ]) 
+    in subst tmpl (context [ ("returntype", rettypeToString (genericFuncRet func))  
+                           , ("funcname", aliasedFuncName c func) 
+                           , ("args", argsToString (genericFuncArgs func))
+                           ]) 
 
 
 

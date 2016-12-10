@@ -16,10 +16,10 @@ module FFICXX.Generate.Util where
 import           Data.Char 
 import           Data.List
 import           Data.List.Split
-import           Data.Text               (Text)
+import           Data.Text                (Text)
 import qualified Data.Text          as T
+import qualified Data.Text.Lazy     as TL
 import           Data.Text.Template
--- import qualified Text.StringTemplate as ST
 
 moduleDirFile :: String -> (String,String)
 moduleDirFile mname = 
@@ -84,28 +84,5 @@ context assocs x = maybe err (T.pack) . lookup x $ assocs
   where err = error $ "Could not find key: " ++ (T.unpack x)
 
         
--- render :: String -> [(String,String)] -> String        
--- render tmpl attribs = (ST.render . ST.setManyAttrib attribs . ST.newSTMP) tmpl 
-
-{- 
-renderTemplateGroup :: (ST.ToSElem a) => ST.STGroup String -> [(String,a)] 
-                    -> [Char] -> String 
-renderTemplateGroup gr attrs tmpl = 
-    maybe ("template not found: " ++ tmpl)
-          (ST.toString . setManyAttribSafer attrs) 
-          (ST.getStringTemplate tmpl gr)
- 
-setManyAttribSafer :: (ST.Stringable b, ST.ToSElem a) => 
-                      [(String, a)] 
-                   -> ST.StringTemplate b 
-                   -> ST.StringTemplate b
-setManyAttribSafer attrs st = 
-    let mbFoundbadattr = find badTmplVarName . map fst $ attrs 
-    in maybe (ST.setManyAttrib attrs st) 
-             (\mbA -> ST.newSTMP . ("setManyAttribSafer, bad template atr: "++) 
-                      $ mbA)
-             mbFoundbadattr 
-  where badTmplVarName :: String -> Bool 
-        badTmplVarName t = not . null . filter (not . isAlpha) $ t 
-
--}
+subst :: Text -> Context -> String
+subst t c = TL.unpack (substitute t c)
