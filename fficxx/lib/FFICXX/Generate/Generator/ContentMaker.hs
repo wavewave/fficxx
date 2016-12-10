@@ -77,8 +77,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- ffiHscFileName :: String 
 -- ffiHscFileName = "FFI.hsc"
 
-interfaceHsFileName :: String
-interfaceHsFileName = "Interface.hs"
+-- interfaceHsFileName :: String
+-- interfaceHsFileName = "Interface.hs"
 
 castHsFileName :: String
 castHsFileName = "Cast.hs"
@@ -347,14 +347,27 @@ mkRawTypeHs m = TL.unpack $ substitute
           intercalateWith connRet2 hsClassRawType (filter (not.isAbstractClass) classes)
 
 -- | 
-mkInterfaceHs :: AnnotateMap 
-              -> STGroup String 
-              -> ClassModule 
-              -> String    
-mkInterfaceHs amap templates m = 
-    renderTemplateGroup templates [ ("ifaceHeader", ifaceHeaderStr) 
-                                  , ("ifaceImport", ifaceImportStr)
-                                  , ("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
+mkInterfaceHs :: AnnotateMap -> ClassModule -> String    
+mkInterfaceHs amap m = TL.unpack $ substitute
+                                     "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
+                                     \             FlexibleInstances, TypeSynonymInstances,\n\
+                                     \             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}\n\
+                                     \\n\
+                                     \$ifaceHeader\n\
+                                     \\n\
+                                     \import Data.Word\n\
+                                     \import Foreign.C\n\
+                                     \import Foreign.Ptr\n\
+                                     \import Foreign.ForeignPtr\n\
+                                     \import FFICXX.Runtime.Cast\n\
+                                     \\n\
+                                     \$ifaceImport\n\
+                                     \\n\
+                                     \$ifaceBody\n"
+                                     (context [ ("ifaceHeader", ifaceHeaderStr)
+                                              , ("ifaceImport", ifaceImportStr)
+                                              , ("ifaceBody", ifaceBodyStr)     ])
+
   where ifaceHeaderStr = "module " ++ cmModule m <.> "Interface where\n" 
         classes = cmClass m
         ifaceImportStr = genImportInInterface m

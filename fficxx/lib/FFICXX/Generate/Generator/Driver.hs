@@ -96,13 +96,10 @@ writeFFIHsc wdir m =
   in withFile fn WriteMode $ \h -> hPutStrLn h (mkFFIHsc m)
 
 -- | 
-writeInterfaceHs :: AnnotateMap -> STGroup String -> FilePath 
-                 -> ClassModule 
-                 -> IO ()
-writeInterfaceHs amap templates wdir m = do 
-  let fn = wdir </> cmModule m <.> interfaceHsFileName
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkInterfaceHs amap templates m)
+writeInterfaceHs :: AnnotateMap -> FilePath -> ClassModule -> IO ()
+writeInterfaceHs amap wdir m =
+  let fn = wdir </> cmModule m <.> "Interface" <.> "hs"
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHs amap m)
 
 -- |
 writeCastHs :: STGroup String -> FilePath -> ClassModule -> IO ()
