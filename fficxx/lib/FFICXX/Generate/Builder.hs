@@ -156,7 +156,7 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
   mapM_ (writeImplementationHs mempty templates workingDir) mods
   --
   putStrLn "hs-boot file generation"
-  mapM_ (writeInterfaceHSBOOT templates workingDir) hsbootlst
+  mapM_ (writeInterfaceHSBOOT workingDir) hsbootlst
   --
   putStrLn "module file generation"
   mapM_ (writeModuleHs workingDir) mods

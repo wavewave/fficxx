@@ -144,10 +144,10 @@ writeExistentialHs templates cglobal wdir m = do
     hPutStrLn h (mkExistentialHs templates cglobal m)
 
 -- | 
-writeInterfaceHSBOOT :: STGroup String -> FilePath -> String -> IO ()
-writeInterfaceHSBOOT templates wdir mname = do 
+writeInterfaceHSBOOT :: FilePath -> String -> IO ()
+writeInterfaceHSBOOT wdir mname =
   let fn = wdir </> mname <.> "Interface" <.> "hs-boot"
-  withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHSBOOT templates mname)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHSBOOT mname)
 
 -- |
 writeModuleHs :: FilePath -> ClassModule -> IO () 

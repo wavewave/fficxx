@@ -59,8 +59,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- moduleTemplate :: String 
 -- moduleTemplate = "module.hs"
 
-hsbootTemplate :: String
-hsbootTemplate = "Class.hs-boot"
+-- hsbootTemplate :: String
+-- hsbootTemplate = "Class.hs-boot"
 
 declarationTemplate :: String
 declarationTemplate = "Module.h"
@@ -388,17 +388,14 @@ mkExistentialHs templates cglobal m =
   in  hsfilestr
 
 -- | 
-mkInterfaceHSBOOT :: STGroup String -> String -> String 
-mkInterfaceHSBOOT templates mname = 
+mkInterfaceHSBOOT :: String -> String 
+mkInterfaceHSBOOT mname = 
   let cname = last (splitOn "." mname)
       hsbootbodystr = "class " ++ 'I':cname ++ " a" 
-      hsbootstr = renderTemplateGroup 
-                    templates 
-                    [ ("moduleName", mname <.> "Interface") 
-                    , ("hsBootBody", hsbootbodystr)
-                    ]
-                    hsbootTemplate
-  in hsbootstr 
+      txt = substitute "module $moduleName where\n\n$hsBootBody\n"
+              (context [ ("moduleName", mname <.> "Interface") 
+                       , ("hsBootBody", hsbootbodystr)         ])
+  in TL.unpack txt
 
 
 
