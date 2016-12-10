@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Util
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -20,6 +20,7 @@ import           Data.Text                (Text)
 import qualified Data.Text          as T
 import qualified Data.Text.Lazy     as TL
 import           Data.Text.Template
+
 
 moduleDirFile :: String -> (String,String)
 moduleDirFile mname = 
@@ -86,3 +87,4 @@ context assocs x = maybe err (T.pack) . lookup x $ assocs
         
 subst :: Text -> Context -> String
 subst t c = TL.unpack (substitute t c)
+

@@ -5,7 +5,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.HsFrontEnd
--- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -26,12 +26,15 @@ import           Data.Text                              (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                     hiding (render)
+import           Language.Haskell.Exts.Syntax (Type(..))
+import           Language.Haskell.Exts.Pretty
 import           System.FilePath ((<.>))
 -- 
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Util
+import           FFICXX.Generate.Util.HaskellSrcExts
 
 
 mkComment :: Int -> String -> String
@@ -87,7 +90,7 @@ genHsFrontDecl c = do
   let header = subst hsClassDeclHeaderTmpl (context [ ("classname" , typeclassName c ) 
                                                     , ("constraint", classprefix c   ) 
                                                     , ("classann"  , mkComment 0 cann) ])
-      bodyline func = 
+      bodyline func =
         let fname = hsFuncName c func 
             mann = maybe "" id $ M.lookup (PkgMethod,fname) amap
         in  subst hsClassDeclFuncTmpl (context [ ("funcname", hsFuncName c func             ) 
@@ -191,23 +194,29 @@ genAllHsFrontInstExistVirtual cs _dmap = intercalateWith connRet2 allinstances c
 genHsFrontInstNew :: Class         -- ^ only concrete class 
                     -> Reader AnnotateMap (Maybe String)
 genHsFrontInstNew c = do 
-  amap <- ask 
-  if null newfuncs 
-    then return Nothing
-    else do 
-      let newfunc = head newfuncs
-          cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
-          newfuncann = mkComment 0 cann
-          newlinehead = constructorName c ++ " :: " ++ argstr newfunc 
-          newlinebody = constructorName c ++ " = " 
-                              ++ hsFuncXformer newfunc ++ " " 
-                              ++ hscFuncName c newfunc 
-          argstr func = intercalateWith connArrow id $
-                          map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
-                          ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func]
-          newline = newfuncann ++ "\n" ++ newlinehead ++ "\n" ++ newlinebody 
-      return (Just newline)
-  where newfuncs = filter isNewFunc (class_funcs c)  
+  amap <- ask
+  let mnewfunc = listToMaybe (filter isNewFunc (class_funcs c))
+  return . flip fmap mnewfunc $ \newfunc ->
+    let cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
+        newfuncann = mkComment 0 cann
+        fname = constructorName c
+        ctyp f = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
+        farg f =
+          let lst = map (tycon . ctypToHsTyp (Just c) . fst) (genericFuncArgs f)
+          in foldr1 TyFun (lst ++ [TyApp (tycon "IO") (ctyp f)])
+        [sig] = mkFunGen fname (farg newfunc)
+         
+        newlinehead = constructorName c ++ " :: " ++ argstr newfunc 
+        newlinebody = constructorName c ++ " = " 
+                            ++ hsFuncXformer newfunc ++ " " 
+                            ++ hscFuncName c newfunc 
+        argstr func = intercalateWith connArrow id $
+                        map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
+                        ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func]
+        -- newline = newfuncann ++ "\n" ++ newlinehead ++ "\n" ++ newlinebody  
+        newline = newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ newlinebody
+                
+    in newline
 
 genAllHsFrontInstNew :: [Class]    -- ^ only concrete class 
                      -> Reader AnnotateMap String 
