@@ -35,7 +35,7 @@ funcToDecl c func
                               , ("args", argsToStringNoSelf (genericFuncArgs func))
                               ])
   | otherwise =  
-    let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
+    let tmpl = "$returntype Type ## _$funcname ( $args )" 
     in TL.unpack $ substitute tmpl
                      (context [ ("returntype", rettypeToString (genericFuncRet func))  
                               , ("funcname", aliasedFuncName c func) 

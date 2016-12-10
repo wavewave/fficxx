@@ -145,7 +145,7 @@ mkDeclHeader (TypMcro typemacroprefix) cprefix header =
                       `connRet2`   
                       genAllCppDefTmplVirtual classes
                       `connRet2`
-                       genAllCppDefTmplNonVirtual classes
+                      genAllCppDefTmplNonVirtual classes
       classDeclsStr = if (fst.hsClassName) aclass /= "Deletable"
                         then mkParentDef genCppHeaderInstVirtual aclass 
                              `connRet2`
@@ -402,7 +402,7 @@ mkImplementationHs amap m = TL.unpack $ substitute
         f y = intercalateWith connRet (flip genHsFrontInst y) (y:class_allparents y )
         g y = intercalateWith connRet (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
-        implBodyStr =  
+        implBodyStr = 
           intercalateWith connRet2 f classes
           `connRet2` 
           intercalateWith connRet2 g (filter (not.isAbstractClass) classes)

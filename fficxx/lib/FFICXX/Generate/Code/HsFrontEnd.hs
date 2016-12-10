@@ -154,7 +154,7 @@ genAllHsFrontInstExistCommon cs = intercalateWith connRet2 genHsFrontInstExistCo
 -------------------
 
 hsClassInstExistVirtualTmpl :: Text
-hsClassInstExistVirtualTmpl = "instance $Iparent (Exist $child) where\n$method"
+hsClassInstExistVirtualTmpl = "instance $iparent (Exist $child) where\n$method"
 
 hsClassInstExistVirtualMethodNoSelfTmpl :: Text
 hsClassInstExistVirtualMethodNoSelfTmpl = "  $methodname ($exist x) = $methodname x"
@@ -167,7 +167,7 @@ genHsFrontInstExistVirtual :: Class -> Class -> String
 genHsFrontInstExistVirtual p c = TL.unpack $ substitute hsClassInstExistVirtualTmpl (context tmplName)
   where methodstr = intercalateWith connRet (genHsFrontInstExistVirtualMethod p c)  
                                             (virtualFuncs.class_funcs $ p)
-        tmplName = [ ("Iparent",typeclassName p)
+        tmplName = [ ("iparent",typeclassName p)
                    , ("child", (fst.hsClassName) c)
                    , ("method", methodstr )         ] 
 
@@ -353,21 +353,21 @@ mkHsFuncRetType rtyp =
 
 hsInterfaceCastableInstanceTmpl :: Text 
 hsInterfaceCastableInstanceTmpl = 
-  "instance ($interfaceName$ a, FPtr a) => Castable a (Ptr $rawClassName$) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
+  "instance ($interfaceName a, FPtr a) => Castable a (Ptr $rawClassName) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
 
 hsInterfaceCastableInstanceSelfTmpl :: Text 
 hsInterfaceCastableInstanceSelfTmpl = 
-  "instance Castable $className$ (Ptr $rawClassName$) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
+  "instance Castable $className (Ptr $rawClassName) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
 
 
 ----------
 
 hsExistentialGADTBodyTmpl :: Text 
-hsExistentialGADTBodyTmpl = "    GADT$mother$$daughter$ :: $daughter$ -> GADTType $mother$ $daughter$"
+hsExistentialGADTBodyTmpl = "    GADT${mother}${daughter} :: $daughter -> GADTType $mother $daughter"
 
 
 hsExistentialCastBodyTmpl :: Text
-hsExistentialCastBodyTmpl = "    \"$daughter$\" -> case obj of\n        $mother$ fptr -> let obj' = $daughter$ (castForeignPtr fptr :: ForeignPtr Raw$daughter$)\n                        in  return . EGADT$mother$ . GADT$mother$$daughter$ \\$ obj'"
+hsExistentialCastBodyTmpl = "    \"$daughter\" -> case obj of\n        $mother fptr -> let obj' = $daughter (castForeignPtr fptr :: ForeignPtr Raw$daughter)\n                        in  return . EGADT$mother . GADT${mother}${daughter} $$ obj'"
 
 ------------
 -- upcast --
@@ -388,7 +388,7 @@ genAllHsFrontUpcastClass = intercalateWithM connRet2 genHsFrontUpcastClass
 
 
 hsUpcastClassTmpl :: Text 
-hsUpcastClassTmpl =  "upcast$classname$ :: (FPtr a, $ifacename$ a) => a -> $classname$\nupcast$classname$ h = let fh = get_fptr h\n$space$    fh2 :: ForeignPtr $rawclassname$ = castForeignPtr fh\n$space$in cast_fptr_to_obj fh2"
+hsUpcastClassTmpl =  "upcast$classname :: (FPtr a, $ifacename a) => a -> $classname\nupcast$classname h = let fh = get_fptr h\n$space    fh2 :: ForeignPtr $rawclassname = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
 
 
 --------------
@@ -410,7 +410,7 @@ genAllHsFrontDowncastClass = intercalateWithM connRet2 genHsFrontDowncastClass
 
 
 hsDowncastClassTmpl :: Text 
-hsDowncastClassTmpl =  "downcast$classname$ :: (FPtr a, $ifacename$ a) => $classname$ -> a \ndowncast$classname$ h = let fh = get_fptr h\n$space$    fh2 = castForeignPtr fh\n$space$in cast_fptr_to_obj fh2"
+hsDowncastClassTmpl =  "downcast$classname :: (FPtr a, $ifacename a) => $classname -> a \ndowncast$classname h = let fh = get_fptr h\n$space    fh2 = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
 
 ------------
 -- Export --
@@ -532,9 +532,7 @@ genImportInImplementation m =
 genImportInExistential :: DaughterMap -> ClassModule -> String
 genImportInExistential dmap m = 
   let daughters = concat . catMaybes $ (map (flip M.lookup dmap . getClassModuleBase)  (cmClass m))
-      alldaughters' = nub . map getClassModuleBase $ daughters
-      -- alldaughters = filter ((&&) <$> (/= "TClass") <*> (/= "TObject")) alldaughters'
-      alldaughters = alldaughters'
+      alldaughters = nub . map getClassModuleBase $ daughters
       getImportOneClass mname = 
           intercalateWith connRet (importOneClass mname) 
                           ["RawType", "Cast", "Interface", "Implementation"]
