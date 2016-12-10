@@ -132,7 +132,7 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
   --
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__") 
-  writeTypeDeclHeaders templates workingDir typmacro pkgname cihs
+  writeTypeDeclHeaders workingDir typmacro pkgname cihs
   mapM_ (writeDeclHeaders workingDir typmacro pkgname) cihs
   writeTopLevelFunctionHeaders workingDir typmacro pkgname tih
   --

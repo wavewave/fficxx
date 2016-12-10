@@ -65,8 +65,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- declarationTemplate :: String
 -- declarationTemplate = "Module.h"
 
-typeDeclHeaderFileName :: String
-typeDeclHeaderFileName = "PkgType.h"
+-- typeDeclHeaderFileName :: String
+-- typeDeclHeaderFileName = "PkgType.h"
 
 definitionTemplate :: String
 definitionTemplate = "Pkg.cpp"
@@ -120,19 +120,29 @@ mkProtectedFunctionList c =
      . unProtected . class_protected) c 
 
 -- |
-mkTypeDeclHeader :: STGroup String
-                 -> TypeMacro -- ^ typemacro 
+mkTypeDeclHeader :: TypeMacro -- ^ typemacro 
                  -> [Class]
                  -> String 
-mkTypeDeclHeader templates (TypMcro typemacro) classes =
+mkTypeDeclHeader (TypMcro typemacro) classes =
   let typeDeclBodyStr   = genAllCppHeaderTmplType classes 
-  in  renderTemplateGroup 
-        templates 
-        [ ("typeDeclBody", typeDeclBodyStr ) 
-        , ("typemacro", typemacro ) 
+  in TL.unpack $ substitute
+                   "#ifdef __cplusplus\n\
+                   \extern \"C\" { \n\
+                   \#endif\n\
+                   \\n\
+                   \#ifndef $typemacro\n\
+                   \#define $typemacro\n\
+                   \\n\
+                   \$typeDeclBody\n\
+                   \\n\
+                   \#endif // $typemacro\n\
+                   \\n\
+                   \#ifdef __cplusplus\n\
+                   \}\n\
+                   \#endif\n" 
+                   (context [ ("typeDeclBody", typeDeclBodyStr ) 
+                            , ("typemacro", typemacro )          ])
 
-        ] 
-        typeDeclHeaderFileName
 
 
 declarationTemplate :: Text

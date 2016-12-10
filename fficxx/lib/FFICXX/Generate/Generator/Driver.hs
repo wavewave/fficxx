@@ -33,17 +33,16 @@ import FFICXX.Generate.Util
 ----
 
 -- | 
-writeTypeDeclHeaders :: STGroup String 
-                     -> FilePath 
+writeTypeDeclHeaders :: FilePath 
                      -> TypeMacro  -- ^ type macro 
                      -> String  -- ^ cprefix 
                      -> [ClassImportHeader]
                      -> IO ()
-writeTypeDeclHeaders templates wdir typemacro cprefix headers = do 
+writeTypeDeclHeaders wdir typemacro cprefix headers =
   let fn = wdir </> cprefix ++ "Type.h"
       classes = map cihClass headers
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkTypeDeclHeader templates typemacro classes)
+  in withFile fn WriteMode $ \h ->
+       hPutStrLn h (mkTypeDeclHeader typemacro classes)
 
 -- | 
 writeDeclHeaders :: FilePath 
