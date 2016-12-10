@@ -27,6 +27,7 @@ import           Data.Text                              (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                     hiding (render)
+import           Language.Haskell.Exts.Pretty           (prettyPrint)
 import           System.FilePath
 -- 
 import           FFICXX.Generate.Code.Cpp
@@ -40,8 +41,6 @@ import           FFICXX.Generate.Type.PackageInterface  ( TypeMacro(..), HeaderN
                                                         )
 import           FFICXX.Generate.Util
 --
-
-
 
 srcDir :: FilePath -> FilePath
 srcDir installbasedir = installbasedir </> "src" 
@@ -402,7 +401,7 @@ mkImplementationHs amap m = subst
           `connRet2` 
           intercalateWith connRet2 g (filter (not.isAbstractClass) classes)
           `connRet2`
-          runReader (genAllHsFrontInstNew classes) amap
+          runReader (intercalate "\n\n" . map (intercalateWith connRet prettyPrint) <$> genAllHsFrontInstNew classes) amap
           `connRet2`
           genAllHsFrontInstNonVirtual classes
           `connRet2`

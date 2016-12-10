@@ -26,7 +26,7 @@ import           Data.Text                              (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                     hiding (render)
-import           Language.Haskell.Exts.Syntax (Type(..), Exp(..))
+import           Language.Haskell.Exts.Syntax (Type(..), Exp(..),Decl(..))
 import           Language.Haskell.Exts.Pretty
 import           System.FilePath ((<.>))
 -- 
@@ -192,25 +192,28 @@ genAllHsFrontInstExistVirtual cs _dmap = intercalateWith connRet2 allinstances c
 ---------------------
 
 genHsFrontInstNew :: Class         -- ^ only concrete class 
-                    -> Reader AnnotateMap (Maybe String)
+                  -> Reader AnnotateMap (Maybe [Decl])
 genHsFrontInstNew c = do 
-  amap <- ask
+  -- amap <- ask
   let mnewfunc = listToMaybe (filter isNewFunc (class_funcs c))
   return . flip fmap mnewfunc $ \newfunc ->
-    let cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
-        newfuncann = mkComment 0 cann
+    let
+        -- for the time being, let's ignore annotation.
+        -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
+        -- newfuncann = mkComment 0 cann
         fname = constructorName c
         ctyp f = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
         farg f =
           let lst = map (convertCpp2HS (Just c) . fst) (genericFuncArgs f)
           in foldr1 TyFun (lst ++ [TyApp (tycon "IO") (ctyp f)])
         rhs f = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-        [sig,defn] = mkFunGen fname (farg newfunc) [] (rhs newfunc) Nothing
-    in newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ prettyPrint defn
+    in mkFunGen fname (farg newfunc) [] (rhs newfunc) Nothing
+    {- in  newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ prettyPrint defn -}
 
 genAllHsFrontInstNew :: [Class]    -- ^ only concrete class 
-                     -> Reader AnnotateMap String 
-genAllHsFrontInstNew = liftM (intercalate "\n\n") . liftM catMaybes . mapM genHsFrontInstNew 
+                     -> Reader AnnotateMap [[Decl]]
+genAllHsFrontInstNew = liftM catMaybes . mapM genHsFrontInstNew
+  -- liftM (intercalate "\n\n") . liftM catMaybes . mapM genHsFrontInstNew 
   
 genHsFrontInstNonVirtual :: Class -> Maybe String 
 genHsFrontInstNonVirtual c 
