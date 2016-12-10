@@ -86,8 +86,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- implementationHsFileName :: String 
 -- implementationHsFileName = "Implementation.hs"
 
-existentialHsFileName :: String 
-existentialHsFileName = "Existential.hs"
+-- existentialHsFileName :: String 
+-- existentialHsFileName = "Existential.hs"
 
 
 ---- common function for daughter
@@ -452,7 +452,9 @@ mkImplementationHs amap m = TL.unpack $ substitute
           intercalateWith connRet id (mapMaybe genHsFrontInstStatic classes)
           `connRet2`
           genAllHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
-        
+
+
+{- 
 -- | 
 mkExistentialEach :: STGroup String 
                   -> Class 
@@ -501,6 +503,7 @@ mkExistentialHs templates cglobal m =
                     , ( "existEachBody" , existEachBody) ]
                   "Existential.hs" 
   in  hsfilestr
+-}
 
 -- | 
 mkInterfaceHSBOOT :: String -> String 

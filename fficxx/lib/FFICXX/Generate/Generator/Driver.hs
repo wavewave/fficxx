@@ -116,6 +116,7 @@ writeImplementationHs amap wdir m =
   let fn = wdir </> cmModule m <.> "Implementation" <.> "hs"
   in withFile fn WriteMode $ \h -> hPutStrLn h (mkImplementationHs amap m)
 
+{-
 -- | 
 writeExistentialHs :: STGroup String 
                    -> ClassGlobal 
@@ -126,6 +127,7 @@ writeExistentialHs templates cglobal wdir m = do
   let fn = wdir </> cmModule m <.> existentialHsFileName
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkExistentialHs templates cglobal m)
+-}
 
 -- | 
 writeInterfaceHSBOOT :: FilePath -> String -> IO ()
