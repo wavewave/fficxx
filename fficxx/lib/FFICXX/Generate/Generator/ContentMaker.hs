@@ -1,9 +1,10 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Generator.ContentMaker
--- Copyright   : (c) 2011-2013,2015,2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -15,24 +16,32 @@
 module FFICXX.Generate.Generator.ContentMaker where 
 
 import           Control.Applicative
-import           Control.Lens (set,at)
+import           Control.Lens                           (set,at)
 import           Control.Monad.Trans.Reader
-import           Data.Function (on)
-import qualified Data.Map as M
+import           Data.Function                          (on)
+import qualified Data.Map                          as M
 import           Data.List 
-import           Data.List.Split (splitOn) 
+import           Data.List.Split                        (splitOn) 
 import           Data.Maybe
-import           System.FilePath 
-import           Text.StringTemplate hiding (render)
+import           Data.Text                              (Text)
+import qualified Data.Text                         as T
+import qualified Data.Text.Lazy                    as TL
+import           Data.Text.Template                     hiding (render)
+import           System.FilePath
 -- 
 import           FFICXX.Generate.Code.Cpp
 import           FFICXX.Generate.Code.HsFFI 
 import           FFICXX.Generate.Code.HsFrontEnd
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class
-import qualified FFICXX.Generate.Type.PackageInterface as T
+import           FFICXX.Generate.Type.PackageInterface  ( TypeMacro(..), HeaderName(..)
+                                                        , PackageInterface, PackageName(..)
+                                                        , ClassName(..)
+                                                        )
 import           FFICXX.Generate.Util
 --
+
+
 
 srcDir :: FilePath -> FilePath
 srcDir installbasedir = installbasedir </> "src" 
@@ -40,42 +49,8 @@ srcDir installbasedir = installbasedir </> "src"
 csrcDir :: FilePath -> FilePath
 csrcDir installbasedir = installbasedir </> "csrc" 
 
-pkgModuleTemplate :: String
-pkgModuleTemplate = "Pkg.hs"
-
-moduleTemplate :: String 
-moduleTemplate = "module.hs"
-
-hsbootTemplate :: String
-hsbootTemplate = "Class.hs-boot"
-
-declarationTemplate :: String
-declarationTemplate = "Module.h"
-
-typeDeclHeaderFileName :: String
-typeDeclHeaderFileName = "PkgType.h"
-
-definitionTemplate :: String
-definitionTemplate = "Pkg.cpp"
-
-rawtypeHsFileName :: String
-rawtypeHsFileName = "RawType.hs"
-
-ffiHscFileName :: String 
-ffiHscFileName = "FFI.hsc"
-
-interfaceHsFileName :: String
-interfaceHsFileName = "Interface.hs"
-
-castHsFileName :: String
-castHsFileName = "Cast.hs"
-
-implementationHsFileName :: String 
-implementationHsFileName = "Implementation.hs"
-
-existentialHsFileName :: String 
-existentialHsFileName = "Existential.hs"
-
+-- existentialHsFileName :: String 
+-- existentialHsFileName = "Existential.hs"
 
 ---- common function for daughter
 
@@ -107,39 +82,70 @@ mkProtectedFunctionList c =
      . unProtected . class_protected) c 
 
 -- |
-mkTypeDeclHeader :: STGroup String
-                 -> T.TypeMacro -- ^ typemacro 
+mkTypeDeclHeader :: TypeMacro -- ^ typemacro 
                  -> [Class]
                  -> String 
-mkTypeDeclHeader templates (T.TypMcro typemacro) classes =
+mkTypeDeclHeader (TypMcro typemacro) classes =
   let typeDeclBodyStr   = genAllCppHeaderTmplType classes 
-  in  renderTemplateGroup 
-        templates 
-        [ ("typeDeclBody", typeDeclBodyStr ) 
-        , ("typemacro", typemacro ) 
+  in TL.unpack $ substitute
+                   "#ifdef __cplusplus\n\
+                   \extern \"C\" { \n\
+                   \#endif\n\
+                   \\n\
+                   \#ifndef $typemacro\n\
+                   \#define $typemacro\n\
+                   \\n\
+                   \$typeDeclBody\n\
+                   \\n\
+                   \#endif // $typemacro\n\
+                   \\n\
+                   \#ifdef __cplusplus\n\
+                   \}\n\
+                   \#endif\n" 
+                   (context [ ("typeDeclBody", typeDeclBodyStr ) 
+                            , ("typemacro", typemacro )          ])
 
-        ] 
-        typeDeclHeaderFileName
+
+
+declarationTemplate :: Text
+declarationTemplate = 
+  "#ifdef __cplusplus\n\
+  \extern \"C\" { \n\
+  \#endif\n\
+  \\n\
+  \#ifndef $typemacro\n\
+  \#define $typemacro\n\
+  \\n\
+  \#include \"${cprefix}Type.h\"\
+  \\n\
+  \$declarationheader\n\
+  \\n\
+  \$declarationbody\n\
+  \\n\
+  \#endif // $typemacro\n\
+  \\n\
+  \#ifdef __cplusplus\n\
+  \}\n\
+  \#endif\n"
 
 -- | 
-mkDeclHeader :: STGroup String 
-             -> T.TypeMacro  -- ^ typemacro prefix 
+mkDeclHeader :: TypeMacro  -- ^ typemacro prefix 
              -> String     -- ^ C prefix 
              -> ClassImportHeader 
              -> String 
-mkDeclHeader templates (T.TypMcro typemacroprefix) cprefix header =
+mkDeclHeader (TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       typemacrostr = typemacroprefix ++ class_name aclass ++ "__" 
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"") $
-                        map T.unHdrName (cihIncludedHPkgHeadersInH header)
+                        map unHdrName (cihIncludedHPkgHeadersInH header)
       declDefStr    = genAllCppHeaderTmplVirtual classes 
                       `connRet2`
                       genAllCppHeaderTmplNonVirtual classes 
                       `connRet2`   
                       genAllCppDefTmplVirtual classes
                       `connRet2`
-                       genAllCppDefTmplNonVirtual classes
+                      genAllCppDefTmplNonVirtual classes
       classDeclsStr = if (fst.hsClassName) aclass /= "Deletable"
                         then mkParentDef genCppHeaderInstVirtual aclass 
                              `connRet2`
@@ -150,21 +156,59 @@ mkDeclHeader templates (T.TypMcro typemacroprefix) cprefix header =
       declBodyStr   = declDefStr 
                       `connRet2` 
                       classDeclsStr 
-  in  renderTemplateGroup 
-        templates 
-        [ ("typemacro", typemacrostr)
-        , ("cprefix", cprefix)
-        , ("declarationheader", declHeaderStr ) 
-        , ("declarationbody", declBodyStr ) ] 
-        declarationTemplate
+      txt = substitute
+              declarationTemplate
+              (context [ ("typemacro", typemacrostr)
+                       , ("cprefix", cprefix)
+                       , ("declarationheader", declHeaderStr ) 
+                       , ("declarationbody", declBodyStr ) ])
+  in TL.unpack txt
+
+
+definitionTemplate :: Text
+definitionTemplate =
+  "#include <MacroPatternMatch.h>\n\
+  \$header\n\
+  \\n\
+  \using namespace std;\n\
+  \$namespace\n\
+  \\n\
+  \template<class ToType, class FromType>\n\
+  \const ToType* to_const(const FromType* x) {\n\
+  \  return reinterpret_cast<const ToType*>(x);\n\
+  \}\n\
+  \\n\
+  \template<class ToType, class FromType>\n\
+  \ToType* to_nonconst(FromType* x) {\n\
+  \  return reinterpret_cast<ToType*>(x);\n\
+  \}\n\
+  \\n\
+  \template<class ToType, class FromType>\n\
+  \const ToType& to_constref(const FromType& x) {\n\
+  \  return reinterpret_cast<const ToType&>(x);\n\
+  \}\n\
+  \\n\
+  \template<class ToType, class FromType>\n\
+  \ToType& to_nonconstref(FromType& x) {\n\
+  \  return reinterpret_cast<ToType&>(x);\n\
+  \}\n\
+  \\n\
+  \#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n\
+  \\n\
+  \#define TYPECASTMETHOD(cname,mname,oname) \\\n\
+  \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+  \  (to_nonconst<oname,cname ## _t>), \\\n\
+  \  (to_nonconst<cname,cname ## _t>) )\n\
+  \\n\
+  \$cppbody\n"
+
 
 -- | 
-mkDefMain :: STGroup String 
-          -> ClassImportHeader 
+mkDefMain :: ClassImportHeader 
           -> String 
-mkDefMain templates header =
+mkDefMain header =
   let classes = [cihClass header]
-      headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (T.unHdrName (cihSelfHeader header)) ++ "\"" 
+      headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (unHdrName (cihSelfHeader header)) ++ "\"" 
       namespaceStr = (concatMap (\x->"using namespace " ++ unNamespace x ++ ";\n") . cihNamespace) header
       aclass = cihClass header
       cppBody = mkProtectedFunctionList (cihClass header) 
@@ -176,70 +220,67 @@ mkDefMain templates header =
                   else genCppDefInstVirtual (aclass, aclass)
                 `connRet`
                 genAllCppDefInstNonVirtual classes
-  in  renderTemplateGroup 
-        templates 
-        [ ("header" , headerStr ) 
-        , ("namespace", namespaceStr ) 
-        , ("cppbody", cppBody )  
-        ] 
-        definitionTemplate
-
+  in TL.unpack $ substitute definitionTemplate
+                   (context ([ ("header" , headerStr )
+                             , ("namespace", namespaceStr )
+                             , ("cppbody", cppBody )        ])) 
 
 -- | 
-mkTopLevelFunctionHeader :: STGroup String 
-                         -> T.TypeMacro  -- ^ typemacro prefix 
+mkTopLevelFunctionHeader :: TypeMacro  -- ^ typemacro prefix 
                          -> String     -- ^ C prefix 
                          -> TopLevelImportHeader
                          -> String 
-mkTopLevelFunctionHeader templates (T.TypMcro typemacroprefix) cprefix tih =
+mkTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix ++ "TOPLEVEL" ++ "__" 
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"")
-                      . map (T.unHdrName . cihSelfHeader) . tihClassDep $ tih
+                      . map (unHdrName . cihSelfHeader) . tihClassDep $ tih
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
-  in  renderTemplateGroup 
-        templates 
-        [ ("typemacro", typemacrostr)
-        , ("cprefix", cprefix)
-        , ("declarationheader", declHeaderStr ) 
-        , ("declarationbody", declBodyStr ) ] 
-        declarationTemplate
-
+  in TL.unpack $ substitute declarationTemplate
+                   (context [ ("typemacro", typemacrostr)
+                            , ("cprefix", cprefix)
+                            , ("declarationheader", declHeaderStr )
+                            , ("declarationbody", declBodyStr ) ])
 
 -- | 
-mkTopLevelFunctionCppDef :: STGroup String 
-                         -> String     -- ^ C prefix 
+mkTopLevelFunctionCppDef :: String     -- ^ C prefix 
                          -> TopLevelImportHeader
                          -> String 
-mkTopLevelFunctionCppDef templates cprefix tih =
+mkTopLevelFunctionCppDef cprefix tih =
   let cihs = tihClassDep tih
       declHeaderStr = "#include \"" ++ tihHeaderFileName tih <.> "h" ++ "\""
                       `connRet2`
                       (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
                       `connRet2`
-                      ((intercalateWith connRet (\x->"#include \""++x++"\"") . map (T.unHdrName . cihSelfHeader)) cihs)
+                      ((intercalateWith connRet (\x->"#include \""++x++"\"") . map (unHdrName . cihSelfHeader)) cihs)
       allns = nubBy ((==) `on` unNamespace) (tihClassDep tih >>= cihNamespace)
       namespaceStr = do ns <- allns 
                         ("using namespace " ++ unNamespace ns ++ ";\n")
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
-  in  renderTemplateGroup 
-        templates 
-        [ ("header", declHeaderStr)
-        , ("namespace", namespaceStr)
-        , ("cppbody", declBodyStr ) ] 
-        definitionTemplate
+  in TL.unpack $ substitute definitionTemplate
+                   (context [ ("header", declHeaderStr)
+                            , ("namespace", namespaceStr)
+                            , ("cppbody", declBodyStr )   ])
 
 -- | 
-mkFFIHsc :: STGroup String 
-         -> ClassModule 
-         -> String 
-mkFFIHsc templates m = 
-    renderTemplateGroup templates 
-                        [ ("ffiHeader", ffiHeaderStr)
-                        , ("ffiImport", ffiImportStr)
-                        , ("cppInclude", cppIncludeStr)
-                        , ("hsFunctionBody", genAllHsFFI headers) ]
-                        ffiHscFileName
+mkFFIHsc :: ClassModule -> String 
+mkFFIHsc m = TL.unpack $ substitute
+                           "{-# LANGUAGE ForeignFunctionInterface #-}\n\
+                           \\n\
+                           \$ffiHeader\n\
+                           \\n\
+                           \import Foreign.C\n\
+                           \import Foreign.Ptr\n\
+                           \\n\
+                           \$ffiImport\n\
+                           \\n\
+                           \$cppInclude\n\
+                           \\n\
+                           \$hsFunctionBody\n"
+                           (context  [ ("ffiHeader", ffiHeaderStr)
+                                     , ("ffiImport", ffiImportStr)
+                                     , ("cppInclude", cppIncludeStr)
+                                     , ("hsFunctionBody", genAllHsFFI headers) ])
   where mname = cmModule m
         headers = cmCIH m
         ffiHeaderStr = "module " ++ mname <.> "FFI where\n"
@@ -248,26 +289,47 @@ mkFFIHsc templates m =
         cppIncludeStr = genModuleIncludeHeader headers
 
 -- |                      
-mkRawTypeHs :: STGroup String 
-            -> ClassModule 
-            -> String
-mkRawTypeHs templates m = 
-    renderTemplateGroup templates [ ("rawtypeHeader", rawtypeHeaderStr) 
-                                  , ("rawtypeBody", rawtypeBodyStr)] rawtypeHsFileName
+mkRawTypeHs :: ClassModule -> String
+mkRawTypeHs m = TL.unpack $ substitute
+                              "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
+                              \             FlexibleInstances, TypeSynonymInstances, \n\
+                              \             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}\n\
+                              \\n\
+                              \$rawtypeHeader\n\
+                              \\n\
+                              \import Foreign.ForeignPtr\n\
+                              \import FFICXX.Runtime.Cast\n\
+                              \\n\
+                              \$rawtypeBody\n"
+                              (context [ ("rawtypeHeader", rawtypeHeaderStr)
+                                       , ("rawtypeBody", rawtypeBodyStr)     ])
   where rawtypeHeaderStr = "module " ++ cmModule m <.> "RawType where\n"
         classes = cmClass m
         rawtypeBodyStr = 
           intercalateWith connRet2 hsClassRawType (filter (not.isAbstractClass) classes)
 
 -- | 
-mkInterfaceHs :: AnnotateMap 
-              -> STGroup String 
-              -> ClassModule 
-              -> String    
-mkInterfaceHs amap templates m = 
-    renderTemplateGroup templates [ ("ifaceHeader", ifaceHeaderStr) 
-                                  , ("ifaceImport", ifaceImportStr)
-                                  , ("ifaceBody", ifaceBodyStr)]  "Interface.hs" 
+mkInterfaceHs :: AnnotateMap -> ClassModule -> String    
+mkInterfaceHs amap m = TL.unpack $ substitute
+                                     "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
+                                     \             FlexibleInstances, TypeSynonymInstances,\n\
+                                     \             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}\n\
+                                     \\n\
+                                     \$ifaceHeader\n\
+                                     \\n\
+                                     \import Data.Word\n\
+                                     \import Foreign.C\n\
+                                     \import Foreign.Ptr\n\
+                                     \import Foreign.ForeignPtr\n\
+                                     \import FFICXX.Runtime.Cast\n\
+                                     \\n\
+                                     \$ifaceImport\n\
+                                     \\n\
+                                     \$ifaceBody\n"
+                                     (context [ ("ifaceHeader", ifaceHeaderStr)
+                                              , ("ifaceImport", ifaceImportStr)
+                                              , ("ifaceBody", ifaceBodyStr)     ])
+
   where ifaceHeaderStr = "module " ++ cmModule m <.> "Interface where\n" 
         classes = cmClass m
         ifaceImportStr = genImportInInterface m
@@ -281,12 +343,26 @@ mkInterfaceHs amap templates m =
           runReader (genAllHsFrontDowncastClass (filter (not.isAbstractClass) classes)) amap
 
 -- | 
-mkCastHs :: STGroup String -> ClassModule -> String    
-mkCastHs templates m  = 
-    renderTemplateGroup templates [ ("castHeader", castHeaderStr) 
-                                  , ("castImport", castImportStr)
-                                  , ("castBody", castBodyStr) ]  
-                                  castHsFileName
+mkCastHs :: ClassModule -> String    
+mkCastHs m = TL.unpack $ substitute
+                           "{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeFamilies,\n\
+                           \             MultiParamTypeClasses, OverlappingInstances, IncoherentInstances #-}\n\
+                           \\n\
+                           \$castHeader\n\
+                           \\n\
+                           \import Foreign.Ptr\n\
+                           \import Foreign.ForeignPtr (castForeignPtr, newForeignPtr_)\n\
+                           \import Foreign.ForeignPtr.Unsafe\n\
+                           \import FFICXX.Runtime.Cast\n\
+                           \import System.IO.Unsafe\n\
+                           \\n\
+                           \$castImport\n\
+                           \\n\
+                           \$castBody\n"
+                           (context [ ("castHeader", castHeaderStr) 
+                                    , ("castImport", castImportStr)
+                                    , ("castBody", castBodyStr)     ])
+
   where castHeaderStr = "module " ++ cmModule m <.> "Cast where\n" 
         classes = cmClass m
         castImportStr = genImportInCast m
@@ -296,23 +372,37 @@ mkCastHs templates m  =
           intercalateWith connRet2 genHsFrontInstCastableSelf classes
 
 -- | 
-mkImplementationHs :: AnnotateMap 
-                   -> STGroup String  -- ^ template 
-                   -> ClassModule 
-                   -> String
-mkImplementationHs amap templates m = 
-    renderTemplateGroup templates 
-                        [ ("implHeader", implHeaderStr) 
-                        , ("implImport", implImportStr)
-                        , ("implBody", implBodyStr ) ]
-                        "Implementation.hs"
+mkImplementationHs :: AnnotateMap -> ClassModule -> String
+mkImplementationHs amap m = TL.unpack $ substitute
+                                          "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
+                                          \             FlexibleInstances, TypeSynonymInstances, EmptyDataDecls,\n\
+                                          \             OverlappingInstances, IncoherentInstances #-}\n\
+                                          \\n\
+                                          \$implHeader\n\
+                                          \\n\
+                                          \import FFICXX.Runtime.Cast\n\
+                                          \\n\
+                                          \$implImport\n\
+                                          \\n\
+                                          \import Data.Word\n\
+                                          \import Foreign.C\n\
+                                          \import Foreign.Ptr\n\
+                                          \import Foreign.ForeignPtr\n\
+                                          \\n\
+                                          \import System.IO.Unsafe\n\
+                                          \\n\
+                                          \$implBody\n"
+                                          (context [ ("implHeader", implHeaderStr) 
+                                                   , ("implImport", implImportStr)
+                                                   , ("implBody", implBodyStr )    ]) 
+
   where classes = cmClass m
         implHeaderStr = "module " ++ cmModule m <.> "Implementation where\n" 
         implImportStr = genImportInImplementation m
         f y = intercalateWith connRet (flip genHsFrontInst y) (y:class_allparents y )
         g y = intercalateWith connRet (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
-        implBodyStr =  
+        implBodyStr = 
           intercalateWith connRet2 f classes
           `connRet2` 
           intercalateWith connRet2 g (filter (not.isAbstractClass) classes)
@@ -324,7 +414,9 @@ mkImplementationHs amap templates m =
           intercalateWith connRet id (mapMaybe genHsFrontInstStatic classes)
           `connRet2`
           genAllHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
-        
+
+
+{- 
 -- | 
 mkExistentialEach :: STGroup String 
                   -> Class 
@@ -373,40 +465,40 @@ mkExistentialHs templates cglobal m =
                     , ( "existEachBody" , existEachBody) ]
                   "Existential.hs" 
   in  hsfilestr
+-}
 
 -- | 
-mkInterfaceHSBOOT :: STGroup String -> String -> String 
-mkInterfaceHSBOOT templates mname = 
+mkInterfaceHSBOOT :: String -> String 
+mkInterfaceHSBOOT mname = 
   let cname = last (splitOn "." mname)
       hsbootbodystr = "class " ++ 'I':cname ++ " a" 
-      hsbootstr = renderTemplateGroup 
-                    templates 
-                    [ ("moduleName", mname <.> "Interface") 
-                    , ("hsBootBody", hsbootbodystr)
-                    ]
-                    hsbootTemplate
-  in hsbootstr 
+      txt = substitute "module $moduleName where\n\n$hsBootBody\n"
+              (context [ ("moduleName", mname <.> "Interface") 
+                       , ("hsBootBody", hsbootbodystr)         ])
+  in TL.unpack txt
 
 
 
 -- | 
-mkModuleHs :: STGroup String 
-           -> ClassModule 
-           -> String 
-mkModuleHs templates m = 
-    let str = renderTemplateGroup 
-                templates 
-                [ ("moduleName", cmModule m) 
-                , ("exportList", genExportList (cmClass m)) 
-                , ("importList", genImportInModule (cmClass m))
-                ]
-                moduleTemplate 
-    in str
+mkModuleHs :: ClassModule -> String 
+mkModuleHs m = 
+    let txt = substitute
+                "module $moduleName \n\
+                \  (\n\
+                \$exportList\n\
+                \  ) where\n\
+                \\n\
+                \$importList\n"
+                (context [ ("moduleName", cmModule m) 
+                         , ("exportList", genExportList (cmClass m)) 
+                         , ("importList", genImportInModule (cmClass m))
+                         ])
+    in TL.unpack txt
 
 
 -- | 
-mkPkgHs :: String -> STGroup String -> [ClassModule] -> TopLevelImportHeader -> String 
-mkPkgHs modname templates mods tih = 
+mkPkgHs :: String -> [ClassModule] -> TopLevelImportHeader -> String 
+mkPkgHs modname mods tih = 
     let tfns = tihFuncs tih 
         exportListStr = intercalateWith (conn "\n, ") ((\x->"module " ++ x).cmModule) mods 
                         ++ if null tfns 
@@ -424,27 +516,31 @@ mkPkgHs modname templates mods tih =
         topLevelDefStr = intercalateWith connRet2 (genTopLevelFuncFFI tih) tfns 
                          `connRet2`
                          intercalateWith connRet2 genTopLevelFuncDef tfns
-        str = renderTemplateGroup 
-                templates 
-                [ ("summarymod", modname)
-                , ("exportList", exportListStr) 
-                , ("importList", importListStr) 
-                , ("topLevelDef", topLevelDefStr) 
-                ]
-                pkgModuleTemplate
-    in str 
+        txt = substitute
+                "module $summarymod (\n\
+                \  $exportList\n\
+                \) where\n\
+                \\n\
+                \$importList\n\
+                \$topLevelDef\n"
+                (context [ ("summarymod", modname)
+                         , ("exportList", exportListStr) 
+                         , ("importList", importListStr) 
+                         , ("topLevelDef", topLevelDefStr) 
+                         ])
+    in TL.unpack txt
        
 
 
   
 -- |
-mkPackageInterface :: T.PackageInterface 
-                   -> T.PackageName 
+mkPackageInterface :: PackageInterface 
+                   -> PackageName 
                    -> [ClassImportHeader] 
-                   -> T.PackageInterface
+                   -> PackageInterface
 mkPackageInterface pinfc pkgname = foldr f pinfc 
   where f cih repo = 
           let name = (class_name . cihClass) cih 
               header = cihSelfHeader cih 
-          in set (at (pkgname,T.ClsName name)) (Just header) repo
+          in set (at (pkgname,ClsName name)) (Just header) repo
 

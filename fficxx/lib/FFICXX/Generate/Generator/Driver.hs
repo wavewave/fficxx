@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Generator.Driver
--- Copyright   : (c) 2011-2015 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 -- 
 -- License     : BSD3
 -- Maintainer  : ianwookim@gmail.com
@@ -20,7 +20,6 @@ import           System.Directory
 import           System.FilePath
 import           System.IO
 import           System.Process
-import           Text.StringTemplate
 --
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Annotate
@@ -33,105 +32,90 @@ import FFICXX.Generate.Util
 ----
 
 -- | 
-writeTypeDeclHeaders :: STGroup String 
-                     -> FilePath 
+writeTypeDeclHeaders :: FilePath 
                      -> TypeMacro  -- ^ type macro 
                      -> String  -- ^ cprefix 
                      -> [ClassImportHeader]
                      -> IO ()
-writeTypeDeclHeaders templates wdir typemacro cprefix headers = do 
+writeTypeDeclHeaders wdir typemacro cprefix headers =
   let fn = wdir </> cprefix ++ "Type.h"
       classes = map cihClass headers
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkTypeDeclHeader templates typemacro classes)
+  in withFile fn WriteMode $ \h ->
+       hPutStrLn h (mkTypeDeclHeader typemacro classes)
 
 -- | 
-writeDeclHeaders :: STGroup String  
-                 -> FilePath 
+writeDeclHeaders :: FilePath 
                  -> TypeMacro 
                  -> String  -- ^ c prefix 
                  -> ClassImportHeader
                  -> IO () 
-writeDeclHeaders templates wdir typemacroprefix cprefix header = do 
+writeDeclHeaders wdir typemacroprefix cprefix header =
   let fn = wdir </> (unHdrName (cihSelfHeader header))
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkDeclHeader templates typemacroprefix cprefix header)
+  in withFile fn WriteMode $ \h -> 
+       hPutStrLn h (mkDeclHeader typemacroprefix cprefix header)
 
 -- | 
-writeTopLevelFunctionHeaders :: STGroup String  
-                             -> FilePath 
+writeTopLevelFunctionHeaders :: FilePath 
                              -> TypeMacro 
                              -> String  -- ^ c prefix 
                              -> TopLevelImportHeader
                              -> IO () 
-writeTopLevelFunctionHeaders templates wdir typemacroprefix cprefix tih = do 
+writeTopLevelFunctionHeaders wdir typemacroprefix cprefix tih =
   let fn = wdir </> tihHeaderFileName tih <.> "h"
-  withFile fn WriteMode $ \h -> 
-    hPutStrLn h (mkTopLevelFunctionHeader templates typemacroprefix cprefix tih)
+  in withFile fn WriteMode $ \h -> 
+       hPutStrLn h (mkTopLevelFunctionHeader typemacroprefix cprefix tih)
 
-
-
-
-writeCppDef :: STGroup String -> FilePath -> ClassImportHeader -> IO () 
-writeCppDef templates wdir header = do 
+writeCppDef :: FilePath -> ClassImportHeader -> IO () 
+writeCppDef wdir header = 
   let fn = wdir </> cihSelfCpp header
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkDefMain templates header)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkDefMain header)
 
 
 -- | 
-writeTopLevelFunctionCppDef :: STGroup String  
-                            -> FilePath 
+writeTopLevelFunctionCppDef :: FilePath 
                             -> TypeMacro 
                             -> String  -- ^ c prefix 
                             -> TopLevelImportHeader
                             -> IO () 
-writeTopLevelFunctionCppDef templates wdir typemacroprefix cprefix tih = do 
+writeTopLevelFunctionCppDef wdir typemacroprefix cprefix tih = 
   let fn = wdir </> tihHeaderFileName tih <.> "cpp"
-  withFile fn WriteMode $ \h -> hPutStrLn h (mkTopLevelFunctionCppDef templates cprefix tih)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkTopLevelFunctionCppDef cprefix tih)
 
 
 -- | 
-writeRawTypeHs :: STGroup String -> FilePath -> ClassModule -> IO ()
-writeRawTypeHs templates wdir m = do
-  let fn = wdir </> cmModule m <.> rawtypeHsFileName
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkRawTypeHs templates m) 
+writeRawTypeHs :: FilePath -> ClassModule -> IO ()
+writeRawTypeHs wdir m =
+  let fn = wdir </> cmModule m <.> "RawType" <.> "hs"
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkRawTypeHs m) 
 
 -- | 
-writeFFIHsc :: STGroup String -> FilePath -> ClassModule -> IO ()
-writeFFIHsc templates wdir m = do 
-  let fn = wdir </> cmModule m <.> ffiHscFileName
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkFFIHsc templates m)
+writeFFIHsc :: FilePath -> ClassModule -> IO ()
+writeFFIHsc wdir m = 
+  let fn = wdir </> cmModule m <.> "FFI" <.> "hsc"
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkFFIHsc m)
 
 -- | 
-writeInterfaceHs :: AnnotateMap -> STGroup String -> FilePath 
-                 -> ClassModule 
-                 -> IO ()
-writeInterfaceHs amap templates wdir m = do 
-  let fn = wdir </> cmModule m <.> interfaceHsFileName
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkInterfaceHs amap templates m)
+writeInterfaceHs :: AnnotateMap -> FilePath -> ClassModule -> IO ()
+writeInterfaceHs amap wdir m =
+  let fn = wdir </> cmModule m <.> "Interface" <.> "hs"
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHs amap m)
 
 -- |
-writeCastHs :: STGroup String -> FilePath -> ClassModule -> IO ()
-writeCastHs templates wdir m = do 
-  let fn = wdir </> cmModule m <.> castHsFileName
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkCastHs templates m)
+writeCastHs :: FilePath -> ClassModule -> IO ()
+writeCastHs wdir m = 
+  let fn = wdir </> cmModule m <.> "Cast" <.> "hs"
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkCastHs m)
 
 -- | 
 writeImplementationHs :: AnnotateMap 
-                      -> STGroup String 
                       -> FilePath 
                       -> ClassModule 
                       -> IO ()
-writeImplementationHs amap templates wdir m = do 
-  let fn = wdir </> cmModule m <.> implementationHsFileName
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkImplementationHs amap templates m)
+writeImplementationHs amap wdir m = 
+  let fn = wdir </> cmModule m <.> "Implementation" <.> "hs"
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkImplementationHs amap m)
 
+{-
 -- | 
 writeExistentialHs :: STGroup String 
                    -> ClassGlobal 
@@ -142,31 +126,31 @@ writeExistentialHs templates cglobal wdir m = do
   let fn = wdir </> cmModule m <.> existentialHsFileName
   withFile fn WriteMode $ \h -> do 
     hPutStrLn h (mkExistentialHs templates cglobal m)
+-}
 
 -- | 
-writeInterfaceHSBOOT :: STGroup String -> FilePath -> String -> IO ()
-writeInterfaceHSBOOT templates wdir mname = do 
+writeInterfaceHSBOOT :: FilePath -> String -> IO ()
+writeInterfaceHSBOOT wdir mname =
   let fn = wdir </> mname <.> "Interface" <.> "hs-boot"
-  withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHSBOOT templates mname)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHSBOOT mname)
 
 -- |
-writeModuleHs :: STGroup String -> FilePath -> ClassModule -> IO () 
-writeModuleHs templates wdir m = do 
+writeModuleHs :: FilePath -> ClassModule -> IO () 
+writeModuleHs wdir m =
   let fn = wdir </> cmModule m <.> "hs"
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkModuleHs templates m)
+  in withFile fn WriteMode $ \h -> do 
+       hPutStrLn h (mkModuleHs m)
 
 -- | 
 writePkgHs :: String -- ^ summary module 
-           -> STGroup String 
            -> FilePath 
            -> [ClassModule] 
            -> TopLevelImportHeader
            -> IO () 
-writePkgHs modname templates wdir mods tih = do 
+writePkgHs modname wdir mods tih = 
   let fn = wdir </> modname <.> "hs"
-      str = mkPkgHs modname templates mods tih
-  withFile fn WriteMode $ \h -> hPutStrLn h str
+      str = mkPkgHs modname mods tih
+  in withFile fn WriteMode $ \h -> hPutStrLn h str
 
 
 notExistThenCreate :: FilePath -> IO () 

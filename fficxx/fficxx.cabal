@@ -1,5 +1,5 @@
 Name:		fficxx
-Version:	0.2.1
+Version:	0.2.999
 Synopsis:	automatic C++ binding generation
 Description: 	automatic C++ binding generation
 License:        BSD3
@@ -9,12 +9,7 @@ Maintainer: 	Ian-Woo Kim <ianwookim@gmail.com>
 Build-Type: 	Simple
 Category:       FFI Tools
 Cabal-Version:  >= 1.8
-Data-files: template/*.h.st
-            template/*.hs.st
-            template/*.hsc.st
-            template/*.hs-boot.st
-            template/*.cpp.st
-            template/Pkg.cabal.st
+Data-files: 
             sample/cxxlib/include/*.h
             sample/cxxlib/src/*.cpp
             sample/cxxlib/Makefile
@@ -32,24 +27,26 @@ Library
   ghc-options: 	-Wall -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: base == 4.*,
-                 data-default,
-                 mtl>2,
+                 Cabal,
+                 bytestring,
                  containers,
-                 filepath>1,
+                 data-default,
                  directory,
-                 HStringTemplate,
-                 split,
-                 process,
-                 transformers >= 0.3,
-                 template-haskell,
-                 hashable,
-                 unordered-containers,
-                 lens > 3,
                  either,
                  errors,
-                 bytestring,
+                 filepath>1,
+                 hashable,
+                 lens > 3,
+                 mtl>2,
+                 process,
                  pureMD5,
-                 Cabal
+                 split,
+                 transformers >= 0.3,
+                 template,
+                 template-haskell,
+                 text,
+                 unordered-containers
+                 
 
   Exposed-Modules:
                    FFICXX.Generate.Builder

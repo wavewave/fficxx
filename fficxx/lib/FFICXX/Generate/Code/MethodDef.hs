@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.MethodDef
@@ -12,8 +14,13 @@
 
 module FFICXX.Generate.Code.MethodDef where
 
-import FFICXX.Generate.Type.Class
-import FFICXX.Generate.Util 
+import           Data.Text                              (Text)
+import qualified Data.Text                         as T
+import qualified Data.Text.Lazy                    as TL
+import           Data.Text.Template                     hiding (render)
+-- 
+import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Util 
 
 
 -- Function Declaration and Definition
@@ -21,15 +28,19 @@ import FFICXX.Generate.Util
 funcToDecl :: Class -> Function -> String 
 funcToDecl c func 
   | isNewFunc func || isStaticFunc func = 
-    let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
-    in  render tmpl [ ("returntype", rettypeToString (genericFuncRet func))  
-                    , ("funcname",  aliasedFuncName c func) 
-                    , ("args", argsToStringNoSelf (genericFuncArgs func)) ] 
+    let tmpl = "$returntype Type ## _$funcname ( $args )" 
+    in TL.unpack $ substitute tmpl
+                     (context [ ("returntype", rettypeToString (genericFuncRet func))  
+                              , ("funcname",  aliasedFuncName c func) 
+                              , ("args", argsToStringNoSelf (genericFuncArgs func))
+                              ])
   | otherwise =  
-    let tmpl = "$returntype$ Type ## _$funcname$ ( $args$ )" 
-    in  render tmpl [ ("returntype", rettypeToString (genericFuncRet func))  
-                    , ("funcname", aliasedFuncName c func) 
-                    , ("args", argsToString (genericFuncArgs func)) ] 
+    let tmpl = "$returntype Type ## _$funcname ( $args )" 
+    in TL.unpack $ substitute tmpl
+                     (context [ ("returntype", rettypeToString (genericFuncRet func))  
+                              , ("funcname", aliasedFuncName c func) 
+                              , ("args", argsToString (genericFuncArgs func))
+                              ]) 
 
 
 
