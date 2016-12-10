@@ -83,8 +83,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- castHsFileName :: String
 -- castHsFileName = "Cast.hs"
 
-implementationHsFileName :: String 
-implementationHsFileName = "Implementation.hs"
+-- implementationHsFileName :: String 
+-- implementationHsFileName = "Implementation.hs"
 
 existentialHsFileName :: String 
 existentialHsFileName = "Existential.hs"
@@ -410,16 +410,30 @@ mkCastHs m = TL.unpack $ substitute
           intercalateWith connRet2 genHsFrontInstCastableSelf classes
 
 -- | 
-mkImplementationHs :: AnnotateMap 
-                   -> STGroup String  -- ^ template 
-                   -> ClassModule 
-                   -> String
-mkImplementationHs amap templates m = 
-    renderTemplateGroup templates 
-                        [ ("implHeader", implHeaderStr) 
-                        , ("implImport", implImportStr)
-                        , ("implBody", implBodyStr ) ]
-                        "Implementation.hs"
+mkImplementationHs :: AnnotateMap -> ClassModule -> String
+mkImplementationHs amap m = TL.unpack $ substitute
+                                          "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
+                                          \             FlexibleInstances, TypeSynonymInstances, EmptyDataDecls,\n\
+                                          \             OverlappingInstances, IncoherentInstances #-}\n\
+                                          \\n\
+                                          \$implHeader\n\
+                                          \\n\
+                                          \import FFICXX.Runtime.Cast\n\
+                                          \\n\
+                                          \$implImport\n\
+                                          \\n\
+                                          \import Data.Word\n\
+                                          \import Foreign.C\n\
+                                          \import Foreign.Ptr\n\
+                                          \import Foreign.ForeignPtr\n\
+                                          \\n\
+                                          \import System.IO.Unsafe\n\
+                                          \\n\
+                                          \$implBody\n"
+                                          (context [ ("implHeader", implHeaderStr) 
+                                                   , ("implImport", implImportStr)
+                                                   , ("implBody", implBodyStr )    ]) 
+
   where classes = cmClass m
         implHeaderStr = "module " ++ cmModule m <.> "Implementation where\n" 
         implImportStr = genImportInImplementation m
