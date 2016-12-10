@@ -68,8 +68,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- typeDeclHeaderFileName :: String
 -- typeDeclHeaderFileName = "PkgType.h"
 
-definitionTemplate :: String
-definitionTemplate = "Pkg.cpp"
+-- definitionTemplate :: String
+-- definitionTemplate = "Pkg.cpp"
 
 rawtypeHsFileName :: String
 rawtypeHsFileName = "RawType.hs"
@@ -202,11 +202,49 @@ mkDeclHeader (TypMcro typemacroprefix) cprefix header =
                        , ("declarationbody", declBodyStr ) ])
   in TL.unpack txt
 
+
+definitionTemplate :: Text
+definitionTemplate =
+  "#include <MacroPatternMatch.h>\n\
+  \$header\n\
+  \\n\
+  \using namespace std;\n\
+  \$namespace\n\
+  \\n\
+  \template<class ToType, class FromType>\n\
+  \const ToType* to_const(const FromType* x) {\n\
+  \  return reinterpret_cast<const ToType*>(x);\n\
+  \}\n\
+  \\n\
+  \template<class ToType, class FromType>\n\
+  \ToType* to_nonconst(FromType* x) {\n\
+  \  return reinterpret_cast<ToType*>(x);\n\
+  \}\n\
+  \\n\
+  \template<class ToType, class FromType>\n\
+  \const ToType& to_constref(const FromType& x) {\n\
+  \  return reinterpret_cast<const ToType&>(x);\n\
+  \}\n\
+  \\n\
+  \template<class ToType, class FromType>\n\
+  \ToType& to_nonconstref(FromType& x) {\n\
+  \  return reinterpret_cast<ToType&>(x);\n\
+  \}\n\
+  \\n\
+  \#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n\
+  \\n\
+  \#define TYPECASTMETHOD(cname,mname,oname) \\\n\
+  \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+  \  (to_nonconst<oname,cname ## _t>), \\\n\
+  \  (to_nonconst<cname,cname ## _t>) )\n\
+  \\n\
+  \$cppbody\n"
+
+
 -- | 
-mkDefMain :: STGroup String 
-          -> ClassImportHeader 
+mkDefMain :: ClassImportHeader 
           -> String 
-mkDefMain templates header =
+mkDefMain header =
   let classes = [cihClass header]
       headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (unHdrName (cihSelfHeader header)) ++ "\"" 
       namespaceStr = (concatMap (\x->"using namespace " ++ unNamespace x ++ ";\n") . cihNamespace) header
@@ -220,14 +258,10 @@ mkDefMain templates header =
                   else genCppDefInstVirtual (aclass, aclass)
                 `connRet`
                 genAllCppDefInstNonVirtual classes
-  in  renderTemplateGroup 
-        templates 
-        [ ("header" , headerStr ) 
-        , ("namespace", namespaceStr ) 
-        , ("cppbody", cppBody )  
-        ] 
-        definitionTemplate
-
+  in TL.unpack $ substitute definitionTemplate
+                   (context ([ ("header" , headerStr )
+                             , ("namespace", namespaceStr )
+                             , ("cppbody", cppBody )        ])) 
 
 -- | 
 mkTopLevelFunctionHeader :: TypeMacro  -- ^ typemacro prefix 
@@ -246,11 +280,10 @@ mkTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
                             , ("declarationbody", declBodyStr ) ])
 
 -- | 
-mkTopLevelFunctionCppDef :: STGroup String 
-                         -> String     -- ^ C prefix 
+mkTopLevelFunctionCppDef :: String     -- ^ C prefix 
                          -> TopLevelImportHeader
                          -> String 
-mkTopLevelFunctionCppDef templates cprefix tih =
+mkTopLevelFunctionCppDef cprefix tih =
   let cihs = tihClassDep tih
       declHeaderStr = "#include \"" ++ tihHeaderFileName tih <.> "h" ++ "\""
                       `connRet2`
@@ -262,12 +295,10 @@ mkTopLevelFunctionCppDef templates cprefix tih =
                         ("using namespace " ++ unNamespace ns ++ ";\n")
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
-  in  renderTemplateGroup 
-        templates 
-        [ ("header", declHeaderStr)
-        , ("namespace", namespaceStr)
-        , ("cppbody", declBodyStr ) ] 
-        definitionTemplate
+  in TL.unpack $ substitute definitionTemplate
+                   (context [ ("header", declHeaderStr)
+                            , ("namespace", namespaceStr)
+                            , ("cppbody", declBodyStr )   ])
 
 -- | 
 mkFFIHsc :: STGroup String 

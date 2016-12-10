@@ -66,26 +66,21 @@ writeTopLevelFunctionHeaders wdir typemacroprefix cprefix tih =
   in withFile fn WriteMode $ \h -> 
        hPutStrLn h (mkTopLevelFunctionHeader typemacroprefix cprefix tih)
 
-
-
-
-writeCppDef :: STGroup String -> FilePath -> ClassImportHeader -> IO () 
-writeCppDef templates wdir header = do 
+writeCppDef :: FilePath -> ClassImportHeader -> IO () 
+writeCppDef wdir header = 
   let fn = wdir </> cihSelfCpp header
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkDefMain templates header)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkDefMain header)
 
 
 -- | 
-writeTopLevelFunctionCppDef :: STGroup String  
-                            -> FilePath 
+writeTopLevelFunctionCppDef :: FilePath 
                             -> TypeMacro 
                             -> String  -- ^ c prefix 
                             -> TopLevelImportHeader
                             -> IO () 
-writeTopLevelFunctionCppDef templates wdir typemacroprefix cprefix tih = do 
+writeTopLevelFunctionCppDef wdir typemacroprefix cprefix tih = 
   let fn = wdir </> tihHeaderFileName tih <.> "cpp"
-  withFile fn WriteMode $ \h -> hPutStrLn h (mkTopLevelFunctionCppDef templates cprefix tih)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkTopLevelFunctionCppDef cprefix tih)
 
 
 -- | 
