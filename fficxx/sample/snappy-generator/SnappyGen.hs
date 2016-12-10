@@ -76,8 +76,8 @@ headerMap = [ ("Sink"  , ([NS "snappy"], [HdrName "snappy-sinksource.h", HdrName
 
 mycabalattr = 
     CabalAttr 
-    { cabalattr_license = Nothing
-    , cabalattr_licensefile = Nothing
+    { cabalattr_license = Just "BSD3"
+    , cabalattr_licensefile = Just "LICENSE"
     , cabalattr_extraincludedirs = []
     , cabalattr_extralibdirs = []
     }
