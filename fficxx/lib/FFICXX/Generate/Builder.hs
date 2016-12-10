@@ -26,7 +26,6 @@ import           Data.Text.Template                     hiding (render)
 import           System.FilePath ((</>), (<.>))
 import           System.Directory (getCurrentDirectory)
 import           System.Process (readProcess)
-import           Text.StringTemplate hiding (render)
 --
 import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Code.Cpp
@@ -164,8 +163,8 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
       hsbootlst = mkHSBOOTCandidateList mods
       cglobal = mkGlobal myclasses
       cabalFileName = pkgname <.> "cabal" 
-  templateDir <- F.getDataDir >>= return . (</> "template")
-  (templates :: STGroup String) <- directoryGroup templateDir
+  -- templateDir <- F.getDataDir >>= return . (</> "template")
+  -- (templates :: STGroup String) <- directoryGroup templateDir
   --
   notExistThenCreate workingDir
   notExistThenCreate installDir

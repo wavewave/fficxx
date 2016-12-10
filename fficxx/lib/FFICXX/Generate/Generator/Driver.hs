@@ -20,7 +20,6 @@ import           System.Directory
 import           System.FilePath
 import           System.IO
 import           System.Process
-import           Text.StringTemplate
 --
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Annotate

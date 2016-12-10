@@ -13,15 +13,13 @@
 
 module FFICXX.Generate.Util where
 
-
--- 
 import           Data.Char 
 import           Data.List
-import           Data.List.Split 
-import qualified Text.StringTemplate as ST
--- 
--- import           FFICXX.Generate.Type.CType 
--- 
+import           Data.List.Split
+import           Data.Text               (Text)
+import qualified Data.Text          as T
+import           Data.Text.Template
+-- import qualified Text.StringTemplate as ST
 
 moduleDirFile :: String -> (String,String)
 moduleDirFile mname = 
@@ -71,7 +69,6 @@ connArrow = conn " -> "
 intercalateWith :: (String-> String -> String) -> (a->String) -> [a] -> String
 intercalateWith  f mapper x 
   | not (null x) = foldl1 f (map mapper x)
--- (foldl1 (\x1 y -> x1 `f` y) . (map mapper)) x  
   | otherwise    = "" 
 
 
@@ -81,15 +78,16 @@ intercalateWithM f mapper x
                       return (foldl1 f ms)
   | otherwise = return "" 
 
--- intercalateM :: (Monad m) => String -> [String] -> m String 
--- intercalateM str = return . foldl1 (\x y-> x ++ str ++ y)
 
+context :: [(Text,String)] -> Context
+context assocs x = maybe err (T.pack) . lookup x $ assocs
+  where err = error $ "Could not find key: " ++ (T.unpack x)
 
         
-render :: String -> [(String,String)] -> String        
-render tmpl attribs = (ST.render . ST.setManyAttrib attribs . ST.newSTMP) tmpl 
-   -- flip render1
+-- render :: String -> [(String,String)] -> String        
+-- render tmpl attribs = (ST.render . ST.setManyAttrib attribs . ST.newSTMP) tmpl 
 
+{- 
 renderTemplateGroup :: (ST.ToSElem a) => ST.STGroup String -> [(String,a)] 
                     -> [Char] -> String 
 renderTemplateGroup gr attrs tmpl = 
@@ -110,4 +108,4 @@ setManyAttribSafer attrs st =
   where badTmplVarName :: String -> Bool 
         badTmplVarName t = not . null . filter (not . isAlpha) $ t 
 
-
+-}

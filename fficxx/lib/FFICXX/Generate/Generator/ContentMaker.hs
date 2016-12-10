@@ -28,7 +28,6 @@ import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                     hiding (render)
 import           System.FilePath
-import           Text.StringTemplate                    hiding (render)
 -- 
 import           FFICXX.Generate.Code.Cpp
 import           FFICXX.Generate.Code.HsFFI 
@@ -42,9 +41,6 @@ import           FFICXX.Generate.Type.PackageInterface  ( TypeMacro(..), HeaderN
 import           FFICXX.Generate.Util
 --
 
-context :: [(Text,String)] -> Context
-context assocs x = maybe err (T.pack) . lookup x $ assocs
-  where err = error $ "Could not find key: " ++ (T.unpack x)
 
 
 srcDir :: FilePath -> FilePath
@@ -53,42 +49,8 @@ srcDir installbasedir = installbasedir </> "src"
 csrcDir :: FilePath -> FilePath
 csrcDir installbasedir = installbasedir </> "csrc" 
 
--- pkgModuleTemplate :: String
--- pkgModuleTemplate = "Pkg.hs"
-
--- moduleTemplate :: String 
--- moduleTemplate = "module.hs"
-
--- hsbootTemplate :: String
--- hsbootTemplate = "Class.hs-boot"
-
--- declarationTemplate :: String
--- declarationTemplate = "Module.h"
-
--- typeDeclHeaderFileName :: String
--- typeDeclHeaderFileName = "PkgType.h"
-
--- definitionTemplate :: String
--- definitionTemplate = "Pkg.cpp"
-
--- rawtypeHsFileName :: String
--- rawtypeHsFileName = "RawType.hs"
-
--- ffiHscFileName :: String 
--- ffiHscFileName = "FFI.hsc"
-
--- interfaceHsFileName :: String
--- interfaceHsFileName = "Interface.hs"
-
--- castHsFileName :: String
--- castHsFileName = "Cast.hs"
-
--- implementationHsFileName :: String 
--- implementationHsFileName = "Implementation.hs"
-
 -- existentialHsFileName :: String 
 -- existentialHsFileName = "Existential.hs"
-
 
 ---- common function for daughter
 
