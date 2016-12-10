@@ -46,28 +46,26 @@ writeTypeDeclHeaders templates wdir typemacro cprefix headers = do
     hPutStrLn h (mkTypeDeclHeader templates typemacro classes)
 
 -- | 
-writeDeclHeaders :: STGroup String  
-                 -> FilePath 
+writeDeclHeaders :: FilePath 
                  -> TypeMacro 
                  -> String  -- ^ c prefix 
                  -> ClassImportHeader
                  -> IO () 
-writeDeclHeaders templates wdir typemacroprefix cprefix header = do 
+writeDeclHeaders wdir typemacroprefix cprefix header =
   let fn = wdir </> (unHdrName (cihSelfHeader header))
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkDeclHeader templates typemacroprefix cprefix header)
+  in withFile fn WriteMode $ \h -> 
+       hPutStrLn h (mkDeclHeader typemacroprefix cprefix header)
 
 -- | 
-writeTopLevelFunctionHeaders :: STGroup String  
-                             -> FilePath 
+writeTopLevelFunctionHeaders :: FilePath 
                              -> TypeMacro 
                              -> String  -- ^ c prefix 
                              -> TopLevelImportHeader
                              -> IO () 
-writeTopLevelFunctionHeaders templates wdir typemacroprefix cprefix tih = do 
+writeTopLevelFunctionHeaders wdir typemacroprefix cprefix tih =
   let fn = wdir </> tihHeaderFileName tih <.> "h"
-  withFile fn WriteMode $ \h -> 
-    hPutStrLn h (mkTopLevelFunctionHeader templates typemacroprefix cprefix tih)
+  in withFile fn WriteMode $ \h -> 
+       hPutStrLn h (mkTopLevelFunctionHeader typemacroprefix cprefix tih)
 
 
 

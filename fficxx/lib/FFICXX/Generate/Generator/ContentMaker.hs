@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Generator.ContentMaker
--- Copyright   : (c) 2011-2013,2015,2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -62,8 +62,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- hsbootTemplate :: String
 -- hsbootTemplate = "Class.hs-boot"
 
-declarationTemplate :: String
-declarationTemplate = "Module.h"
+-- declarationTemplate :: String
+-- declarationTemplate = "Module.h"
 
 typeDeclHeaderFileName :: String
 typeDeclHeaderFileName = "PkgType.h"
@@ -134,13 +134,34 @@ mkTypeDeclHeader templates (TypMcro typemacro) classes =
         ] 
         typeDeclHeaderFileName
 
+
+declarationTemplate :: Text
+declarationTemplate = 
+  "#ifdef __cplusplus\n\
+  \extern \"C\" { \n\
+  \#endif\n\
+  \\n\
+  \#ifndef $typemacro\n\
+  \#define $typemacro\n\
+  \\n\
+  \#include \"${cprefix}Type.h\"\
+  \\n\
+  \$declarationheader\n\
+  \\n\
+  \$declarationbody\n\
+  \\n\
+  \#endif // $typemacro\n\
+  \\n\
+  \#ifdef __cplusplus\n\
+  \}\n\
+  \#endif\n"
+
 -- | 
-mkDeclHeader :: STGroup String 
-             -> TypeMacro  -- ^ typemacro prefix 
+mkDeclHeader :: TypeMacro  -- ^ typemacro prefix 
              -> String     -- ^ C prefix 
              -> ClassImportHeader 
              -> String 
-mkDeclHeader templates (TypMcro typemacroprefix) cprefix header =
+mkDeclHeader (TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       typemacrostr = typemacroprefix ++ class_name aclass ++ "__" 
@@ -163,13 +184,13 @@ mkDeclHeader templates (TypMcro typemacroprefix) cprefix header =
       declBodyStr   = declDefStr 
                       `connRet2` 
                       classDeclsStr 
-  in  renderTemplateGroup 
-        templates 
-        [ ("typemacro", typemacrostr)
-        , ("cprefix", cprefix)
-        , ("declarationheader", declHeaderStr ) 
-        , ("declarationbody", declBodyStr ) ] 
-        declarationTemplate
+      txt = substitute
+              declarationTemplate
+              (context [ ("typemacro", typemacrostr)
+                       , ("cprefix", cprefix)
+                       , ("declarationheader", declHeaderStr ) 
+                       , ("declarationbody", declBodyStr ) ])
+  in TL.unpack txt
 
 -- | 
 mkDefMain :: STGroup String 
@@ -199,24 +220,20 @@ mkDefMain templates header =
 
 
 -- | 
-mkTopLevelFunctionHeader :: STGroup String 
-                         -> TypeMacro  -- ^ typemacro prefix 
+mkTopLevelFunctionHeader :: TypeMacro  -- ^ typemacro prefix 
                          -> String     -- ^ C prefix 
                          -> TopLevelImportHeader
                          -> String 
-mkTopLevelFunctionHeader templates (TypMcro typemacroprefix) cprefix tih =
+mkTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix ++ "TOPLEVEL" ++ "__" 
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"")
                       . map (unHdrName . cihSelfHeader) . tihClassDep $ tih
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
-  in  renderTemplateGroup 
-        templates 
-        [ ("typemacro", typemacrostr)
-        , ("cprefix", cprefix)
-        , ("declarationheader", declHeaderStr ) 
-        , ("declarationbody", declBodyStr ) ] 
-        declarationTemplate
-
+  in TL.unpack $ substitute declarationTemplate
+                   (context [ ("typemacro", typemacrostr)
+                            , ("cprefix", cprefix)
+                            , ("declarationheader", declHeaderStr )
+                            , ("declarationbody", declBodyStr ) ])
 
 -- | 
 mkTopLevelFunctionCppDef :: STGroup String 
