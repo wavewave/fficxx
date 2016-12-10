@@ -202,7 +202,7 @@ genHsFrontInstNew c = do
         fname = constructorName c
         ctyp f = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
         farg f =
-          let lst = map (tycon . ctypToHsTyp (Just c) . fst) (genericFuncArgs f)
+          let lst = map (convertCpp2HS (Just c) . fst) (genericFuncArgs f)
           in foldr1 TyFun (lst ++ [TyApp (tycon "IO") (ctyp f)])
         [sig] = mkFunGen fname (farg newfunc)
          
@@ -214,7 +214,7 @@ genHsFrontInstNew c = do
                         map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
                         ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func]
         -- newline = newfuncann ++ "\n" ++ newlinehead ++ "\n" ++ newlinebody  
-        newline = newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ newlinebody
+        newline = newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ newlinehead ++ "\n" ++ newlinebody
                 
     in newline
 

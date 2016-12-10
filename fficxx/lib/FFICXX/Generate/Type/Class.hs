@@ -15,16 +15,18 @@
 
 module FFICXX.Generate.Type.Class where
 
-import Control.Applicative ((<$>),(<*>))
-import Data.Char
-import Data.Default (Default(def))
-import Data.List
-import Data.Monoid
-import qualified Data.Map as M
-import System.FilePath
+import           Control.Applicative               ((<$>),(<*>))
+import           Data.Char
+import           Data.Default                      (Default(def))
+import           Data.List
+import           Data.Monoid
+import qualified Data.Map                     as M
+import           Language.Haskell.Exts.Syntax      (Type(..), unit_tycon)
+import           System.FilePath
 --
-import FFICXX.Generate.Util
-import FFICXX.Generate.Type.PackageInterface
+import           FFICXX.Generate.Util
+import           FFICXX.Generate.Util.HaskellSrcExts
+import           FFICXX.Generate.Type.PackageInterface
 
 -- some type aliases
 
@@ -531,6 +533,34 @@ ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
 ctypToHsTyp _c (CT (CRef t) _) = hsCTypeName (CRef t)
 ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
+
+
+-- |
+convertC2HS :: CTypes -> Type
+convertC2HS CTString     = tycon "CString"
+convertC2HS CTChar       = tycon "CChar"
+convertC2HS CTInt        = tycon "CInt"
+convertC2HS CTUInt       = tycon "CUInt"
+convertC2HS CTLong       = tycon "CLong"
+convertC2HS CTULong      = tycon "CULong"
+convertC2HS CTDouble     = tycon "CDouble"
+convertC2HS CTDoubleStar = TyApp (tycon "Ptr") (tycon "CDouble")
+convertC2HS CTBool       = tycon "CInt"
+convertC2HS CTVoidStar   = TyApp (tycon "Ptr") unit_tycon
+convertC2HS CTIntStar    = TyApp (tycon "Ptr") (tycon "CInt")
+convertC2HS CTCharStarStar = TyApp (tycon "Ptr") (tycon "CString")
+convertC2HS (CPointer t) = TyApp (tycon "Ptr") (convertC2HS t)
+convertC2HS (CRef t)     = TyApp (tycon "Ptr") (convertC2HS t)
+
+-- |
+convertCpp2HS :: Maybe Class -> Types -> Type
+convertCpp2HS _c Void                  = unit_tycon
+convertCpp2HS (Just c) SelfType        = tycon ((fst.hsClassName) c)
+convertCpp2HS Nothing SelfType         = error "convertCpp2HS : SelfType but no class "
+convertCpp2HS _c (CT t _)              = convertC2HS t
+convertCpp2HS _c (CPT (CPTClass c') _)    = tycon (class_name c')
+convertCpp2HS _c (CPT (CPTClassRef c') _) = tycon (class_name c')
+
 
 
 typeclassName :: Class -> String
