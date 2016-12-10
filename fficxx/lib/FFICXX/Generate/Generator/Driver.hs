@@ -102,11 +102,10 @@ writeInterfaceHs amap wdir m =
   in withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHs amap m)
 
 -- |
-writeCastHs :: STGroup String -> FilePath -> ClassModule -> IO ()
-writeCastHs templates wdir m = do 
-  let fn = wdir </> cmModule m <.> castHsFileName
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkCastHs templates m)
+writeCastHs :: FilePath -> ClassModule -> IO ()
+writeCastHs wdir m = 
+  let fn = wdir </> cmModule m <.> "Cast" <.> "hs"
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkCastHs m)
 
 -- | 
 writeImplementationHs :: AnnotateMap 

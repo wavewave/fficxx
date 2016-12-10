@@ -80,8 +80,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- interfaceHsFileName :: String
 -- interfaceHsFileName = "Interface.hs"
 
-castHsFileName :: String
-castHsFileName = "Cast.hs"
+-- castHsFileName :: String
+-- castHsFileName = "Cast.hs"
 
 implementationHsFileName :: String 
 implementationHsFileName = "Implementation.hs"
@@ -381,12 +381,26 @@ mkInterfaceHs amap m = TL.unpack $ substitute
           runReader (genAllHsFrontDowncastClass (filter (not.isAbstractClass) classes)) amap
 
 -- | 
-mkCastHs :: STGroup String -> ClassModule -> String    
-mkCastHs templates m  = 
-    renderTemplateGroup templates [ ("castHeader", castHeaderStr) 
-                                  , ("castImport", castImportStr)
-                                  , ("castBody", castBodyStr) ]  
-                                  castHsFileName
+mkCastHs :: ClassModule -> String    
+mkCastHs m = TL.unpack $ substitute
+                           "{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeFamilies,\n\
+                           \             MultiParamTypeClasses, OverlappingInstances, IncoherentInstances #-}\n\
+                           \\n\
+                           \$castHeader\n\
+                           \\n\
+                           \import Foreign.Ptr\n\
+                           \import Foreign.ForeignPtr (castForeignPtr, newForeignPtr_)\n\
+                           \import Foreign.ForeignPtr.Unsafe\n\
+                           \import FFICXX.Runtime.Cast\n\
+                           \import System.IO.Unsafe\n\
+                           \\n\
+                           \$castImport\n\
+                           \\n\
+                           \$castBody\n"
+                           (context [ ("castHeader", castHeaderStr) 
+                                    , ("castImport", castImportStr)
+                                    , ("castBody", castBodyStr)     ])
+
   where castHeaderStr = "module " ++ cmModule m <.> "Cast where\n" 
         classes = cmClass m
         castImportStr = genImportInCast m
