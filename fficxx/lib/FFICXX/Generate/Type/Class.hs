@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Type.Class
--- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -21,7 +21,7 @@ import           Data.Default                      (Default(def))
 import           Data.List
 import           Data.Monoid
 import qualified Data.Map                     as M
-import           Language.Haskell.Exts.Syntax      (Type(..), unit_tycon)
+import           Language.Haskell.Exts.Syntax      (Context(..), Asst(..), Type(..), unit_tycon)
 import           System.FilePath
 --
 import           FFICXX.Generate.Util
@@ -29,11 +29,6 @@ import           FFICXX.Generate.Util.HaskellSrcExts
 import           FFICXX.Generate.Type.PackageInterface
 
 -- some type aliases
-
--- type HeaderFileName = String
-
--- type ClassName = String
-
 
 
 -- | C types
@@ -681,3 +676,7 @@ nonvirtualName c str = (firstLower.fst.hsClassName) c ++ str
 
 destructorName :: String
 destructorName = "delete"
+
+
+classConstraints :: Class -> Context
+classConstraints = map ((\n->ClassA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents 

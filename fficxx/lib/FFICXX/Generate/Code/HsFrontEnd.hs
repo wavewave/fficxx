@@ -72,12 +72,13 @@ genModuleDecl m = do
 
 
 ----------------
--- |
+-- | will be deprecated
 classprefix :: Class -> String 
 classprefix c = let ps = (map typeclassName . class_parents) c
                 in  if null ps 
                     then "" 
                     else "(" ++ intercalate "," (map (++ " a") ps) ++ ") => "
+
 
 -- |
 hsClassDeclHeaderTmpl :: Text
@@ -87,9 +88,15 @@ genHsFrontDecl :: Class -> Reader AnnotateMap String
 genHsFrontDecl c = do 
   amap <- ask  
   let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap 
-  let header = subst hsClassDeclHeaderTmpl (context [ ("classname" , typeclassName c ) 
-                                                    , ("constraint", classprefix c   ) 
-                                                    , ("classann"  , mkComment 0 cann) ])
+  let 
+
+
+      -- header = subst hsClassDeclHeaderTmpl (context [ ("classname" , typeclassName c ) 
+      --                                               , ("constraint", classprefix c   ) 
+      --                                               , ("classann"  , mkComment 0 cann) ])
+    
+      header = prettyPrint (mkClass (classConstraints c) (typeclassName c) [] [])
+    
       bodyline func =
         let fname = hsFuncName c func 
             mann = maybe "" id $ M.lookup (PkgMethod,fname) amap
