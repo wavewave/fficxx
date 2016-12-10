@@ -11,7 +11,6 @@ Category:       FFI Tools
 Cabal-Version:  >= 1.8
 Data-files: template/*.h.st
             template/*.hs.st
-            template/*.hsc.st
             template/Pkg.cabal.st
             sample/cxxlib/include/*.h
             sample/cxxlib/src/*.cpp

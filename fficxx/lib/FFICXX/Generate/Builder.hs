@@ -144,7 +144,7 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
   mapM_ (writeRawTypeHs workingDir) mods
   --
   putStrLn "FFI.hsc file generation"
-  mapM_ (writeFFIHsc templates workingDir) mods
+  mapM_ (writeFFIHsc workingDir) mods
   --
   putStrLn "Interface.hs file generation"
   mapM_ (writeInterfaceHs mempty templates workingDir) mods

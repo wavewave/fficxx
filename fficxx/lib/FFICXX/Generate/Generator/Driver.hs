@@ -90,11 +90,10 @@ writeRawTypeHs wdir m =
   in withFile fn WriteMode $ \h -> hPutStrLn h (mkRawTypeHs m) 
 
 -- | 
-writeFFIHsc :: STGroup String -> FilePath -> ClassModule -> IO ()
-writeFFIHsc templates wdir m = do 
-  let fn = wdir </> cmModule m <.> ffiHscFileName
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkFFIHsc templates m)
+writeFFIHsc :: FilePath -> ClassModule -> IO ()
+writeFFIHsc wdir m = 
+  let fn = wdir </> cmModule m <.> "FFI" <.> "hsc"
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkFFIHsc m)
 
 -- | 
 writeInterfaceHs :: AnnotateMap -> STGroup String -> FilePath 

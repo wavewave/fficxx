@@ -74,8 +74,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- rawtypeHsFileName :: String
 -- rawtypeHsFileName = "RawType.hs"
 
-ffiHscFileName :: String 
-ffiHscFileName = "FFI.hsc"
+-- ffiHscFileName :: String 
+-- ffiHscFileName = "FFI.hsc"
 
 interfaceHsFileName :: String
 interfaceHsFileName = "Interface.hs"
@@ -301,16 +301,24 @@ mkTopLevelFunctionCppDef cprefix tih =
                             , ("cppbody", declBodyStr )   ])
 
 -- | 
-mkFFIHsc :: STGroup String 
-         -> ClassModule 
-         -> String 
-mkFFIHsc templates m = 
-    renderTemplateGroup templates 
-                        [ ("ffiHeader", ffiHeaderStr)
-                        , ("ffiImport", ffiImportStr)
-                        , ("cppInclude", cppIncludeStr)
-                        , ("hsFunctionBody", genAllHsFFI headers) ]
-                        ffiHscFileName
+mkFFIHsc :: ClassModule -> String 
+mkFFIHsc m = TL.unpack $ substitute
+                           "{-# LANGUAGE ForeignFunctionInterface #-}\n\
+                           \\n\
+                           \$ffiHeader\n\
+                           \\n\
+                           \import Foreign.C\n\
+                           \import Foreign.Ptr\n\
+                           \\n\
+                           \$ffiImport\n\
+                           \\n\
+                           \$cppInclude\n\
+                           \\n\
+                           \$hsFunctionBody\n"
+                           (context  [ ("ffiHeader", ffiHeaderStr)
+                                     , ("ffiImport", ffiImportStr)
+                                     , ("cppInclude", cppIncludeStr)
+                                     , ("hsFunctionBody", genAllHsFFI headers) ])
   where mname = cmModule m
         headers = cmCIH m
         ffiHeaderStr = "module " ++ mname <.> "FFI where\n"
