@@ -71,8 +71,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- definitionTemplate :: String
 -- definitionTemplate = "Pkg.cpp"
 
-rawtypeHsFileName :: String
-rawtypeHsFileName = "RawType.hs"
+-- rawtypeHsFileName :: String
+-- rawtypeHsFileName = "RawType.hs"
 
 ffiHscFileName :: String 
 ffiHscFileName = "FFI.hsc"
@@ -319,12 +319,20 @@ mkFFIHsc templates m =
         cppIncludeStr = genModuleIncludeHeader headers
 
 -- |                      
-mkRawTypeHs :: STGroup String 
-            -> ClassModule 
-            -> String
-mkRawTypeHs templates m = 
-    renderTemplateGroup templates [ ("rawtypeHeader", rawtypeHeaderStr) 
-                                  , ("rawtypeBody", rawtypeBodyStr)] rawtypeHsFileName
+mkRawTypeHs :: ClassModule -> String
+mkRawTypeHs m = TL.unpack $ substitute
+                              "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
+                              \             FlexibleInstances, TypeSynonymInstances, \n\
+                              \             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}\n\
+                              \\n\
+                              \$rawtypeHeader\n\
+                              \\n\
+                              \import Foreign.ForeignPtr\n\
+                              \import FFICXX.Runtime.Cast\n\
+                              \\n\
+                              \$rawtypeBody\n"
+                              (context [ ("rawtypeHeader", rawtypeHeaderStr)
+                                       , ("rawtypeBody", rawtypeBodyStr)     ])
   where rawtypeHeaderStr = "module " ++ cmModule m <.> "RawType where\n"
         classes = cmClass m
         rawtypeBodyStr = 

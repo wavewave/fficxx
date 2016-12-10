@@ -141,7 +141,7 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
   writeTopLevelFunctionCppDef workingDir typmacro pkgname tih
   --
   putStrLn "RawType.hs file generation"
-  mapM_ (writeRawTypeHs templates workingDir) mods
+  mapM_ (writeRawTypeHs workingDir) mods
   --
   putStrLn "FFI.hsc file generation"
   mapM_ (writeFFIHsc templates workingDir) mods

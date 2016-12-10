@@ -84,11 +84,10 @@ writeTopLevelFunctionCppDef wdir typemacroprefix cprefix tih =
 
 
 -- | 
-writeRawTypeHs :: STGroup String -> FilePath -> ClassModule -> IO ()
-writeRawTypeHs templates wdir m = do
-  let fn = wdir </> cmModule m <.> rawtypeHsFileName
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkRawTypeHs templates m) 
+writeRawTypeHs :: FilePath -> ClassModule -> IO ()
+writeRawTypeHs wdir m =
+  let fn = wdir </> cmModule m <.> "RawType" <.> "hs"
+  in withFile fn WriteMode $ \h -> hPutStrLn h (mkRawTypeHs m) 
 
 -- | 
 writeFFIHsc :: STGroup String -> FilePath -> ClassModule -> IO ()
