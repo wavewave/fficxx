@@ -17,15 +17,15 @@ import           Language.Haskell.Exts
 import           Language.Haskell.Exts.SrcLoc
 import           Language.Haskell.Exts.Syntax
 
--- srcLoc = SrcLoc "test.hs" 0 0
-
 tycon = TyCon . UnQual . Ident
+
+mkVar = Var . UnQual . Ident
 
 mkBind1 name pat rhs mbinds =
   FunBind [ Match noLoc (Ident name) pat Nothing (UnGuardedRhs rhs) mbinds ]
 
-mkFunGen :: String -> Type -> [Decl]
-mkFunGen funname typ {- pats rhs mbinds -} = [sig] -- ,def]
-  where sig = TypeSig noLoc [Ident funname] typ
-        -- def = mkBind1 funname pats rhs mbinds
+mkFunGen :: String -> Type -> [Pat] -> Exp -> Maybe Binds -> [Decl]
+mkFunGen funname typ pats rhs mbinds = [sig,defn]
+  where sig  = TypeSig noLoc [Ident funname] typ
+        defn = mkBind1 funname pats rhs mbinds
        

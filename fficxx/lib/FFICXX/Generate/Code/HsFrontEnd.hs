@@ -26,7 +26,7 @@ import           Data.Text                              (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                     hiding (render)
-import           Language.Haskell.Exts.Syntax (Type(..))
+import           Language.Haskell.Exts.Syntax (Type(..), Exp(..))
 import           Language.Haskell.Exts.Pretty
 import           System.FilePath ((<.>))
 -- 
@@ -204,19 +204,9 @@ genHsFrontInstNew c = do
         farg f =
           let lst = map (convertCpp2HS (Just c) . fst) (genericFuncArgs f)
           in foldr1 TyFun (lst ++ [TyApp (tycon "IO") (ctyp f)])
-        [sig] = mkFunGen fname (farg newfunc)
-         
-        newlinehead = constructorName c ++ " :: " ++ argstr newfunc 
-        newlinebody = constructorName c ++ " = " 
-                            ++ hsFuncXformer newfunc ++ " " 
-                            ++ hscFuncName c newfunc 
-        argstr func = intercalateWith connArrow id $
-                        map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
-                        ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func]
-        -- newline = newfuncann ++ "\n" ++ newlinehead ++ "\n" ++ newlinebody  
-        newline = newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ newlinehead ++ "\n" ++ newlinebody
-                
-    in newline
+        rhs f = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+        [sig,defn] = mkFunGen fname (farg newfunc) [] (rhs newfunc) Nothing
+    in newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ prettyPrint defn
 
 genAllHsFrontInstNew :: [Class]    -- ^ only concrete class 
                      -> Reader AnnotateMap String 
