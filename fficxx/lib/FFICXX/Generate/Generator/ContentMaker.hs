@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -15,24 +16,36 @@
 module FFICXX.Generate.Generator.ContentMaker where 
 
 import           Control.Applicative
-import           Control.Lens (set,at)
+import           Control.Lens                           (set,at)
 import           Control.Monad.Trans.Reader
-import           Data.Function (on)
-import qualified Data.Map as M
+import           Data.Function                          (on)
+import qualified Data.Map                          as M
 import           Data.List 
-import           Data.List.Split (splitOn) 
+import           Data.List.Split                        (splitOn) 
 import           Data.Maybe
-import           System.FilePath 
-import           Text.StringTemplate hiding (render)
+import           Data.Text                              (Text)
+import qualified Data.Text                         as T
+import qualified Data.Text.Lazy                    as TL
+import           Data.Text.Template                     hiding (render)
+import           System.FilePath
+import           Text.StringTemplate                    hiding (render)
 -- 
 import           FFICXX.Generate.Code.Cpp
 import           FFICXX.Generate.Code.HsFFI 
 import           FFICXX.Generate.Code.HsFrontEnd
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class
-import qualified FFICXX.Generate.Type.PackageInterface as T
+import           FFICXX.Generate.Type.PackageInterface  ( TypeMacro(..), HeaderName(..)
+                                                        , PackageInterface, PackageName(..)
+                                                        , ClassName(..)
+                                                        )
 import           FFICXX.Generate.Util
 --
+
+context :: [(Text,String)] -> Context
+context assocs x = maybe err (T.pack) . lookup x $ assocs
+  where err = error $ "Could not find key: " ++ (T.unpack x)
+
 
 srcDir :: FilePath -> FilePath
 srcDir installbasedir = installbasedir </> "src" 
@@ -40,8 +53,8 @@ srcDir installbasedir = installbasedir </> "src"
 csrcDir :: FilePath -> FilePath
 csrcDir installbasedir = installbasedir </> "csrc" 
 
-pkgModuleTemplate :: String
-pkgModuleTemplate = "Pkg.hs"
+-- pkgModuleTemplate :: String
+-- pkgModuleTemplate = "Pkg.hs"
 
 moduleTemplate :: String 
 moduleTemplate = "module.hs"
@@ -108,10 +121,10 @@ mkProtectedFunctionList c =
 
 -- |
 mkTypeDeclHeader :: STGroup String
-                 -> T.TypeMacro -- ^ typemacro 
+                 -> TypeMacro -- ^ typemacro 
                  -> [Class]
                  -> String 
-mkTypeDeclHeader templates (T.TypMcro typemacro) classes =
+mkTypeDeclHeader templates (TypMcro typemacro) classes =
   let typeDeclBodyStr   = genAllCppHeaderTmplType classes 
   in  renderTemplateGroup 
         templates 
@@ -123,16 +136,16 @@ mkTypeDeclHeader templates (T.TypMcro typemacro) classes =
 
 -- | 
 mkDeclHeader :: STGroup String 
-             -> T.TypeMacro  -- ^ typemacro prefix 
+             -> TypeMacro  -- ^ typemacro prefix 
              -> String     -- ^ C prefix 
              -> ClassImportHeader 
              -> String 
-mkDeclHeader templates (T.TypMcro typemacroprefix) cprefix header =
+mkDeclHeader templates (TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       typemacrostr = typemacroprefix ++ class_name aclass ++ "__" 
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"") $
-                        map T.unHdrName (cihIncludedHPkgHeadersInH header)
+                        map unHdrName (cihIncludedHPkgHeadersInH header)
       declDefStr    = genAllCppHeaderTmplVirtual classes 
                       `connRet2`
                       genAllCppHeaderTmplNonVirtual classes 
@@ -164,7 +177,7 @@ mkDefMain :: STGroup String
           -> String 
 mkDefMain templates header =
   let classes = [cihClass header]
-      headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (T.unHdrName (cihSelfHeader header)) ++ "\"" 
+      headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (unHdrName (cihSelfHeader header)) ++ "\"" 
       namespaceStr = (concatMap (\x->"using namespace " ++ unNamespace x ++ ";\n") . cihNamespace) header
       aclass = cihClass header
       cppBody = mkProtectedFunctionList (cihClass header) 
@@ -187,14 +200,14 @@ mkDefMain templates header =
 
 -- | 
 mkTopLevelFunctionHeader :: STGroup String 
-                         -> T.TypeMacro  -- ^ typemacro prefix 
+                         -> TypeMacro  -- ^ typemacro prefix 
                          -> String     -- ^ C prefix 
                          -> TopLevelImportHeader
                          -> String 
-mkTopLevelFunctionHeader templates (T.TypMcro typemacroprefix) cprefix tih =
+mkTopLevelFunctionHeader templates (TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix ++ "TOPLEVEL" ++ "__" 
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"")
-                      . map (T.unHdrName . cihSelfHeader) . tihClassDep $ tih
+                      . map (unHdrName . cihSelfHeader) . tihClassDep $ tih
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
   in  renderTemplateGroup 
         templates 
@@ -216,7 +229,7 @@ mkTopLevelFunctionCppDef templates cprefix tih =
                       `connRet2`
                       (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
                       `connRet2`
-                      ((intercalateWith connRet (\x->"#include \""++x++"\"") . map (T.unHdrName . cihSelfHeader)) cihs)
+                      ((intercalateWith connRet (\x->"#include \""++x++"\"") . map (unHdrName . cihSelfHeader)) cihs)
       allns = nubBy ((==) `on` unNamespace) (tihClassDep tih >>= cihNamespace)
       namespaceStr = do ns <- allns 
                         ("using namespace " ++ unNamespace ns ++ ";\n")
@@ -424,27 +437,31 @@ mkPkgHs modname templates mods tih =
         topLevelDefStr = intercalateWith connRet2 (genTopLevelFuncFFI tih) tfns 
                          `connRet2`
                          intercalateWith connRet2 genTopLevelFuncDef tfns
-        str = renderTemplateGroup 
-                templates 
-                [ ("summarymod", modname)
-                , ("exportList", exportListStr) 
-                , ("importList", importListStr) 
-                , ("topLevelDef", topLevelDefStr) 
-                ]
-                pkgModuleTemplate
-    in str 
+        txt = substitute
+                "module $summarymod (\n\
+                \  $exportList\n\
+                \) where\n\
+                \\n\
+                \$importList\n\
+                \$topLevelDef\n"
+                (context [ ("summarymod", modname)
+                         , ("exportList", exportListStr) 
+                         , ("importList", importListStr) 
+                         , ("topLevelDef", topLevelDefStr) 
+                         ])
+    in TL.unpack txt
        
 
 
   
 -- |
-mkPackageInterface :: T.PackageInterface 
-                   -> T.PackageName 
+mkPackageInterface :: PackageInterface 
+                   -> PackageName 
                    -> [ClassImportHeader] 
-                   -> T.PackageInterface
+                   -> PackageInterface
 mkPackageInterface pinfc pkgname = foldr f pinfc 
   where f cih repo = 
           let name = (class_name . cihClass) cih 
               header = cihSelfHeader cih 
-          in set (at (pkgname,T.ClsName name)) (Just header) repo
+          in set (at (pkgname,ClsName name)) (Just header) repo
 

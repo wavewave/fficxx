@@ -1,10 +1,11 @@
 with (import <nixpkgs> {}).pkgs;
-let pkg = haskellngPackages.callPackage
+let pkg = haskellPackages.callPackage
             ({ mkDerivation, base, bytestring, Cabal, containers
              , data-default, directory
              , either, errors, filepath, hashable, HStringTemplate, lens, mtl
              , process, pureMD5, split, stdenv, template-haskell, transformers
              , unordered-containers
+             , template, haskell-src-exts
              }:
              mkDerivation {
                pname = "fficxx";
@@ -14,8 +15,9 @@ let pkg = haskellngPackages.callPackage
                  base bytestring Cabal containers data-default directory either errors filepath
                  hashable HStringTemplate lens mtl process pureMD5 split
                  template-haskell transformers unordered-containers
+                 template haskell-src-exts
                ];
-	       buildTools = [ haskellngPackages.cabal-install pkgs.snappy ];
+	       buildTools = [ haskellPackages.cabal-install pkgs.snappy ];
                description = "automatic C++ binding generation";
                license = stdenv.lib.licenses.bsd3;
              }) {};
