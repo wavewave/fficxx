@@ -56,8 +56,8 @@ csrcDir installbasedir = installbasedir </> "csrc"
 -- pkgModuleTemplate :: String
 -- pkgModuleTemplate = "Pkg.hs"
 
-moduleTemplate :: String 
-moduleTemplate = "module.hs"
+-- moduleTemplate :: String 
+-- moduleTemplate = "module.hs"
 
 hsbootTemplate :: String
 hsbootTemplate = "Class.hs-boot"
@@ -403,23 +403,25 @@ mkInterfaceHSBOOT templates mname =
 
 
 -- | 
-mkModuleHs :: STGroup String 
-           -> ClassModule 
-           -> String 
-mkModuleHs templates m = 
-    let str = renderTemplateGroup 
-                templates 
-                [ ("moduleName", cmModule m) 
-                , ("exportList", genExportList (cmClass m)) 
-                , ("importList", genImportInModule (cmClass m))
-                ]
-                moduleTemplate 
-    in str
+mkModuleHs :: ClassModule -> String 
+mkModuleHs m = 
+    let txt = substitute
+                "module $moduleName \n\
+                \  (\n\
+                \$exportList\n\
+                \  ) where\n\
+                \\n\
+                \$importList\n"
+                (context [ ("moduleName", cmModule m) 
+                         , ("exportList", genExportList (cmClass m)) 
+                         , ("importList", genImportInModule (cmClass m))
+                         ])
+    in TL.unpack txt
 
 
 -- | 
-mkPkgHs :: String -> STGroup String -> [ClassModule] -> TopLevelImportHeader -> String 
-mkPkgHs modname templates mods tih = 
+mkPkgHs :: String -> [ClassModule] -> TopLevelImportHeader -> String 
+mkPkgHs modname mods tih = 
     let tfns = tihFuncs tih 
         exportListStr = intercalateWith (conn "\n, ") ((\x->"module " ++ x).cmModule) mods 
                         ++ if null tfns 

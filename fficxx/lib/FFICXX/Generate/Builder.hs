@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Builder
--- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -159,10 +159,10 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
   mapM_ (writeInterfaceHSBOOT templates workingDir) hsbootlst
   --
   putStrLn "module file generation"
-  mapM_ (writeModuleHs templates workingDir) mods
+  mapM_ (writeModuleHs workingDir) mods
   --
   putStrLn "summary module generation generation"
-  writePkgHs summarymodule templates workingDir mods tih
+  writePkgHs summarymodule workingDir mods tih
   --
   putStrLn "copying"
   touch (workingDir </> "LICENSE")

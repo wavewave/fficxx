@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Generator.Driver
--- Copyright   : (c) 2011-2015 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 -- 
 -- License     : BSD3
 -- Maintainer  : ianwookim@gmail.com
@@ -150,23 +150,22 @@ writeInterfaceHSBOOT templates wdir mname = do
   withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHSBOOT templates mname)
 
 -- |
-writeModuleHs :: STGroup String -> FilePath -> ClassModule -> IO () 
-writeModuleHs templates wdir m = do 
+writeModuleHs :: FilePath -> ClassModule -> IO () 
+writeModuleHs wdir m =
   let fn = wdir </> cmModule m <.> "hs"
-  withFile fn WriteMode $ \h -> do 
-    hPutStrLn h (mkModuleHs templates m)
+  in withFile fn WriteMode $ \h -> do 
+       hPutStrLn h (mkModuleHs m)
 
 -- | 
 writePkgHs :: String -- ^ summary module 
-           -> STGroup String 
            -> FilePath 
            -> [ClassModule] 
            -> TopLevelImportHeader
            -> IO () 
-writePkgHs modname templates wdir mods tih = do 
+writePkgHs modname wdir mods tih = 
   let fn = wdir </> modname <.> "hs"
-      str = mkPkgHs modname templates mods tih
-  withFile fn WriteMode $ \h -> hPutStrLn h str
+      str = mkPkgHs modname mods tih
+  in withFile fn WriteMode $ \h -> hPutStrLn h str
 
 
 notExistThenCreate :: FilePath -> IO () 
