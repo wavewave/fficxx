@@ -66,36 +66,6 @@ mkPostComment str
      in unlines commented_lines 
   | otherwise = str                
 
-{-                        
-mkHsFuncArgType :: Args -> ([String],[String]) 
-mkHsFuncArgType lst = 
-  let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
-  in   (args,fst st)
-  where mkFuncArgTypeWorker (typ,_var) = 
-          case typ of                  
-            SelfType -> return "a"
-            CT _ _   -> return $ ctypToHsTyp Nothing typ 
-            CPT (CPTClass c') _ -> do 
-              (prefix,n) <- get 
-              let cname = (fst.hsClassName) c' 
-                  iname = typeclassNameFromStr cname 
-                  newname = 'c' : show n
-                  newprefix1 = iname ++ " " ++ newname    
-                  newprefix2 = "FPtr " ++ newname
-              put (newprefix1:newprefix2:prefix,n+1)
-              return newname
-            CPT (CPTClassRef c') _ -> do 
-              (prefix,n) <- get 
-              let cname = (fst.hsClassName) c' 
-                  iname = typeclassNameFromStr cname 
-                  newname = 'c' : show n
-                  newprefix1 = iname ++ " " ++ newname    
-                  newprefix2 = "FPtr " ++ newname
-              put (newprefix1:newprefix2:prefix,n+1)
-              return newname
-            _ -> error ("No such c type : " ++ show typ)  
--}
-
 {-
 mkHsFuncRetType :: Types -> (String,[String])
 mkHsFuncRetType rtyp = 
@@ -392,20 +362,6 @@ genTopLevelFuncDef f@TopLevelFunction {..} =
         rhs = App (mkVar xformerstr) (mkVar cfname)
         
     in mkFun fname sig [] rhs Nothing 
-
-{-
-        prefixstr =  
-          let prefixlst = (snd . mkHsFuncArgType) toplevelfunc_args
-                        ++ (snd . mkHsFuncRetType) toplevelfunc_ret
-          in  if null prefixlst
-              then "" 
-              else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
-
-        argstr = intercalateWith connArrow id $
-                      (fst . mkHsFuncArgType) toplevelfunc_args 
-                      ++ ["IO " ++ (fst . mkHsFuncRetType) toplevelfunc_ret]  
-        defstr = fname ++ " = " ++ xformerstr ++ " " ++ cfname 
-    in (fname ++ " :: " ++ prefixstr ++ argstr ++ "\n" ++ defstr) -}
 genTopLevelFuncDef v@TopLevelVariable {..} = 
     let fname = hsFrontNameForTopLevelFunction v
         cfname = "c_" ++ toLowers fname 
@@ -414,20 +370,6 @@ genTopLevelFuncDef v@TopLevelVariable {..} =
         rhs = App (mkVar "xformnull") (mkVar cfname)
         
     in mkFun fname sig [] rhs Nothing 
-
-
-
-{-
-        prefixstr =  
-          let prefixlst = (snd . mkHsFuncRetType) toplevelvar_ret
-          in  if null prefixlst
-              then "" 
-              else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
-
-        argstr = intercalateWith connArrow id $ ["IO " ++ (fst . mkHsFuncRetType) toplevelvar_ret]  
-        defstr = fname ++ " = " ++ xformerstr ++ " " ++ cfname
-    in fname ++ " :: " ++ prefixstr ++ argstr ++ "\n" ++ defstr 
--}
 
 
 ------------
