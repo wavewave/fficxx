@@ -393,7 +393,7 @@ mkImplementationHs amap m = subst
   where classes = cmClass m
         implHeaderStr = "module " ++ cmModule m <.> "Implementation where\n" 
         implImportStr = genImportInImplementation m
-        f y = intercalateWith connRet (flip genHsFrontInst y) (y:class_allparents y )
+        f y = intercalateWith connRet (concatMap prettyPrint . flip genHsFrontInst y) (y:class_allparents y )
         g y = intercalateWith connRet (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
         implBodyStr = 

@@ -38,3 +38,6 @@ mkFunSigDecl fname typ = TypeSig noLoc [Ident fname] typ
 
 mkClass ctxt name tbinds cdecls =
   ClsDecl (ClassDecl noLoc ctxt (Ident name) tbinds [] cdecls)
+
+mkInstance name typ idecls =
+  InsDecl (InstDecl noLoc Nothing [] [] (unqual name) [typ] idecls)

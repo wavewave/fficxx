@@ -26,7 +26,8 @@ import           Data.Text                              (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                     hiding (render)
-import           Language.Haskell.Exts.Syntax (Type(..), Exp(..),Decl(..),ClassDecl(..), unit_tycon)
+import           Language.Haskell.Exts.Syntax ( Type(..), Exp(..), Decl(..)
+                                              , ClassDecl(..), InstDecl(..), unit_tycon)
 import           Language.Haskell.Exts.Pretty
 import           System.FilePath ((<.>))
 -- 
@@ -37,18 +38,7 @@ import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 
 
-----------------
-functionSignature :: Class -> Function -> Type
-functionSignature c f =
-  let ctyp = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
-      lst =
-        (if isVirtualFunc f then (mkTVar "a":) else id)
-          (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
-  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
-
-
 -----------------
-
 
 mkComment :: Int -> String -> String
 mkComment indent str 
@@ -105,54 +95,32 @@ genHsFrontDecl c = do
   -- amap <- ask  
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap 
   let 
-      -- header = subst hsClassDeclHeaderTmpl (context [ ("classname" , typeclassName c ) 
-      --                                               , ("constraint", classprefix c   ) 
-      --                                               , ("classann"  , mkComment 0 cann) ])
-    
       cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
-
       sigdecl f = mkFunSigDecl (hsFuncName c f) (functionSignature c f)
-  
       body = map (ClsDecl . sigdecl) . virtualFuncs . class_funcs $ c 
-      {- 
-      bodyline func =
-        let fname = hsFuncName c func 
-            mann = maybe "" id $ M.lookup (PkgMethod,fname) amap
-        in  subst hsClassDeclFuncTmpl (context [ ("funcname", hsFuncName c func             ) 
-                                               , ("args"    , prefixstr func ++ argstr func )
-                                               , ("funcann" , mkComment 4 mann              ) ]) 
-      prefixstr func =  
-        let prefixlst = (snd . mkHsFuncArgType . genericFuncArgs) func
-                        ++ (snd . mkHsFuncRetType . genericFuncRet ) func
-        in  if null prefixlst
-              then "" 
-              else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
-                  
-      argstr func = intercalateWith connArrow id $
-                      [ "a" ] 
-                      ++ fst (mkHsFuncArgType (genericFuncArgs func))
-                      ++ ["IO " ++ (fst . mkHsFuncRetType . genericFuncRet) func]  
-      bodylines = map bodyline . virtualFuncs 
-                      $ (class_funcs c)  
-  return $ intercalateWith connRet id (header : bodylines)  -}
   return cdecl
-
-
--- genAllHsFrontDecl :: [Class] -> Reader AnnotateMap [ClassDecl]
--- genAllHsFrontDecl = intercalateWithM connRet2 genHsFrontDecl
 
 -------------------
 
-
-genHsFrontInst :: Class -> Class -> String 
+genHsFrontInst :: Class -> Class -> [InstDecl]
 genHsFrontInst parent child  
   | (not.isAbstractClass) child = 
-    let headline = "instance " ++ typeclassName parent ++ " " ++ (fst.hsClassName) child ++ " where" 
+    let
+        idecl = mkInstance (typeclassName parent) (convertCpp2HS (Just child) SelfType) body
+
+     
+        defn f = mkBind1 (hsFuncName child f) [] rhs Nothing 
+          where rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName child f))
+
+        body = map (InsDecl . defn) . virtualFuncs . class_funcs $ parent
+        {- 
+        headline = "instance " ++ typeclassName parent ++ " " ++ (fst.hsClassName) child ++ " where" 
         defline func = "  " ++ hsFuncName child func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
         deflines = (map defline) . virtualFuncs . class_funcs $ parent 
 
-    in  intercalateWith connRet id (headline : deflines) 
-  | otherwise = ""
+    in  intercalateWith connRet id (idecl : headline : deflines)  -}
+    in [idecl]
+  | otherwise = []
         
 
       
@@ -226,11 +194,6 @@ genHsFrontInstNew c = do
         -- for the time being, let's ignore annotation.
         -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
         -- newfuncann = mkComment 0 cann
-        {- ctyp f = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
-        farg f =
-          let lst = map (convertCpp2HS (Just c) . fst) (genericFuncArgs f)
-          in foldr1 TyFun (lst ++ [TyApp (tycon "IO") (ctyp f)]) -}
-                
         rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
     in mkFunDecl (constructorName c) (functionSignature c f) [] rhs Nothing
     {- in  newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ prettyPrint defn -}

@@ -680,3 +680,12 @@ destructorName = "delete"
 
 classConstraints :: Class -> Context
 classConstraints = map ((\n->ClassA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents 
+
+functionSignature :: Class -> Function -> Type
+functionSignature c f =
+  let ctyp = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
+      lst =
+        (if isVirtualFunc f then (mkTVar "a":) else id)
+          (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
+  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+
