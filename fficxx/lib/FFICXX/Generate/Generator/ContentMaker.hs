@@ -505,7 +505,7 @@ mkPkgHs modname mods tih =
                                    .fst.hsClassName.cihClass) (tihClassDep tih)
         topLevelDefStr = intercalateWith connRet2 (genTopLevelFuncFFI tih) tfns 
                          `connRet2`
-                         intercalateWith connRet2 genTopLevelFuncDef tfns
+                         intercalate "\n\n" (map (intercalateWith connRet prettyPrint) (map genTopLevelFuncDef tfns))
     in subst
          "module $summarymod (\n\
          \  $exportList\n\

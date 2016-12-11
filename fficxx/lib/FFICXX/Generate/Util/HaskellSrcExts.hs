@@ -21,6 +21,10 @@ unqual = UnQual . Ident
 
 tycon = TyCon . unqual
 
+conDecl name ys = ConDecl (Ident name) ys
+recDecl name rs = RecDecl (Ident name) rs
+
+
 app x y = App (mkVar x) (mkVar y)
 
 mkVar = Var . unqual
