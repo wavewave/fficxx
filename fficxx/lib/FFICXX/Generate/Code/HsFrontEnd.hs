@@ -298,9 +298,6 @@ genHsFrontUpcastClass c = mkFun ("upcast"++highname) typ [mkPVar "h"] rhs Nothin
 -- downcast --
 --------------
 
--- hsDowncastClassTmpl :: Text 
--- hsDowncastClassTmpl =  "downcast$classname :: (FPtr a, $ifacename a) => $classname -> a \ndowncast$classname h = let fh = get_fptr h\n$space    fh2 = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
-
 genHsFrontDowncastClass :: Class -> [Decl]
 genHsFrontDowncastClass c = mkFun ("downcast"++highname) typ [mkPVar "h"] rhs Nothing
   where (highname,rawname) = hsClassName c
@@ -318,12 +315,6 @@ genHsFrontDowncastClass c = mkFun ("downcast"++highname) typ [mkPVar "h"] rhs No
                     ] 
                   ) 
                   (mkVar "cast_fptr_to_obj" `App` mkVar "fh2")
-
-{- 
-genAllHsFrontDowncastClass :: [Class] -> Reader AnnotateMap String
-genAllHsFrontDowncastClass = intercalateWithM connRet2 genHsFrontDowncastClass
--}
-
 
 ------------
 -- Export --
@@ -359,10 +350,6 @@ genExportStatic c =
   where indent = replicate 2 ' ' 
         fs = class_funcs c
         fns = map (aliasedFuncName c) (staticFuncs fs) 
-
-
-
-
 
 genExportList :: [Class] -> String 
 genExportList = concatMap genExport 
