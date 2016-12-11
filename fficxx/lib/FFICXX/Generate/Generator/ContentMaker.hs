@@ -394,16 +394,16 @@ mkImplementationHs amap m = subst
         implHeaderStr = "module " ++ cmModule m <.> "Implementation where\n" 
         implImportStr = genImportInImplementation m
         f y = intercalateWith connRet (concatMap prettyPrint . flip genHsFrontInst y) (y:class_allparents y )
-        g y = intercalateWith connRet (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
+        g y = intercalateWith connRet (prettyPrint . flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
         implBodyStr = 
           intercalateWith connRet2 f classes
           `connRet2` 
           intercalateWith connRet2 g (filter (not.isAbstractClass) classes)
           `connRet2`
-          runReader (intercalate "\n\n" . map (intercalateWith connRet prettyPrint) <$> genAllHsFrontInstNew classes) amap
+          runReader (intercalate "\n\n" . map (intercalateWith connRet prettyPrint) <$> mapM genHsFrontInstNew classes) amap
           `connRet2`
-          genAllHsFrontInstNonVirtual classes
+          (intercalate "\n\n" (map (intercalateWith connRet prettyPrint) (map genHsFrontInstNonVirtual classes)))
           `connRet2`
           intercalateWith connRet id (mapMaybe genHsFrontInstStatic classes)
           `connRet2`

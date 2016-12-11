@@ -146,70 +146,37 @@ genHsFrontInstExistCommon c = mkInstance "FPtr" existtype body
 
 -------------------
 
--- hsClassInstExistVirtualTmpl :: Text
--- hsClassInstExistVirtualTmpl = "instance $iparent (Exist $child) where\n$method"
 
-
-
-
-genHsFrontInstExistVirtual :: Class -> Class -> String 
-genHsFrontInstExistVirtual p c =
-   -- subst hsClassInstExistVirtualTmpl (context tmplName)
-    prettyPrint (mkInstance iparent existtype body)
+genHsFrontInstExistVirtual :: Class -> Class -> InstDecl
+genHsFrontInstExistVirtual p c = mkInstance iparent existtype body
   where body = map (genHsFrontInstExistVirtualMethod p c) . virtualFuncs.class_funcs $ p
         iparent = typeclassName p
         existtype = TyApp (tycon "Exist") (tycon ((fst.hsClassName) c))
-        -- tmplName = [ ("iparent",typeclassName p)
-        --            , ("child",  (fst.hsClassName) c)
-        --            , ("method", methodstr )         ] 
-
--- hsClassInstExistVirtualMethodNoSelfTmpl :: Text
--- hsClassInstExistVirtualMethodNoSelfTmpl = "  $methodname ($exist x) = $methodname x"
-
--- hsClassInstExistVirtualMethodSelfTmpl :: Text 
--- hsClassInstExistVirtualMethodSelfTmpl = "  $methodname ($exist x) $args =  return . $exist =<< $methodname x $args"
-
 
 genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> InstDecl
 genHsFrontInstExistVirtualMethod p c f =
     case f of
       Constructor _  _ -> error "error in genHsFrontInstExistVirtualMethod"  
       Destructor _ -> InsDecl (mkBind1 fname [existx] ((mkVar fname) `App` (mkVar "x")) Nothing)
-
-
-        -- subst hsClassInstExistVirtualMethodNoSelfTmpl (context tmplName)
       _ -> case func_ret f of
              SelfType -> InsDecl (mkBind1 fname (existx:map mkPVar args) rhs Nothing)
-             -- subst hsClassInstExistVirtualMethodSelfTmpl (context (tmplName++args))
              _ -> InsDecl (mkBind1 fname [existx] ((mkVar fname) `App` (mkVar "x")) Nothing)
-             -- subst hsClassInstExistVirtualMethodNoSelfTmpl (context tmplName)
   where fname = hsFuncName p f
         ename = existConstructorName c
         existx = PApp (unqual ename) [PVar (Ident "x")]
         rhs = (mkVar "return" `App` mkVar "." `App` mkVar ename) `App`
               mkVar "=<<" `App`
-              (mkVar fname `App` foldl1 App (mkVar "x":map mkVar args))   --  $exist =<< $methodname x $args
-        
-        -- tmplName = [ ("methodname", hsFuncName p f)
-        --            , ("exist", existConstructorName c) ]
+              (mkVar fname `App` foldl1 App (mkVar "x":map mkVar args))
         args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ [1..] 
- 
-
-genAllHsFrontInstExistVirtual :: [Class] -> DaughterMap -> String 
-genAllHsFrontInstExistVirtual cs _dmap = intercalateWith connRet2 allinstances cs
-  where allinstances c = 
-          let ps = c : class_allparents c
-          in  intercalateWith connRet2 (\p->genHsFrontInstExistVirtual p c) ps 
-
 
 ---------------------
 
 genHsFrontInstNew :: Class         -- ^ only concrete class 
-                  -> Reader AnnotateMap (Maybe [Decl])
+                  -> Reader AnnotateMap [Decl]
 genHsFrontInstNew c = do 
   -- amap <- ask
-  let mnewfunc = listToMaybe (filter isNewFunc (class_funcs c))
-  return . flip fmap mnewfunc $ \f ->
+  let fs = filter isNewFunc (class_funcs c)
+  return . flip concatMap fs $ \f ->
     let
         -- for the time being, let's ignore annotation.
         -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
@@ -218,26 +185,24 @@ genHsFrontInstNew c = do
     in mkFunDecl (constructorName c) (functionSignature c f) [] rhs Nothing
     {- in  newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ prettyPrint defn -}
 
-genAllHsFrontInstNew :: [Class]    -- ^ only concrete class 
-                     -> Reader AnnotateMap [[Decl]]
-genAllHsFrontInstNew = liftM catMaybes . mapM genHsFrontInstNew
-  -- liftM (intercalate "\n\n") . liftM catMaybes . mapM genHsFrontInstNew 
-  
-genHsFrontInstNonVirtual :: Class -> Maybe String 
-genHsFrontInstNonVirtual c 
-  | (not.null) nonvirtualFuncs  =                        
-    let header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
-        body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
-        argstr func = intercalateWith connArrow id $ 
-                        [(fst.hsClassName) c]  
-                        ++ map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
-                        ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func] 
-    in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
-  | otherwise = Nothing   
+genHsFrontInstNonVirtual :: Class -> [Decl]
+genHsFrontInstNonVirtual c =
+  flip concatMap nonvirtualFuncs $ \f -> 
+    let -- header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
+        rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+        -- body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
+        -- argstr func = intercalateWith connArrow id $ 
+        --                 [(fst.hsClassName) c]  
+        --                ++ map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
+        --                 ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func] 
+    in mkFunDecl (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
+   --intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
  where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
 
+{- 
 genAllHsFrontInstNonVirtual :: [Class] -> String 
 genAllHsFrontInstNonVirtual = intercalate "\n\n" . map fromJust . filter isJust . map genHsFrontInstNonVirtual
+-}
 
 -----
 

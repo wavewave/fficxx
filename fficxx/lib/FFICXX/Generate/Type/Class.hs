@@ -328,9 +328,15 @@ isDeleteFunc (Destructor _) = True
 isDeleteFunc _ = False
 
 isVirtualFunc :: Function -> Bool
-isVirtualFunc (Destructor _)           = True
-isVirtualFunc (Virtual _ _ _ _)        = True
-isVirtualFunc _ = False
+isVirtualFunc (Destructor _)          = True
+isVirtualFunc (Virtual _ _ _ _)       = True
+isVirtualFunc _                       = False
+
+isNonVirtualFunc :: Function -> Bool
+isNonVirtualFunc (NonVirtual _ _ _ _) = True
+isNonVirtualFunc _                    = False
+
+
 
 isStaticFunc :: Function -> Bool
 isStaticFunc (Static _ _ _ _) = True
@@ -639,7 +645,6 @@ genericFuncRet f =
     Virtual t _ _ _ -> t
     NonVirtual t _ _ _-> t
     Static t _ _ _ -> t
-    -- AliasVirtual t _ _ _ -> t
     Destructor _ -> void_
 
 genericFuncArgs :: Function -> Args
@@ -684,8 +689,10 @@ classConstraints = map ((\n->ClassA (unqual n) [mkTVar "a"]) . typeclassName) . 
 functionSignature :: Class -> Function -> Type
 functionSignature c f =
   let ctyp = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
-      lst =
-        (if isVirtualFunc f then (mkTVar "a":) else id)
-          (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
+      arg0
+        | isVirtualFunc f    = (mkTVar "a" :)
+        | isNonVirtualFunc f = (mkTVar (class_name c) :)
+        | otherwise          = id
+      lst = arg0 (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
 
