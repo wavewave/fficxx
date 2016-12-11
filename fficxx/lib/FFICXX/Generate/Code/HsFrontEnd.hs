@@ -236,8 +236,6 @@ genHsFrontInstCastableSelf c
 
 --------------------------
 
-
-
 hsClassRawType :: Class -> [Decl]
 hsClassRawType c =
   [ mkData    rawname [] [] []
@@ -253,11 +251,6 @@ hsClassRawType c =
        rawtype = tycon rawname
        derivs = [(unqual "Eq",[]),(unqual "Ord",[]),(unqual "Show",[])]
 
-
--- existableInstance :: Text
--- existableInstance = "instance Existable $highname where\n  data Exist $highname = forall a. (FPtr a, $interfacename a) => $existConstructor a"
-
-
 hsClassExistType :: Class -> Decl
 hsClassExistType c = mkInstance [] "Existable" [hightype]
                        [ InsData noLoc DataType (TyApp (tycon "Exist") hightype)
@@ -267,80 +260,21 @@ hsClassExistType c = mkInstance [] "Existable" [hightype]
                            ]
                            []
                        ]
-
-    -- subst existableInstance (context tmplName)
   where (highname,_) = hsClassName c
         hightype = tycon highname
         a_bind = UnkindedVar (Ident "a")
         a_tvar = mkTVar "a"
-        -- a_var  = mkVar "a" 
         iname = typeclassName c 
         ename = existConstructorName c
-        {- 
-        tmplName = [ ("existConstructor",ename) 
-                   , ("highname",highname)
-                   , ("interfacename",iname)    ] -}
-
-hsClassDeclFuncTmpl :: Text
-hsClassDeclFuncTmpl = "$funcann\n    $funcname :: $args "
 
 
-hsArgs :: Class -> Args -> String
-hsArgs c = intercalateWith connArrow (ctypToHsTyp (Just c) . fst) 
-
-mkHsFuncArgType :: Args -> ([String],[String]) 
-mkHsFuncArgType lst = 
-  let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
-  in   (args,fst st)
-  where mkFuncArgTypeWorker (typ,_var) = 
-          case typ of                  
-            SelfType -> return "a"
-            CT _ _   -> return $ ctypToHsTyp Nothing typ 
-            CPT (CPTClass c') _ -> do 
-              (prefix,n) <- get 
-              let cname = (fst.hsClassName) c' 
-                  iname = typeclassNameFromStr cname 
-                  newname = 'c' : show n
-                  newprefix1 = iname ++ " " ++ newname    
-                  newprefix2 = "FPtr " ++ newname
-              put (newprefix1:newprefix2:prefix,n+1)
-              return newname
-            CPT (CPTClassRef c') _ -> do 
-              (prefix,n) <- get 
-              let cname = (fst.hsClassName) c' 
-                  iname = typeclassNameFromStr cname 
-                  newname = 'c' : show n
-                  newprefix1 = iname ++ " " ++ newname    
-                  newprefix2 = "FPtr " ++ newname
-              put (newprefix1:newprefix2:prefix,n+1)
-              return newname
-            _ -> error ("No such c type : " ++ show typ)  
-
-mkHsFuncRetType :: Types -> (String,[String])
-mkHsFuncRetType rtyp = 
-  case rtyp of 
-    SelfType -> ("a",[])
-    CPT (CPTClass c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
-    CPT (CPTClassRef c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
-    _ -> (ctypToHsTyp Nothing rtyp,[])
-
-      
-----------                        
-
-
-
-----------
-
-hsExistentialGADTBodyTmpl :: Text 
-hsExistentialGADTBodyTmpl = "    GADT${mother}${daughter} :: $daughter -> GADTType $mother $daughter"
-
-
-hsExistentialCastBodyTmpl :: Text
-hsExistentialCastBodyTmpl = "    \"$daughter\" -> case obj of\n        $mother fptr -> let obj' = $daughter (castForeignPtr fptr :: ForeignPtr Raw$daughter)\n                        in  return . EGADT$mother . GADT${mother}${daughter} $$ obj'"
 
 ------------
 -- upcast --
 ------------
+
+hsUpcastClassTmpl :: Text 
+hsUpcastClassTmpl =  "upcast$classname :: (FPtr a, $ifacename a) => a -> $classname\nupcast$classname h = let fh = get_fptr h\n$space    fh2 :: ForeignPtr $rawclassname = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
 
 genHsFrontUpcastClass :: Class -> Reader AnnotateMap String
 genHsFrontUpcastClass c = do 
@@ -355,13 +289,14 @@ genAllHsFrontUpcastClass :: [Class] -> Reader AnnotateMap String
 genAllHsFrontUpcastClass = intercalateWithM connRet2 genHsFrontUpcastClass
 
 
-hsUpcastClassTmpl :: Text 
-hsUpcastClassTmpl =  "upcast$classname :: (FPtr a, $ifacename a) => a -> $classname\nupcast$classname h = let fh = get_fptr h\n$space    fh2 :: ForeignPtr $rawclassname = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
 
 
 --------------
 -- downcast --
 --------------
+
+hsDowncastClassTmpl :: Text 
+hsDowncastClassTmpl =  "downcast$classname :: (FPtr a, $ifacename a) => $classname -> a \ndowncast$classname h = let fh = get_fptr h\n$space    fh2 = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
 
 genHsFrontDowncastClass :: Class -> Reader AnnotateMap String
 genHsFrontDowncastClass c = do 
@@ -376,8 +311,6 @@ genAllHsFrontDowncastClass :: [Class] -> Reader AnnotateMap String
 genAllHsFrontDowncastClass = intercalateWithM connRet2 genHsFrontDowncastClass
 
 
-hsDowncastClassTmpl :: Text 
-hsDowncastClassTmpl =  "downcast$classname :: (FPtr a, $ifacename a) => $classname -> a \ndowncast$classname h = let fh = get_fptr h\n$space    fh2 = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
 
 ------------
 -- Export --
@@ -511,6 +444,44 @@ genImportInExistential dmap m =
 ------------------------
 -- Top Level Function --
 ------------------------
+
+
+mkHsFuncArgType :: Args -> ([String],[String]) 
+mkHsFuncArgType lst = 
+  let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
+  in   (args,fst st)
+  where mkFuncArgTypeWorker (typ,_var) = 
+          case typ of                  
+            SelfType -> return "a"
+            CT _ _   -> return $ ctypToHsTyp Nothing typ 
+            CPT (CPTClass c') _ -> do 
+              (prefix,n) <- get 
+              let cname = (fst.hsClassName) c' 
+                  iname = typeclassNameFromStr cname 
+                  newname = 'c' : show n
+                  newprefix1 = iname ++ " " ++ newname    
+                  newprefix2 = "FPtr " ++ newname
+              put (newprefix1:newprefix2:prefix,n+1)
+              return newname
+            CPT (CPTClassRef c') _ -> do 
+              (prefix,n) <- get 
+              let cname = (fst.hsClassName) c' 
+                  iname = typeclassNameFromStr cname 
+                  newname = 'c' : show n
+                  newprefix1 = iname ++ " " ++ newname    
+                  newprefix2 = "FPtr " ++ newname
+              put (newprefix1:newprefix2:prefix,n+1)
+              return newname
+            _ -> error ("No such c type : " ++ show typ)  
+
+mkHsFuncRetType :: Types -> (String,[String])
+mkHsFuncRetType rtyp = 
+  case rtyp of 
+    SelfType -> ("a",[])
+    CPT (CPTClass c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
+    CPT (CPTClassRef c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
+    _ -> (ctypToHsTyp Nothing rtyp,[])
+
 
 genTopLevelFuncDef :: TopLevelFunction -> String 
 genTopLevelFuncDef f@TopLevelFunction {..} = 
