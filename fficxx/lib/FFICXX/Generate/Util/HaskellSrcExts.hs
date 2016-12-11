@@ -44,7 +44,11 @@ mkFunSigDecl fname typ = TypeSig noLoc [Ident fname] typ
 mkClass ctxt name tbinds cdecls =
   ClsDecl (ClassDecl noLoc ctxt (Ident name) tbinds [] cdecls)
 
-mkInstance ctxt name typs idecls =
-  InsDecl (InstDecl noLoc Nothing [] ctxt (unqual name) typs idecls)
+mkInstance ctxt name typs idecls = InstDecl noLoc Nothing [] ctxt (unqual name) typs idecls
+
+mkData name tbinds qdecls derivs  = DataDecl noLoc DataType [] (Ident name) tbinds qdecls derivs
+
+mkNewtype name tbinds qdecls derivs  = DataDecl noLoc NewType [] (Ident name) tbinds qdecls derivs
+
 
 x `dot` y = x `App` mkVar "." `App` y

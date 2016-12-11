@@ -29,7 +29,8 @@ import           Data.Text.Template                      hiding (render)
 import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
                                                          , ClassDecl(..), InstDecl(..)
                                                          , Pat(..), Name(..), QOp(..), Op(..)
-                                                         , Asst(..)
+                                                         , Asst(..), ConDecl(..), QualConDecl(..)
+                                                         , DataOrNew(..), TyVarBind (..)
                                                          , unit_tycon)
 import           Language.Haskell.Exts.Pretty
 import           Language.Haskell.Exts.SrcLoc            ( noLoc )
@@ -106,7 +107,7 @@ genHsFrontDecl c = do
 
 -------------------
 
-genHsFrontInst :: Class -> Class -> [InstDecl]
+genHsFrontInst :: Class -> Class -> [Decl]
 genHsFrontInst parent child  
   | (not.isAbstractClass) child = 
     let idecl = mkInstance [] (typeclassName parent) [convertCpp2HS (Just child) SelfType] body
@@ -120,7 +121,7 @@ genHsFrontInst parent child
       
 ---------------------
 
-genHsFrontInstExistCommon :: Class -> InstDecl 
+genHsFrontInstExistCommon :: Class -> Decl 
 genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
   where (highname,rawname) = hsClassName c
         hightype = tycon highname
@@ -148,7 +149,7 @@ genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
 -------------------
 
 
-genHsFrontInstExistVirtual :: Class -> Class -> InstDecl
+genHsFrontInstExistVirtual :: Class -> Class -> Decl
 genHsFrontInstExistVirtual p c = mkInstance [] iparent [existtype] body
   where body = map (genHsFrontInstExistVirtualMethod p c) . virtualFuncs.class_funcs $ p
         iparent = typeclassName p
@@ -215,7 +216,7 @@ castBody = [ InsDecl (mkBind1 "cast" []
                        Nothing)
            ]
 
-genHsFrontInstCastable :: Class -> Maybe InstDecl
+genHsFrontInstCastable :: Class -> Maybe Decl
 genHsFrontInstCastable c 
   | (not.isAbstractClass) c = 
     let iname = typeclassName c
@@ -225,7 +226,7 @@ genHsFrontInstCastable c
     in Just (mkInstance ctxt "Castable" [a,TyApp (tycon "Ptr") (tycon rname)] castBody)
   | otherwise = Nothing
 
-genHsFrontInstCastableSelf :: Class -> Maybe InstDecl
+genHsFrontInstCastableSelf :: Class -> Maybe Decl
 genHsFrontInstCastableSelf c 
   | (not.isAbstractClass) c = 
     let (cname,rname) = hsClassName c
@@ -235,37 +236,50 @@ genHsFrontInstCastableSelf c
 
 --------------------------
 
-rawToHighDecl :: Text
-rawToHighDecl = "data $rawname\nnewtype $highname = $highname (ForeignPtr $rawname) deriving (Eq, Ord, Show)"
-
-rawToHighInstance :: Text
-rawToHighInstance = "instance FPtr $highname where\n   type Raw $highname = $rawname\n   get_fptr ($highname fptr) = fptr\n   cast_fptr_to_obj = $highname"
 
 
-existableInstance :: Text
-existableInstance = "instance Existable $highname where\n  data Exist $highname = forall a. (FPtr a, $interfacename a) => $existConstructor a"
+hsClassRawType :: Class -> [Decl]
+hsClassRawType c =
+  [ mkData    rawname [] [] []
+  , mkNewtype highname []
+      [ QualConDecl noLoc [] []
+          (ConDecl (Ident highname) [TyApp (tycon "ForeignPtr") rawtype])
+      ]
+      derivs
+  , mkInstance [] "FPtr" [hightype] [ InsType noLoc (TyApp (tycon "Raw") hightype) rawtype ]
+  ]
+ where (highname,rawname) = hsClassName c
+       hightype = tycon highname
+       rawtype = tycon rawname
+       derivs = [(unqual "Eq",[]),(unqual "Ord",[]),(unqual "Show",[])]
 
 
-hsClassRawType :: Class -> String 
-hsClassRawType c = 
-    let decl = subst rawToHighDecl (context tmplName)
-        inst1 = subst rawToHighInstance (context tmplName)
-    in  decl `connRet` inst1 
-  where (highname,rawname) = hsClassName c
-        iname = typeclassName c 
-        -- ename = existConstructorName c
-        tmplName = [ ("rawname",rawname)
-                   , ("highname",highname)
-                   , ("interfacename",iname) ] 
+-- existableInstance :: Text
+-- existableInstance = "instance Existable $highname where\n  data Exist $highname = forall a. (FPtr a, $interfacename a) => $existConstructor a"
 
-hsClassExistType :: Class -> String 
-hsClassExistType c = subst existableInstance (context tmplName)
-  where (highname,_rawname) = hsClassName c
+
+hsClassExistType :: Class -> Decl
+hsClassExistType c = mkInstance [] "Existable" [hightype]
+                       [ InsData noLoc DataType (TyApp (tycon "Exist") hightype)
+                           [ QualConDecl noLoc [a_bind]
+                               [ClassA (unqual "FPtr") [a_tvar], ClassA (unqual iname) [a_tvar] ]
+                               (ConDecl (Ident ename) [a_tvar])
+                           ]
+                           []
+                       ]
+
+    -- subst existableInstance (context tmplName)
+  where (highname,_) = hsClassName c
+        hightype = tycon highname
+        a_bind = UnkindedVar (Ident "a")
+        a_tvar = mkTVar "a"
+        -- a_var  = mkVar "a" 
         iname = typeclassName c 
         ename = existConstructorName c
+        {- 
         tmplName = [ ("existConstructor",ename) 
                    , ("highname",highname)
-                   , ("interfacename",iname)    ]
+                   , ("interfacename",iname)    ] -}
 
 hsClassDeclFuncTmpl :: Text
 hsClassDeclFuncTmpl = "$funcann\n    $funcname :: $args "

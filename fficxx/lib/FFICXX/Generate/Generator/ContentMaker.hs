@@ -300,7 +300,7 @@ mkRawTypeHs m = subst
   where rawtypeHeaderStr = "module " ++ cmModule m <.> "RawType where\n"
         classes = cmClass m
         rawtypeBodyStr = 
-          intercalateWith connRet2 hsClassRawType (filter (not.isAbstractClass) classes)
+          intercalate "\n\n" (map prettyPrint (concatMap hsClassRawType (filter (not.isAbstractClass) classes)))
 
 -- | 
 mkInterfaceHs :: AnnotateMap -> ClassModule -> String    
@@ -330,7 +330,7 @@ mkInterfaceHs amap m = subst
         ifaceBodyStr = 
           runReader (intercalateWith connRet prettyPrint <$> mapM genHsFrontDecl classes) amap 
           `connRet2`
-          intercalateWith connRet hsClassExistType (filter (not.isAbstractClass) classes) 
+          (intercalate "\n" . map (prettyPrint . hsClassExistType) .  filter (not.isAbstractClass)) classes
           `connRet2`
           runReader (genAllHsFrontUpcastClass (filter (not.isAbstractClass) classes)) amap  
           `connRet2`
