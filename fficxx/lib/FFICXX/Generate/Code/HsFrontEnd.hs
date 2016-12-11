@@ -26,7 +26,7 @@ import           Data.Text                              (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                     hiding (render)
-import           Language.Haskell.Exts.Syntax (Type(..), Exp(..),Decl(..))
+import           Language.Haskell.Exts.Syntax (Type(..), Exp(..),Decl(..),ClassDecl(..), unit_tycon)
 import           Language.Haskell.Exts.Pretty
 import           System.FilePath ((<.>))
 -- 
@@ -35,6 +35,19 @@ import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
+
+
+----------------
+functionSignature :: Class -> Function -> Type
+functionSignature c f =
+  let ctyp = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
+      lst =
+        (if isVirtualFunc f then (mkTVar "a":) else id)
+          (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
+  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+
+
+-----------------
 
 
 mkComment :: Int -> String -> String
@@ -57,6 +70,8 @@ mkPostComment str
   | otherwise = str                
 
                         
+
+
 ----------------
 
 -- |
@@ -84,19 +99,22 @@ classprefix c = let ps = (map typeclassName . class_parents) c
 hsClassDeclHeaderTmpl :: Text
 hsClassDeclHeaderTmpl = "$classann\nclass ${constraint}${classname} a where"
 
-genHsFrontDecl :: Class -> Reader AnnotateMap String 
-genHsFrontDecl c = do 
-  amap <- ask  
-  let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap 
+genHsFrontDecl :: Class -> Reader AnnotateMap ClassDecl
+genHsFrontDecl c = do
+  -- for the time being, let's ignore annotation.
+  -- amap <- ask  
+  -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap 
   let 
-
-
       -- header = subst hsClassDeclHeaderTmpl (context [ ("classname" , typeclassName c ) 
       --                                               , ("constraint", classprefix c   ) 
       --                                               , ("classann"  , mkComment 0 cann) ])
     
-      header = prettyPrint (mkClass (classConstraints c) (typeclassName c) [] [])
-    
+      cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
+
+      sigdecl f = mkFunSigDecl (hsFuncName c f) (functionSignature c f)
+  
+      body = map (ClsDecl . sigdecl) . virtualFuncs . class_funcs $ c 
+      {- 
       bodyline func =
         let fname = hsFuncName c func 
             mann = maybe "" id $ M.lookup (PkgMethod,fname) amap
@@ -115,13 +133,13 @@ genHsFrontDecl c = do
                       ++ fst (mkHsFuncArgType (genericFuncArgs func))
                       ++ ["IO " ++ (fst . mkHsFuncRetType . genericFuncRet) func]  
       bodylines = map bodyline . virtualFuncs 
-                      $ (class_funcs c) 
-  return $ intercalateWith connRet id (header : bodylines) 
+                      $ (class_funcs c)  
+  return $ intercalateWith connRet id (header : bodylines)  -}
+  return cdecl
 
 
-
-genAllHsFrontDecl :: [Class] -> Reader AnnotateMap String 
-genAllHsFrontDecl = intercalateWithM connRet2 genHsFrontDecl
+-- genAllHsFrontDecl :: [Class] -> Reader AnnotateMap [ClassDecl]
+-- genAllHsFrontDecl = intercalateWithM connRet2 genHsFrontDecl
 
 -------------------
 
@@ -203,18 +221,18 @@ genHsFrontInstNew :: Class         -- ^ only concrete class
 genHsFrontInstNew c = do 
   -- amap <- ask
   let mnewfunc = listToMaybe (filter isNewFunc (class_funcs c))
-  return . flip fmap mnewfunc $ \newfunc ->
+  return . flip fmap mnewfunc $ \f ->
     let
         -- for the time being, let's ignore annotation.
         -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
         -- newfuncann = mkComment 0 cann
-        fname = constructorName c
-        ctyp f = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
+        {- ctyp f = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
         farg f =
           let lst = map (convertCpp2HS (Just c) . fst) (genericFuncArgs f)
-          in foldr1 TyFun (lst ++ [TyApp (tycon "IO") (ctyp f)])
-        rhs f = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-    in mkFunGen fname (farg newfunc) [] (rhs newfunc) Nothing
+          in foldr1 TyFun (lst ++ [TyApp (tycon "IO") (ctyp f)]) -}
+                
+        rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+    in mkFunDecl (constructorName c) (functionSignature c f) [] rhs Nothing
     {- in  newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ prettyPrint defn -}
 
 genAllHsFrontInstNew :: [Class]    -- ^ only concrete class 

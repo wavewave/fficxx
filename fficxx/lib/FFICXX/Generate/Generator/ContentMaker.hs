@@ -328,7 +328,7 @@ mkInterfaceHs amap m = subst
         classes = cmClass m
         ifaceImportStr = genImportInInterface m
         ifaceBodyStr = 
-          runReader (genAllHsFrontDecl classes) amap 
+          runReader (intercalateWith connRet prettyPrint <$> mapM genHsFrontDecl classes) amap 
           `connRet2`
           intercalateWith connRet hsClassExistType (filter (not.isAbstractClass) classes) 
           `connRet2`

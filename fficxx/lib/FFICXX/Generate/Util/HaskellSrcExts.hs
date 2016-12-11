@@ -25,14 +25,16 @@ mkVar = Var . unqual
 
 mkTVar = TyVar . Ident
 
+mkTBind = UnkindedVar . Ident
+
 mkBind1 name pat rhs mbinds =
   FunBind [ Match noLoc (Ident name) pat Nothing (UnGuardedRhs rhs) mbinds ]
 
-mkFunGen :: String -> Type -> [Pat] -> Exp -> Maybe Binds -> [Decl]
-mkFunGen funname typ pats rhs mbinds = [sig,defn]
-  where sig  = TypeSig noLoc [Ident funname] typ
-        defn = mkBind1 funname pats rhs mbinds
+mkFunDecl :: String -> Type -> [Pat] -> Exp -> Maybe Binds -> [Decl]
+mkFunDecl fname typ pats rhs mbinds = [mkFunSigDecl fname typ, mkBind1 fname pats rhs mbinds]
 
+mkFunSigDecl :: String -> Type -> Decl
+mkFunSigDecl fname typ = TypeSig noLoc [Ident fname] typ
 
 mkClass ctxt name tbinds cdecls =
   ClsDecl (ClassDecl noLoc ctxt (Ident name) tbinds [] cdecls)
