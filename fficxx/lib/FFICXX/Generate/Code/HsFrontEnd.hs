@@ -18,18 +18,21 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import           Control.Monad.State
 import           Control.Monad.Reader
-import           Data.Char                 (toLower)
+import           Data.Char                               (toLower)
 import           Data.List
 import qualified Data.Map             as M
 import           Data.Maybe
-import           Data.Text                              (Text)
+import           Data.Text                               (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                     hiding (render)
-import           Language.Haskell.Exts.Syntax ( Type(..), Exp(..), Decl(..)
-                                              , ClassDecl(..), InstDecl(..), unit_tycon)
+import           Data.Text.Template                      hiding (render)
+import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
+                                                         , ClassDecl(..), InstDecl(..)
+                                                         , Pat(..), Name(..)
+                                                         , unit_tycon)
 import           Language.Haskell.Exts.Pretty
-import           System.FilePath ((<.>))
+import           Language.Haskell.Exts.SrcLoc            ( noLoc )
+import           System.FilePath                         ((<.>))
 -- 
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Annotate
@@ -105,43 +108,58 @@ genHsFrontDecl c = do
 genHsFrontInst :: Class -> Class -> [InstDecl]
 genHsFrontInst parent child  
   | (not.isAbstractClass) child = 
-    let
-        idecl = mkInstance (typeclassName parent) (convertCpp2HS (Just child) SelfType) body
-
-     
+    let idecl = mkInstance (typeclassName parent) (convertCpp2HS (Just child) SelfType) body
         defn f = mkBind1 (hsFuncName child f) [] rhs Nothing 
           where rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName child f))
-
         body = map (InsDecl . defn) . virtualFuncs . class_funcs $ parent
-        {- 
-        headline = "instance " ++ typeclassName parent ++ " " ++ (fst.hsClassName) child ++ " where" 
-        defline func = "  " ++ hsFuncName child func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
-        deflines = (map defline) . virtualFuncs . class_funcs $ parent 
-
-    in  intercalateWith connRet id (idecl : headline : deflines)  -}
     in [idecl]
   | otherwise = []
         
 
       
 ---------------------
-
+{- 
 hsClassInstExistCommonTmpl :: Text 
 hsClassInstExistCommonTmpl = "instance FPtr (Exist $highname) where\n  type Raw (Exist $highname) = $rawname\n  get_fptr ($existConstructor obj) = castForeignPtr (get_fptr obj)\n  cast_fptr_to_obj fptr = $existConstructor (cast_fptr_to_obj (fptr :: ForeignPtr $rawname) :: $highname)" 
+-}
 
 
-genHsFrontInstExistCommon :: Class -> String 
-genHsFrontInstExistCommon c = subst hsClassInstExistCommonTmpl (context tmplName)
+genHsFrontInstExistCommon :: Class -> InstDecl 
+genHsFrontInstExistCommon c = mkInstance "FPtr" existtype body
+  -- subst hsClassInstExistCommonTmpl (context tmplName)
   where (highname,rawname) = hsClassName c
+        hightype = tycon highname
+        rawtype = tycon rawname
+        existtype = TyApp (tycon "Exist") hightype
         iname = typeclassName c 
         ename = existConstructorName c
+        -- defn f = mkBind1
+        
+        body = [ InsType noLoc (TyApp (tycon "Raw") existtype) rawtype
+               , InsDecl (mkBind1 "get_fptr" [PApp (unqual ename) [PVar (Ident "obj")] ]
+                            ((mkVar "castForeignPtr") `App` ((mkVar "get_fptr") `App` (mkVar "obj")))
+                            Nothing)
+               , InsDecl (mkBind1 "cast_fptr_to_obj" [PVar (Ident "fptr")]
+                            (App (mkVar ename)
+                              (ExpTypeSig noLoc
+                                (App (mkVar "cast_fptr_to_obj")
+                                  (ExpTypeSig noLoc (mkVar "fptr")
+                                    (TyApp (tycon "ForeignPtr") rawtype)
+                                  )
+                                )
+                                hightype
+                              )
+                            )
+                            Nothing)
+               ]
         tmplName = [ ("rawname",rawname)
                    , ("highname",highname)
                    , ("interfacename",iname)
                    , ("existConstructor",ename) ] 
 
-genAllHsFrontInstExistCommon :: [Class] -> String 
-genAllHsFrontInstExistCommon cs = intercalateWith connRet2 genHsFrontInstExistCommon cs
+-- genAllHsFrontInstExistCommon :: [Class] -> String 
+-- genAllHsFrontInstExistCommon cs = intercalateWith connRet2 genHsFrontInstExistCommon cs
+
 
 -------------------
 

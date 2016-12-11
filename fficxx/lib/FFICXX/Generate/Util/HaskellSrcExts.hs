@@ -21,6 +21,8 @@ unqual = UnQual . Ident
 
 tycon = TyCon . unqual
 
+app x y = App (mkVar x) (mkVar y)
+
 mkVar = Var . unqual
 
 mkTVar = TyVar . Ident

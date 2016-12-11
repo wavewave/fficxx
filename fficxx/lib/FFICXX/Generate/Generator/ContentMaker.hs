@@ -407,7 +407,8 @@ mkImplementationHs amap m = subst
           `connRet2`
           intercalateWith connRet id (mapMaybe genHsFrontInstStatic classes)
           `connRet2`
-          genAllHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
+          (intercalate "\n" . map (prettyPrint . genHsFrontInstExistCommon) . filter (not.isAbstractClass)) classes
+
 
 
 {- 
