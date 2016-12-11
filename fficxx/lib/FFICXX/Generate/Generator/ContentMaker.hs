@@ -332,9 +332,9 @@ mkInterfaceHs amap m = subst
           `connRet2`
           (intercalate "\n" . map (prettyPrint . hsClassExistType) .  filter (not.isAbstractClass)) classes
           `connRet2`
-          runReader (genAllHsFrontUpcastClass (filter (not.isAbstractClass) classes)) amap  
+          (intercalate "\n" . map prettyPrint . concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
           `connRet2`
-          runReader (genAllHsFrontDowncastClass (filter (not.isAbstractClass) classes)) amap
+          (intercalate "\n" . map prettyPrint . concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
 -- | 
 mkCastHs :: ClassModule -> String    

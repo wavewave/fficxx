@@ -29,17 +29,20 @@ mkTVar = TyVar . Ident
 
 mkPVar = PVar . Ident
 
+mkPVarSig n typ = PatTypeSig noLoc (mkPVar n) typ
+
+pbind = PatBind noLoc
 
 mkTBind = UnkindedVar . Ident
 
 mkBind1 name pat rhs mbinds =
   FunBind [ Match noLoc (Ident name) pat Nothing (UnGuardedRhs rhs) mbinds ]
 
-mkFunDecl :: String -> Type -> [Pat] -> Exp -> Maybe Binds -> [Decl]
-mkFunDecl fname typ pats rhs mbinds = [mkFunSigDecl fname typ, mkBind1 fname pats rhs mbinds]
+mkFun :: String -> Type -> [Pat] -> Exp -> Maybe Binds -> [Decl]
+mkFun fname typ pats rhs mbinds = [mkFunSig fname typ, mkBind1 fname pats rhs mbinds]
 
-mkFunSigDecl :: String -> Type -> Decl
-mkFunSigDecl fname typ = TypeSig noLoc [Ident fname] typ
+mkFunSig :: String -> Type -> Decl
+mkFunSig fname typ = TypeSig noLoc [Ident fname] typ
 
 mkClass ctxt name tbinds cdecls =
   ClsDecl (ClassDecl noLoc ctxt (Ident name) tbinds [] cdecls)
@@ -52,3 +55,7 @@ mkNewtype name tbinds qdecls derivs  = DataDecl noLoc NewType [] (Ident name) tb
 
 
 x `dot` y = x `App` mkVar "." `App` y
+
+tyPtr = tycon "Ptr"
+
+tyForeignPtr = tycon "ForeignPtr"

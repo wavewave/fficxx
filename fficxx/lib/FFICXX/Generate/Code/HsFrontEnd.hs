@@ -30,7 +30,8 @@ import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), De
                                                          , ClassDecl(..), InstDecl(..)
                                                          , Pat(..), Name(..), QOp(..), Op(..)
                                                          , Asst(..), ConDecl(..), QualConDecl(..)
-                                                         , DataOrNew(..), TyVarBind (..)
+                                                         , DataOrNew(..), TyVarBind (..), Binds(..)
+                                                         , Rhs(..)
                                                          , unit_tycon)
 import           Language.Haskell.Exts.Pretty
 import           Language.Haskell.Exts.SrcLoc            ( noLoc )
@@ -101,7 +102,7 @@ genHsFrontDecl c = do
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap 
   let 
       cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
-      sigdecl f = mkFunSigDecl (hsFuncName c f) (functionSignature c f)
+      sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
       body = map (ClsDecl . sigdecl) . virtualFuncs . class_funcs $ c 
   return cdecl
 
@@ -184,13 +185,13 @@ genHsFrontInstNew c = do
         -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
         -- newfuncann = mkComment 0 cann
         rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-    in mkFunDecl (constructorName c) (functionSignature c f) [] rhs Nothing
+    in mkFun (constructorName c) (functionSignature c f) [] rhs Nothing
 
 genHsFrontInstNonVirtual :: Class -> [Decl]
 genHsFrontInstNonVirtual c =
   flip concatMap nonvirtualFuncs $ \f -> 
     let rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-    in mkFunDecl (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
+    in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
  where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
 
 -----
@@ -199,7 +200,7 @@ genHsFrontInstStatic :: Class -> [Decl]
 genHsFrontInstStatic c =
   flip concatMap (staticFuncs (class_funcs c)) $ \f ->
     let rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-    in mkFunDecl (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
+    in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
 
 -----
 
@@ -223,14 +224,14 @@ genHsFrontInstCastable c
         (_,rname) = hsClassName c
         a = mkTVar "a"
         ctxt = [ ClassA (unqual iname) [a], ClassA (unqual "FPtr") [a] ]
-    in Just (mkInstance ctxt "Castable" [a,TyApp (tycon "Ptr") (tycon rname)] castBody)
+    in Just (mkInstance ctxt "Castable" [a,TyApp tyPtr (tycon rname)] castBody)
   | otherwise = Nothing
 
 genHsFrontInstCastableSelf :: Class -> Maybe Decl
 genHsFrontInstCastableSelf c 
   | (not.isAbstractClass) c = 
     let (cname,rname) = hsClassName c
-    in Just (mkInstance [] "Castable" [tycon cname, TyApp (tycon "Ptr") (tycon rname)] castBody)
+    in Just (mkInstance [] "Castable" [tycon cname, TyApp tyPtr (tycon rname)] castBody)
   | otherwise = Nothing
 
 
@@ -241,7 +242,7 @@ hsClassRawType c =
   [ mkData    rawname [] [] []
   , mkNewtype highname []
       [ QualConDecl noLoc [] []
-          (ConDecl (Ident highname) [TyApp (tycon "ForeignPtr") rawtype])
+          (ConDecl (Ident highname) [TyApp tyForeignPtr rawtype])
       ]
       derivs
   , mkInstance [] "FPtr" [hightype] [ InsType noLoc (TyApp (tycon "Raw") hightype) rawtype ]
@@ -273,43 +274,55 @@ hsClassExistType c = mkInstance [] "Existable" [hightype]
 -- upcast --
 ------------
 
-hsUpcastClassTmpl :: Text 
-hsUpcastClassTmpl =  "upcast$classname :: (FPtr a, $ifacename a) => a -> $classname\nupcast$classname h = let fh = get_fptr h\n$space    fh2 :: ForeignPtr $rawclassname = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
-
-genHsFrontUpcastClass :: Class -> Reader AnnotateMap String
-genHsFrontUpcastClass c = do 
-  let (highname,rawname) = hsClassName c
-      upcaststr = subst hsUpcastClassTmpl (context [ ("classname"   , highname) 
-                                                   , ("ifacename"   , typeclassName c)
-                                                   , ("rawclassname", rawname)  
-                                                   , ("space"       , replicate (length highname+11) ' ' ) ])
-  return upcaststr
-
-genAllHsFrontUpcastClass :: [Class] -> Reader AnnotateMap String
-genAllHsFrontUpcastClass = intercalateWithM connRet2 genHsFrontUpcastClass
-
-
+genHsFrontUpcastClass :: Class -> [Decl]
+genHsFrontUpcastClass c = mkFun ("upcast"++highname) typ [mkPVar "h"] rhs Nothing
+  where (highname,rawname) = hsClassName c
+        hightype = tycon highname
+        rawtype = tycon rawname
+        iname = typeclassName c
+        a_bind = UnkindedVar (Ident "a")
+        a_tvar = mkTVar "a"
+        typ = TyForall (Just [a_bind])
+                [ClassA (unqual "FPtr") [a_tvar], ClassA (unqual iname) [a_tvar]]
+                (TyFun a_tvar hightype)
+        rhs = Let (BDecls
+                    [ pbind (mkPVar "fh") (UnGuardedRhs (App (mkVar "get_fptr") (mkVar "h"))) Nothing
+                    , pbind (mkPVarSig "fh2" (TyApp tyForeignPtr rawtype))
+                        (UnGuardedRhs (App (mkVar "castForeignPtr") (mkVar "fh"))) Nothing
+                    ] 
+                  ) 
+                  (mkVar "cast_fptr_to_obj" `App` mkVar "fh2")
 
 
 --------------
 -- downcast --
 --------------
 
-hsDowncastClassTmpl :: Text 
-hsDowncastClassTmpl =  "downcast$classname :: (FPtr a, $ifacename a) => $classname -> a \ndowncast$classname h = let fh = get_fptr h\n$space    fh2 = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
+-- hsDowncastClassTmpl :: Text 
+-- hsDowncastClassTmpl =  "downcast$classname :: (FPtr a, $ifacename a) => $classname -> a \ndowncast$classname h = let fh = get_fptr h\n$space    fh2 = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
 
-genHsFrontDowncastClass :: Class -> Reader AnnotateMap String
-genHsFrontDowncastClass c = do 
-  let (highname,rawname) = hsClassName c
-      downcaststr = subst hsDowncastClassTmpl (context [ ("classname", highname) 
-                                                       , ("ifacename", typeclassName c)
-                                                       , ("rawclassname", rawname)  
-                                                       , ("space", replicate (length highname+13) ' ' ) ])
-  return downcaststr
+genHsFrontDowncastClass :: Class -> [Decl]
+genHsFrontDowncastClass c = mkFun ("downcast"++highname) typ [mkPVar "h"] rhs Nothing
+  where (highname,rawname) = hsClassName c
+        hightype = tycon highname
+        rawtype = tycon rawname
+        iname = typeclassName c
+        a_bind = UnkindedVar (Ident "a")
+        a_tvar = mkTVar "a"
+        typ = TyForall (Just [a_bind])
+                [ClassA (unqual "FPtr") [a_tvar], ClassA (unqual iname) [a_tvar]]
+                (TyFun hightype a_tvar)
+        rhs = Let (BDecls
+                    [ pbind (mkPVar "fh") (UnGuardedRhs (App (mkVar "get_fptr") (mkVar "h"))) Nothing
+                    , pbind (mkPVar "fh2") (UnGuardedRhs (App (mkVar "castForeignPtr") (mkVar "fh"))) Nothing
+                    ] 
+                  ) 
+                  (mkVar "cast_fptr_to_obj" `App` mkVar "fh2")
 
+{- 
 genAllHsFrontDowncastClass :: [Class] -> Reader AnnotateMap String
 genAllHsFrontDowncastClass = intercalateWithM connRet2 genHsFrontDowncastClass
-
+-}
 
 
 ------------
