@@ -215,7 +215,6 @@ castBody = [ InsDecl (mkBind1 "cast" []
                        Nothing)
            ]
 
-
 genHsFrontInstCastable :: Class -> Maybe InstDecl
 genHsFrontInstCastable c 
   | (not.isAbstractClass) c = 
@@ -226,20 +225,11 @@ genHsFrontInstCastable c
     in Just (mkInstance ctxt "Castable" [a,TyApp (tycon "Ptr") (tycon rname)] castBody)
   | otherwise = Nothing
 
--- hsInterfaceCastableInstanceSelfTmpl :: Text 
--- hsInterfaceCastableInstanceSelfTmpl = 
---   "instance Castable $className (Ptr $rawClassName) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
-
-
-
 genHsFrontInstCastableSelf :: Class -> Maybe InstDecl
 genHsFrontInstCastableSelf c 
   | (not.isAbstractClass) c = 
     let (cname,rname) = hsClassName c
     in Just (mkInstance [] "Castable" [tycon cname, TyApp (tycon "Ptr") (tycon rname)] castBody)
-
-
-     -- subst hsInterfaceCastableInstanceSelfTmpl (context [("className",cname), ("rawClassName",rname)])
   | otherwise = Nothing
 
 
