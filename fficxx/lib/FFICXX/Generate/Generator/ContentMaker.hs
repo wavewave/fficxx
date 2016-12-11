@@ -361,9 +361,9 @@ mkCastHs m = subst
         classes = cmClass m
         castImportStr = genImportInCast m
         castBodyStr = 
-          genAllHsFrontInstCastable classes 
+          intercalate "\n" (map prettyPrint (mapMaybe genHsFrontInstCastable classes))
           `connRet2`
-          intercalateWith connRet2 genHsFrontInstCastableSelf classes
+          intercalate "\n" (map prettyPrint (mapMaybe genHsFrontInstCastableSelf classes))
 
 -- | 
 mkImplementationHs :: AnnotateMap -> ClassModule -> String
@@ -403,9 +403,9 @@ mkImplementationHs amap m = subst
           `connRet2`
           runReader (intercalate "\n\n" . map (intercalateWith connRet prettyPrint) <$> mapM genHsFrontInstNew classes) amap
           `connRet2`
-          (intercalate "\n\n" (map (intercalateWith connRet prettyPrint) (map genHsFrontInstNonVirtual classes)))
+          intercalate "\n\n" (map (intercalateWith connRet prettyPrint) (map genHsFrontInstNonVirtual classes))
           `connRet2`
-          intercalateWith connRet id (mapMaybe genHsFrontInstStatic classes)
+          intercalate "\n\n" (map (intercalateWith connRet prettyPrint . genHsFrontInstStatic) classes)
           `connRet2`
           (intercalate "\n" . map (prettyPrint . genHsFrontInstExistCommon) . filter (not.isAbstractClass)) classes
 

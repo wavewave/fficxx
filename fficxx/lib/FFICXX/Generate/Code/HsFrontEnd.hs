@@ -29,6 +29,7 @@ import           Data.Text.Template                      hiding (render)
 import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
                                                          , ClassDecl(..), InstDecl(..)
                                                          , Pat(..), Name(..), QOp(..), Op(..)
+                                                         , Asst(..)
                                                          , unit_tycon)
 import           Language.Haskell.Exts.Pretty
 import           Language.Haskell.Exts.SrcLoc            ( noLoc )
@@ -108,7 +109,7 @@ genHsFrontDecl c = do
 genHsFrontInst :: Class -> Class -> [InstDecl]
 genHsFrontInst parent child  
   | (not.isAbstractClass) child = 
-    let idecl = mkInstance (typeclassName parent) (convertCpp2HS (Just child) SelfType) body
+    let idecl = mkInstance [] (typeclassName parent) [convertCpp2HS (Just child) SelfType] body
         defn f = mkBind1 (hsFuncName child f) [] rhs Nothing 
           where rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName child f))
         body = map (InsDecl . defn) . virtualFuncs . class_funcs $ parent
@@ -120,7 +121,7 @@ genHsFrontInst parent child
 ---------------------
 
 genHsFrontInstExistCommon :: Class -> InstDecl 
-genHsFrontInstExistCommon c = mkInstance "FPtr" existtype body
+genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
   where (highname,rawname) = hsClassName c
         hightype = tycon highname
         rawtype = tycon rawname
@@ -148,7 +149,7 @@ genHsFrontInstExistCommon c = mkInstance "FPtr" existtype body
 
 
 genHsFrontInstExistVirtual :: Class -> Class -> InstDecl
-genHsFrontInstExistVirtual p c = mkInstance iparent existtype body
+genHsFrontInstExistVirtual p c = mkInstance [] iparent [existtype] body
   where body = map (genHsFrontInstExistVirtualMethod p c) . virtualFuncs.class_funcs $ p
         iparent = typeclassName p
         existtype = TyApp (tycon "Exist") (tycon ((fst.hsClassName) c))
@@ -164,7 +165,7 @@ genHsFrontInstExistVirtualMethod p c f =
   where fname = hsFuncName p f
         ename = existConstructorName c
         existx = PApp (unqual ename) [PVar (Ident "x")]
-        rhs = (mkVar "return" `App` mkVar "." `App` mkVar ename) `App`
+        rhs = (mkVar "return" `dot` mkVar ename) `App`
               mkVar "=<<" `App`
               (mkVar fname `App` foldl1 App (mkVar "x":map mkVar args))
         args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ [1..] 
@@ -183,61 +184,63 @@ genHsFrontInstNew c = do
         -- newfuncann = mkComment 0 cann
         rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
     in mkFunDecl (constructorName c) (functionSignature c f) [] rhs Nothing
-    {- in  newfuncann ++ "\n" ++ prettyPrint sig ++ "\n" ++ prettyPrint defn -}
 
 genHsFrontInstNonVirtual :: Class -> [Decl]
 genHsFrontInstNonVirtual c =
   flip concatMap nonvirtualFuncs $ \f -> 
-    let -- header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
-        rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-        -- body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
-        -- argstr func = intercalateWith connArrow id $ 
-        --                 [(fst.hsClassName) c]  
-        --                ++ map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
-        --                 ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func] 
+    let rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
     in mkFunDecl (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
-   --intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
  where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
 
-{- 
-genAllHsFrontInstNonVirtual :: [Class] -> String 
-genAllHsFrontInstNonVirtual = intercalate "\n\n" . map fromJust . filter isJust . map genHsFrontInstNonVirtual
--}
+-----
+
+genHsFrontInstStatic :: Class -> [Decl]
+genHsFrontInstStatic c =
+  flip concatMap (staticFuncs (class_funcs c)) $ \f ->
+    let rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+    in mkFunDecl (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
 
 -----
 
-genHsFrontInstStatic :: Class -> Maybe String 
-genHsFrontInstStatic c 
-  | (not.null) fs =                        
-    let header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
-        body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
-        argstr f = intercalateWith connArrow id $ 
-                     map (ctypToHsTyp (Just c) . fst) (genericFuncArgs f)
-                     ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) f] 
-    in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) fs
-  | otherwise = Nothing   
- where fs = staticFuncs (class_funcs c)
+castBody = [ InsDecl (mkBind1 "cast" []
+                       (mkVar "unsafeForeignPtrToPtr" `dot`
+                        mkVar "castForeignPtr" `dot`
+                        mkVar "get_fptr")
+                       Nothing)
+           , InsDecl (mkBind1 "uncast" []
+                       (mkVar "cast_fptr_to_obj" `dot`
+                        mkVar "castForeignPtr" `dot`
+                        mkVar "unsafePerformIO" `dot`
+                        mkVar "newForeignPtr_")
+                       Nothing)
+           ]
 
------
 
-genHsFrontInstCastable :: Class -> String 
+genHsFrontInstCastable :: Class -> Maybe InstDecl
 genHsFrontInstCastable c 
   | (not.isAbstractClass) c = 
     let iname = typeclassName c
         (_,rname) = hsClassName c
-    in subst hsInterfaceCastableInstanceTmpl (context [("interfaceName",iname),("rawClassName",rname)])
-  | otherwise = "" 
+        a = mkTVar "a"
+        ctxt = [ ClassA (unqual iname) [a], ClassA (unqual "FPtr") [a] ]
+    in Just (mkInstance ctxt "Castable" [a,TyApp (tycon "Ptr") (tycon rname)] castBody)
+  | otherwise = Nothing
 
-genAllHsFrontInstCastable :: [Class] -> String 
-genAllHsFrontInstCastable = 
-  intercalateWith connRet2 genHsFrontInstCastable
+-- hsInterfaceCastableInstanceSelfTmpl :: Text 
+-- hsInterfaceCastableInstanceSelfTmpl = 
+--   "instance Castable $className (Ptr $rawClassName) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
 
-genHsFrontInstCastableSelf :: Class -> String 
+
+
+genHsFrontInstCastableSelf :: Class -> Maybe InstDecl
 genHsFrontInstCastableSelf c 
   | (not.isAbstractClass) c = 
     let (cname,rname) = hsClassName c
-    in subst hsInterfaceCastableInstanceSelfTmpl (context [("className",cname), ("rawClassName",rname)])
-  | otherwise = "" 
+    in Just (mkInstance [] "Castable" [tycon cname, TyApp (tycon "Ptr") (tycon rname)] castBody)
+
+
+     -- subst hsInterfaceCastableInstanceSelfTmpl (context [("className",cname), ("rawClassName",rname)])
+  | otherwise = Nothing
 
 
 --------------------------
@@ -320,13 +323,6 @@ mkHsFuncRetType rtyp =
       
 ----------                        
 
-hsInterfaceCastableInstanceTmpl :: Text 
-hsInterfaceCastableInstanceTmpl = 
-  "instance ($interfaceName a, FPtr a) => Castable a (Ptr $rawClassName) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
-
-hsInterfaceCastableInstanceSelfTmpl :: Text 
-hsInterfaceCastableInstanceSelfTmpl = 
-  "instance Castable $className (Ptr $rawClassName) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
 
 
 ----------
