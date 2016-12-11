@@ -28,7 +28,7 @@ import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                      hiding (render)
 import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
                                                          , ClassDecl(..), InstDecl(..)
-                                                         , Pat(..), Name(..)
+                                                         , Pat(..), Name(..), QOp(..), Op(..)
                                                          , unit_tycon)
 import           Language.Haskell.Exts.Pretty
 import           Language.Haskell.Exts.SrcLoc            ( noLoc )
@@ -118,23 +118,14 @@ genHsFrontInst parent child
 
       
 ---------------------
-{- 
-hsClassInstExistCommonTmpl :: Text 
-hsClassInstExistCommonTmpl = "instance FPtr (Exist $highname) where\n  type Raw (Exist $highname) = $rawname\n  get_fptr ($existConstructor obj) = castForeignPtr (get_fptr obj)\n  cast_fptr_to_obj fptr = $existConstructor (cast_fptr_to_obj (fptr :: ForeignPtr $rawname) :: $highname)" 
--}
-
 
 genHsFrontInstExistCommon :: Class -> InstDecl 
 genHsFrontInstExistCommon c = mkInstance "FPtr" existtype body
-  -- subst hsClassInstExistCommonTmpl (context tmplName)
   where (highname,rawname) = hsClassName c
         hightype = tycon highname
         rawtype = tycon rawname
         existtype = TyApp (tycon "Exist") hightype
-        iname = typeclassName c 
         ename = existConstructorName c
-        -- defn f = mkBind1
-        
         body = [ InsType noLoc (TyApp (tycon "Raw") existtype) rawtype
                , InsDecl (mkBind1 "get_fptr" [PApp (unqual ename) [PVar (Ident "obj")] ]
                             ((mkVar "castForeignPtr") `App` ((mkVar "get_fptr") `App` (mkVar "obj")))
@@ -143,55 +134,66 @@ genHsFrontInstExistCommon c = mkInstance "FPtr" existtype body
                             (App (mkVar ename)
                               (ExpTypeSig noLoc
                                 (App (mkVar "cast_fptr_to_obj")
-                                  (ExpTypeSig noLoc (mkVar "fptr")
-                                    (TyApp (tycon "ForeignPtr") rawtype)
-                                  )
+                                  (ExpTypeSig noLoc (mkVar "fptr") (TyApp (tycon "ForeignPtr") rawtype))
                                 )
                                 hightype
                               )
                             )
                             Nothing)
                ]
-        tmplName = [ ("rawname",rawname)
-                   , ("highname",highname)
-                   , ("interfacename",iname)
-                   , ("existConstructor",ename) ] 
 
--- genAllHsFrontInstExistCommon :: [Class] -> String 
--- genAllHsFrontInstExistCommon cs = intercalateWith connRet2 genHsFrontInstExistCommon cs
 
 
 -------------------
 
-hsClassInstExistVirtualTmpl :: Text
-hsClassInstExistVirtualTmpl = "instance $iparent (Exist $child) where\n$method"
+-- hsClassInstExistVirtualTmpl :: Text
+-- hsClassInstExistVirtualTmpl = "instance $iparent (Exist $child) where\n$method"
 
-hsClassInstExistVirtualMethodNoSelfTmpl :: Text
-hsClassInstExistVirtualMethodNoSelfTmpl = "  $methodname ($exist x) = $methodname x"
 
-hsClassInstExistVirtualMethodSelfTmpl :: Text 
-hsClassInstExistVirtualMethodSelfTmpl = "  $methodname ($exist x) $args = return . $exist =<< $methodname x $args"
 
 
 genHsFrontInstExistVirtual :: Class -> Class -> String 
-genHsFrontInstExistVirtual p c = subst hsClassInstExistVirtualTmpl (context tmplName)
-  where methodstr = intercalateWith connRet (genHsFrontInstExistVirtualMethod p c)  
-                                            (virtualFuncs.class_funcs $ p)
-        tmplName = [ ("iparent",typeclassName p)
-                   , ("child", (fst.hsClassName) c)
-                   , ("method", methodstr )         ] 
+genHsFrontInstExistVirtual p c =
+   -- subst hsClassInstExistVirtualTmpl (context tmplName)
+    prettyPrint (mkInstance iparent existtype body)
+  where body = map (genHsFrontInstExistVirtualMethod p c) . virtualFuncs.class_funcs $ p
+        iparent = typeclassName p
+        existtype = TyApp (tycon "Exist") (tycon ((fst.hsClassName) c))
+        -- tmplName = [ ("iparent",typeclassName p)
+        --            , ("child",  (fst.hsClassName) c)
+        --            , ("method", methodstr )         ] 
 
-genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> String 
+-- hsClassInstExistVirtualMethodNoSelfTmpl :: Text
+-- hsClassInstExistVirtualMethodNoSelfTmpl = "  $methodname ($exist x) = $methodname x"
+
+-- hsClassInstExistVirtualMethodSelfTmpl :: Text 
+-- hsClassInstExistVirtualMethodSelfTmpl = "  $methodname ($exist x) $args =  return . $exist =<< $methodname x $args"
+
+
+genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> InstDecl
 genHsFrontInstExistVirtualMethod p c f =
     case f of
       Constructor _  _ -> error "error in genHsFrontInstExistVirtualMethod"  
-      Destructor _ -> subst hsClassInstExistVirtualMethodNoSelfTmpl (context tmplName)
+      Destructor _ -> InsDecl (mkBind1 fname [existx] ((mkVar fname) `App` (mkVar "x")) Nothing)
+
+
+        -- subst hsClassInstExistVirtualMethodNoSelfTmpl (context tmplName)
       _ -> case func_ret f of
-             SelfType -> subst hsClassInstExistVirtualMethodSelfTmpl (context (tmplName++args))
-             _ -> subst hsClassInstExistVirtualMethodNoSelfTmpl (context tmplName)
-  where tmplName = [ ("methodname", hsFuncName p f)
-                   , ("exist", existConstructorName c) ]
-        args  = [ ("args", intercalate " " (take (length (func_args f)) (map (\x -> 'a':(show x)) ([1..] :: [Int]) )))]
+             SelfType -> InsDecl (mkBind1 fname (existx:map mkPVar args) rhs Nothing)
+             -- subst hsClassInstExistVirtualMethodSelfTmpl (context (tmplName++args))
+             _ -> InsDecl (mkBind1 fname [existx] ((mkVar fname) `App` (mkVar "x")) Nothing)
+             -- subst hsClassInstExistVirtualMethodNoSelfTmpl (context tmplName)
+  where fname = hsFuncName p f
+        ename = existConstructorName c
+        existx = PApp (unqual ename) [PVar (Ident "x")]
+        rhs = (mkVar "return" `App` mkVar "." `App` mkVar ename) `App`
+              mkVar "=<<" `App`
+              (mkVar fname `App` foldl1 App (mkVar "x":map mkVar args))   --  $exist =<< $methodname x $args
+        
+        -- tmplName = [ ("methodname", hsFuncName p f)
+        --            , ("exist", existConstructorName c) ]
+        args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ [1..] 
+ 
 
 genAllHsFrontInstExistVirtual :: [Class] -> DaughterMap -> String 
 genAllHsFrontInstExistVirtual cs _dmap = intercalateWith connRet2 allinstances cs

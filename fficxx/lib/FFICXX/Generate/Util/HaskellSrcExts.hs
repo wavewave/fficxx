@@ -27,6 +27,9 @@ mkVar = Var . unqual
 
 mkTVar = TyVar . Ident
 
+mkPVar = PVar . Ident
+
+
 mkTBind = UnkindedVar . Ident
 
 mkBind1 name pat rhs mbinds =
