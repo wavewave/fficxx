@@ -59,6 +59,12 @@ mkNewtype name tbinds qdecls derivs  = DataDecl noLoc NewType [] (Ident name) tb
 
 mkForImpCcall quote name typ = ForImp noLoc CCall (PlaySafe False) quote (Ident name) typ
 
+mkModule name pragmas idecls decls = Module noLoc (ModuleName name) pragmas Nothing Nothing idecls decls
+
+mkImport mod = ImportDecl noLoc (ModuleName mod) False False False Nothing Nothing Nothing
+mkImportSrc mod = ImportDecl noLoc (ModuleName mod) False True False Nothing Nothing Nothing
+
+lang ns = LanguagePragma noLoc (map Ident ns)
 
 
 x `dot` y = x `App` mkVar "." `App` y

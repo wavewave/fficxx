@@ -12,10 +12,11 @@
 
 module FFICXX.Generate.Generator.Driver where
 
-import           Control.Applicative ((<$>))
-import           Control.Monad (when, forM_)
-import qualified Data.ByteString.Lazy.Char8 as L
+import           Control.Applicative                ((<$>))
+import           Control.Monad                      (when, forM_)
+import qualified Data.ByteString.Lazy.Char8   as L
 import           Data.Digest.Pure.MD5
+import           Language.Haskell.Exts.Pretty       (prettyPrint)
 import           System.Directory 
 import           System.FilePath
 import           System.IO
@@ -92,7 +93,7 @@ writeRawTypeHs wdir m =
 writeFFIHsc :: FilePath -> ClassModule -> IO ()
 writeFFIHsc wdir m = 
   let fn = wdir </> cmModule m <.> "FFI" <.> "hsc"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkFFIHsc m)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkFFIHsc m))
 
 -- | 
 writeInterfaceHs :: AnnotateMap -> FilePath -> ClassModule -> IO ()

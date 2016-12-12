@@ -27,7 +27,7 @@ import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                      hiding (render)
 import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
-                                                         , ClassDecl(..), InstDecl(..)
+                                                         , ClassDecl(..), InstDecl(..), ImportDecl(..)
                                                          , Pat(..), Name(..), QOp(..), Op(..)
                                                          , Asst(..), ConDecl(..), QualConDecl(..)
                                                          , DataOrNew(..), TyVarBind (..), Binds(..)
@@ -426,10 +426,8 @@ genImportInModule cs =
   in  intercalate "\n" (map genImportOneClass cs)
 
 
-genImportInFFI :: ClassModule -> String
-genImportInFFI m = 
-  let modlst = cmImportedModulesForFFI m
-  in  intercalateWith connRet (\x->importOneClass x "RawType") modlst
+genImportInFFI :: ClassModule -> [ImportDecl]
+genImportInFFI = map (\x->mkImport (x <.> "RawType")) . cmImportedModulesForFFI
 
 
 genImportInInterface :: ClassModule -> String

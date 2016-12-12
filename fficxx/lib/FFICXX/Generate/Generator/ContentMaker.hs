@@ -27,6 +27,7 @@ import           Data.Text                              (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                     hiding (render)
+import           Language.Haskell.Exts.Syntax           (Module(..))
 import           Language.Haskell.Exts.Pretty           (prettyPrint)
 import           System.FilePath
 -- 
@@ -40,6 +41,7 @@ import           FFICXX.Generate.Type.PackageInterface  ( TypeMacro(..), HeaderN
                                                         , ClassName(..)
                                                         )
 import           FFICXX.Generate.Util
+import           FFICXX.Generate.Util.HaskellSrcExts
 --
 
 srcDir :: FilePath -> FilePath
@@ -257,8 +259,11 @@ mkTopLevelFunctionCppDef cprefix tih =
                                        , ("cppbody"  , declBodyStr  ) ])
 
 -- | 
-mkFFIHsc :: ClassModule -> String 
-mkFFIHsc m = subst
+mkFFIHsc :: ClassModule -> Module
+mkFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports body 
+
+{-
+  subst
                "{-# LANGUAGE ForeignFunctionInterface #-}\n\
                \\n\
                \$ffiHeader\n\
@@ -274,14 +279,16 @@ mkFFIHsc m = subst
                (context  [ ("ffiHeader"     , ffiHeaderStr       )
                          , ("ffiImport"     , ffiImportStr       )
                          , ("cppInclude"    , cppIncludeStr      )
-                         , ("hsFunctionBody", hscBody            ) ])
+                         , ("hsFunctionBody", hscBody            ) ]) -}
   where mname = cmModule m
         headers = cmCIH m
-        ffiHeaderStr = "module " ++ mname <.> "FFI where\n"
-        ffiImportStr = "import " ++ mname <.> "RawType\n"
-                       ++ genImportInFFI m
-        cppIncludeStr = genModuleIncludeHeader headers
-        hscBody =intercalate "\n\n" (map (intercalate "\n\n".map prettyPrint.genHsFFI) headers)
+        -- ffiHeaderStr = "module " ++ mname <.> "FFI where\n"
+        ffiImports = [ mkImport "Foreign.C", mkImport "Foreign.Ptr", mkImport (mname <.> "RawType") ]
+                     ++ genImportInFFI m
+        body = cppInclude ++ hscBody
+        cppInclude = [] -- genModuleIncludeHeader headers
+        hscBody = concatMap genHsFFI headers
+
 
 -- |                      
 mkRawTypeHs :: ClassModule -> String

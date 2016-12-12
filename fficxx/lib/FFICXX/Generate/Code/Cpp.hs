@@ -148,11 +148,15 @@ genAllCppHeaderInclude header =
       map unHdrName (cihIncludedHPkgHeadersInCPP header
                      ++ cihIncludedCPkgHeaders header)
 
+{-
 
+-- we do not use this. 
 genModuleIncludeHeader :: [ClassImportHeader] -> String 
 genModuleIncludeHeader headers =
   let strlst = map ((\x->"#include \""++x++"\"") . unHdrName . cihSelfHeader) headers 
   in  intercalate "\n" strlst 
+-}
+
 
 ----
 
