@@ -446,7 +446,7 @@ genImportInCast m = [ mkImport (cmModule m <.> "RawType")
                    ,  mkImport (cmModule m <.> "Interface") ]
 
 -- | 
-genImportInImplementation :: ClassModule -> String
+genImportInImplementation :: ClassModule -> [ImportDecl]
 genImportInImplementation m = 
   let modlstraw' = cmImportedModulesForFFI m
       modlsthigh = nub $ map getClassModuleBase $ concatMap class_allparents (cmClass m)
@@ -457,17 +457,12 @@ genImportInImplementation m =
       getImportOneClassHigh mname = 
         intercalateWith connRet (importOneClass mname) 
                         ["RawType","Cast","Interface"] 
-  in  importOneClass (cmModule m) "RawType"
-      `connRet`
-      importOneClass (cmModule m) "FFI"
-      `connRet`
-      importOneClass (cmModule m) "Interface"
-      `connRet`
-      importOneClass (cmModule m) "Cast"
-      `connRet`
-      intercalateWith connRet getImportOneClassRaw modlstraw
-      `connRet` 
-      intercalateWith connRet getImportOneClassHigh modlsthigh
+  in  [ mkImport (cmModule m <.> "RawType")
+      , mkImport (cmModule m <.> "FFI")
+      , mkImport (cmModule m <.> "Interface")
+      , mkImport (cmModule m <.> "Cast") ]
+      ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
+      ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
 -- | 
 genImportInExistential :: DaughterMap -> ClassModule -> String

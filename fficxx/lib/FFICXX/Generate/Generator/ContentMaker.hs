@@ -27,7 +27,7 @@ import           Data.Text                              (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                     hiding (render)
-import           Language.Haskell.Exts.Syntax           (Module(..))
+import           Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
 import           Language.Haskell.Exts.Pretty           (prettyPrint)
 import           System.FilePath
 -- 
@@ -305,27 +305,6 @@ mkCastHs m = mkModule (cmModule m <.> "Cast")
                [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
                       , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
                castImports castBody
-
-{-
-  subst
-               "{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeFamilies,\n\
-               \             MultiParamTypeClasses, OverlappingInstances, IncoherentInstances #-}\n\
-               \\n\
-               \$castHeader\n\
-               \\n\
-               \import Foreign.Ptr\n\
-               \import Foreign.ForeignPtr (castForeignPtr, newForeignPtr_)\n\
-               \import Foreign.ForeignPtr.Unsafe\n\
-               \import FFICXX.Runtime.Cast\n\
-               \import System.IO.Unsafe\n\
-               \\n\
-               \$castImport\n\
-               \\n\
-               \$castBody\n"
-               (context [ ("castHeader", castHeaderStr) 
-                        , ("castImport", castImportStr)
-                        , ("castBody", castBodyStr)     ])
--}
   where classes = cmClass m
         castImports = [ mkImport "Foreign.Ptr"
                       , mkImportExp "Foreign.ForeignPtr" [ "castForeignPtr", "newForeignPtr_" ]
@@ -337,8 +316,18 @@ mkCastHs m = mkModule (cmModule m <.> "Cast")
                    ++ mapMaybe genHsFrontInstCastableSelf classes
 
 -- | 
-mkImplementationHs :: AnnotateMap -> ClassModule -> String
-mkImplementationHs amap m = subst
+mkImplementationHs :: AnnotateMap -> ClassModule -> Module
+mkImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
+                              [ lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
+                                     , "FlexibleInstances", "TypeSynonymInstances", "EmptyDataDecls"
+                                     , "OverlappingInstances", "IncoherentInstances"
+                                     ] ]
+                              implImports implBody
+
+
+{-
+
+  subst
                               "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
                               \             FlexibleInstances, TypeSynonymInstances, EmptyDataDecls,\n\
                               \             OverlappingInstances, IncoherentInstances #-}\n\
@@ -359,26 +348,26 @@ mkImplementationHs amap m = subst
                               \$implBody\n"
                               (context [ ("implHeader", implHeaderStr) 
                                        , ("implImport", implImportStr)
-                                       , ("implBody", implBodyStr )    ]) 
+                                       , ("implBody", implBodyStr )    ])  -}
 
   where classes = cmClass m
-        implHeaderStr = "module " ++ cmModule m <.> "Implementation where\n" 
-        implImportStr = genImportInImplementation m
-        f y = intercalateWith connRet (concatMap prettyPrint . flip genHsFrontInst y) (y:class_allparents y )
-        g y = intercalateWith connRet (prettyPrint . flip genHsFrontInstExistVirtual y) (y:class_allparents y )
+        implImports = [ mkImport "FFICXX.Runtime.Cast"
+                      , mkImport "Data.Word"
+                      , mkImport "Foreign.C"
+                      , mkImport "Foreign.Ptr"
+                      , mkImport "Foreign.ForeignPtr"
+                      , mkImport "System.IO.Unsafe" ]
+                      ++ genImportInImplementation m
+        f :: Class -> [Decl]
+        f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
+        g :: Class -> [Decl]
+        g y = map (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
-        implBodyStr = 
-          intercalateWith connRet2 f classes
-          `connRet2` 
-          intercalateWith connRet2 g (filter (not.isAbstractClass) classes)
-          `connRet2`
-          runReader (intercalate "\n\n" . map (intercalateWith connRet prettyPrint) <$> mapM genHsFrontInstNew classes) amap
-          `connRet2`
-          intercalate "\n\n" (map (intercalateWith connRet prettyPrint) (map genHsFrontInstNonVirtual classes))
-          `connRet2`
-          intercalate "\n\n" (map (intercalateWith connRet prettyPrint . genHsFrontInstStatic) classes)
-          `connRet2`
-          (intercalate "\n" . map (prettyPrint . genHsFrontInstExistCommon) . filter (not.isAbstractClass)) classes
+        implBody = concatMap f classes ++ concatMap g (filter (not.isAbstractClass) classes)
+                   ++ runReader (concat <$> mapM genHsFrontInstNew classes) amap
+                   ++ concatMap genHsFrontInstNonVirtual classes
+                   ++ concatMap genHsFrontInstStatic classes
+                   ++ map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
 
 
 

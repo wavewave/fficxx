@@ -114,7 +114,7 @@ writeImplementationHs :: AnnotateMap
                       -> IO ()
 writeImplementationHs amap wdir m = 
   let fn = wdir </> cmModule m <.> "Implementation" <.> "hs"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkImplementationHs amap m)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkImplementationHs amap m))
 
 {-
 -- | 
