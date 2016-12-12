@@ -125,7 +125,7 @@ classprefix c = let ps = (map typeclassName . class_parents) c
 hsClassDeclHeaderTmpl :: Text
 hsClassDeclHeaderTmpl = "$classann\nclass ${constraint}${classname} a where"
 
-genHsFrontDecl :: Class -> Reader AnnotateMap ClassDecl
+genHsFrontDecl :: Class -> Reader AnnotateMap Decl
 genHsFrontDecl c = do
   -- for the time being, let's ignore annotation.
   -- amap <- ask  
@@ -430,26 +430,15 @@ genImportInFFI :: ClassModule -> [ImportDecl]
 genImportInFFI = map (\x->mkImport (x <.> "RawType")) . cmImportedModulesForFFI
 
 
-genImportInInterface :: ClassModule -> String
+genImportInInterface :: ClassModule -> [ImportDecl]
 genImportInInterface m = 
   let modlstraw = cmImportedModulesRaw m
       modlstparent = cmImportedModulesHighNonSource m 
       modlsthigh = cmImportedModulesHighSource m
-      getImportOneClassRaw mname = 
-        intercalateWith connRet (importOneClass mname) ["RawType"]
-      getImportOneClassHigh mname = 
-        intercalateWith connRet (importOneClass mname) ["Interface"]
-      getImportSOURCEOneClassHigh mname = 
-        intercalateWith connRet (importSOURCEOneClass mname) ["Interface"]
-  in  importOneClass (cmModule m) "RawType"
-      `connRet`
-      intercalateWith connRet getImportOneClassRaw modlstraw
-      `connRet`
-      intercalateWith connRet getImportOneClassHigh modlstparent 
-      `connRet` 
-      "---- ============ ----" 
-      `connRet` 
-      intercalateWith connRet getImportSOURCEOneClassHigh modlsthigh
+  in  [mkImport (cmModule m <.> "RawType")]
+      ++ map (\x -> mkImport (x<.>"RawType")) modlstraw
+      ++ map (\x -> mkImport (x<.>"Interface")) modlstparent 
+      ++ map (\x -> mkImportSrc (x<.>"Interface")) modlsthigh
 
 -- |
 genImportInCast :: ClassModule -> String 

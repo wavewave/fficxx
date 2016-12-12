@@ -87,7 +87,7 @@ writeTopLevelFunctionCppDef wdir typemacroprefix cprefix tih =
 writeRawTypeHs :: FilePath -> ClassModule -> IO ()
 writeRawTypeHs wdir m =
   let fn = wdir </> cmModule m <.> "RawType" <.> "hs"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkRawTypeHs m) 
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkRawTypeHs m))
 
 -- | 
 writeFFIHsc :: FilePath -> ClassModule -> IO ()
@@ -99,7 +99,7 @@ writeFFIHsc wdir m =
 writeInterfaceHs :: AnnotateMap -> FilePath -> ClassModule -> IO ()
 writeInterfaceHs amap wdir m =
   let fn = wdir </> cmModule m <.> "Interface" <.> "hs"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHs amap m)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkInterfaceHs amap m))
 
 -- |
 writeCastHs :: FilePath -> ClassModule -> IO ()
