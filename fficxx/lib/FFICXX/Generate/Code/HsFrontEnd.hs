@@ -99,7 +99,7 @@ extractArgTypes lst =
 
 
 ----------------
-
+{-
 -- |
 hsModuleDeclTmpl :: Text
 hsModuleDeclTmpl = "module $moduleName $moduleExp where"
@@ -110,7 +110,7 @@ genModuleDecl m = do
   let modheader = subst hsModuleDeclTmpl (context [ ("moduleName", module_name m    ) 
                                                   , ("moduleExp" , mkModuleExports m) ])
   return (modheader)
-
+-}
 
 ----------------
 -- | will be deprecated

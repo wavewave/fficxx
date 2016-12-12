@@ -73,7 +73,7 @@ hsFFIClassFunc headerfilename c f =
 ----------------------------
 
 genTopLevelFuncFFI :: TopLevelImportHeader -> TopLevelFunction -> Decl
-genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename ++ " " ++ cfname) ("TopLevel_" ++ fname) typ
+genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename ++ " TopLevel_" ++ fname) cfname typ
   where (fname,args,ret) =
           case tfn of
             TopLevelFunction {..} -> (fromMaybe toplevelfunc_name toplevelfunc_alias, toplevelfunc_args, toplevelfunc_ret)
@@ -81,7 +81,7 @@ genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename ++ " " ++ cfname) ("Top
         (x:xs)  = fname
         hfilename = tihHeaderFileName header <.> "h"
         cfname = "c_" ++ toLowers fname
-        typ = foldl1 TyFun (map (hsargtype . fst) args ++ [TyApp (tycon "IO") (hsrettype ret)])
+        typ = foldr1 TyFun (map (hsargtype . fst) args ++ [TyApp (tycon "IO") (hsrettype ret)])
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
         hsargtype (CPT x _)    = tycon (hsCppTypeName x)
