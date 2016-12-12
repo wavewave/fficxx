@@ -274,13 +274,14 @@ mkFFIHsc m = subst
                (context  [ ("ffiHeader"     , ffiHeaderStr       )
                          , ("ffiImport"     , ffiImportStr       )
                          , ("cppInclude"    , cppIncludeStr      )
-                         , ("hsFunctionBody", genAllHsFFI headers) ])
+                         , ("hsFunctionBody", hscBody            ) ])
   where mname = cmModule m
         headers = cmCIH m
         ffiHeaderStr = "module " ++ mname <.> "FFI where\n"
         ffiImportStr = "import " ++ mname <.> "RawType\n"
                        ++ genImportInFFI m
         cppIncludeStr = genModuleIncludeHeader headers
+        hscBody =intercalate "\n\n" (map (intercalate "\n\n".map prettyPrint.genHsFFI) headers)
 
 -- |                      
 mkRawTypeHs :: ClassModule -> String
