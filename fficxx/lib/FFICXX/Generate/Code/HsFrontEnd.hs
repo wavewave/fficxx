@@ -441,11 +441,9 @@ genImportInInterface m =
       ++ map (\x -> mkImportSrc (x<.>"Interface")) modlsthigh
 
 -- |
-genImportInCast :: ClassModule -> String 
-genImportInCast m = 
-    importOneClass (cmModule m) "RawType"
-    `connRet` 
-    importOneClass (cmModule m) "Interface"
+genImportInCast :: ClassModule -> [ImportDecl]
+genImportInCast m = [ mkImport (cmModule m <.> "RawType")
+                   ,  mkImport (cmModule m <.> "Interface") ]
 
 -- | 
 genImportInImplementation :: ClassModule -> String

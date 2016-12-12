@@ -266,9 +266,6 @@ mkFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiI
         ffiImports = [ mkImport "Foreign.C", mkImport "Foreign.Ptr", mkImport (mname <.> "RawType") ]
                      ++ genImportInFFI m
         hscBody = concatMap genHsFFI headers
-                     
-        -- body = cppInclude ++ hscBody
-        -- cppInclude = [] -- genModuleIncludeHeader headers
 
 
 -- |                      
@@ -278,22 +275,6 @@ mkRawTypeHs m = mkModule (cmModule m <.> "RawType")
                         , "FlexibleInstances", "TypeSynonymInstances"
                         , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
                   rawtypeImports rawtypeBody
-{-
-
-
-  subst
-                  "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
-                  \             FlexibleInstances, TypeSynonymInstances, \n\
-                  \             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}\n\
-                  \\n\
-                  \$rawtypeHeader\n\
-                  \\n\
-                  \import Foreign.ForeignPtr\n\
-                  \import FFICXX.Runtime.Cast\n\
-                  \\n\
-                  \$rawtypeBody\n"
-                  (context [ ("rawtypeHeader", rawtypeHeaderStr)
-                           , ("rawtypeBody"  , rawtypeBodyStr  ) ]) -}
   where rawtypeImports = [ mkImport "Foreign.ForeignPtr", mkImport "FFICXX.Runtime.Cast" ] 
         rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
 
@@ -304,29 +285,6 @@ mkInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
                                , "FlexibleInstances", "TypeSynonymInstances"
                                , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
                          ifaceImports ifaceBody
-
-
-{-
-  subst
-                         "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
-                         \             FlexibleInstances, TypeSynonymInstances,\n\
-                         \             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}\n\
-                         \\n\
-                         \$ifaceHeader\n\
-                         \\n\
-                         \import Data.Word\n\
-                         \import Foreign.C\n\
-                         \import Foreign.Ptr\n\
-                         \import Foreign.ForeignPtr\n\
-                         \import FFICXX.Runtime.Cast\n\
-                         \\n\
-                         \$ifaceImport\n\
-                         \\n\
-                         \$ifaceBody\n"
-                         (context [ ("ifaceHeader", ifaceHeaderStr)
-                                  , ("ifaceImport", ifaceImportStr)
-                                  , ("ifaceBody"  , ifaceBodyStr  ) ]) -}
-
   where classes = cmClass m
         ifaceImports =
           [ mkImport "Data.Word"
@@ -342,8 +300,14 @@ mkInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
           ++ (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
 -- | 
-mkCastHs :: ClassModule -> String    
-mkCastHs m = subst
+mkCastHs :: ClassModule -> Module
+mkCastHs m = mkModule (cmModule m <.> "Cast")
+               [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
+                      , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
+               castImports castBody
+
+{-
+  subst
                "{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeFamilies,\n\
                \             MultiParamTypeClasses, OverlappingInstances, IncoherentInstances #-}\n\
                \\n\
@@ -361,14 +325,16 @@ mkCastHs m = subst
                (context [ ("castHeader", castHeaderStr) 
                         , ("castImport", castImportStr)
                         , ("castBody", castBodyStr)     ])
-
-  where castHeaderStr = "module " ++ cmModule m <.> "Cast where\n" 
-        classes = cmClass m
-        castImportStr = genImportInCast m
-        castBodyStr = 
-          intercalate "\n" (map prettyPrint (mapMaybe genHsFrontInstCastable classes))
-          `connRet2`
-          intercalate "\n" (map prettyPrint (mapMaybe genHsFrontInstCastableSelf classes))
+-}
+  where classes = cmClass m
+        castImports = [ mkImport "Foreign.Ptr"
+                      , mkImportExp "Foreign.ForeignPtr" [ "castForeignPtr", "newForeignPtr_" ]
+                      , mkImport "Foreign.ForeignPtr.Unsafe"
+                      , mkImport "FFICXX.Runtime.Cast"
+                      , mkImport "System.IO.Unsafe" ]
+                      ++ genImportInCast m
+        castBody = mapMaybe genHsFrontInstCastable classes
+                   ++ mapMaybe genHsFrontInstCastableSelf classes
 
 -- | 
 mkImplementationHs :: AnnotateMap -> ClassModule -> String

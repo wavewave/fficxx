@@ -105,7 +105,7 @@ writeInterfaceHs amap wdir m =
 writeCastHs :: FilePath -> ClassModule -> IO ()
 writeCastHs wdir m = 
   let fn = wdir </> cmModule m <.> "Cast" <.> "hs"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkCastHs m)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkCastHs m))
 
 -- | 
 writeImplementationHs :: AnnotateMap 

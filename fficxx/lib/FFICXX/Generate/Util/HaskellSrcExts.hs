@@ -61,6 +61,8 @@ mkForImpCcall quote name typ = ForImp noLoc CCall (PlaySafe False) quote (Ident 
 mkModule name pragmas idecls decls = Module noLoc (ModuleName name) pragmas Nothing Nothing idecls decls
 
 mkImport mod = ImportDecl noLoc (ModuleName mod) False False False Nothing Nothing Nothing
+mkImportExp mod lst = ImportDecl noLoc (ModuleName mod) False False False Nothing Nothing
+                        (Just (False,map (IVar . Ident) lst))
 mkImportSrc mod = ImportDecl noLoc (ModuleName mod) False True False Nothing Nothing Nothing
 
 lang ns = LanguagePragma noLoc (map Ident ns)
