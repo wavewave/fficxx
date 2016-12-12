@@ -396,29 +396,14 @@ mkExistentialHs templates cglobal m =
 -}
 
 -- | 
-mkInterfaceHSBOOT :: String -> String 
-mkInterfaceHSBOOT mname = 
-  let cname = last (splitOn "." mname)
-      hsbootbodystr = "class " ++ 'I':cname ++ " a" 
-  in subst "module $moduleName where\n\n$hsBootBody\n"
-       (context [ ("moduleName", mname <.> "Interface") 
-                , ("hsBootBody", hsbootbodystr        ) ])
+mkInterfaceHSBOOT :: String -> Module
+mkInterfaceHSBOOT mname = mkModule (mname <.> "Interface") [] [] hsbootBody
+  where cname = last (splitOn "." mname)
+        hsbootBody = [ mkClass [] ('I':cname) [mkTBind "a"] [] ]
 
 -- | 
 mkModuleHs :: ClassModule -> Module
 mkModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (genImportInModule (cmClass m)) []
-{-
-  subst
-    "module $moduleName \n\
-    \  (\n\
-    \$exportList\n\
-    \  ) where\n\
-    \\n\
-    \$importList\n"
-    (context [ ("moduleName", cmModule m                   ) 
-             , ("exportList", genExportList (cmClass m)    ) 
-             , ("importList", genImportInModule (cmClass m)) ])
--}
 
 -- | 
 mkPkgHs :: String -> [ClassModule] -> TopLevelImportHeader -> String 

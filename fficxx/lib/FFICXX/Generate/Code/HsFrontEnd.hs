@@ -403,16 +403,6 @@ genExportStatic c = map (EVar . unqual) fns
   where fs = class_funcs c
         fns = map (aliasedFuncName c) (staticFuncs fs) 
 
--- genExportList :: [Class] -> 
--- genExportList = concatMap genExport 
-
-importOneClass :: String -> String -> String 
-importOneClass mname typ = "import " ++ mname <.> typ 
-
-importSOURCEOneClass :: String -> String -> String 
-importSOURCEOneClass mname typ = "import {-# SOURCE #-} " ++ mname <.> typ 
-
-
 genImportInModule :: [Class] -> [ImportDecl]
 genImportInModule = concatMap (\x -> map (\y -> mkImport (getClassModuleBase x<.>y)) ["RawType","Interface","Implementation"])
 
@@ -448,6 +438,7 @@ genImportInImplementation m =
       ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
       ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
+{- 
 -- | 
 genImportInExistential :: DaughterMap -> ClassModule -> String
 genImportInExistential dmap m = 
@@ -457,7 +448,7 @@ genImportInExistential dmap m =
           intercalateWith connRet (importOneClass mname) 
                           ["RawType", "Cast", "Interface", "Implementation"]
   in  intercalateWith connRet getImportOneClass alldaughters
-
+-}
 
 
 
