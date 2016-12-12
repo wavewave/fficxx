@@ -323,33 +323,6 @@ mkImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                                      , "OverlappingInstances", "IncoherentInstances"
                                      ] ]
                               implImports implBody
-
-
-{-
-
-  subst
-                              "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
-                              \             FlexibleInstances, TypeSynonymInstances, EmptyDataDecls,\n\
-                              \             OverlappingInstances, IncoherentInstances #-}\n\
-                              \\n\
-                              \$implHeader\n\
-                              \\n\
-                              \import FFICXX.Runtime.Cast\n\
-                              \\n\
-                              \$implImport\n\
-                              \\n\
-                              \import Data.Word\n\
-                              \import Foreign.C\n\
-                              \import Foreign.Ptr\n\
-                              \import Foreign.ForeignPtr\n\
-                              \\n\
-                              \import System.IO.Unsafe\n\
-                              \\n\
-                              \$implBody\n"
-                              (context [ ("implHeader", implHeaderStr) 
-                                       , ("implImport", implImportStr)
-                                       , ("implBody", implBodyStr )    ])  -}
-
   where classes = cmClass m
         implImports = [ mkImport "FFICXX.Runtime.Cast"
                       , mkImport "Data.Word"
@@ -432,8 +405,9 @@ mkInterfaceHSBOOT mname =
                 , ("hsBootBody", hsbootbodystr        ) ])
 
 -- | 
-mkModuleHs :: ClassModule -> String 
-mkModuleHs m = 
+mkModuleHs :: ClassModule -> Module
+mkModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (genImportInModule (cmClass m)) []
+{-
   subst
     "module $moduleName \n\
     \  (\n\
@@ -444,7 +418,7 @@ mkModuleHs m =
     (context [ ("moduleName", cmModule m                   ) 
              , ("exportList", genExportList (cmClass m)    ) 
              , ("importList", genImportInModule (cmClass m)) ])
-
+-}
 
 -- | 
 mkPkgHs :: String -> [ClassModule] -> TopLevelImportHeader -> String 

@@ -139,8 +139,7 @@ writeInterfaceHSBOOT wdir mname =
 writeModuleHs :: FilePath -> ClassModule -> IO () 
 writeModuleHs wdir m =
   let fn = wdir </> cmModule m <.> "hs"
-  in withFile fn WriteMode $ \h -> do 
-       hPutStrLn h (mkModuleHs m)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkModuleHs m))
 
 -- | 
 writePkgHs :: String -- ^ summary module 
