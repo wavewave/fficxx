@@ -503,7 +503,7 @@ mkPkgHs modname mods tih =
                                 intercalateWith connRet 
                                   ((\x->"import " ++ modname ++ "." ++ x ++ ".RawType")
                                    .fst.hsClassName.cihClass) (tihClassDep tih)
-        topLevelDefStr = intercalateWith connRet2 (genTopLevelFuncFFI tih) tfns 
+        topLevelDefStr = intercalate "\n" (map (prettyPrint . genTopLevelFuncFFI tih) tfns)
                          `connRet2`
                          intercalate "\n\n" (map (intercalateWith connRet prettyPrint) (map genTopLevelFuncDef tfns))
     in subst

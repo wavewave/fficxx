@@ -578,6 +578,7 @@ hsClassName c =
 existConstructorName :: Class -> String
 existConstructorName c = 'E' : (fst.hsClassName) c
 
+{- 
 -- | this is for FFI type.
 hsFuncTyp :: Class -> Function -> String
 hsFuncTyp c f = let args = genericFuncArgs f
@@ -596,7 +597,8 @@ hsFuncTyp c f = let args = genericFuncArgs f
         hsrettype SelfType = "IO " ++ selfstr
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
         hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
-
+-}
+{-
 -- | this is for FFI
 hsFuncTypNoSelf :: Class -> Function -> String
 hsFuncTypNoSelf c f = let args = genericFuncArgs f
@@ -615,7 +617,7 @@ hsFuncTypNoSelf c f = let args = genericFuncArgs f
         hsrettype SelfType = "IO " ++ selfstr
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
         hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
-
+-}
 
 hscFuncName :: Class -> Function -> String
 hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (aliasedFuncName c f)
@@ -695,4 +697,44 @@ functionSignature c f =
         | otherwise          = id
       lst = arg0 (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+
+
+-- | this is for FFI type.
+hsFuncTyp :: Class -> Function -> Type
+hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
+  where argtyps = map (hsargtype . fst) $ genericFuncArgs f
+        rettyp  = hsrettype (genericFuncRet f)
+        (_hcname,rcname) = hsClassName c
+
+        selftyp = TyApp tyPtr (tycon rcname)
+
+        hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
+        hsargtype (CPT x _)    = tycon (hsCppTypeName x)
+        hsargtype SelfType     = selftyp
+        hsargtype _ = error "undefined hsargtype"
+
+        hsrettype Void         = unit_tycon
+        hsrettype SelfType     = selftyp
+        hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
+        hsrettype (CPT x _ )   = tycon (hsCppTypeName x)
+
+
+-- | this is for FFI
+hsFuncTypNoSelf :: Class -> Function -> Type
+hsFuncTypNoSelf c f = foldr1 TyFun (argtyps ++ [TyApp (tycon "IO") rettyp])
+  where argtyps = map (hsargtype . fst) $ genericFuncArgs f
+        rettyp  = hsrettype (genericFuncRet f)
+        (_hcname,rcname) = hsClassName c
+        
+        selftyp = TyApp tyPtr (tycon rcname)
+
+        hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
+        hsargtype (CPT x _)    = tycon (hsCppTypeName x)
+        hsargtype SelfType     = selftyp
+        hsargtype _ = error "undefined hsargtype"
+
+        hsrettype Void         = unit_tycon
+        hsrettype SelfType     = selftyp
+        hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
+        hsrettype (CPT x _ )   = tycon (hsCppTypeName x)
 

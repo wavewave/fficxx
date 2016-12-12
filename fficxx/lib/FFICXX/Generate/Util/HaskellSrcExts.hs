@@ -57,6 +57,9 @@ mkData name tbinds qdecls derivs  = DataDecl noLoc DataType [] (Ident name) tbin
 
 mkNewtype name tbinds qdecls derivs  = DataDecl noLoc NewType [] (Ident name) tbinds qdecls derivs
 
+mkForImpCcall quote name typ = ForImp noLoc CCall (PlaySafe False) quote (Ident name) typ
+
+
 
 x `dot` y = x `App` mkVar "." `App` y
 
