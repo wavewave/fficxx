@@ -5,7 +5,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.HsFrontEnd
--- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -18,21 +18,34 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import           Control.Monad.State
 import           Control.Monad.Reader
-import           Data.Char                 (toLower)
+import           Data.Char                               (toLower)
 import           Data.List
 import qualified Data.Map             as M
 import           Data.Maybe
-import           Data.Text                              (Text)
+import           Data.Text                               (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                     hiding (render)
-import           System.FilePath ((<.>))
+import           Data.Text.Template                      hiding (render)
+import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
+                                                         , ClassDecl(..), InstDecl(..)
+                                                         , Pat(..), Name(..), QOp(..), Op(..)
+                                                         , Asst(..), ConDecl(..), QualConDecl(..)
+                                                         , DataOrNew(..), TyVarBind (..), Binds(..)
+                                                         , Rhs(..)
+                                                         , unit_tycon)
+import           Language.Haskell.Exts.Pretty
+import           Language.Haskell.Exts.SrcLoc            ( noLoc )
+import           System.FilePath                         ((<.>))
 -- 
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Util
+import           FFICXX.Generate.Util.HaskellSrcExts
+--
+import Debug.Trace
 
+-----------------
 
 mkComment :: Int -> String -> String
 mkComment indent str 
@@ -53,7 +66,38 @@ mkPostComment str
      in unlines commented_lines 
   | otherwise = str                
 
-                        
+{-
+mkHsFuncRetType :: Types -> (String,[String])
+mkHsFuncRetType rtyp = 
+  case rtyp of 
+    SelfType -> ("a",[])
+    CPT (CPTClass c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
+    CPT (CPTClassRef c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
+    _ -> (ctypToHsTyp Nothing rtyp,[])
+-}
+
+extractArgTypes :: Args -> ([Type],[Asst]) 
+extractArgTypes lst = 
+  let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
+  in   (args,fst st)
+ where addclass c = do
+         (ctxts,n) <- get 
+         let cname = (fst.hsClassName) c 
+             iname = typeclassNameFromStr cname 
+             tvar = mkTVar ('c' : show n)
+             ctxt1 = ClassA (unqual iname) [tvar]
+             ctxt2 = ClassA (unqual "FPtr") [tvar]
+         put (ctxt1:ctxt2:ctxts,n+1)
+         return tvar
+       mkFuncArgTypeWorker (typ,_var) = 
+         case typ of                  
+           SelfType -> return (mkTVar "a")
+           CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
+           CPT (CPTClass c') _    -> addclass c'
+           CPT (CPTClassRef c') _ -> addclass c' 
+           _ -> error ("No such c type : " ++ show typ)  
+
+
 ----------------
 
 -- |
@@ -63,354 +107,270 @@ hsModuleDeclTmpl = "module $moduleName $moduleExp where"
 -- |
 genModuleDecl :: Module -> Reader AnnotateMap String 
 genModuleDecl m = do 
-  let modheader = TL.unpack $ substitute hsModuleDeclTmpl
-                                (context [ ("moduleName", module_name m) 
-                                         , ("moduleExp", mkModuleExports m) ])
+  let modheader = subst hsModuleDeclTmpl (context [ ("moduleName", module_name m    ) 
+                                                  , ("moduleExp" , mkModuleExports m) ])
   return (modheader)
 
 
 ----------------
--- |
+-- | will be deprecated
 classprefix :: Class -> String 
 classprefix c = let ps = (map typeclassName . class_parents) c
                 in  if null ps 
                     then "" 
                     else "(" ++ intercalate "," (map (++ " a") ps) ++ ") => "
 
+
 -- |
 hsClassDeclHeaderTmpl :: Text
 hsClassDeclHeaderTmpl = "$classann\nclass ${constraint}${classname} a where"
 
-genHsFrontDecl :: Class -> Reader AnnotateMap String 
-genHsFrontDecl c = do 
-  amap <- ask  
-  let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap 
-  let header = TL.unpack $ substitute hsClassDeclHeaderTmpl
-                             (context [ ("classname", typeclassName c ) 
-                                      , ("constraint", classprefix c) 
-                                      , ("classann",   mkComment 0 cann) ])
-      bodyline func = 
-        let fname = hsFuncName c func 
-            mann = maybe "" id $ M.lookup (PkgMethod,fname) amap
-        in  TL.unpack $ substitute hsClassDeclFuncTmpl 
-                          (context [ ("funcname", hsFuncName c func) 
-                                   , ("args" , prefixstr func ++ argstr func )
-                                   , ("funcann", mkComment 4 mann)  
-                                   ]) 
-      prefixstr func =  
-        let prefixlst = (snd . mkHsFuncArgType . genericFuncArgs) func
-                        ++ (snd . mkHsFuncRetType . genericFuncRet ) func
-        in  if null prefixlst
-              then "" 
-              else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
-                  
-      argstr func = intercalateWith connArrow id $
-                      [ "a" ] 
-                      ++ fst (mkHsFuncArgType (genericFuncArgs func))
-                      ++ ["IO " ++ (fst . mkHsFuncRetType . genericFuncRet) func]  
-      bodylines = map bodyline . virtualFuncs 
-                      $ (class_funcs c) 
-  return $ intercalateWith connRet id (header : bodylines) 
-
-
-
-genAllHsFrontDecl :: [Class] -> Reader AnnotateMap String 
-genAllHsFrontDecl = intercalateWithM connRet2 genHsFrontDecl
+genHsFrontDecl :: Class -> Reader AnnotateMap ClassDecl
+genHsFrontDecl c = do
+  -- for the time being, let's ignore annotation.
+  -- amap <- ask  
+  -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap 
+  let 
+      cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
+      sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
+      body = map (ClsDecl . sigdecl) . virtualFuncs . class_funcs $ c 
+  return cdecl
 
 -------------------
 
-
-genHsFrontInst :: Class -> Class -> String 
+genHsFrontInst :: Class -> Class -> [Decl]
 genHsFrontInst parent child  
   | (not.isAbstractClass) child = 
-    let headline = "instance " ++ typeclassName parent ++ " " ++ (fst.hsClassName) child ++ " where" 
-        defline func = "  " ++ hsFuncName child func ++ " = " ++ hsFuncXformer func ++ " " ++ hscFuncName child func 
-        deflines = (map defline) . virtualFuncs . class_funcs $ parent 
-
-    in  intercalateWith connRet id (headline : deflines) 
-  | otherwise = ""
+    let idecl = mkInstance [] (typeclassName parent) [convertCpp2HS (Just child) SelfType] body
+        defn f = mkBind1 (hsFuncName child f) [] rhs Nothing 
+          where rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName child f))
+        body = map (InsDecl . defn) . virtualFuncs . class_funcs $ parent
+    in [idecl]
+  | otherwise = []
         
 
       
 ---------------------
 
-hsClassInstExistCommonTmpl :: Text 
-hsClassInstExistCommonTmpl = "instance FPtr (Exist $highname) where\n  type Raw (Exist $highname) = $rawname\n  get_fptr ($existConstructor obj) = castForeignPtr (get_fptr obj)\n  cast_fptr_to_obj fptr = $existConstructor (cast_fptr_to_obj (fptr :: ForeignPtr $rawname) :: $highname)" 
-
-
-genHsFrontInstExistCommon :: Class -> String 
-genHsFrontInstExistCommon c = TL.unpack $ substitute hsClassInstExistCommonTmpl (context tmplName)
+genHsFrontInstExistCommon :: Class -> Decl 
+genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
   where (highname,rawname) = hsClassName c
-        iname = typeclassName c 
+        hightype = tycon highname
+        rawtype = tycon rawname
+        existtype = TyApp (tycon "Exist") hightype
         ename = existConstructorName c
-        tmplName = [ ("rawname",rawname)
-                   , ("highname",highname)
-                   , ("interfacename",iname)
-                   , ("existConstructor",ename) ] 
+        body = [ InsType noLoc (TyApp (tycon "Raw") existtype) rawtype
+               , InsDecl (mkBind1 "get_fptr" [PApp (unqual ename) [PVar (Ident "obj")] ]
+                            ((mkVar "castForeignPtr") `App` ((mkVar "get_fptr") `App` (mkVar "obj")))
+                            Nothing)
+               , InsDecl (mkBind1 "cast_fptr_to_obj" [PVar (Ident "fptr")]
+                            (App (mkVar ename)
+                              (ExpTypeSig noLoc
+                                (App (mkVar "cast_fptr_to_obj")
+                                  (ExpTypeSig noLoc (mkVar "fptr") (TyApp (tycon "ForeignPtr") rawtype))
+                                )
+                                hightype
+                              )
+                            )
+                            Nothing)
+               ]
 
-genAllHsFrontInstExistCommon :: [Class] -> String 
-genAllHsFrontInstExistCommon cs = intercalateWith connRet2 genHsFrontInstExistCommon cs
+
 
 -------------------
 
-hsClassInstExistVirtualTmpl :: Text
-hsClassInstExistVirtualTmpl = "instance $iparent (Exist $child) where\n$method"
 
-hsClassInstExistVirtualMethodNoSelfTmpl :: Text
-hsClassInstExistVirtualMethodNoSelfTmpl = "  $methodname ($exist x) = $methodname x"
+genHsFrontInstExistVirtual :: Class -> Class -> Decl
+genHsFrontInstExistVirtual p c = mkInstance [] iparent [existtype] body
+  where body = map (genHsFrontInstExistVirtualMethod p c) . virtualFuncs.class_funcs $ p
+        iparent = typeclassName p
+        existtype = TyApp (tycon "Exist") (tycon ((fst.hsClassName) c))
 
-hsClassInstExistVirtualMethodSelfTmpl :: Text 
-hsClassInstExistVirtualMethodSelfTmpl = "  $methodname ($exist x) $args = return . $exist =<< $methodname x $args"
-
-
-genHsFrontInstExistVirtual :: Class -> Class -> String 
-genHsFrontInstExistVirtual p c = TL.unpack $ substitute hsClassInstExistVirtualTmpl (context tmplName)
-  where methodstr = intercalateWith connRet (genHsFrontInstExistVirtualMethod p c)  
-                                            (virtualFuncs.class_funcs $ p)
-        tmplName = [ ("iparent",typeclassName p)
-                   , ("child", (fst.hsClassName) c)
-                   , ("method", methodstr )         ] 
-
-genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> String 
+genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> InstDecl
 genHsFrontInstExistVirtualMethod p c f =
     case f of
       Constructor _  _ -> error "error in genHsFrontInstExistVirtualMethod"  
-      Destructor _ -> TL.unpack $ substitute hsClassInstExistVirtualMethodNoSelfTmpl (context tmplName)
+      Destructor _ -> InsDecl (mkBind1 fname [existx] ((mkVar fname) `App` (mkVar "x")) Nothing)
       _ -> case func_ret f of
-             SelfType -> TL.unpack $ substitute hsClassInstExistVirtualMethodSelfTmpl (context (tmplName++args))
-             _ -> TL.unpack $ substitute hsClassInstExistVirtualMethodNoSelfTmpl (context tmplName)
-  where tmplName = [ ("methodname", hsFuncName p f)
-                   , ("exist", existConstructorName c) ]
-        args  = [ ("args", intercalate " " (take (length (func_args f)) (map (\x -> 'a':(show x)) ([1..] :: [Int]) )))]
-
-genAllHsFrontInstExistVirtual :: [Class] -> DaughterMap -> String 
-genAllHsFrontInstExistVirtual cs _dmap = intercalateWith connRet2 allinstances cs
-  where allinstances c = 
-          let ps = c : class_allparents c
-          in  intercalateWith connRet2 (\p->genHsFrontInstExistVirtual p c) ps 
-
+             SelfType -> InsDecl (mkBind1 fname (existx:map mkPVar args) rhs Nothing)
+             _ -> InsDecl (mkBind1 fname [existx] ((mkVar fname) `App` (mkVar "x")) Nothing)
+  where fname = hsFuncName p f
+        ename = existConstructorName c
+        existx = PApp (unqual ename) [PVar (Ident "x")]
+        rhs = (mkVar "return" `dot` mkVar ename) `App`
+              mkVar "=<<" `App`
+              (mkVar fname `App` foldl1 App (mkVar "x":map mkVar args))
+        args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ [1..] 
 
 ---------------------
 
 genHsFrontInstNew :: Class         -- ^ only concrete class 
-                    -> Reader AnnotateMap (Maybe String)
+                  -> Reader AnnotateMap [Decl]
 genHsFrontInstNew c = do 
-  amap <- ask 
-  if null newfuncs 
-    then return Nothing
-    else do 
-      let newfunc = head newfuncs
-          cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
-          newfuncann = mkComment 0 cann
-          newlinehead = constructorName c ++ " :: " ++ argstr newfunc 
-          newlinebody = constructorName c ++ " = " 
-                              ++ hsFuncXformer newfunc ++ " " 
-                              ++ hscFuncName c newfunc 
-          argstr func = intercalateWith connArrow id $
-                          map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
-                          ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func]
-          newline = newfuncann ++ "\n" ++ newlinehead ++ "\n" ++ newlinebody 
-      return (Just newline)
-  where newfuncs = filter isNewFunc (class_funcs c)  
+  -- amap <- ask
+  let fs = filter isNewFunc (class_funcs c)
+  return . flip concatMap fs $ \f ->
+    let
+        -- for the time being, let's ignore annotation.
+        -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
+        -- newfuncann = mkComment 0 cann
+        rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+    in mkFun (constructorName c) (functionSignature c f) [] rhs Nothing
 
-genAllHsFrontInstNew :: [Class]    -- ^ only concrete class 
-                     -> Reader AnnotateMap String 
-genAllHsFrontInstNew = liftM (intercalate "\n\n") . liftM catMaybes . mapM genHsFrontInstNew 
-  
-genHsFrontInstNonVirtual :: Class -> Maybe String 
-genHsFrontInstNonVirtual c 
-  | (not.null) nonvirtualFuncs  =                        
-    let header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
-        body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
-        argstr func = intercalateWith connArrow id $ 
-                        [(fst.hsClassName) c]  
-                        ++ map (ctypToHsTyp (Just c) . fst) (genericFuncArgs func)
-                        ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) func] 
-    in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) nonvirtualFuncs
-  | otherwise = Nothing   
+genHsFrontInstNonVirtual :: Class -> [Decl]
+genHsFrontInstNonVirtual c =
+  flip concatMap nonvirtualFuncs $ \f -> 
+    let rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+    in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
  where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
 
-genAllHsFrontInstNonVirtual :: [Class] -> String 
-genAllHsFrontInstNonVirtual = intercalate "\n\n" . map fromJust . filter isJust . map genHsFrontInstNonVirtual
+-----
+
+genHsFrontInstStatic :: Class -> [Decl]
+genHsFrontInstStatic c =
+  flip concatMap (staticFuncs (class_funcs c)) $ \f ->
+    let rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+    in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
 
 -----
 
-genHsFrontInstStatic :: Class -> Maybe String 
-genHsFrontInstStatic c 
-  | (not.null) fs =                        
-    let header f = (aliasedFuncName c f) ++ " :: " ++ argstr f
-        body f  = (aliasedFuncName c f)  ++ " = " ++ hsFuncXformer f ++ " " ++ hscFuncName c f 
-        argstr f = intercalateWith connArrow id $ 
-                     map (ctypToHsTyp (Just c) . fst) (genericFuncArgs f)
-                     ++ ["IO " ++ (ctypToHsTyp (Just c) . genericFuncRet) f] 
-    in  Just $ intercalateWith connRet2 (\f -> header f ++ "\n" ++ body f) fs
-  | otherwise = Nothing   
- where fs = staticFuncs (class_funcs c)
+castBody = [ InsDecl (mkBind1 "cast" []
+                       (mkVar "unsafeForeignPtrToPtr" `dot`
+                        mkVar "castForeignPtr" `dot`
+                        mkVar "get_fptr")
+                       Nothing)
+           , InsDecl (mkBind1 "uncast" []
+                       (mkVar "cast_fptr_to_obj" `dot`
+                        mkVar "castForeignPtr" `dot`
+                        mkVar "unsafePerformIO" `dot`
+                        mkVar "newForeignPtr_")
+                       Nothing)
+           ]
 
------
-
-genHsFrontInstCastable :: Class -> String 
+genHsFrontInstCastable :: Class -> Maybe Decl
 genHsFrontInstCastable c 
   | (not.isAbstractClass) c = 
     let iname = typeclassName c
         (_,rname) = hsClassName c
-    in TL.unpack $ substitute hsInterfaceCastableInstanceTmpl
-                     (context [("interfaceName",iname),("rawClassName",rname)])
-  | otherwise = "" 
+        a = mkTVar "a"
+        ctxt = [ ClassA (unqual iname) [a], ClassA (unqual "FPtr") [a] ]
+    in Just (mkInstance ctxt "Castable" [a,TyApp tyPtr (tycon rname)] castBody)
+  | otherwise = Nothing
 
-genAllHsFrontInstCastable :: [Class] -> String 
-genAllHsFrontInstCastable = 
-  intercalateWith connRet2 genHsFrontInstCastable
-
-genHsFrontInstCastableSelf :: Class -> String 
+genHsFrontInstCastableSelf :: Class -> Maybe Decl
 genHsFrontInstCastableSelf c 
   | (not.isAbstractClass) c = 
     let (cname,rname) = hsClassName c
-    in TL.unpack $ substitute hsInterfaceCastableInstanceSelfTmpl
-                     (context [("className",cname), ("rawClassName",rname)])
-  | otherwise = "" 
+    in Just (mkInstance [] "Castable" [tycon cname, TyApp tyPtr (tycon rname)] castBody)
+  | otherwise = Nothing
 
 
 --------------------------
 
-rawToHighDecl :: Text
-rawToHighDecl = "data $rawname\nnewtype $highname = $highname (ForeignPtr $rawname) deriving (Eq, Ord, Show)"
+hsClassRawType :: Class -> [Decl]
+hsClassRawType c =
+  [ mkData    rawname [] [] []
+  , mkNewtype highname []
+      [ QualConDecl noLoc [] []
+          (conDecl highname [TyApp tyForeignPtr rawtype])
+      ]
+      derivs
+  , mkInstance [] "FPtr" [hightype] [ InsType noLoc (TyApp (tycon "Raw") hightype) rawtype ]
+  ]
+ where (highname,rawname) = hsClassName c
+       hightype = tycon highname
+       rawtype = tycon rawname
+       derivs = [(unqual "Eq",[]),(unqual "Ord",[]),(unqual "Show",[])]
 
-rawToHighInstance :: Text
-rawToHighInstance = "instance FPtr $highname where\n   type Raw $highname = $rawname\n   get_fptr ($highname fptr) = fptr\n   cast_fptr_to_obj = $highname"
-
-
-existableInstance :: Text
-existableInstance = "instance Existable $highname where\n  data Exist $highname = forall a. (FPtr a, $interfacename a) => $existConstructor a"
-
-
-hsClassRawType :: Class -> String 
-hsClassRawType c = 
-    let decl = TL.unpack $ substitute rawToHighDecl (context tmplName)
-        inst1 = TL.unpack $ substitute rawToHighInstance (context tmplName)
-    in  decl `connRet` inst1 
-  where (highname,rawname) = hsClassName c
-        iname = typeclassName c 
-        -- ename = existConstructorName c
-        tmplName = [ ("rawname",rawname)
-                   , ("highname",highname)
-                   , ("interfacename",iname) ] 
-
-hsClassExistType :: Class -> String 
-hsClassExistType c = TL.unpack $ substitute existableInstance (context tmplName)
-  where (highname,_rawname) = hsClassName c
+hsClassExistType :: Class -> Decl
+hsClassExistType c = mkInstance [] "Existable" [hightype]
+                       [ InsData noLoc DataType (TyApp (tycon "Exist") hightype)
+                           [ QualConDecl noLoc [a_bind]
+                               [ClassA (unqual "FPtr") [a_tvar], ClassA (unqual iname) [a_tvar] ]
+                               (conDecl ename [a_tvar])
+                           ]
+                           []
+                       ]
+  where (highname,_) = hsClassName c
+        hightype = tycon highname
+        a_bind = UnkindedVar (Ident "a")
+        a_tvar = mkTVar "a"
         iname = typeclassName c 
         ename = existConstructorName c
-        tmplName = [ ("existConstructor",ename) 
-                   , ("highname",highname)
-                   , ("interfacename",iname)    ]
-
-hsClassDeclFuncTmpl :: Text
-hsClassDeclFuncTmpl = "$funcann\n    $funcname :: $args "
 
 
-hsArgs :: Class -> Args -> String
-hsArgs c = intercalateWith connArrow (ctypToHsTyp (Just c) . fst) 
-
-mkHsFuncArgType :: Args -> ([String],[String]) 
-mkHsFuncArgType lst = 
-  let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
-  in   (args,fst st)
-  where mkFuncArgTypeWorker (typ,_var) = 
-          case typ of                  
-            SelfType -> return "a"
-            CT _ _   -> return $ ctypToHsTyp Nothing typ 
-            CPT (CPTClass c') _ -> do 
-              (prefix,n) <- get 
-              let cname = (fst.hsClassName) c' 
-                  iname = typeclassNameFromStr cname 
-                  newname = 'c' : show n
-                  newprefix1 = iname ++ " " ++ newname    
-                  newprefix2 = "FPtr " ++ newname
-              put (newprefix1:newprefix2:prefix,n+1)
-              return newname
-            CPT (CPTClassRef c') _ -> do 
-              (prefix,n) <- get 
-              let cname = (fst.hsClassName) c' 
-                  iname = typeclassNameFromStr cname 
-                  newname = 'c' : show n
-                  newprefix1 = iname ++ " " ++ newname    
-                  newprefix2 = "FPtr " ++ newname
-              put (newprefix1:newprefix2:prefix,n+1)
-              return newname
-            _ -> error ("No such c type : " ++ show typ)  
-
-mkHsFuncRetType :: Types -> (String,[String])
-mkHsFuncRetType rtyp = 
-  case rtyp of 
-    SelfType -> ("a",[])
-    CPT (CPTClass c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
-    CPT (CPTClassRef c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
-    _ -> (ctypToHsTyp Nothing rtyp,[])
-
-      
-----------                        
-
-hsInterfaceCastableInstanceTmpl :: Text 
-hsInterfaceCastableInstanceTmpl = 
-  "instance ($interfaceName a, FPtr a) => Castable a (Ptr $rawClassName) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
-
-hsInterfaceCastableInstanceSelfTmpl :: Text 
-hsInterfaceCastableInstanceSelfTmpl = 
-  "instance Castable $className (Ptr $rawClassName) where\n  cast = unsafeForeignPtrToPtr . castForeignPtr . get_fptr\n  uncast = cast_fptr_to_obj . castForeignPtr . unsafePerformIO . newForeignPtr_ \n"
-
-
-----------
-
-hsExistentialGADTBodyTmpl :: Text 
-hsExistentialGADTBodyTmpl = "    GADT${mother}${daughter} :: $daughter -> GADTType $mother $daughter"
-
-
-hsExistentialCastBodyTmpl :: Text
-hsExistentialCastBodyTmpl = "    \"$daughter\" -> case obj of\n        $mother fptr -> let obj' = $daughter (castForeignPtr fptr :: ForeignPtr Raw$daughter)\n                        in  return . EGADT$mother . GADT${mother}${daughter} $$ obj'"
 
 ------------
 -- upcast --
 ------------
 
-genHsFrontUpcastClass :: Class -> Reader AnnotateMap String
-genHsFrontUpcastClass c = do 
-  let (highname,rawname) = hsClassName c
-      upcaststr = TL.unpack $ substitute hsUpcastClassTmpl
-                                (context [ ("classname", highname) 
-                                         , ("ifacename", typeclassName c)
-                                         , ("rawclassname", rawname)  
-                                         , ("space", replicate (length highname+11) ' ' ) ])
-  return upcaststr
-
-genAllHsFrontUpcastClass :: [Class] -> Reader AnnotateMap String
-genAllHsFrontUpcastClass = intercalateWithM connRet2 genHsFrontUpcastClass
-
-
-hsUpcastClassTmpl :: Text 
-hsUpcastClassTmpl =  "upcast$classname :: (FPtr a, $ifacename a) => a -> $classname\nupcast$classname h = let fh = get_fptr h\n$space    fh2 :: ForeignPtr $rawclassname = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
+genHsFrontUpcastClass :: Class -> [Decl]
+genHsFrontUpcastClass c = mkFun ("upcast"++highname) typ [mkPVar "h"] rhs Nothing
+  where (highname,rawname) = hsClassName c
+        hightype = tycon highname
+        rawtype = tycon rawname
+        iname = typeclassName c
+        a_bind = UnkindedVar (Ident "a")
+        a_tvar = mkTVar "a"
+        typ = TyForall (Just [a_bind])
+                [ClassA (unqual "FPtr") [a_tvar], ClassA (unqual iname) [a_tvar]]
+                (TyFun a_tvar hightype)
+        rhs = Let (BDecls
+                    [ pbind (mkPVar "fh") (UnGuardedRhs (App (mkVar "get_fptr") (mkVar "h"))) Nothing
+                    , pbind (mkPVarSig "fh2" (TyApp tyForeignPtr rawtype))
+                        (UnGuardedRhs (App (mkVar "castForeignPtr") (mkVar "fh"))) Nothing
+                    ] 
+                  ) 
+                  (mkVar "cast_fptr_to_obj" `App` mkVar "fh2")
 
 
 --------------
 -- downcast --
 --------------
 
-genHsFrontDowncastClass :: Class -> Reader AnnotateMap String
-genHsFrontDowncastClass c = do 
-  let (highname,rawname) = hsClassName c
-      downcaststr = TL.unpack $ substitute hsDowncastClassTmpl
-                                  (context [ ("classname", highname) 
-                                           , ("ifacename", typeclassName c)
-                                           , ("rawclassname", rawname)  
-                                           , ("space", replicate (length highname+13) ' ' ) ])
-  return downcaststr
+genHsFrontDowncastClass :: Class -> [Decl]
+genHsFrontDowncastClass c = mkFun ("downcast"++highname) typ [mkPVar "h"] rhs Nothing
+  where (highname,rawname) = hsClassName c
+        hightype = tycon highname
+        rawtype = tycon rawname
+        iname = typeclassName c
+        a_bind = UnkindedVar (Ident "a")
+        a_tvar = mkTVar "a"
+        typ = TyForall (Just [a_bind])
+                [ClassA (unqual "FPtr") [a_tvar], ClassA (unqual iname) [a_tvar]]
+                (TyFun hightype a_tvar)
+        rhs = Let (BDecls
+                    [ pbind (mkPVar "fh") (UnGuardedRhs (App (mkVar "get_fptr") (mkVar "h"))) Nothing
+                    , pbind (mkPVar "fh2") (UnGuardedRhs (App (mkVar "castForeignPtr") (mkVar "fh"))) Nothing
+                    ] 
+                  ) 
+                  (mkVar "cast_fptr_to_obj" `App` mkVar "fh2")
 
-genAllHsFrontDowncastClass :: [Class] -> Reader AnnotateMap String
-genAllHsFrontDowncastClass = intercalateWithM connRet2 genHsFrontDowncastClass
 
+------------------------
+-- Top Level Function --
+------------------------
 
-hsDowncastClassTmpl :: Text 
-hsDowncastClassTmpl =  "downcast$classname :: (FPtr a, $ifacename a) => $classname -> a \ndowncast$classname h = let fh = get_fptr h\n$space    fh2 = castForeignPtr fh\n${space}in cast_fptr_to_obj fh2"
+genTopLevelFuncDef :: TopLevelFunction -> [Decl]
+genTopLevelFuncDef f@TopLevelFunction {..} = 
+    let fname = hsFrontNameForTopLevelFunction f
+        (atyps,ctxts) = extractArgTypes toplevelfunc_args
+        rtyp = (tycon . ctypToHsTyp Nothing) toplevelfunc_ret
+        sig = TyForall Nothing ctxts (foldr1 TyFun (atyps ++ [TyApp (tycon "IO") rtyp]))
+        xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
+        cfname = "c_" ++ toLowers fname 
+        rhs = App (mkVar xformerstr) (mkVar cfname)
+        
+    in mkFun fname sig [] rhs Nothing 
+genTopLevelFuncDef v@TopLevelVariable {..} = 
+    let fname = hsFrontNameForTopLevelFunction v
+        cfname = "c_" ++ toLowers fname 
+        rtyp = (tycon . ctypToHsTyp Nothing) toplevelvar_ret
+        sig = TyApp (tycon "IO") rtyp
+        rhs = App (mkVar "xformnull") (mkVar cfname)
+        
+    in mkFun fname sig [] rhs Nothing 
+
 
 ------------
 -- Export --
@@ -446,10 +406,6 @@ genExportStatic c =
   where indent = replicate 2 ' ' 
         fs = class_funcs c
         fns = map (aliasedFuncName c) (staticFuncs fs) 
-
-
-
-
 
 genExportList :: [Class] -> String 
 genExportList = concatMap genExport 
@@ -540,43 +496,4 @@ genImportInExistential dmap m =
 
 
 
-
-------------------------
--- Top Level Function --
-------------------------
-
-genTopLevelFuncDef :: TopLevelFunction -> String 
-genTopLevelFuncDef f@TopLevelFunction {..} = 
-    let fname = hsFrontNameForTopLevelFunction f
-        cfname = "c_" ++ toLowers fname 
-        args = toplevelfunc_args
-        ret = toplevelfunc_ret 
-        xformerstr = let len = length args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
-        prefixstr =  
-          let prefixlst = (snd . mkHsFuncArgType) toplevelfunc_args
-                        ++ (snd . mkHsFuncRetType) toplevelfunc_ret
-          in  if null prefixlst
-              then "" 
-              else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
-
-        argstr = intercalateWith connArrow id $
-                      (fst . mkHsFuncArgType) toplevelfunc_args 
-                      ++ ["IO " ++ (fst . mkHsFuncRetType) toplevelfunc_ret]  
-        defstr = fname ++ " = " ++ xformerstr ++ " " ++ cfname
-    in fname ++ " :: " ++ prefixstr ++ argstr ++ "\n" ++ defstr 
-genTopLevelFuncDef v@TopLevelVariable {..} = 
-    let fname = hsFrontNameForTopLevelFunction v
-        cfname = "c_" ++ toLowers fname 
-        args = []
-        ret = toplevelvar_ret 
-        xformerstr = let len = length args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
-        prefixstr =  
-          let prefixlst = (snd . mkHsFuncRetType) toplevelvar_ret
-          in  if null prefixlst
-              then "" 
-              else "(" ++ (intercalateWith conncomma id prefixlst) ++ ") => "  
-
-        argstr = intercalateWith connArrow id $ ["IO " ++ (fst . mkHsFuncRetType) toplevelvar_ret]  
-        defstr = fname ++ " = " ++ xformerstr ++ " " ++ cfname
-    in fname ++ " :: " ++ prefixstr ++ argstr ++ "\n" ++ defstr 
 

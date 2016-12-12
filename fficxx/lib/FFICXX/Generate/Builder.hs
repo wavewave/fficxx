@@ -109,7 +109,7 @@ mkCabalFile config
             = do
   cpath <- getCurrentDirectory
 
-  let txt = substitute cabalTemplate
+  let txt = subst cabalTemplate
               (context ([ ("licenseField", "license: " ++ license)
                           | Just license <- [cabalattr_license cabalattr] ] ++
                         [ ("licenseFileField", "license-file: " ++ licensefile)
@@ -136,7 +136,7 @@ mkCabalFile config
                         , ("extraLibraries", concatMap (", " ++) extralibs)
                         , ("cabalIndentation", cabalIndentation)
                         ]))
-  writeFile cabalfile (TL.unpack txt)
+  writeFile cabalfile txt
 
 
 macrofy :: String -> String

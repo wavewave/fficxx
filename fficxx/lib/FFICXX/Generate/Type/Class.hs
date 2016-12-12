@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Type.Class
--- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -15,23 +15,20 @@
 
 module FFICXX.Generate.Type.Class where
 
-import Control.Applicative ((<$>),(<*>))
-import Data.Char
-import Data.Default (Default(def))
-import Data.List
-import Data.Monoid
-import qualified Data.Map as M
-import System.FilePath
+import           Control.Applicative               ((<$>),(<*>))
+import           Data.Char
+import           Data.Default                      (Default(def))
+import           Data.List
+import           Data.Monoid
+import qualified Data.Map                     as M
+import           Language.Haskell.Exts.Syntax      (Context(..), Asst(..), Type(..), unit_tycon)
+import           System.FilePath
 --
-import FFICXX.Generate.Util
-import FFICXX.Generate.Type.PackageInterface
+import           FFICXX.Generate.Util
+import           FFICXX.Generate.Util.HaskellSrcExts
+import           FFICXX.Generate.Type.PackageInterface
 
 -- some type aliases
-
--- type HeaderFileName = String
-
--- type ClassName = String
-
 
 
 -- | C types
@@ -331,9 +328,15 @@ isDeleteFunc (Destructor _) = True
 isDeleteFunc _ = False
 
 isVirtualFunc :: Function -> Bool
-isVirtualFunc (Destructor _)           = True
-isVirtualFunc (Virtual _ _ _ _)        = True
-isVirtualFunc _ = False
+isVirtualFunc (Destructor _)          = True
+isVirtualFunc (Virtual _ _ _ _)       = True
+isVirtualFunc _                       = False
+
+isNonVirtualFunc :: Function -> Bool
+isNonVirtualFunc (NonVirtual _ _ _ _) = True
+isNonVirtualFunc _                    = False
+
+
 
 isStaticFunc :: Function -> Bool
 isStaticFunc (Static _ _ _ _) = True
@@ -533,6 +536,34 @@ ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
 
 
+-- |
+convertC2HS :: CTypes -> Type
+convertC2HS CTString     = tycon "CString"
+convertC2HS CTChar       = tycon "CChar"
+convertC2HS CTInt        = tycon "CInt"
+convertC2HS CTUInt       = tycon "CUInt"
+convertC2HS CTLong       = tycon "CLong"
+convertC2HS CTULong      = tycon "CULong"
+convertC2HS CTDouble     = tycon "CDouble"
+convertC2HS CTDoubleStar = TyApp (tycon "Ptr") (tycon "CDouble")
+convertC2HS CTBool       = tycon "CInt"
+convertC2HS CTVoidStar   = TyApp (tycon "Ptr") unit_tycon
+convertC2HS CTIntStar    = TyApp (tycon "Ptr") (tycon "CInt")
+convertC2HS CTCharStarStar = TyApp (tycon "Ptr") (tycon "CString")
+convertC2HS (CPointer t) = TyApp (tycon "Ptr") (convertC2HS t)
+convertC2HS (CRef t)     = TyApp (tycon "Ptr") (convertC2HS t)
+
+-- |
+convertCpp2HS :: Maybe Class -> Types -> Type
+convertCpp2HS _c Void                  = unit_tycon
+convertCpp2HS (Just c) SelfType        = tycon ((fst.hsClassName) c)
+convertCpp2HS Nothing SelfType         = error "convertCpp2HS : SelfType but no class "
+convertCpp2HS _c (CT t _)              = convertC2HS t
+convertCpp2HS _c (CPT (CPTClass c') _)    = tycon (class_name c')
+convertCpp2HS _c (CPT (CPTClassRef c') _) = tycon (class_name c')
+
+
+
 typeclassName :: Class -> String
 typeclassName c = 'I' : fst (hsClassName c)
 
@@ -547,6 +578,7 @@ hsClassName c =
 existConstructorName :: Class -> String
 existConstructorName c = 'E' : (fst.hsClassName) c
 
+{- 
 -- | this is for FFI type.
 hsFuncTyp :: Class -> Function -> String
 hsFuncTyp c f = let args = genericFuncArgs f
@@ -565,7 +597,8 @@ hsFuncTyp c f = let args = genericFuncArgs f
         hsrettype SelfType = "IO " ++ selfstr
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
         hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
-
+-}
+{-
 -- | this is for FFI
 hsFuncTypNoSelf :: Class -> Function -> String
 hsFuncTypNoSelf c f = let args = genericFuncArgs f
@@ -584,7 +617,7 @@ hsFuncTypNoSelf c f = let args = genericFuncArgs f
         hsrettype SelfType = "IO " ++ selfstr
         hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
         hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
-
+-}
 
 hscFuncName :: Class -> Function -> String
 hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (aliasedFuncName c f)
@@ -614,7 +647,6 @@ genericFuncRet f =
     Virtual t _ _ _ -> t
     NonVirtual t _ _ _-> t
     Static t _ _ _ -> t
-    -- AliasVirtual t _ _ _ -> t
     Destructor _ -> void_
 
 genericFuncArgs :: Function -> Args
@@ -651,3 +683,58 @@ nonvirtualName c str = (firstLower.fst.hsClassName) c ++ str
 
 destructorName :: String
 destructorName = "delete"
+
+
+classConstraints :: Class -> Context
+classConstraints = map ((\n->ClassA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents 
+
+functionSignature :: Class -> Function -> Type
+functionSignature c f =
+  let ctyp = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
+      arg0
+        | isVirtualFunc f    = (mkTVar "a" :)
+        | isNonVirtualFunc f = (mkTVar (class_name c) :)
+        | otherwise          = id
+      lst = arg0 (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
+  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+
+
+-- | this is for FFI type.
+hsFuncTyp :: Class -> Function -> Type
+hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
+  where argtyps = map (hsargtype . fst) $ genericFuncArgs f
+        rettyp  = hsrettype (genericFuncRet f)
+        (_hcname,rcname) = hsClassName c
+
+        selftyp = TyApp tyPtr (tycon rcname)
+
+        hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
+        hsargtype (CPT x _)    = tycon (hsCppTypeName x)
+        hsargtype SelfType     = selftyp
+        hsargtype _ = error "undefined hsargtype"
+
+        hsrettype Void         = unit_tycon
+        hsrettype SelfType     = selftyp
+        hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
+        hsrettype (CPT x _ )   = tycon (hsCppTypeName x)
+
+
+-- | this is for FFI
+hsFuncTypNoSelf :: Class -> Function -> Type
+hsFuncTypNoSelf c f = foldr1 TyFun (argtyps ++ [TyApp (tycon "IO") rettyp])
+  where argtyps = map (hsargtype . fst) $ genericFuncArgs f
+        rettyp  = hsrettype (genericFuncRet f)
+        (_hcname,rcname) = hsClassName c
+        
+        selftyp = TyApp tyPtr (tycon rcname)
+
+        hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
+        hsargtype (CPT x _)    = tycon (hsCppTypeName x)
+        hsargtype SelfType     = selftyp
+        hsargtype _ = error "undefined hsargtype"
+
+        hsrettype Void         = unit_tycon
+        hsrettype SelfType     = selftyp
+        hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
+        hsrettype (CPT x _ )   = tycon (hsCppTypeName x)
+
