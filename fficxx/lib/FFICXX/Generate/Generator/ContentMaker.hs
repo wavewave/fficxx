@@ -27,6 +27,7 @@ import           Data.Text                              (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                     hiding (render)
+import           Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
 import           Language.Haskell.Exts.Pretty           (prettyPrint)
 import           System.FilePath
 -- 
@@ -40,6 +41,7 @@ import           FFICXX.Generate.Type.PackageInterface  ( TypeMacro(..), HeaderN
                                                         , ClassName(..)
                                                         )
 import           FFICXX.Generate.Util
+import           FFICXX.Generate.Util.HaskellSrcExts
 --
 
 srcDir :: FilePath -> FilePath
@@ -257,158 +259,88 @@ mkTopLevelFunctionCppDef cprefix tih =
                                        , ("cppbody"  , declBodyStr  ) ])
 
 -- | 
-mkFFIHsc :: ClassModule -> String 
-mkFFIHsc m = subst
-               "{-# LANGUAGE ForeignFunctionInterface #-}\n\
-               \\n\
-               \$ffiHeader\n\
-               \\n\
-               \import Foreign.C\n\
-               \import Foreign.Ptr\n\
-               \\n\
-               \$ffiImport\n\
-               \\n\
-               \$cppInclude\n\
-               \\n\
-               \$hsFunctionBody\n"
-               (context  [ ("ffiHeader"     , ffiHeaderStr       )
-                         , ("ffiImport"     , ffiImportStr       )
-                         , ("cppInclude"    , cppIncludeStr      )
-                         , ("hsFunctionBody", hscBody            ) ])
+mkFFIHsc :: ClassModule -> Module
+mkFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody 
   where mname = cmModule m
         headers = cmCIH m
-        ffiHeaderStr = "module " ++ mname <.> "FFI where\n"
-        ffiImportStr = "import " ++ mname <.> "RawType\n"
-                       ++ genImportInFFI m
-        cppIncludeStr = genModuleIncludeHeader headers
-        hscBody =intercalate "\n\n" (map (intercalate "\n\n".map prettyPrint.genHsFFI) headers)
+        ffiImports = [ mkImport "Foreign.C", mkImport "Foreign.Ptr", mkImport (mname <.> "RawType") ]
+                     ++ genImportInFFI m
+        hscBody = concatMap genHsFFI headers
+
 
 -- |                      
-mkRawTypeHs :: ClassModule -> String
-mkRawTypeHs m = subst
-                  "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
-                  \             FlexibleInstances, TypeSynonymInstances, \n\
-                  \             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}\n\
-                  \\n\
-                  \$rawtypeHeader\n\
-                  \\n\
-                  \import Foreign.ForeignPtr\n\
-                  \import FFICXX.Runtime.Cast\n\
-                  \\n\
-                  \$rawtypeBody\n"
-                  (context [ ("rawtypeHeader", rawtypeHeaderStr)
-                           , ("rawtypeBody"  , rawtypeBodyStr  ) ])
-  where rawtypeHeaderStr = "module " ++ cmModule m <.> "RawType where\n"
-        classes = cmClass m
-        rawtypeBodyStr = 
-          intercalate "\n\n" (map prettyPrint (concatMap hsClassRawType (filter (not.isAbstractClass) classes)))
+mkRawTypeHs :: ClassModule -> Module
+mkRawTypeHs m = mkModule (cmModule m <.> "RawType")
+                  [lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
+                        , "FlexibleInstances", "TypeSynonymInstances"
+                        , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
+                  rawtypeImports rawtypeBody
+  where rawtypeImports = [ mkImport "Foreign.ForeignPtr", mkImport "FFICXX.Runtime.Cast" ] 
+        rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
 
 -- | 
-mkInterfaceHs :: AnnotateMap -> ClassModule -> String    
-mkInterfaceHs amap m = subst
-                         "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
-                         \             FlexibleInstances, TypeSynonymInstances,\n\
-                         \             EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}\n\
-                         \\n\
-                         \$ifaceHeader\n\
-                         \\n\
-                         \import Data.Word\n\
-                         \import Foreign.C\n\
-                         \import Foreign.Ptr\n\
-                         \import Foreign.ForeignPtr\n\
-                         \import FFICXX.Runtime.Cast\n\
-                         \\n\
-                         \$ifaceImport\n\
-                         \\n\
-                         \$ifaceBody\n"
-                         (context [ ("ifaceHeader", ifaceHeaderStr)
-                                  , ("ifaceImport", ifaceImportStr)
-                                  , ("ifaceBody"  , ifaceBodyStr  ) ])
-
-  where ifaceHeaderStr = "module " ++ cmModule m <.> "Interface where\n" 
-        classes = cmClass m
-        ifaceImportStr = genImportInInterface m
-        ifaceBodyStr = 
-          runReader (intercalateWith connRet prettyPrint <$> mapM genHsFrontDecl classes) amap 
-          `connRet2`
-          (intercalate "\n" . map (prettyPrint . hsClassExistType) .  filter (not.isAbstractClass)) classes
-          `connRet2`
-          (intercalate "\n" . map prettyPrint . concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
-          `connRet2`
-          (intercalate "\n" . map prettyPrint . concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
-
--- | 
-mkCastHs :: ClassModule -> String    
-mkCastHs m = subst
-               "{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeFamilies,\n\
-               \             MultiParamTypeClasses, OverlappingInstances, IncoherentInstances #-}\n\
-               \\n\
-               \$castHeader\n\
-               \\n\
-               \import Foreign.Ptr\n\
-               \import Foreign.ForeignPtr (castForeignPtr, newForeignPtr_)\n\
-               \import Foreign.ForeignPtr.Unsafe\n\
-               \import FFICXX.Runtime.Cast\n\
-               \import System.IO.Unsafe\n\
-               \\n\
-               \$castImport\n\
-               \\n\
-               \$castBody\n"
-               (context [ ("castHeader", castHeaderStr) 
-                        , ("castImport", castImportStr)
-                        , ("castBody", castBodyStr)     ])
-
-  where castHeaderStr = "module " ++ cmModule m <.> "Cast where\n" 
-        classes = cmClass m
-        castImportStr = genImportInCast m
-        castBodyStr = 
-          intercalate "\n" (map prettyPrint (mapMaybe genHsFrontInstCastable classes))
-          `connRet2`
-          intercalate "\n" (map prettyPrint (mapMaybe genHsFrontInstCastableSelf classes))
-
--- | 
-mkImplementationHs :: AnnotateMap -> ClassModule -> String
-mkImplementationHs amap m = subst
-                              "{-# LANGUAGE ForeignFunctionInterface, TypeFamilies, MultiParamTypeClasses,\n\
-                              \             FlexibleInstances, TypeSynonymInstances, EmptyDataDecls,\n\
-                              \             OverlappingInstances, IncoherentInstances #-}\n\
-                              \\n\
-                              \$implHeader\n\
-                              \\n\
-                              \import FFICXX.Runtime.Cast\n\
-                              \\n\
-                              \$implImport\n\
-                              \\n\
-                              \import Data.Word\n\
-                              \import Foreign.C\n\
-                              \import Foreign.Ptr\n\
-                              \import Foreign.ForeignPtr\n\
-                              \\n\
-                              \import System.IO.Unsafe\n\
-                              \\n\
-                              \$implBody\n"
-                              (context [ ("implHeader", implHeaderStr) 
-                                       , ("implImport", implImportStr)
-                                       , ("implBody", implBodyStr )    ]) 
-
+mkInterfaceHs :: AnnotateMap -> ClassModule -> Module   
+mkInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
+                         [lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
+                               , "FlexibleInstances", "TypeSynonymInstances"
+                               , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
+                         ifaceImports ifaceBody
   where classes = cmClass m
-        implHeaderStr = "module " ++ cmModule m <.> "Implementation where\n" 
-        implImportStr = genImportInImplementation m
-        f y = intercalateWith connRet (concatMap prettyPrint . flip genHsFrontInst y) (y:class_allparents y )
-        g y = intercalateWith connRet (prettyPrint . flip genHsFrontInstExistVirtual y) (y:class_allparents y )
+        ifaceImports =
+          [ mkImport "Data.Word"
+          , mkImport "Foreign.C"
+          , mkImport "Foreign.Ptr"
+          , mkImport "Foreign.ForeignPtr"
+          , mkImport "FFICXX.Runtime.Cast" ]
+          ++ genImportInInterface m
+        ifaceBody = 
+          runReader (mapM genHsFrontDecl classes) amap 
+          ++ (map hsClassExistType .  filter (not.isAbstractClass)) classes
+          ++ (concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
+          ++ (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
-        implBodyStr = 
-          intercalateWith connRet2 f classes
-          `connRet2` 
-          intercalateWith connRet2 g (filter (not.isAbstractClass) classes)
-          `connRet2`
-          runReader (intercalate "\n\n" . map (intercalateWith connRet prettyPrint) <$> mapM genHsFrontInstNew classes) amap
-          `connRet2`
-          intercalate "\n\n" (map (intercalateWith connRet prettyPrint) (map genHsFrontInstNonVirtual classes))
-          `connRet2`
-          intercalate "\n\n" (map (intercalateWith connRet prettyPrint . genHsFrontInstStatic) classes)
-          `connRet2`
-          (intercalate "\n" . map (prettyPrint . genHsFrontInstExistCommon) . filter (not.isAbstractClass)) classes
+-- | 
+mkCastHs :: ClassModule -> Module
+mkCastHs m = mkModule (cmModule m <.> "Cast")
+               [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
+                      , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
+               castImports castBody
+  where classes = cmClass m
+        castImports = [ mkImport "Foreign.Ptr"
+                      , mkImportExp "Foreign.ForeignPtr" [ "castForeignPtr", "newForeignPtr_" ]
+                      , mkImport "Foreign.ForeignPtr.Unsafe"
+                      , mkImport "FFICXX.Runtime.Cast"
+                      , mkImport "System.IO.Unsafe" ]
+                      ++ genImportInCast m
+        castBody = mapMaybe genHsFrontInstCastable classes
+                   ++ mapMaybe genHsFrontInstCastableSelf classes
+
+-- | 
+mkImplementationHs :: AnnotateMap -> ClassModule -> Module
+mkImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
+                              [ lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
+                                     , "FlexibleInstances", "TypeSynonymInstances", "EmptyDataDecls"
+                                     , "OverlappingInstances", "IncoherentInstances"
+                                     ] ]
+                              implImports implBody
+  where classes = cmClass m
+        implImports = [ mkImport "FFICXX.Runtime.Cast"
+                      , mkImport "Data.Word"
+                      , mkImport "Foreign.C"
+                      , mkImport "Foreign.Ptr"
+                      , mkImport "Foreign.ForeignPtr"
+                      , mkImport "System.IO.Unsafe" ]
+                      ++ genImportInImplementation m
+        f :: Class -> [Decl]
+        f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
+        g :: Class -> [Decl]
+        g y = map (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
+
+        implBody = concatMap f classes ++ concatMap g (filter (not.isAbstractClass) classes)
+                   ++ runReader (concat <$> mapM genHsFrontInstNew classes) amap
+                   ++ concatMap genHsFrontInstNonVirtual classes
+                   ++ concatMap genHsFrontInstStatic classes
+                   ++ map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
 
 
 
@@ -464,28 +396,14 @@ mkExistentialHs templates cglobal m =
 -}
 
 -- | 
-mkInterfaceHSBOOT :: String -> String 
-mkInterfaceHSBOOT mname = 
-  let cname = last (splitOn "." mname)
-      hsbootbodystr = "class " ++ 'I':cname ++ " a" 
-  in subst "module $moduleName where\n\n$hsBootBody\n"
-       (context [ ("moduleName", mname <.> "Interface") 
-                , ("hsBootBody", hsbootbodystr        ) ])
+mkInterfaceHSBOOT :: String -> Module
+mkInterfaceHSBOOT mname = mkModule (mname <.> "Interface") [] [] hsbootBody
+  where cname = last (splitOn "." mname)
+        hsbootBody = [ mkClass [] ('I':cname) [mkTBind "a"] [] ]
 
 -- | 
-mkModuleHs :: ClassModule -> String 
-mkModuleHs m = 
-  subst
-    "module $moduleName \n\
-    \  (\n\
-    \$exportList\n\
-    \  ) where\n\
-    \\n\
-    \$importList\n"
-    (context [ ("moduleName", cmModule m                   ) 
-             , ("exportList", genExportList (cmClass m)    ) 
-             , ("importList", genImportInModule (cmClass m)) ])
-
+mkModuleHs :: ClassModule -> Module
+mkModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (genImportInModule (cmClass m)) []
 
 -- | 
 mkPkgHs :: String -> [ClassModule] -> TopLevelImportHeader -> String 

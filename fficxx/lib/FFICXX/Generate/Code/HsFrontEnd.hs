@@ -27,11 +27,11 @@ import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import           Data.Text.Template                      hiding (render)
 import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
-                                                         , ClassDecl(..), InstDecl(..)
+                                                         , ClassDecl(..), InstDecl(..), ImportDecl(..)
                                                          , Pat(..), Name(..), QOp(..), Op(..)
                                                          , Asst(..), ConDecl(..), QualConDecl(..)
                                                          , DataOrNew(..), TyVarBind (..), Binds(..)
-                                                         , Rhs(..)
+                                                         , Rhs(..), ExportSpec(..), Namespace(..)
                                                          , unit_tycon)
 import           Language.Haskell.Exts.Pretty
 import           Language.Haskell.Exts.SrcLoc            ( noLoc )
@@ -125,7 +125,7 @@ classprefix c = let ps = (map typeclassName . class_parents) c
 hsClassDeclHeaderTmpl :: Text
 hsClassDeclHeaderTmpl = "$classann\nclass ${constraint}${classname} a where"
 
-genHsFrontDecl :: Class -> Reader AnnotateMap ClassDecl
+genHsFrontDecl :: Class -> Reader AnnotateMap Decl
 genHsFrontDecl c = do
   -- for the time being, let's ignore annotation.
   -- amap <- ask  
@@ -376,114 +376,69 @@ genTopLevelFuncDef v@TopLevelVariable {..} =
 -- Export --
 ------------
 
-genExport :: Class -> String 
+genExport :: Class -> [ExportSpec]
 genExport c =
-    let methodstr = if null . (filter isVirtualFunc) $ (class_funcs c) 
-                      then ""
-                      else "(..)"
+    let espec n = if null . (filter isVirtualFunc) $ (class_funcs c) 
+                    then EAbs NoNamespace (unqual n)
+                    else EThingAll (unqual n)
     in if isAbstractClass c 
-         then "    " ++ typeclassName c ++ methodstr 
-         else "    " ++ (fst.hsClassName) c ++ "(..)\n  , " 
-                     ++ typeclassName c ++ methodstr
-                     ++ "\n  , upcast" ++ (fst.hsClassName) c 
-                     ++ "\n  , downcast" ++ (fst.hsClassName) c 
-                     ++ "\n" ++ genExportConstructorAndNonvirtual c 
-                     ++ "\n" ++ genExportStatic c 
+       then [ espec (typeclassName c) ]
+       else [ EThingAll (unqual ((fst.hsClassName) c))
+            , espec (typeclassName c)
+            , EVar (unqual ("upcast" ++ (fst.hsClassName) c))
+            , EVar (unqual ("downcast" ++ (fst.hsClassName) c)) ]
+            ++ genExportConstructorAndNonvirtual c 
+            ++ genExportStatic c 
 
 -- | constructor and non-virtual function 
-genExportConstructorAndNonvirtual :: Class -> String 
-genExportConstructorAndNonvirtual c =         
-    intercalateWith connRet (\x->indent++", "++x) fns
-  where indent = replicate 2 ' ' 
-        fs = class_funcs c
+genExportConstructorAndNonvirtual :: Class -> [ExportSpec]
+genExportConstructorAndNonvirtual c = map (EVar . unqual) fns
+  where fs = class_funcs c
         fns = map (aliasedFuncName c) (constructorFuncs fs 
                                        ++ nonVirtualNotNewFuncs fs)
 
 -- | staic function export list 
-genExportStatic :: Class -> String 
-genExportStatic c =         
-    intercalateWith connRet (\x->indent++", "++x) fns
-  where indent = replicate 2 ' ' 
-        fs = class_funcs c
+genExportStatic :: Class -> [ExportSpec]
+genExportStatic c = map (EVar . unqual) fns
+  where fs = class_funcs c
         fns = map (aliasedFuncName c) (staticFuncs fs) 
 
-genExportList :: [Class] -> String 
-genExportList = concatMap genExport 
+genImportInModule :: [Class] -> [ImportDecl]
+genImportInModule = concatMap (\x -> map (\y -> mkImport (getClassModuleBase x<.>y)) ["RawType","Interface","Implementation"])
 
-importOneClass :: String -> String -> String 
-importOneClass mname typ = "import " ++ mname <.> typ 
-
-importSOURCEOneClass :: String -> String -> String 
-importSOURCEOneClass mname typ = "import {-# SOURCE #-} " ++ mname <.> typ 
+genImportInFFI :: ClassModule -> [ImportDecl]
+genImportInFFI = map (\x->mkImport (x <.> "RawType")) . cmImportedModulesForFFI
 
 
-genImportInModule :: [Class] -> String 
-genImportInModule cs = 
-  let genImportOneClass c = 
-        let n = getClassModuleBase c 
-        in  intercalateWith connRet (importOneClass n) $
-              ["RawType", "Interface", "Implementation"]
-  in  intercalate "\n" (map genImportOneClass cs)
-
-
-genImportInFFI :: ClassModule -> String
-genImportInFFI m = 
-  let modlst = cmImportedModulesForFFI m
-  in  intercalateWith connRet (\x->importOneClass x "RawType") modlst
-
-
-genImportInInterface :: ClassModule -> String
+genImportInInterface :: ClassModule -> [ImportDecl]
 genImportInInterface m = 
   let modlstraw = cmImportedModulesRaw m
       modlstparent = cmImportedModulesHighNonSource m 
       modlsthigh = cmImportedModulesHighSource m
-      getImportOneClassRaw mname = 
-        intercalateWith connRet (importOneClass mname) ["RawType"]
-      getImportOneClassHigh mname = 
-        intercalateWith connRet (importOneClass mname) ["Interface"]
-      getImportSOURCEOneClassHigh mname = 
-        intercalateWith connRet (importSOURCEOneClass mname) ["Interface"]
-  in  importOneClass (cmModule m) "RawType"
-      `connRet`
-      intercalateWith connRet getImportOneClassRaw modlstraw
-      `connRet`
-      intercalateWith connRet getImportOneClassHigh modlstparent 
-      `connRet` 
-      "---- ============ ----" 
-      `connRet` 
-      intercalateWith connRet getImportSOURCEOneClassHigh modlsthigh
+  in  [mkImport (cmModule m <.> "RawType")]
+      ++ map (\x -> mkImport (x<.>"RawType")) modlstraw
+      ++ map (\x -> mkImport (x<.>"Interface")) modlstparent 
+      ++ map (\x -> mkImportSrc (x<.>"Interface")) modlsthigh
 
 -- |
-genImportInCast :: ClassModule -> String 
-genImportInCast m = 
-    importOneClass (cmModule m) "RawType"
-    `connRet` 
-    importOneClass (cmModule m) "Interface"
+genImportInCast :: ClassModule -> [ImportDecl]
+genImportInCast m = [ mkImport (cmModule m <.> "RawType")
+                   ,  mkImport (cmModule m <.> "Interface") ]
 
 -- | 
-genImportInImplementation :: ClassModule -> String
+genImportInImplementation :: ClassModule -> [ImportDecl]
 genImportInImplementation m = 
   let modlstraw' = cmImportedModulesForFFI m
       modlsthigh = nub $ map getClassModuleBase $ concatMap class_allparents (cmClass m)
       modlstraw = filter (not.(flip elem modlsthigh)) modlstraw' 
-      getImportOneClassRaw mname = 
-        intercalateWith connRet (importOneClass mname) 
-                        ["RawType","Cast","Interface"]
-      getImportOneClassHigh mname = 
-        intercalateWith connRet (importOneClass mname) 
-                        ["RawType","Cast","Interface"] 
-  in  importOneClass (cmModule m) "RawType"
-      `connRet`
-      importOneClass (cmModule m) "FFI"
-      `connRet`
-      importOneClass (cmModule m) "Interface"
-      `connRet`
-      importOneClass (cmModule m) "Cast"
-      `connRet`
-      intercalateWith connRet getImportOneClassRaw modlstraw
-      `connRet` 
-      intercalateWith connRet getImportOneClassHigh modlsthigh
+  in  [ mkImport (cmModule m <.> "RawType")
+      , mkImport (cmModule m <.> "FFI")
+      , mkImport (cmModule m <.> "Interface")
+      , mkImport (cmModule m <.> "Cast") ]
+      ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
+      ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
+{- 
 -- | 
 genImportInExistential :: DaughterMap -> ClassModule -> String
 genImportInExistential dmap m = 
@@ -493,7 +448,7 @@ genImportInExistential dmap m =
           intercalateWith connRet (importOneClass mname) 
                           ["RawType", "Cast", "Interface", "Implementation"]
   in  intercalateWith connRet getImportOneClass alldaughters
-
+-}
 
 
 

@@ -12,10 +12,11 @@
 
 module FFICXX.Generate.Generator.Driver where
 
-import           Control.Applicative ((<$>))
-import           Control.Monad (when, forM_)
-import qualified Data.ByteString.Lazy.Char8 as L
+import           Control.Applicative                ((<$>))
+import           Control.Monad                      (when, forM_)
+import qualified Data.ByteString.Lazy.Char8   as L
 import           Data.Digest.Pure.MD5
+import           Language.Haskell.Exts.Pretty       (prettyPrint)
 import           System.Directory 
 import           System.FilePath
 import           System.IO
@@ -86,25 +87,25 @@ writeTopLevelFunctionCppDef wdir typemacroprefix cprefix tih =
 writeRawTypeHs :: FilePath -> ClassModule -> IO ()
 writeRawTypeHs wdir m =
   let fn = wdir </> cmModule m <.> "RawType" <.> "hs"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkRawTypeHs m) 
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkRawTypeHs m))
 
 -- | 
 writeFFIHsc :: FilePath -> ClassModule -> IO ()
 writeFFIHsc wdir m = 
   let fn = wdir </> cmModule m <.> "FFI" <.> "hsc"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkFFIHsc m)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkFFIHsc m))
 
 -- | 
 writeInterfaceHs :: AnnotateMap -> FilePath -> ClassModule -> IO ()
 writeInterfaceHs amap wdir m =
   let fn = wdir </> cmModule m <.> "Interface" <.> "hs"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHs amap m)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkInterfaceHs amap m))
 
 -- |
 writeCastHs :: FilePath -> ClassModule -> IO ()
 writeCastHs wdir m = 
   let fn = wdir </> cmModule m <.> "Cast" <.> "hs"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkCastHs m)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkCastHs m))
 
 -- | 
 writeImplementationHs :: AnnotateMap 
@@ -113,7 +114,7 @@ writeImplementationHs :: AnnotateMap
                       -> IO ()
 writeImplementationHs amap wdir m = 
   let fn = wdir </> cmModule m <.> "Implementation" <.> "hs"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkImplementationHs amap m)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkImplementationHs amap m))
 
 {-
 -- | 
@@ -132,14 +133,13 @@ writeExistentialHs templates cglobal wdir m = do
 writeInterfaceHSBOOT :: FilePath -> String -> IO ()
 writeInterfaceHSBOOT wdir mname =
   let fn = wdir </> mname <.> "Interface" <.> "hs-boot"
-  in withFile fn WriteMode $ \h -> hPutStrLn h (mkInterfaceHSBOOT mname)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkInterfaceHSBOOT mname))
 
 -- |
 writeModuleHs :: FilePath -> ClassModule -> IO () 
 writeModuleHs wdir m =
   let fn = wdir </> cmModule m <.> "hs"
-  in withFile fn WriteMode $ \h -> do 
-       hPutStrLn h (mkModuleHs m)
+  in withFile fn WriteMode $ \h -> hPutStrLn h (prettyPrint (mkModuleHs m))
 
 -- | 
 writePkgHs :: String -- ^ summary module 
