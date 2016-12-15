@@ -99,20 +99,6 @@ extractArgTypes lst =
 
 
 ----------------
-{-
--- |
-hsModuleDeclTmpl :: Text
-hsModuleDeclTmpl = "module $moduleName $moduleExp where"
-
--- |
-genModuleDecl :: Module -> Reader AnnotateMap String 
-genModuleDecl m = do 
-  let modheader = subst hsModuleDeclTmpl (context [ ("moduleName", module_name m    ) 
-                                                  , ("moduleExp" , mkModuleExports m) ])
-  return (modheader)
--}
-
-----------------
 -- | will be deprecated
 classprefix :: Class -> String 
 classprefix c = let ps = (map typeclassName . class_parents) c
@@ -451,4 +437,15 @@ genImportInExistential dmap m =
 -}
 
 
-
+genTmplDecl :: TemplateClass -> [Decl]
+genTmplDecl t = [ mkData rname [mkTBind "a"] [] []
+                , mkNewtype hname [mkTBind "a"]
+                    [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyForeignPtr rawtype]) ] []
+                , mkClass [] (typeclassNameT t) [mkTBind "a"] methods
+                    
+                ]
+  where (hname,rname) = hsTemplateClassName t
+        hightype = tycon hname
+        rawtype = TyApp (tycon rname) (mkTVar "a")
+        sigdecl f = mkFunSig (tfun_name f) (functionSignature t f)
+        methods = map (ClsDecl . sigdecl) (tclass_funcs t)

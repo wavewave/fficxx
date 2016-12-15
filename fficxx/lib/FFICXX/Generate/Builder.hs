@@ -149,10 +149,10 @@ macrofy :: String -> String
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
 simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))]
-              -> (Cabal, CabalAttr, [Class], [TopLevelFunction])
+              -> (Cabal, CabalAttr, [Class], [TopLevelFunction], [TemplateClass])
               -> [String] -- ^ extra libs
               ->  IO ()
-simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) extralibs = do
+simpleBuilder summarymodule m (cabal, cabalattr, classes, toplevelfunctions, templates) extralibs = do
   let pkgname = cabal_pkgname cabal
   putStrLn ("generating " ++ pkgname)
   cwd <- getCurrentDirectory
@@ -163,14 +163,12 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg
 
-      (mods,cihs,tih,_) = mkAll_CM_CIH_TIH_TCM
+      (mods,cihs,tih,tcms) = mkAll_CM_CIH_TIH_TCM
                             (pkgname, mkClassNSHeaderFromMap (HM.fromList m))
-                            (myclasses, toplevelfunctions,[])
+                            (classes, toplevelfunctions,templates)
       hsbootlst = mkHSBOOTCandidateList mods
-      cglobal = mkGlobal myclasses
+      cglobal = mkGlobal classes
       cabalFileName = pkgname <.> "cabal" 
-  -- templateDir <- F.getDataDir >>= return . (</> "template")
-  -- (templates :: STGroup String) <- directoryGroup templateDir
   --
   notExistThenCreate workingDir
   notExistThenCreate installDir
@@ -210,9 +208,17 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
   putStrLn "Implementation.hs file generation"
   mapM_ (\m -> gen (cmModule m <.> "Implementation" <.> "hs") (prettyPrint (mkImplementationHs mempty m))) mods
   --
+  putStrLn "Template.hs file generation"
+  mapM_ (\m -> gen (tcmModule m <.> "Template" <.> "hs") (prettyPrint (mkTemplateHs m))) tcms 
+
+
+  -- 
   putStrLn "hs-boot file generation"
   mapM_ (\m -> gen (m <.> "Interface" <.> "hs-boot") (prettyPrint (mkInterfaceHSBOOT m))) hsbootlst
   --
+
+
+  
   putStrLn "module file generation"
   mapM_ (\m -> gen (cmModule m <.> "hs") (prettyPrint (mkModuleHs m))) mods
   --

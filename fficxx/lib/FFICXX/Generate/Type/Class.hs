@@ -426,10 +426,19 @@ data Class = Class { class_cabal :: Cabal
                            , class_funcs :: [Function]
                            }
 
+data TemplateFunction = TFun { tfun_ret :: Types
+                             , tfun_name :: String
+                             , tfun_args :: Args
+                             , tfun_alias :: Maybe String }
 
-data TemplateClass = TmplClass { tclass_name :: String
-                               }
-                   deriving Show
+
+data TemplateClass = TmplCls { tclass_cabal :: Cabal
+                             , tclass_name :: String
+                             , tclass_funcs :: [TemplateFunction]
+                             }
+
+instance Show TemplateClass where
+  show x = show (tclass_name x)
 
 
 
@@ -464,6 +473,9 @@ class_allparents c = let ps = class_parents c
 
 getClassModuleBase :: Class -> String
 getClassModuleBase = (<.>) <$> (cabal_moduleprefix.class_cabal) <*> (fst.hsClassName)
+
+getTClassModuleBase :: TemplateClass -> String
+getTClassModuleBase = (<.>) <$> (cabal_moduleprefix.tclass_cabal) <*> (fst.hsTemplateClassName)
 
 
 
@@ -541,6 +553,11 @@ convertCpp2HS _c (CPT (CPTClassRef c') _) = tycon (class_name c')
 typeclassName :: Class -> String
 typeclassName c = 'I' : fst (hsClassName c)
 
+typeclassNameT :: TemplateClass -> String
+typeclassNameT c = 'I' : fst (hsTemplateClassName c)
+
+
+
 typeclassNameFromStr :: String -> String
 typeclassNameFromStr = ('I':)
 
@@ -549,9 +566,10 @@ hsClassName c =
   let cname = maybe (class_name c) id (class_alias c)
   in (cname, "Raw" ++ cname)
 
-hsTemplateClassName :: TemplateClass -> String  -- ^ High-level
-hsTemplateClassName t = tclass_name t
-
+hsTemplateClassName :: TemplateClass -> (String, String)  -- ^ High-level, 'Raw'-level
+hsTemplateClassName t =
+  let tname = tclass_name t
+  in (tname, "Raw" ++ tname)
 
 existConstructorName :: Class -> String
 existConstructorName c = 'E' : (fst.hsClassName) c
@@ -633,6 +651,19 @@ functionSignature c f =
         | otherwise          = id
       lst = arg0 (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+
+
+
+functionSignatureT :: TemplateClass -> Function -> Type
+functionSignatureT t f =
+  let ctyp = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
+      arg0
+        | isVirtualFunc f    = (mkTVar "a" :)
+        | isNonVirtualFunc f = (mkTVar (class_name c) :)
+        | otherwise          = id
+      lst = arg0 (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
+  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+
 
 
 -- | this is for FFI type.

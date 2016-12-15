@@ -6,24 +6,29 @@ import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 
 
-mycabal = Cabal { cabal_pkgname = "STL" 
-                , cabal_cheaderprefix = "STL"
-                , cabal_moduleprefix = "STL" }
+cabal = Cabal { cabal_pkgname = "STL" 
+              , cabal_cheaderprefix = "STL"
+              , cabal_moduleprefix = "STL" }
 
 -- myclass = Class mycabal 
 
 -- this is standard string library
 
-myclasses = [ ] 
+classes = [ ] 
 
-toplevelfunctions =
-  [ ]  
+toplevelfunctions =  [ ]  
 
+
+
+templates = [ TmplCls cabal "Vector"
+                [ TFun void_ "func1" [] Nothing
+                ]
+            ] 
 
 
 headerMap = [ ]
 
-mycabalattr = 
+cabalattr = 
     CabalAttr 
     { cabalattr_license = Just "BSD3"
     , cabalattr_licensefile = Just "LICENSE"
@@ -33,6 +38,6 @@ mycabalattr =
 
 main :: IO ()
 main = do 
-  simpleBuilder "STL" headerMap (mycabal,mycabalattr,myclasses,toplevelfunctions) [ "stl" ]
+  simpleBuilder "STL" headerMap (cabal,cabalattr,classes,toplevelfunctions,templates) [ "stl" ]
 
 

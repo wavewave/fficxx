@@ -171,7 +171,7 @@ mkClassNSHeaderFromMap m c = fromMaybe ([],[]) (HM.lookup (class_name c) m)
 
 
 mkTCM :: TemplateClass -> TemplateClassModule 
-mkTCM t = TCM (hsTemplateClassName t) [t]
+mkTCM t = TCM  (getTClassModuleBase t) [t]
 
 mkAll_CM_CIH_TIH_TCM
   :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)

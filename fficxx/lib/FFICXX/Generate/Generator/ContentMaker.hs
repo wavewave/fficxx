@@ -344,7 +344,14 @@ mkImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    ++ map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
 
 
-
+mkTemplateHs :: TemplateClassModule -> Module
+mkTemplateHs m = mkModule (tcmModule m <.> "Template")
+                   [lang  ["EmptyDataDecls", "TypeFamilies"] ]
+                   [ mkImport "Foreign.C.Types"
+                   , mkImport "Foreign.Ptr"     ]
+                   body
+  where ts = tcmTemplateClasses m
+        body = concatMap genTmplDecl ts 
 {- 
 -- | 
 mkExistentialEach :: STGroup String 
