@@ -15,17 +15,22 @@
 
 module FFICXX.Generate.Builder where
 
-import           Data.Char (toUpper)
-import qualified Data.HashMap.Strict as HM
-import           Data.List (intercalate)
+import           Control.Monad                           ( forM_, void, when )
+import qualified Data.ByteString.Lazy.Char8        as L
+import           Data.Char                               ( toUpper )
+import           Data.Digest.Pure.MD5                    ( md5 )
+import qualified Data.HashMap.Strict               as HM
+import           Data.List                               ( intercalate )
 import           Data.Monoid (mempty)
-import           Data.Text                              (Text)
+import           Data.Text                               ( Text )
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                     hiding (render)
-import           System.FilePath ((</>), (<.>))
-import           System.Directory (getCurrentDirectory)
-import           System.Process (readProcess)
+import           Data.Text.Template                      hiding ( render )
+import           Language.Haskell.Exts.Pretty            ( prettyPrint )
+import           System.FilePath                         ( (</>), (<.>), splitExtension )
+import           System.Directory                        ( copyFile, doesDirectoryExist, doesFileExist, getCurrentDirectory )
+import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
+import           System.Process                          ( readProcess, system )
 --
 import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Code.Cpp
@@ -35,16 +40,16 @@ import           FFICXX.Generate.Code.Cpp
 import           FFICXX.Generate.Code.Dependency
 import           FFICXX.Generate.Config
 import           FFICXX.Generate.Generator.ContentMaker
-import           FFICXX.Generate.Generator.Driver
 import           FFICXX.Generate.Type.Annotate
-import           FFICXX.Generate.Type.Class ( Cabal(..)
+import           FFICXX.Generate.Type.Class {- ( Cabal(..)
                                             , CabalAttr(..)
-                                            , Class
+                                            , Class (..)
+                                            , ClassImportHeader(..)
                                             , ClassModule
                                             , Namespace(NS)
                                             , TopLevelFunction
                                             , TopLevelImportHeader
-                                            )
+                                            ) -}
 import           FFICXX.Generate.Type.PackageInterface
 import           FFICXX.Generate.Util
 --
@@ -175,38 +180,43 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
   mkCabalFile cfg (cabal, cabalattr) summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
   --
   putStrLn "header file generation"
-  let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__") 
-  writeTypeDeclHeaders workingDir typmacro pkgname cihs
-  mapM_ (writeDeclHeaders workingDir typmacro pkgname) cihs
-  writeTopLevelFunctionHeaders workingDir typmacro pkgname tih
+  let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")
+      gen :: FilePath -> String -> IO ()
+      gen file str =
+        let path = workingDir </> file in withFile path WriteMode (flip hPutStrLn str)
+
+
+  gen (pkgname ++ "Type.h") (mkTypeDeclHeader typmacro (map cihClass cihs))
+  mapM_ (\hdr -> gen (unHdrName (cihSelfHeader hdr)) (mkDeclHeader typmacro pkgname hdr)) cihs
+  gen (tihHeaderFileName tih <.> "h") (mkTopLevelFunctionHeader typmacro pkgname tih)
   --
   putStrLn "cpp file generation"
-  mapM_ (writeCppDef workingDir) cihs
-  writeTopLevelFunctionCppDef workingDir typmacro pkgname tih
+  mapM_ (\hdr -> gen (cihSelfCpp hdr) (mkDefMain hdr)) cihs
+  gen (tihHeaderFileName tih <.> "cpp") (mkTopLevelFunctionCppDef pkgname tih)
   --
   putStrLn "RawType.hs file generation"
-  mapM_ (writeRawTypeHs workingDir) mods
+  mapM_ (\m -> gen (cmModule m <.> "RawType" <.> "hs") (prettyPrint (mkRawTypeHs m))) mods
   --
   putStrLn "FFI.hsc file generation"
-  mapM_ (writeFFIHsc workingDir) mods
+  mapM_ (\m -> gen (cmModule m <.> "FFI" <.> "hsc") (prettyPrint (mkFFIHsc m))) mods
   --
   putStrLn "Interface.hs file generation"
-  mapM_ (writeInterfaceHs mempty workingDir) mods
+  mapM_ (\m -> gen (cmModule m <.> "Interface" <.> "hs") (prettyPrint (mkInterfaceHs mempty m))) mods
   --
   putStrLn "Cast.hs file generation"
-  mapM_ (writeCastHs workingDir) mods
+  mapM_ (\m -> gen (cmModule m <.> "Cast" <.> "hs") (prettyPrint (mkCastHs m))) mods
   --
   putStrLn "Implementation.hs file generation"
-  mapM_ (writeImplementationHs mempty workingDir) mods
+  mapM_ (\m -> gen (cmModule m <.> "Implementation" <.> "hs") (prettyPrint (mkImplementationHs mempty m))) mods
   --
   putStrLn "hs-boot file generation"
-  mapM_ (writeInterfaceHSBOOT workingDir) hsbootlst
+  mapM_ (\m -> gen (m <.> "Interface" <.> "hs-boot") (prettyPrint (mkInterfaceHSBOOT m))) hsbootlst
   --
   putStrLn "module file generation"
-  mapM_ (writeModuleHs workingDir) mods
+  mapM_ (\m -> gen (cmModule m <.> "hs") (prettyPrint (mkModuleHs m))) mods
   --
   putStrLn "summary module generation generation"
-  writePkgHs summarymodule workingDir mods tih
+  gen (summarymodule <.> "hs") (mkPkgHs summarymodule mods tih)
   --
   putStrLn "copying"
   touch (workingDir </> "LICENSE")
@@ -221,6 +231,71 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
 -- | some dirty hack. later, we will do it with more proper approcah.
 
 touch :: FilePath -> IO ()
-touch fp = do
-    readProcess "touch" [fp] ""
-    return ()
+touch fp = void (readProcess "touch" [fp] "")
+
+
+notExistThenCreate :: FilePath -> IO () 
+notExistThenCreate dir = do 
+    b <- doesDirectoryExist dir
+    if b then return () else system ("mkdir -p " ++ dir) >> return ()
+
+
+{- 
+-- | now only create directory
+copyPredefined :: FilePath -> FilePath -> String -> IO () 
+copyPredefined _tdir _ddir _prefix = do 
+    return () 
+    -- notExistThenCreate (ddir </> prefix)
+    -- copyFile (tdir </> "TypeCast.hs" ) (ddir </> prefix </> "TypeCast.hs") 
+-}
+
+copyFileWithMD5Check :: FilePath -> FilePath -> IO () 
+copyFileWithMD5Check src tgt = do
+  b <- doesFileExist tgt 
+  if b 
+    then do 
+      srcmd5 <- md5 <$> L.readFile src  
+      tgtmd5 <- md5 <$> L.readFile tgt 
+      if srcmd5 == tgtmd5 then return () else copyFile src tgt 
+    else copyFile src tgt  
+
+
+copyCppFiles :: FilePath -> FilePath -> String -> (TopLevelImportHeader,[ClassImportHeader]) -> IO ()
+copyCppFiles wdir ddir cprefix (tih,cihs) = do 
+  let thfile = cprefix ++ "Type.h"
+      tlhfile = tihHeaderFileName tih <.> "h"
+      tlcppfile = tihHeaderFileName tih <.> "cpp"
+  copyFileWithMD5Check (wdir </> thfile) (ddir </> thfile) 
+  doesFileExist (wdir </> tlhfile) 
+    >>= flip when (copyFileWithMD5Check (wdir </> tlhfile) (ddir </> tlhfile))
+  doesFileExist (wdir </> tlcppfile) 
+    >>= flip when (copyFileWithMD5Check (wdir </> tlcppfile) (ddir </> tlcppfile))
+  forM_ cihs $ \header-> do 
+    let hfile = unHdrName (cihSelfHeader header)
+        cppfile = cihSelfCpp header
+    copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
+    copyFileWithMD5Check (wdir </> cppfile) (ddir </> cppfile)
+
+copyModule :: FilePath -> FilePath -> String -> ClassModule -> IO ()
+copyModule wdir ddir summarymod m = do 
+  let modbase = cmModule m 
+  let onefilecopy fname = do 
+        let (fnamebody,fnameext) = splitExtension fname
+            (mdir,mfile) = moduleDirFile fnamebody
+            origfpath = wdir </> fname
+            (mfile',_mext') = splitExtension mfile
+            newfpath = ddir </> mdir </> mfile' ++ fnameext   
+        b <- doesFileExist origfpath 
+        when b $ do 
+          notExistThenCreate (ddir </> mdir) 
+          copyFileWithMD5Check origfpath newfpath 
+
+  onefilecopy $ modbase ++ ".hs"
+  onefilecopy $ modbase ++ ".RawType.hs"
+  onefilecopy $ modbase ++ ".FFI.hsc"
+  onefilecopy $ modbase ++ ".Interface.hs"
+  onefilecopy $ modbase ++ ".Cast.hs"
+  onefilecopy $ modbase ++ ".Implementation.hs"
+  onefilecopy $ modbase ++ ".Interface.hs-boot"
+  onefilecopy $ summarymod <.> "hs"
+  return ()
