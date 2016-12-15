@@ -23,12 +23,13 @@ import qualified Data.HashMap.Strict               as HM
 import           Data.List                               ( intercalate )
 import           Data.Monoid (mempty)
 import           Data.Text                               ( Text )
-import qualified Data.Text                         as T
-import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                      hiding ( render )
+
+
+
 import           Language.Haskell.Exts.Pretty            ( prettyPrint )
 import           System.FilePath                         ( (</>), (<.>), splitExtension )
-import           System.Directory                        ( copyFile, doesDirectoryExist, doesFileExist, getCurrentDirectory )
+import           System.Directory                        ( copyFile, doesDirectoryExist
+                                                         , doesFileExist, getCurrentDirectory )
 import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
 import           System.Process                          ( readProcess, system )
 --
@@ -36,25 +37,13 @@ import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Code.Cpp
 import           FFICXX.Generate.Code.Dependency
 import           FFICXX.Generate.Config
-import           FFICXX.Generate.Code.Cpp
-import           FFICXX.Generate.Code.Dependency
-import           FFICXX.Generate.Config
 import           FFICXX.Generate.Generator.ContentMaker
-import           FFICXX.Generate.Type.Annotate
-import           FFICXX.Generate.Type.Class {- ( Cabal(..)
-                                            , CabalAttr(..)
-                                            , Class (..)
-                                            , ClassImportHeader(..)
-                                            , ClassModule
-                                            , Namespace(NS)
-                                            , TopLevelFunction
-                                            , TopLevelImportHeader
-                                            ) -}
+-- import           FFICXX.Generate.Type.Annotate
+import           FFICXX.Generate.Type.Class 
 import           FFICXX.Generate.Type.Module  
 import           FFICXX.Generate.Type.PackageInterface
 import           FFICXX.Generate.Util
 --
-import qualified FFICXX.Paths_fficxx as F
 
 -- |
 cabalTemplate :: Text
@@ -99,21 +88,19 @@ cabalTemplate =
   \$cppFiles\n"
 
 -- |
-mkCabalFile :: FFICXXConfig
-            -> (Cabal, CabalAttr)
+mkCabalFile :: (Cabal, CabalAttr)
             -> String
             -> (TopLevelImportHeader,[ClassModule])
             -> [String] -- ^ extra libs
             -> FilePath
             -> IO ()
-mkCabalFile config
-            (cabal, cabalattr)
+mkCabalFile (cabal, cabalattr)
             summarymodule
             (tih,classmodules)
             extralibs
             cabalfile
             = do
-  cpath <- getCurrentDirectory
+  -- cpath <- getCurrentDirectory
 
   let txt = subst cabalTemplate
               (context ([ ("licenseField", "license: " ++ license)
@@ -152,7 +139,7 @@ simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))]
               -> (Cabal, CabalAttr, [Class], [TopLevelFunction], [TemplateClass])
               -> [String] -- ^ extra libs
               ->  IO ()
-simpleBuilder summarymodule m (cabal, cabalattr, classes, toplevelfunctions, templates) extralibs = do
+simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, templates) extralibs = do
   let pkgname = cabal_pkgname cabal
   putStrLn ("generating " ++ pkgname)
   cwd <- getCurrentDirectory
@@ -164,10 +151,10 @@ simpleBuilder summarymodule m (cabal, cabalattr, classes, toplevelfunctions, tem
       installDir = fficxxconfig_installBaseDir cfg
 
       (mods,cihs,tih,tcms) = mkAll_CM_CIH_TIH_TCM
-                            (pkgname, mkClassNSHeaderFromMap (HM.fromList m))
+                            (pkgname, mkClassNSHeaderFromMap (HM.fromList lst))
                             (classes, toplevelfunctions,templates)
       hsbootlst = mkHSBOOTCandidateList mods
-      cglobal = mkGlobal classes
+      -- cglobal = mkGlobal classes
       cabalFileName = pkgname <.> "cabal" 
   --
   notExistThenCreate workingDir
@@ -176,7 +163,7 @@ simpleBuilder summarymodule m (cabal, cabalattr, classes, toplevelfunctions, tem
   notExistThenCreate (installDir </> "csrc")
   --
   putStrLn "cabal file generation"
-  mkCabalFile cfg (cabal, cabalattr) summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
+  mkCabalFile (cabal, cabalattr) summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
   --
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")
@@ -191,7 +178,7 @@ simpleBuilder summarymodule m (cabal, cabalattr, classes, toplevelfunctions, tem
   --
   putStrLn "cpp file generation"
   mapM_ (\hdr -> gen (cihSelfCpp hdr) (mkDefMain hdr)) cihs
-  gen (tihHeaderFileName tih <.> "cpp") (mkTopLevelFunctionCppDef pkgname tih)
+  gen (tihHeaderFileName tih <.> "cpp") (mkTopLevelFunctionCppDef tih)
   --
   putStrLn "RawType.hs file generation"
   mapM_ (\m -> gen (cmModule m <.> "RawType" <.> "hs") (prettyPrint (mkRawTypeHs m))) mods

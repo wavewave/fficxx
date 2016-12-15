@@ -19,9 +19,8 @@ import           Control.Applicative               ((<$>),(<*>))
 import           Data.Char
 import           Data.Default                      (Default(def))
 import           Data.List
-import           Data.Monoid
 import qualified Data.Map                     as M
-import           Language.Haskell.Exts.Syntax      (Context(..), Asst(..), Type(..), unit_tycon)
+import           Language.Haskell.Exts.Syntax      (Context, Asst(..), Type(..), unit_tycon)
 import           System.FilePath
 --
 import           FFICXX.Generate.Util
@@ -60,6 +59,7 @@ data Types = Void
            | SelfType
            | CT  CTypes IsConst
            | CPT CPPTypes IsConst
+           ---    | TemplateType TemplateClass
            deriving Show
 
 cvarToStr :: CTypes -> IsConst -> String -> String
@@ -653,7 +653,7 @@ functionSignature c f =
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
 
 
-
+{-
 functionSignatureT :: TemplateClass -> Function -> Type
 functionSignatureT t f =
   let ctyp = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
@@ -663,7 +663,7 @@ functionSignatureT t f =
         | otherwise          = id
       lst = arg0 (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
-
+-}
 
 
 -- | this is for FFI type.
@@ -676,20 +676,20 @@ hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
         selftyp = TyApp tyPtr (tycon rcname)
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsargtype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
-        hsargtype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
+        hsargtype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
         hsargtype SelfType     = selftyp
         hsargtype _ = error "undefined hsargtype"
 
         hsrettype Void         = unit_tycon
         hsrettype SelfType     = selftyp
         hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsrettype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
-        hsrettype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
+        hsrettype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsrettype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
 
 
 -- | this is for FFI
@@ -702,18 +702,18 @@ hsFuncTypNoSelf c f = foldr1 TyFun (argtyps ++ [TyApp (tycon "IO") rettyp])
         selftyp = TyApp tyPtr (tycon rcname)
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsargtype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
-        hsargtype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
+        hsargtype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
         hsargtype SelfType     = selftyp
         hsargtype _ = error "undefined hsargtype"
 
         hsrettype Void         = unit_tycon
         hsrettype SelfType     = selftyp
         hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsrettype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
-        hsrettype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
+        hsrettype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsrettype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
 

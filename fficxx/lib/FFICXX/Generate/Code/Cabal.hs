@@ -12,7 +12,6 @@
 
 module FFICXX.Generate.Code.Cabal where
 
-import           FFICXX.Generate.Type.Class 
 import           FFICXX.Generate.Type.Module
 
 cabalIndentation :: String 

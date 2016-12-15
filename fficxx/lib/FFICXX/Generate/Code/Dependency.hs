@@ -14,7 +14,6 @@
 
 module FFICXX.Generate.Code.Dependency where
 
-import           Control.Applicative
 import           Data.Function (on)
 import           Data.List 
 import           Data.Maybe

@@ -15,22 +15,8 @@
 
 module FFICXX.Generate.Code.HsFFI where
 
-import           Data.Char                               ( toLower )
-import           Data.List
 import           Data.Maybe                              ( fromMaybe, mapMaybe )
-import           Data.Text                               ( Text )
-import qualified Data.Text                         as T
-import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                      hiding (render)
-import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
-                                                         , ClassDecl(..), InstDecl(..)
-                                                         , Pat(..), Name(..), QOp(..), Op(..)
-                                                         , Asst(..), ConDecl(..), QualConDecl(..)
-                                                         , DataOrNew(..), TyVarBind (..), Binds(..)
-                                                         , Rhs(..)
-                                                         , unit_tycon)
-import           Language.Haskell.Exts.Pretty
-import           Language.Haskell.Exts.SrcLoc            ( noLoc )
+import           Language.Haskell.Exts.Syntax            ( Type(..), Decl(..), unit_tycon)
 import           System.FilePath ((<.>))
 -- 
 import           FFICXX.Generate.Util
@@ -79,7 +65,6 @@ genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename ++ " TopLevel_" ++ fnam
           case tfn of
             TopLevelFunction {..} -> (fromMaybe toplevelfunc_name toplevelfunc_alias, toplevelfunc_args, toplevelfunc_ret)
             TopLevelVariable {..} -> (fromMaybe toplevelvar_name toplevelvar_alias, [], toplevelvar_ret)
-        (x:xs)  = fname
         hfilename = tihHeaderFileName header <.> "h"
         cfname = "c_" ++ toLowers fname
         typ = foldr1 TyFun (map (hsargtype . fst) args ++ [TyApp (tycon "IO") (hsrettype ret)])

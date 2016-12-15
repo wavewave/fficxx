@@ -17,12 +17,8 @@ module FFICXX.Generate.Code.Cpp where
 
 import           Data.Char 
 import           Data.List
-import           Data.Text                              (Text)
-import qualified Data.Text                         as T
-import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                     hiding (render)
 import           System.FilePath
-
+--
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Code.MethodDef
 import           FFICXX.Generate.Code.Cabal
@@ -30,7 +26,7 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 --
-import Debug.Trace
+
 
 
 -- Class Declaration and Definition
@@ -254,13 +250,13 @@ genTopLevelFuncCppDefinition TopLevelVariable {..} =
       callstr = toplevelvar_name
       returnstr = case toplevelvar_ret of          
         Void -> callstr ++ ";"
-        SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
-        (CT _ctyp _isconst) -> "return "++callstr++";" 
-        (CT (CRef _) _) -> "return ((*)"++callstr++");"
-        (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
-                                  ++">(("++str++"*)"++callstr++");" 
-          where str = class_name c' 
-        (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
+        SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
+        CT (CRef _) _           -> "return ((*)"++callstr++");"
+        CT _ _                  -> "return "++callstr++";" 
+        CPT (CPTClass c') _     -> "return to_nonconst<"++str++"_t,"++str
+                                   ++">(("++str++"*)"++callstr++");" 
+                                   where str = class_name c' 
+        CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");" 
       funcDefStr = returnstr 
   in subst tmpl (context [ ("returntype", rettypeToString toplevelvar_ret               )  
                          , ("funcname"  , "TopLevel_" 

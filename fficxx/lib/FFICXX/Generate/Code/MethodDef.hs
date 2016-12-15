@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.MethodDef
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -14,11 +14,6 @@
 
 module FFICXX.Generate.Code.MethodDef where
 
-import           Data.Text                              (Text)
-import qualified Data.Text                         as T
-import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                     hiding (render)
--- 
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util 
 

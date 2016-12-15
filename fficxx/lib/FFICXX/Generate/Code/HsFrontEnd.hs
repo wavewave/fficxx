@@ -18,22 +18,21 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import           Control.Monad.State
 import           Control.Monad.Reader
-import           Data.Char                               (toLower)
+
 import           Data.List
-import qualified Data.Map             as M
-import           Data.Maybe
+
+
 import           Data.Text                               (Text)
-import qualified Data.Text                         as T
-import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                      hiding (render)
+
+
+
 import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
                                                          , ClassDecl(..), InstDecl(..), ImportDecl(..)
-                                                         , Pat(..), Name(..), QOp(..), Op(..)
-                                                         , Asst(..), ConDecl(..), QualConDecl(..)
+                                                         , Pat(..), Name(..)
+                                                         , Asst(..), QualConDecl(..)
                                                          , DataOrNew(..), TyVarBind (..), Binds(..)
                                                          , Rhs(..), ExportSpec(..), Namespace(..)
-                                                         , unit_tycon)
-import           Language.Haskell.Exts.Pretty
+                                                         )
 import           Language.Haskell.Exts.SrcLoc            ( noLoc )
 import           System.FilePath                         ((<.>))
 -- 
@@ -42,10 +41,8 @@ import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
---
-import Debug.Trace
 
------------------
+
 
 mkComment :: Int -> String -> String
 mkComment indent str 
@@ -186,7 +183,7 @@ genHsFrontInstExistVirtualMethod p c f =
         rhs = (mkVar "return" `dot` mkVar ename) `App`
               mkVar "=<<" `App`
               (mkVar fname `App` foldl1 App (mkVar "x":map mkVar args))
-        args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ [1..] 
+        args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ ([1..] :: [Int])
 
 ---------------------
 
@@ -220,6 +217,7 @@ genHsFrontInstStatic c =
 
 -----
 
+castBody :: [InstDecl]
 castBody = [ InsDecl (mkBind1 "cast" []
                        (mkVar "unsafeForeignPtrToPtr" `dot`
                         mkVar "castForeignPtr" `dot`
@@ -316,9 +314,8 @@ genHsFrontUpcastClass c = mkFun ("upcast"++highname) typ [mkPVar "h"] rhs Nothin
 
 genHsFrontDowncastClass :: Class -> [Decl]
 genHsFrontDowncastClass c = mkFun ("downcast"++highname) typ [mkPVar "h"] rhs Nothing
-  where (highname,rawname) = hsClassName c
+  where (highname,_rawname) = hsClassName c
         hightype = tycon highname
-        rawtype = tycon rawname
         iname = typeclassName c
         a_bind = UnkindedVar (Ident "a")
         a_tvar = mkTVar "a"
@@ -445,7 +442,6 @@ genTmplDecl t = [ mkData rname [mkTBind "a"] [] []
                     
                 ]
   where (hname,rname) = hsTemplateClassName t
-        hightype = tycon hname
         rawtype = TyApp (tycon rname) (mkTVar "a")
-        sigdecl f = mkFunSig (tfun_name f) (functionSignature t f)
+        sigdecl f = mkFunSig (tfun_name f) (tycon "Test") -- (functionSignature t f)
         methods = map (ClsDecl . sigdecl) (tclass_funcs t)

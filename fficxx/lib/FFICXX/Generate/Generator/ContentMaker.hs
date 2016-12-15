@@ -15,7 +15,6 @@
 
 module FFICXX.Generate.Generator.ContentMaker where 
 
-import           Control.Applicative
 import           Control.Lens                           (set,at)
 import           Control.Monad.Trans.Reader
 import           Data.Function                          (on)
@@ -24,9 +23,6 @@ import           Data.List
 import           Data.List.Split                        (splitOn) 
 import           Data.Maybe
 import           Data.Text                              (Text)
-import qualified Data.Text                         as T
-import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                     hiding (render)
 import           Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
 import           Language.Haskell.Exts.Pretty           (prettyPrint)
 import           System.FilePath
@@ -240,10 +236,8 @@ mkTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
                                         , ("declarationbody"  , declBodyStr   ) ])
 
 -- | 
-mkTopLevelFunctionCppDef :: String     -- ^ C prefix 
-                         -> TopLevelImportHeader
-                         -> String 
-mkTopLevelFunctionCppDef cprefix tih =
+mkTopLevelFunctionCppDef :: TopLevelImportHeader -> String 
+mkTopLevelFunctionCppDef tih =
   let cihs = tihClassDep tih
       declHeaderStr = "#include \"" ++ tihHeaderFileName tih <.> "h" ++ "\""
                       `connRet2`
@@ -305,7 +299,7 @@ mkCastHs :: ClassModule -> Module
 mkCastHs m = mkModule (cmModule m <.> "Cast")
                [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
                       , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
-               castImports castBody
+               castImports body
   where classes = cmClass m
         castImports = [ mkImport "Foreign.Ptr"
                       , mkImportExp "Foreign.ForeignPtr" [ "castForeignPtr", "newForeignPtr_" ]
@@ -313,8 +307,8 @@ mkCastHs m = mkModule (cmModule m <.> "Cast")
                       , mkImport "FFICXX.Runtime.Cast"
                       , mkImport "System.IO.Unsafe" ]
                       ++ genImportInCast m
-        castBody = mapMaybe genHsFrontInstCastable classes
-                   ++ mapMaybe genHsFrontInstCastableSelf classes
+        body = mapMaybe genHsFrontInstCastable classes
+               ++ mapMaybe genHsFrontInstCastableSelf classes
 
 -- | 
 mkImplementationHs :: AnnotateMap -> ClassModule -> Module
