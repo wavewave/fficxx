@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Dependency
--- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -22,6 +22,7 @@ import qualified Data.HashMap.Strict as HM
 import           System.FilePath 
 --
 import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 
 
@@ -158,23 +159,24 @@ mkClassModule mkincheaders c =
                  <*> highs_nonsource  
                  <*> raws 
                  <*> highs_source
-                 <*> ffis 
+                 <*> ffis
             ) c
     in r 
     
   where highs_nonsource = map getClassModuleBase . mkModuleDepHighNonSource
         raws = map getClassModuleBase . mkModuleDepRaw 
         highs_source = map getClassModuleBase . mkModuleDepHighSource
-        ffis = map getClassModuleBase . mkModuleDepFFI 
+        ffis = map getClassModuleBase . mkModuleDepFFI
 
 
 mkClassNSHeaderFromMap :: HM.HashMap String ([Namespace],[HeaderName]) -> Class -> ([Namespace],[HeaderName])
 mkClassNSHeaderFromMap m c = fromMaybe ([],[]) (HM.lookup (class_name c) m)
 
-mkAll_ClassModules_CIH_TIH :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
-                        -> ([Class],[TopLevelFunction]) 
-                        -> ([ClassModule],[ClassImportHeader],TopLevelImportHeader)
-mkAll_ClassModules_CIH_TIH (pkgname,mkNSandIncHdrs) (cs,fs) = 
+mkAll_CM_CIH_TIH_TCM
+  :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
+  -> ([Class],[TopLevelFunction],[TemplateClass]) 
+  -> ([ClassModule],[ClassImportHeader],TopLevelImportHeader,[TemplateClassModule])
+mkAll_CM_CIH_TIH_TCM (pkgname,mkNSandIncHdrs) (cs,fs,ts) = 
   let ms = map (mkClassModule mkNSandIncHdrs) cs 
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
@@ -186,7 +188,7 @@ mkAll_ClassModules_CIH_TIH (pkgname,mkNSandIncHdrs) (cs,fs) =
         foldr (\c acc-> (find (\x -> (class_name . cihClass) x == class_name c) cihs):acc) [] tl_cs 
       -- 
       tih = TopLevelImportHeader (pkgname ++ "TopLevel") tl_cihs fs 
-  in (ms,cihs,tih)
+  in (ms,cihs,tih,[])
 
 
 mkHSBOOTCandidateList :: [ClassModule] -> [String]

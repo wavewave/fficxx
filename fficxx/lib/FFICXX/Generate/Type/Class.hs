@@ -26,7 +26,6 @@ import           System.FilePath
 --
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
-import           FFICXX.Generate.Type.PackageInterface
 
 -- some type aliases
 
@@ -308,11 +307,6 @@ hsFrontNameForTopLevelFunction tfn =
     in toLower x : xs
 
 
-data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String
-                                                 , tihClassDep :: [ClassImportHeader]
-                                                 , tihFuncs :: [TopLevelFunction]
-                                                 }
-
 
 
 isNewFunc :: Function -> Bool
@@ -433,27 +427,11 @@ data Class = Class { class_cabal :: Cabal
                            }
 
 
-newtype Namespace = NS { unNamespace :: String } deriving (Show)
+data TemplateClass = TmplClass { tclass_name :: String
+                               }
+                   deriving Show
 
-data ClassImportHeader = ClassImportHeader
-                       { cihClass :: Class
-                       , cihSelfHeader :: HeaderName
-                       , cihNamespace :: [Namespace]
-                       , cihSelfCpp :: String
-                       , cihIncludedHPkgHeadersInH :: [HeaderName] -- [String]
-                       , cihIncludedHPkgHeadersInCPP :: [HeaderName] -- [String]
-                       , cihIncludedCPkgHeaders :: [HeaderName]
-                       } deriving (Show)
 
-data ClassModule = ClassModule
-                   { cmModule :: String
-                   , cmClass :: [Class]
-                   , cmCIH :: [ClassImportHeader]
-                   , cmImportedModulesHighNonSource :: [String]
-                   , cmImportedModulesRaw :: [String]
-                   , cmImportedModulesHighSource :: [String]
-                   , cmImportedModulesForFFI :: [String]
-                   } deriving (Show)
 
 data ClassGlobal = ClassGlobal
                    { cgDaughterSelfMap :: DaughterMap

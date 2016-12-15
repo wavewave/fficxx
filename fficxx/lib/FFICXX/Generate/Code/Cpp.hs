@@ -27,6 +27,7 @@ import           FFICXX.Generate.Util
 import           FFICXX.Generate.Code.MethodDef
 import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 --
 import Debug.Trace

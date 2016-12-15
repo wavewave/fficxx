@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Cabal
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -12,7 +12,8 @@
 
 module FFICXX.Generate.Code.Cabal where
 
-import FFICXX.Generate.Type.Class 
+import           FFICXX.Generate.Type.Class 
+import           FFICXX.Generate.Type.Module
 
 cabalIndentation :: String 
 cabalIndentation = replicate 23 ' ' 

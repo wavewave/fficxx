@@ -36,6 +36,7 @@ import           FFICXX.Generate.Code.HsFFI
 import           FFICXX.Generate.Code.HsFrontEnd
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface  ( TypeMacro(..), HeaderName(..)
                                                         , PackageInterface, PackageName(..)
                                                         , ClassName(..)

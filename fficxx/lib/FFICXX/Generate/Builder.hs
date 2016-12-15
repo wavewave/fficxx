@@ -50,6 +50,7 @@ import           FFICXX.Generate.Type.Class {- ( Cabal(..)
                                             , TopLevelFunction
                                             , TopLevelImportHeader
                                             ) -}
+import           FFICXX.Generate.Type.Module  
 import           FFICXX.Generate.Type.PackageInterface
 import           FFICXX.Generate.Util
 --
@@ -162,9 +163,9 @@ simpleBuilder summarymodule m (cabal, cabalattr, myclasses, toplevelfunctions) e
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg
 
-      (mods,cihs,tih) = mkAll_ClassModules_CIH_TIH
-                          (pkgname, mkClassNSHeaderFromMap (HM.fromList m))
-                          (myclasses, toplevelfunctions)
+      (mods,cihs,tih,_) = mkAll_CM_CIH_TIH_TCM
+                            (pkgname, mkClassNSHeaderFromMap (HM.fromList m))
+                            (myclasses, toplevelfunctions,[])
       hsbootlst = mkHSBOOTCandidateList mods
       cglobal = mkGlobal myclasses
       cabalFileName = pkgname <.> "cabal" 

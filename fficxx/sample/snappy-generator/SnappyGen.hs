@@ -2,6 +2,7 @@ import Data.Monoid (mempty)
 --
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 
 snappyclasses = [ ] 
