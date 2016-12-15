@@ -38,9 +38,9 @@ data ClassModule = ClassModule
                    , cmImportedModulesForFFI :: [String]
                    } deriving (Show)
 
-data TemplateClassModule = TCMod { tcmModule :: String
-                                 , tcmTemplateClasses :: [TemplateClass]
-                                 } deriving (Show)
+data TemplateClassModule = TCM { tcmModule :: String
+                               , tcmTemplateClasses :: [TemplateClass]
+                               } deriving (Show)
 
 data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String
                                                  , tihClassDep :: [ClassImportHeader]

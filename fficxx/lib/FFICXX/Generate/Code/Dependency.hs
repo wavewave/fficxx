@@ -152,17 +152,14 @@ mkModuleDepFFI c =
 mkClassModule :: (Class->([Namespace],[HeaderName]))
               -> Class 
               -> ClassModule 
-mkClassModule mkincheaders c = 
-    let r = (ClassModule <$> getClassModuleBase  
-                 <*> pure
-                 <*> return . mkCIH mkincheaders
-                 <*> highs_nonsource  
-                 <*> raws 
-                 <*> highs_source
-                 <*> ffis
-            ) c
-    in r 
-    
+mkClassModule mkincheaders c = (ClassModule <$> getClassModuleBase  
+                                            <*> pure
+                                            <*> return . mkCIH mkincheaders
+                                            <*> highs_nonsource  
+                                            <*> raws 
+                                            <*> highs_source
+                                            <*> ffis
+                               ) c
   where highs_nonsource = map getClassModuleBase . mkModuleDepHighNonSource
         raws = map getClassModuleBase . mkModuleDepRaw 
         highs_source = map getClassModuleBase . mkModuleDepHighSource
@@ -171,6 +168,10 @@ mkClassModule mkincheaders c =
 
 mkClassNSHeaderFromMap :: HM.HashMap String ([Namespace],[HeaderName]) -> Class -> ([Namespace],[HeaderName])
 mkClassNSHeaderFromMap m c = fromMaybe ([],[]) (HM.lookup (class_name c) m)
+
+
+mkTCM :: TemplateClass -> TemplateClassModule 
+mkTCM t = TCM (hsTemplateClassName t) [t]
 
 mkAll_CM_CIH_TIH_TCM
   :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
@@ -187,8 +188,9 @@ mkAll_CM_CIH_TIH_TCM (pkgname,mkNSandIncHdrs) (cs,fs,ts) =
       tl_cihs = catMaybes $ 
         foldr (\c acc-> (find (\x -> (class_name . cihClass) x == class_name c) cihs):acc) [] tl_cs 
       -- 
-      tih = TopLevelImportHeader (pkgname ++ "TopLevel") tl_cihs fs 
-  in (ms,cihs,tih,[])
+      tih = TopLevelImportHeader (pkgname ++ "TopLevel") tl_cihs fs
+      tcms = map mkTCM ts
+  in (ms,cihs,tih,tcms)
 
 
 mkHSBOOTCandidateList :: [ClassModule] -> [String]

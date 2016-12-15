@@ -549,6 +549,10 @@ hsClassName c =
   let cname = maybe (class_name c) id (class_alias c)
   in (cname, "Raw" ++ cname)
 
+hsTemplateClassName :: TemplateClass -> String  -- ^ High-level
+hsTemplateClassName t = tclass_name t
+
+
 existConstructorName :: Class -> String
 existConstructorName c = 'E' : (fst.hsClassName) c
 
