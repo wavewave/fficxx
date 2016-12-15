@@ -84,13 +84,18 @@ genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename ++ " TopLevel_" ++ fnam
         typ = foldr1 TyFun (map (hsargtype . fst) args ++ [TyApp (tycon "IO") (hsrettype ret)])
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsargtype (CPT x _)    = tycon (hsCppTypeName x)
+        hsargtype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
+        hsargtype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
         hsargtype SelfType     = error "no self for top level function"
         hsargtype _ = error "undefined hsargtype"
 
         hsrettype Void         = unit_tycon
         hsrettype SelfType     = error "no self fro top level function"
         hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsrettype (CPT x _ )   = tycon (hsCppTypeName x)
-
+        hsrettype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
+        hsrettype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
 

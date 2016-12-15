@@ -264,10 +264,6 @@ hsCTypeName CTCharStarStar = "(Ptr (CString))"
 hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")"
 hsCTypeName (CRef t) = "(Ptr " ++ hsCTypeName t ++ ")"
 
-hsCppTypeName :: CPPTypes -> String
-hsCppTypeName (CPTClass c) =  "(Ptr "++rawname++")"  where rawname = snd (hsClassName c)
-hsCppTypeName (CPTClassRef c) = "(Ptr "++rawname++")" where rawname = snd (hsClassName c)
-
 -------------
 
 type Args = [(Types,String)]
@@ -578,46 +574,6 @@ hsClassName c =
 existConstructorName :: Class -> String
 existConstructorName c = 'E' : (fst.hsClassName) c
 
-{- 
--- | this is for FFI type.
-hsFuncTyp :: Class -> Function -> String
-hsFuncTyp c f = let args = genericFuncArgs f
-                    ret  = genericFuncRet f
-                in  selfstr ++ " -> " ++ concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret
-
-  where (_hcname,rcname) = hsClassName c
-        selfstr = "(Ptr " ++ rcname ++ ")"
-
-        hsargtype (CT ctype _) = hsCTypeName ctype
-        hsargtype (CPT x _) = hsCppTypeName x
-        hsargtype SelfType = selfstr
-        hsargtype _ = error "undefined hsargtype"
-
-        hsrettype Void = "IO ()"
-        hsrettype SelfType = "IO " ++ selfstr
-        hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
-        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
--}
-{-
--- | this is for FFI
-hsFuncTypNoSelf :: Class -> Function -> String
-hsFuncTypNoSelf c f = let args = genericFuncArgs f
-                          ret  = genericFuncRet f
-                      in  intercalateWith connArrow id $ map (hsargtype . fst) args ++ [hsrettype ret]
-
-  where (_hcname,rcname) = hsClassName c
-        selfstr = "(Ptr " ++ rcname ++ ")"
-
-        hsargtype (CT ctype _) = hsCTypeName ctype
-        hsargtype (CPT x _) = hsCppTypeName x
-        hsargtype SelfType = selfstr
-        hsargtype _ = error "undefined hsargtype"
-
-        hsrettype Void = "IO ()"
-        hsrettype SelfType = "IO " ++ selfstr
-        hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
-        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
--}
 
 hscFuncName :: Class -> Function -> String
 hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (aliasedFuncName c f)
@@ -660,7 +616,6 @@ aliasedFuncName c f =
     Virtual _ str _ a -> maybe str id a
     NonVirtual _ str _ a-> maybe (nonvirtualName c str) id a
     Static _ str _ a -> maybe (nonvirtualName c str) id a
-    -- AliasVirtual _ _  _ alias -> alias
     Destructor a -> maybe destructorName id a
 
 cppStaticName :: Class -> Function -> String
@@ -672,7 +627,6 @@ cppFuncName c f =   case f of
     Virtual _ _  _ _ -> func_name f
     NonVirtual _ _ _ _-> func_name f
     Static _ _ _ _-> cppStaticName c f
-    -- AliasVirtual _ _  _ _ _ -> func_name f
     Destructor _ -> destructorName
 
 constructorName :: Class -> String
@@ -709,14 +663,20 @@ hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
         selftyp = TyApp tyPtr (tycon rcname)
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsargtype (CPT x _)    = tycon (hsCppTypeName x)
+        hsargtype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
+        hsargtype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
         hsargtype SelfType     = selftyp
         hsargtype _ = error "undefined hsargtype"
 
         hsrettype Void         = unit_tycon
         hsrettype SelfType     = selftyp
         hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsrettype (CPT x _ )   = tycon (hsCppTypeName x)
+        hsrettype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
+        hsrettype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
 
 
 -- | this is for FFI
@@ -729,12 +689,18 @@ hsFuncTypNoSelf c f = foldr1 TyFun (argtyps ++ [TyApp (tycon "IO") rettyp])
         selftyp = TyApp tyPtr (tycon rcname)
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsargtype (CPT x _)    = tycon (hsCppTypeName x)
+        hsargtype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
+        hsargtype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
         hsargtype SelfType     = selftyp
         hsargtype _ = error "undefined hsargtype"
 
         hsrettype Void         = unit_tycon
         hsrettype SelfType     = selftyp
         hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsrettype (CPT x _ )   = tycon (hsCppTypeName x)
+        hsrettype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
+        hsrettype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName c)
 
