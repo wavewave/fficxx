@@ -59,7 +59,7 @@ data Types = Void
            | SelfType
            | CT  CTypes IsConst
            | CPT CPPTypes IsConst
-           ---    | TemplateType TemplateClass
+           | TemplateType TemplateClass
            deriving Show
 
 cvarToStr :: CTypes -> IsConst -> String -> String
@@ -383,10 +383,10 @@ rettypeToString :: Types -> String
 rettypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
 rettypeToString Void = "void"
 rettypeToString SelfType = "Type ## _p"
-rettypeToString (CPT (CPTClass c) _) = str ++ "_p"
-  where str = class_name c
-rettypeToString (CPT (CPTClassRef c) _) = str ++ "_p"
-  where str = class_name c
+rettypeToString (CPT (CPTClass c) _) = class_name c ++ "_p"
+rettypeToString (CPT (CPTClassRef c) _) = class_name c ++ "_p"
+rettypeToString (TemplateType t) = tclass_name t ++ "_p"
+
 
 --------
 
@@ -520,6 +520,7 @@ ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
 ctypToHsTyp _c (CT (CRef t) _) = hsCTypeName (CRef t)
 ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
+ctypToHsTyp _c (TemplateType t) = "("++ tclass_name t ++ " a)"
 
 
 -- |
@@ -547,6 +548,7 @@ convertCpp2HS Nothing SelfType         = error "convertCpp2HS : SelfType but no 
 convertCpp2HS _c (CT t _)              = convertC2HS t
 convertCpp2HS _c (CPT (CPTClass c') _)    = tycon (class_name c')
 convertCpp2HS _c (CPT (CPTClassRef c') _) = tycon (class_name c')
+convertCpp2HS _c (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVar "a")
 
 
 
@@ -653,17 +655,15 @@ functionSignature c f =
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
 
 
-{-
-functionSignatureT :: TemplateClass -> Function -> Type
+
+functionSignatureT :: TemplateClass -> TemplateFunction -> Type
 functionSignatureT t f =
-  let ctyp = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
-      arg0
-        | isVirtualFunc f    = (mkTVar "a" :)
-        | isNonVirtualFunc f = (mkTVar (class_name c) :)
-        | otherwise          = id
-      lst = arg0 (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
+  let (hname,_) = hsTemplateClassName t
+      ctyp = tycon $ (ctypToHsTyp Nothing . tfun_ret) f
+      arg0 =  (TyApp (tycon hname) (mkTVar "a") :)
+      lst = arg0 (map (convertCpp2HS Nothing . fst) (tfun_args f))
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
--}
+
 
 
 -- | this is for FFI type.
@@ -680,6 +680,8 @@ hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
           where rawname = snd (hsClassName d)
         hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
+        hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
+          where rawname = snd (hsTemplateClassName t)
         hsargtype SelfType     = selftyp
         hsargtype _ = error "undefined hsargtype"
 
@@ -690,6 +692,8 @@ hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
           where rawname = snd (hsClassName d)
         hsrettype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
+        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
+          where rawname = snd (hsTemplateClassName t)
 
 
 -- | this is for FFI
@@ -706,6 +710,8 @@ hsFuncTypNoSelf c f = foldr1 TyFun (argtyps ++ [TyApp (tycon "IO") rettyp])
           where rawname = snd (hsClassName d)
         hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
+        hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
+          where rawname = snd (hsTemplateClassName t)
         hsargtype SelfType     = selftyp
         hsargtype _ = error "undefined hsargtype"
 
@@ -716,4 +722,6 @@ hsFuncTypNoSelf c f = foldr1 TyFun (argtyps ++ [TyApp (tycon "IO") rettyp])
           where rawname = snd (hsClassName d)
         hsrettype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
+        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
+          where rawname = snd (hsTemplateClassName t)
 

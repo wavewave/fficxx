@@ -34,11 +34,6 @@ genHsFFI header =
                ++ (class_funcs c) 
   in mapMaybe (hsFFIClassFunc h c) allfns
 
-{-
-genAllHsFFI :: [ClassImportHeader] -> String 
-genAllHsFFI = intercalateWith connRet2 genHsFFI 
--}
-
 --------
 
 hsFFIClassFunc :: HeaderName -> Class -> Function -> Maybe Decl
@@ -84,4 +79,6 @@ genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename ++ " TopLevel_" ++ fnam
           where rawname = snd (hsClassName c)
         hsrettype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName c)
+        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
+          where rawname = snd (hsTemplateClassName t)
 

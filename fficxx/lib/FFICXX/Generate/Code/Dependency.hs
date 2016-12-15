@@ -66,11 +66,12 @@ mkCIH mkNSandIncHdrs c = let r = ClassImportHeader c
 
 -- |
 extractClassFromType :: Types -> Maybe Class
-extractClassFromType Void = Nothing
-extractClassFromType SelfType = Nothing
-extractClassFromType (CT _ _) = Nothing
-extractClassFromType (CPT (CPTClass c) _) = Just c
+extractClassFromType Void                    = Nothing
+extractClassFromType SelfType                = Nothing
+extractClassFromType (CT _ _)                = Nothing
+extractClassFromType (CPT (CPTClass c) _)    = Just c
 extractClassFromType (CPT (CPTClassRef c) _) = Just c
+extractClassFromType (TemplateType _)        = Nothing
 
 
 -- | class dependency for a given function 

@@ -443,5 +443,5 @@ genTmplDecl t = [ mkData rname [mkTBind "a"] [] []
                 ]
   where (hname,rname) = hsTemplateClassName t
         rawtype = TyApp (tycon rname) (mkTVar "a")
-        sigdecl f = mkFunSig (tfun_name f) (tycon "Test") -- (functionSignature t f)
+        sigdecl f = mkFunSig (tfun_name f) (functionSignatureT t f)
         methods = map (ClsDecl . sigdecl) (tclass_funcs t)

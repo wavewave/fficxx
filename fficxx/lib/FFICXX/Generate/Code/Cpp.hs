@@ -145,16 +145,6 @@ genAllCppHeaderInclude header =
       map unHdrName (cihIncludedHPkgHeadersInCPP header
                      ++ cihIncludedCPkgHeaders header)
 
-{-
-
--- we do not use this. 
-genModuleIncludeHeader :: [ClassImportHeader] -> String 
-genModuleIncludeHeader headers =
-  let strlst = map ((\x->"#include \""++x++"\"") . unHdrName . cihSelfHeader) headers 
-  in  intercalate "\n" strlst 
--}
-
-
 ----
 
 genIncludeFiles :: String        -- ^ package name 
@@ -231,14 +221,15 @@ genTopLevelFuncCppDefinition TopLevelFunction {..} =
                 ++ argsToCallString toplevelfunc_args   
                 ++ ")"
       returnstr = case toplevelfunc_ret of          
-        Void -> callstr ++ ";"
-        SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
-        (CT (CRef _) _) -> "return ((*)"++callstr++");"
-        (CT _ctyp _isconst) -> "return "++callstr++";" 
-        (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
-                                  ++">(("++str++"*)"++callstr++");" 
-          where str = class_name c' 
-        (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
+        Void                    -> callstr ++ ";"
+        SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
+        CT (CRef _) _           -> "return ((*)"++callstr++");"
+        CT _ _                  -> "return "++callstr++";" 
+        CPT (CPTClass c') _     -> "return to_nonconst<"++str++"_t,"++str
+                                    ++">(("++str++"*)"++callstr++");" 
+                                    where str = class_name c' 
+        CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
+        TemplateType _          -> "undefined"
       funcDefStr = returnstr 
   in subst tmpl (context [ ("returntype", rettypeToString toplevelfunc_ret                )  
                          , ("funcname"  , "TopLevel_" 
@@ -256,7 +247,8 @@ genTopLevelFuncCppDefinition TopLevelVariable {..} =
         CPT (CPTClass c') _     -> "return to_nonconst<"++str++"_t,"++str
                                    ++">(("++str++"*)"++callstr++");" 
                                    where str = class_name c' 
-        CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");" 
+        CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
+        TemplateType _          -> "undefined"
       funcDefStr = returnstr 
   in subst tmpl (context [ ("returntype", rettypeToString toplevelvar_ret               )  
                          , ("funcname"  , "TopLevel_" 
