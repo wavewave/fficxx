@@ -104,16 +104,15 @@ tmplFunToDecl t@TmplCls {..} f@TFun {..} =
              , ("args" , tmplAllArgsToString t tfun_args )
              , ("ret"  , tmplRetTypeToString tfun_ret    ) ]) 
 
-{-
+
 tmplFunToDef :: TemplateClass -> TemplateFunction -> String
-tmplFunToDef t f = 
-    let declstr = funcToDecl c func
-        callstr = -- "to_nonconst<Type,Type ## _t>(p)->" 
-                  "TYPECASTMETHOD(Type,"++ aliasedFuncName c func ++ "," ++ class_name c ++ ")(p)->"
-                  ++ cppFuncName c func ++ "("
-                  ++ argsToCallString (genericFuncArgs func)   
+tmplFunToDef t@TmplCls {..} f@TFun {..} = 
+    let declstr = tmplFunToDecl t f
+        callstr = "(reinterpret_cast<" ++ tclass_oname ++ "<Type>*>(p))->"
+                  ++ tfun_oname ++ "("
+                  ++ tmplAllArgsToCallString (tfun_args)   
                   ++ ")"
-        returnstr = case (genericFuncRet func) of          
+        returnstr = case tfun_ret of          
           Void                    -> callstr ++ ";"
           SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
                                       ++ callstr ++ ") ;"
@@ -124,8 +123,8 @@ tmplFunToDef t f =
           CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
           TemplateType _          -> error "funcToDef: TemplateType"
           TemplateParam _         -> error "funcToDef: TemplateParam"          
-    in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
--}
+    in  intercalateWith connBSlash id [declstr, "  {", "    " ++ returnstr, "  }"] 
+
 
 
 

@@ -260,20 +260,18 @@ genTopLevelFuncCppDefinition TopLevelVariable {..} =
 
 genTmplFunCpp :: String -> TemplateClass -> TemplateFunction -> String 
 genTmplFunCpp cprefix t@TmplCls {..} f@TFun {..} = 
-    subst "#define ${tname}_${fname}(Type)                                                   \\\n\
-          \  extern \"C\" {                                                          \\\n\
-          \    $decl;                                 \\\n\
-          \  }                                                                     \\\n\
-          \  inline $decl {                           \\\n\
-          \    ${otname}<Type>* xs0 = reinterpret_cast<${otname}<Type>* >(xs);       \\\n\
-          \    xs0->${ofname}();                                                    \\\n\
-          \  }                                                                     \\\n\
+    subst "#define ${tname}_${fname}(Type) \\\n\
+          \  extern \"C\" { \\\n\
+          \    $decl; \\\n\
+          \  } \\\n\
+          \  inline $defn \\\n\
           \  auto a_${tname}_${fname}_ ## Type = ${tname}_${fname}_ ## Type  ;\n" 
-      (context [ ("cprefix", cprefix      )
-               , ("tname"  , tclass_name  )
-               , ("otname" , tclass_oname )
-               , ("ofname" , tfun_oname   )
-               , ("fname"  , tfun_name    )
-               , ("decl", tmplFunToDecl t f)
+      (context [ ("cprefix", cprefix           )
+               , ("tname"  , tclass_name       )
+               , ("otname" , tclass_oname      )
+               , ("ofname" , tfun_oname        )
+               , ("fname"  , tfun_name         )
+               , ("decl"   , tmplFunToDecl t f )
+               , ("defn"   , tmplFunToDef t f  )
                ])
 
