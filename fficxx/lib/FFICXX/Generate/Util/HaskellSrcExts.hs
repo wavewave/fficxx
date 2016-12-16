@@ -34,6 +34,9 @@ app x y = App (mkVar x) (mkVar y)
 mkVar :: String -> Exp
 mkVar = Var . unqual
 
+con :: String -> Exp
+con = Con . unqual
+
 mkTVar :: String -> Type
 mkTVar = TyVar . Ident
 

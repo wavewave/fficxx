@@ -26,12 +26,14 @@ import           Data.Text                               (Text)
 
 
 
-import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
-                                                         , ClassDecl(..), InstDecl(..), ImportDecl(..)
-                                                         , Pat(..), Name(..)
-                                                         , Asst(..), QualConDecl(..)
-                                                         , DataOrNew(..), TyVarBind (..), Binds(..)
-                                                         , Rhs(..), ExportSpec(..), Namespace(..)
+import           Language.Haskell.Exts.Syntax            ( Asst(..), Binds(..), Boxed(..), Bracket(..)
+                                                         , ClassDecl(..), DataOrNew(..), Decl(..)
+                                                         , Exp(..), ExportSpec(..)
+                                                         , ImportDecl(..), InstDecl(..), Literal(..)
+                                                         , Name(..), Namespace(..), Pat(..)
+                                                         , QualConDecl(..), Rhs(..)
+                                                         , Splice(..), Stmt(..)
+                                                         , Type(..), TyVarBind (..)
                                                          )
 import           Language.Haskell.Exts.SrcLoc            ( noLoc )
 import           System.FilePath                         ((<.>))
@@ -434,14 +436,53 @@ genImportInExistential dmap m =
 -}
 
 
+tmplUtil :: [Decl]
+tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing 
+  where v = mkVar
+        c = Con . unqual
+        p = mkPVar
+        tynm = tycon "Name"
+        tystr = tycon "String"
+        q = tycon "Q"
+        tytyp = tycon "Type"
+        typ = TyFun (TyTuple Boxed
+                       [tynm,TyFun tynm tystr,TyFun tynm (TyApp q tytyp)])
+                    (tycon "ExpQ")
+        pats = [PTuple Boxed [p "nty", p "nf", p "tyf"] ]
+        rhs = Do [ LetStmt (BDecls [ pbind (p "fn")
+                                       (UnGuardedRhs (app "nf""nty")) Nothing ])
+                 , Generator noLoc (p "n") (app "newName" "fn")
+                 , Generator noLoc (p "d")
+                     (v "forImpD" `App` c "CCall" `App` v "unsafe" `App` v "fn" `App` v "n"
+                        `App` ("tyf" `app` "nty") )
+                 , Qualifier (App (v "addTopDecls") (List [v "d"]))
+                 , Qualifier (BracketExp (ExpBracket (SpliceExp (ParenSplice ("varE" `app` "n" )))))
+                 ] 
+
+
+mkTmplFunc :: TemplateClass -> TemplateFunction -> [Decl]
+mkTmplFunc t f = mkFun n sig [mkPVar "a"] rhs (Just binds)
+  where n = tfun_name f
+        sig = functionSignatureT t f
+        v = mkVar
+        lit = Lit (String n)
+        rhs = App (v "mkTFunc") (Tuple Boxed [v "nty", lit, v "tyf"])
+        sig' = functionSignatureTT t f
+        binds = BDecls [ mkBind1 "tyf" [mkPVar "n"]
+                           (BracketExp (TypeBracket sig'))
+                           Nothing 
+                       ]
+        
 genTmplDecl :: TemplateClass -> [Decl]
 genTmplDecl t = [ mkData rname [mkTBind "a"] [] []
                 , mkNewtype hname [mkTBind "a"]
                     [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyForeignPtr rawtype]) ] []
                 , mkClass [] (typeclassNameT t) [mkTBind "a"] methods
-                    
                 ]
+                ++ tmplUtil
+                ++ concatMap (mkTmplFunc t) fs
   where (hname,rname) = hsTemplateClassName t
+        fs = tclass_funcs t
         rawtype = TyApp (tycon rname) (mkTVar "a")
         sigdecl f = mkFunSig (tfun_name f) (functionSignatureT t f)
-        methods = map (ClsDecl . sigdecl) (tclass_funcs t)
+        methods = map (ClsDecl . sigdecl) fs

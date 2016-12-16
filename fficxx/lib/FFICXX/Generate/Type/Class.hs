@@ -15,12 +15,14 @@
 
 module FFICXX.Generate.Type.Class where
 
-import           Control.Applicative               ((<$>),(<*>))
+import           Control.Applicative               ( (<$>),(<*>) )
 import           Data.Char
-import           Data.Default                      (Default(def))
+import           Data.Default                      ( Default(def) )
 import           Data.List
 import qualified Data.Map                     as M
-import           Language.Haskell.Exts.Syntax      (Context, Asst(..), Type(..), unit_tycon)
+import           Language.Haskell.Exts.Syntax      ( Asst(..), Context, Exp(..)
+                                                   , Splice(..), Type(..), unit_tycon
+                                                   )
 import           System.FilePath
 --
 import           FFICXX.Generate.Util
@@ -662,6 +664,16 @@ functionSignatureT t f =
       ctyp = tycon $ (ctypToHsTyp Nothing . tfun_ret) f
       arg0 =  (TyApp (tycon hname) (mkTVar "a") :)
       lst = arg0 (map (convertCpp2HS Nothing . fst) (tfun_args f))
+  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+
+functionSignatureTT :: TemplateClass -> TemplateFunction -> Type
+functionSignatureTT t f =
+  let (_,rname) = hsTemplateClassName t
+      ctyp = tycon $ (ctypToHsTyp Nothing . tfun_ret) f
+      arg0 = TyApp tyPtr (TyApp (tycon rname) spl)
+        where spl = TySplice (ParenSplice e)
+              e = mkVar "return" `App` (con "ConT" `App` mkVar "n")
+      lst = arg0 : map (convertCpp2HS Nothing . fst) (tfun_args f)
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
 
 
