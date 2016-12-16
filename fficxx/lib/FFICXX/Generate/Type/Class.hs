@@ -388,8 +388,53 @@ rettypeToString Void = "void"
 rettypeToString SelfType = "Type ## _p"
 rettypeToString (CPT (CPTClass c) _) = class_name c ++ "_p"
 rettypeToString (CPT (CPTClassRef c) _) = class_name c ++ "_p"
-rettypeToString (TemplateType t) = tclass_name t ++ "_p"
-rettypeToString (TemplateParam _) = error "rettypeToString: TemplateParam"
+rettypeToString (TemplateType t) = "void*"
+rettypeToString (TemplateParam _) = "Type ## _p"
+
+tmplArgToString :: TemplateClass -> (Types,String) -> String
+tmplArgToString _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
+tmplArgToString t (SelfType, varname) = tclass_oname t ++ "* " ++ varname
+tmplArgToString _ (CPT (CPTClass c) isconst, varname) =
+  case isconst of
+    Const   -> "const_" ++ class_name c ++ "_p " ++ varname
+    NoConst -> class_name c ++ "_p " ++ varname
+tmplArgToString _ (CPT (CPTClassRef c) isconst, varname) =
+  case isconst of
+    Const   -> "const_" ++ class_name c ++ "_p " ++ varname
+    NoConst -> class_name c ++ "_p " ++ varname
+tmplArgToString t (TemplateType t',v) = "void* " ++ v
+tmplArgToString _ (TemplateParam _,v) = "Type " ++ v
+tmplArgToString _ _ = error "tmplArgToString: undefined"
+
+tmplAllArgsToString :: TemplateClass -> Args -> String
+tmplAllArgsToString t args =
+  let args' = (TemplateType t, "p") : args
+  in  intercalateWith conncomma (tmplArgToString t) args'
+
+
+
+tmplArgToCallString :: (Types,String) -> String
+tmplArgToCallString (CPT (CPTClass c) _,varname) =
+    "to_nonconst<"++str++","++str++"_t>("++varname++")" where str = class_name c
+tmplArgToCallString (CPT (CPTClassRef c) _,varname) =
+    "to_nonconstref<"++str++","++str++"_t>(*"++varname++")" where str = class_name c
+tmplArgToCallString (CT (CRef _) _,varname) = "(*"++ varname++ ")"
+tmplArgToCallString (_,varname) = varname
+
+tmplAllArgsToCallString :: Args -> String
+tmplAllArgsToCallString = intercalateWith conncomma tmplArgToCallString
+
+
+
+tmplRetTypeToString :: Types -> String
+tmplRetTypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
+tmplRetTypeToString Void = "void"
+tmplRetTypeToString SelfType = "Type ## _p"
+tmplRetTypeToString (CPT (CPTClass c) _) = class_name c ++ "_p"
+tmplRetTypeToString (CPT (CPTClassRef c) _) = class_name c ++ "_p"
+tmplRetTypeToString (TemplateType t) = tclass_oname t ++ "*"
+tmplRetTypeToString (TemplateParam _) = "Type"
+
 
 
 --------

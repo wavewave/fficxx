@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -95,9 +96,17 @@ funcsToDefs :: Class -> [Function] -> String
 funcsToDefs c = intercalateWith connBSlash (funcToDef c)
 
 
+tmplFunToDecl :: TemplateClass -> TemplateFunction -> String 
+tmplFunToDecl t@TmplCls {..} f@TFun {..} =  
+  subst "$ret ${tname}_${fname}_ ## Type ( $args )"
+    (context [ ("tname", tclass_name                     )  
+             , ("fname", tfun_name                       ) 
+             , ("args" , tmplAllArgsToString t tfun_args )
+             , ("ret"  , tmplRetTypeToString tfun_ret    ) ]) 
 
-tmplFunDefineCpp :: Class -> Function -> String
-tmplFunDefineCpp c func = 
+{-
+tmplFunToDef :: TemplateClass -> TemplateFunction -> String
+tmplFunToDef t f = 
     let declstr = funcToDecl c func
         callstr = -- "to_nonconst<Type,Type ## _t>(p)->" 
                   "TYPECASTMETHOD(Type,"++ aliasedFuncName c func ++ "," ++ class_name c ++ ")(p)->"
@@ -116,7 +125,7 @@ tmplFunDefineCpp c func =
           TemplateType _          -> error "funcToDef: TemplateType"
           TemplateParam _         -> error "funcToDef: TemplateParam"          
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
-
+-}
 
 
 

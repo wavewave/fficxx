@@ -47,11 +47,7 @@ srcDir installbasedir = installbasedir </> "src"
 csrcDir :: FilePath -> FilePath
 csrcDir installbasedir = installbasedir </> "csrc" 
 
--- existentialHsFileName :: String 
--- existentialHsFileName = "Existential.hs"
-
 ---- common function for daughter
-
 
 -- | 
 mkGlobal :: [Class] -> ClassGlobal
@@ -253,15 +249,6 @@ buildTopLevelFunctionCppDef tih =
                                        , ("namespace", namespaceStr )
                                        , ("cppbody"  , declBodyStr  ) ])
 
-
-
-templateTemplate :: Text
-templateTemplate = 
-  "#ifndef $typemacro\n\
-  \#define $typemacro\n\
-  \\n\
-  \$deffunc\n"
-                   
 -- | 
 buildTemplateHeader :: TypeMacro  -- ^ typemacro prefix 
                  -> String     -- ^ C prefix
@@ -271,13 +258,13 @@ buildTemplateHeader (TypMcro typemacroprefix) cprefix t =
   let typemacrostr = typemacroprefix ++ "TEMPLATE" ++ "__"
       fs = tclass_funcs t
       deffunc = intercalateWith connRet (genTmplFunCpp cprefix t) fs
-  in subst templateTemplate (context [ ("typemacro"        , typemacrostr  )
-                                     -- , ("cprefix"          , cprefix       )
-                                     , ("deffunc", deffunc )
-                                     ])
-
-
-
+  in subst
+       "#ifndef $typemacro\n\
+       \#define $typemacro\n\
+       \\n\
+       \$deffunc\n"
+       (context [ ("typemacro", typemacrostr )
+                , ("deffunc"  , deffunc      ) ])
 
 
 -- | 

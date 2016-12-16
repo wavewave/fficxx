@@ -17,7 +17,7 @@ toplevelfunctions =  [ ]
 
 
 templates = [ TmplCls cabal "Vector" "std::vector" "t"
-                [ TFun void_ "func1" "orignal" [(TemplateParam "t","x")] Nothing
+                [ TFun void_ "push_back" "push_back" [(TemplateParam "t","x")] Nothing
                 ]
             ] 
 

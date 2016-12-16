@@ -257,33 +257,23 @@ genTopLevelFuncCppDefinition TopLevelVariable {..} =
                                           ++ maybe toplevelvar_name id toplevelvar_alias)
                          , ("funcbody"  , funcDefStr                                    ) ])
 
-{- 
-  #define w_printout(T)                                                   \
-    extern "C" {                                                        \
-	void w_printout_ ## T ( void* xs );                             \
-    }                                                                   \
-    inline void w_printout_ ## T ( void* xs ) {		                \
-	std::vector<T>* xs0 = reinterpret_cast<std::vector<T>* >(xs);	\
-	printout( xs0 );                                                \
-    }                                                                   \
-    auto a_printout_ ## T = w_printout_ ## T  ; 
--}
 
 genTmplFunCpp :: String -> TemplateClass -> TemplateFunction -> String 
-genTmplFunCpp cprefix t TFun {..} = 
-    subst "#define ${tname}_${fname}(T)                                                   \\\n\
+genTmplFunCpp cprefix t@TmplCls {..} f@TFun {..} = 
+    subst "#define ${tname}_${fname}(Type)                                                   \\\n\
           \  extern \"C\" {                                                          \\\n\
-          \    void ${tname}_${fname}_ ## T ( void* xs );                                 \\\n\
+          \    $decl;                                 \\\n\
           \  }                                                                     \\\n\
-          \  inline void ${tname}_${fname}_ ## T ( void* xs ) {                           \\\n\
-          \    ${otname}<T>* xs0 = reinterpret_cast<${otname}<T>* >(xs);       \\\n\
-          \    ${ofname}( xs0 );                                                    \\\n\
+          \  inline $decl {                           \\\n\
+          \    ${otname}<Type>* xs0 = reinterpret_cast<${otname}<Type>* >(xs);       \\\n\
+          \    xs0->${ofname}();                                                    \\\n\
           \  }                                                                     \\\n\
-          \  auto a_${tname}_${fname}_ ## T = ${tname}_${fname}_ ## T  ;\n" 
+          \  auto a_${tname}_${fname}_ ## Type = ${tname}_${fname}_ ## Type  ;\n" 
       (context [ ("cprefix", cprefix      )
-               , ("tname"  , tclass_name t)
-               , ("otname" , "std::vector")
-               , ("ofname" , "origfunc")
-               , ("fname"  , tfun_name    ) ])
-  -- where
+               , ("tname"  , tclass_name  )
+               , ("otname" , tclass_oname )
+               , ("ofname" , tfun_oname   )
+               , ("fname"  , tfun_name    )
+               , ("decl", tmplFunToDecl t f)
+               ])
 
