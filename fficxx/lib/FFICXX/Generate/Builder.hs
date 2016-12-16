@@ -88,13 +88,13 @@ cabalTemplate =
   \$cppFiles\n"
 
 -- |
-mkCabalFile :: (Cabal, CabalAttr)
+buildCabalFile :: (Cabal, CabalAttr)
             -> String
             -> (TopLevelImportHeader,[ClassModule])
             -> [String] -- ^ extra libs
             -> FilePath
             -> IO ()
-mkCabalFile (cabal, cabalattr)
+buildCabalFile (cabal, cabalattr)
             summarymodule
             (tih,classmodules)
             extralibs
@@ -163,7 +163,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   notExistThenCreate (installDir </> "csrc")
   --
   putStrLn "cabal file generation"
-  mkCabalFile (cabal, cabalattr) summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
+  buildCabalFile (cabal, cabalattr) summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
   --
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")
@@ -172,45 +172,50 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
         let path = workingDir </> file in withFile path WriteMode (flip hPutStrLn str)
 
 
-  gen (pkgname ++ "Type.h") (mkTypeDeclHeader typmacro (map cihClass cihs))
-  mapM_ (\hdr -> gen (unHdrName (cihSelfHeader hdr)) (mkDeclHeader typmacro pkgname hdr)) cihs
-  gen (tihHeaderFileName tih <.> "h") (mkTopLevelFunctionHeader typmacro pkgname tih)
+  gen (pkgname ++ "Type.h") (buildTypeDeclHeader typmacro (map cihClass cihs))
+  mapM_ (\hdr -> gen (unHdrName (cihSelfHeader hdr)) (buildDeclHeader typmacro pkgname hdr)) cihs
+  gen (tihHeaderFileName tih <.> "h") (buildTopLevelFunctionHeader typmacro pkgname tih)
+  forM_ tcms $ \m ->
+    gen ("Test.h") (concatMap (buildTemplateHeader typmacro pkgname) (tcmTemplateClasses m))
   --
   putStrLn "cpp file generation"
-  mapM_ (\hdr -> gen (cihSelfCpp hdr) (mkDefMain hdr)) cihs
-  gen (tihHeaderFileName tih <.> "cpp") (mkTopLevelFunctionCppDef tih)
+  mapM_ (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr)) cihs
+  gen (tihHeaderFileName tih <.> "cpp") (buildTopLevelFunctionCppDef tih)
   --
   putStrLn "RawType.hs file generation"
-  mapM_ (\m -> gen (cmModule m <.> "RawType" <.> "hs") (prettyPrint (mkRawTypeHs m))) mods
+  mapM_ (\m -> gen (cmModule m <.> "RawType" <.> "hs") (prettyPrint (buildRawTypeHs m))) mods
   --
   putStrLn "FFI.hsc file generation"
-  mapM_ (\m -> gen (cmModule m <.> "FFI" <.> "hsc") (prettyPrint (mkFFIHsc m))) mods
+  mapM_ (\m -> gen (cmModule m <.> "FFI" <.> "hsc") (prettyPrint (buildFFIHsc m))) mods
   --
   putStrLn "Interface.hs file generation"
-  mapM_ (\m -> gen (cmModule m <.> "Interface" <.> "hs") (prettyPrint (mkInterfaceHs mempty m))) mods
+  mapM_ (\m -> gen (cmModule m <.> "Interface" <.> "hs") (prettyPrint (buildInterfaceHs mempty m))) mods
   --
   putStrLn "Cast.hs file generation"
-  mapM_ (\m -> gen (cmModule m <.> "Cast" <.> "hs") (prettyPrint (mkCastHs m))) mods
+  mapM_ (\m -> gen (cmModule m <.> "Cast" <.> "hs") (prettyPrint (buildCastHs m))) mods
   --
   putStrLn "Implementation.hs file generation"
-  mapM_ (\m -> gen (cmModule m <.> "Implementation" <.> "hs") (prettyPrint (mkImplementationHs mempty m))) mods
+  mapM_ (\m -> gen (cmModule m <.> "Implementation" <.> "hs") (prettyPrint (buildImplementationHs mempty m))) mods
   --
   putStrLn "Template.hs file generation"
-  mapM_ (\m -> gen (tcmModule m <.> "Template" <.> "hs") (prettyPrint (mkTemplateHs m))) tcms 
+  mapM_ (\m -> gen (tcmModule m <.> "Template" <.> "hs") (prettyPrint (buildTemplateHs m))) tcms 
+  -- 
+  putStrLn "TH.hs file generation"
+  mapM_ (\m -> gen (tcmModule m <.> "TH" <.> "hs") (prettyPrint (buildTHHs m))) tcms 
 
 
   -- 
   putStrLn "hs-boot file generation"
-  mapM_ (\m -> gen (m <.> "Interface" <.> "hs-boot") (prettyPrint (mkInterfaceHSBOOT m))) hsbootlst
+  mapM_ (\m -> gen (m <.> "Interface" <.> "hs-boot") (prettyPrint (buildInterfaceHSBOOT m))) hsbootlst
   --
 
 
   
   putStrLn "module file generation"
-  mapM_ (\m -> gen (cmModule m <.> "hs") (prettyPrint (mkModuleHs m))) mods
+  mapM_ (\m -> gen (cmModule m <.> "hs") (prettyPrint (buildModuleHs m))) mods
   --
   putStrLn "summary module generation generation"
-  gen (summarymodule <.> "hs") (mkPkgHs summarymodule mods tih)
+  gen (summarymodule <.> "hs") (buildPkgHs summarymodule mods tih)
   --
   putStrLn "copying"
   touch (workingDir </> "LICENSE")

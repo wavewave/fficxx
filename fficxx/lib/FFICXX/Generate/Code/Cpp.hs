@@ -257,4 +257,33 @@ genTopLevelFuncCppDefinition TopLevelVariable {..} =
                                           ++ maybe toplevelvar_name id toplevelvar_alias)
                          , ("funcbody"  , funcDefStr                                    ) ])
 
+{- 
+  #define w_printout(T)                                                   \
+    extern "C" {                                                        \
+	void w_printout_ ## T ( void* xs );                             \
+    }                                                                   \
+    inline void w_printout_ ## T ( void* xs ) {		                \
+	std::vector<T>* xs0 = reinterpret_cast<std::vector<T>* >(xs);	\
+	printout( xs0 );                                                \
+    }                                                                   \
+    auto a_printout_ ## T = w_printout_ ## T  ; 
+-}
+
+genTmplFunCpp :: String -> TemplateClass -> TemplateFunction -> String 
+genTmplFunCpp cprefix t TFun {..} = 
+    subst "#define ${tname}_${fname}(T)                                                   \\\n\
+          \  extern \"C\" {                                                          \\\n\
+          \    void ${tname}_${fname}_ ## T ( void* xs );                                 \\\n\
+          \  }                                                                     \\\n\
+          \  inline void ${tname}_${fname}_ ## T ( void* xs ) {                           \\\n\
+          \    ${otname}<T>* xs0 = reinterpret_cast<${otname}<T>* >(xs);       \\\n\
+          \    ${ofname}( xs0 );                                                    \\\n\
+          \  }                                                                     \\\n\
+          \  auto a_${tname}_${fname}_ ## T = ${tname}_${fname}_ ## T  ;\n" 
+      (context [ ("cprefix", cprefix      )
+               , ("tname"  , tclass_name t)
+               , ("otname" , "std::vector")
+               , ("ofname" , "origfunc")
+               , ("fname"  , tfun_name    ) ])
+  -- where
 

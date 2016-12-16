@@ -96,6 +96,29 @@ funcsToDefs c = intercalateWith connBSlash (funcToDef c)
 
 
 
+tmplFunDefineCpp :: Class -> Function -> String
+tmplFunDefineCpp c func = 
+    let declstr = funcToDecl c func
+        callstr = -- "to_nonconst<Type,Type ## _t>(p)->" 
+                  "TYPECASTMETHOD(Type,"++ aliasedFuncName c func ++ "," ++ class_name c ++ ")(p)->"
+                  ++ cppFuncName c func ++ "("
+                  ++ argsToCallString (genericFuncArgs func)   
+                  ++ ")"
+        returnstr = case (genericFuncRet func) of          
+          Void                    -> callstr ++ ";"
+          SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
+                                      ++ callstr ++ ") ;"
+          CT _ _                  -> "return "++callstr++";" 
+          CPT (CPTClass c') _     -> "return to_nonconst<"++str++"_t,"++str
+                                     ++">(("++str++"*)"++callstr++");"
+                                     where str = class_name c'
+          CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
+          TemplateType _          -> error "funcToDef: TemplateType"
+          TemplateParam _         -> error "funcToDef: TemplateParam"          
+    in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
+
+
+
 
 
 

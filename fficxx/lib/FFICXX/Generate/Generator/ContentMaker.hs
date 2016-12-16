@@ -59,17 +59,17 @@ mkGlobal = ClassGlobal <$> mkDaughterSelfMap <*> mkDaughterMap
 
 
 -- | 
-mkDaughterDef :: ((String,[Class]) -> String) 
+buildDaughterDef :: ((String,[Class]) -> String) 
               -> DaughterMap 
               -> String 
-mkDaughterDef f m =   
+buildDaughterDef f m =   
     let lst = M.toList m 
         f' (x,xs) =  f (x,filter (not.isAbstractClass) xs) 
     in (concatMap f' lst)
 
 -- | 
-mkParentDef :: ((Class,Class)->String) -> Class -> String
-mkParentDef f cls = g (class_allparents cls,cls)
+buildParentDef :: ((Class,Class)->String) -> Class -> String
+buildParentDef f cls = g (class_allparents cls,cls)
   where g (ps,c) = concatMap (\p -> f (p,c)) ps
 
 -- | 
@@ -80,10 +80,10 @@ mkProtectedFunctionList c =
      . unProtected . class_protected) c 
 
 -- |
-mkTypeDeclHeader :: TypeMacro -- ^ typemacro 
+buildTypeDeclHeader :: TypeMacro -- ^ typemacro 
                  -> [Class]
                  -> String 
-mkTypeDeclHeader (TypMcro typemacro) classes =
+buildTypeDeclHeader (TypMcro typemacro) classes =
   let typeDeclBodyStr   = genAllCppHeaderTmplType classes 
   in subst
        "#ifdef __cplusplus\n\
@@ -127,11 +127,11 @@ declarationTemplate =
   \#endif\n"
 
 -- | 
-mkDeclHeader :: TypeMacro  -- ^ typemacro prefix 
+buildDeclHeader :: TypeMacro  -- ^ typemacro prefix 
              -> String     -- ^ C prefix 
              -> ClassImportHeader 
              -> String 
-mkDeclHeader (TypMcro typemacroprefix) cprefix header =
+buildDeclHeader (TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       typemacrostr = typemacroprefix ++ class_name aclass ++ "__" 
@@ -145,7 +145,7 @@ mkDeclHeader (TypMcro typemacroprefix) cprefix header =
                       `connRet2`
                       genAllCppDefTmplNonVirtual classes
       classDeclsStr = if (fst.hsClassName) aclass /= "Deletable"
-                        then mkParentDef genCppHeaderInstVirtual aclass 
+                        then buildParentDef genCppHeaderInstVirtual aclass 
                              `connRet2`
                              genCppHeaderInstVirtual (aclass, aclass)
                              `connRet2` 
@@ -200,16 +200,16 @@ definitionTemplate =
 
 
 -- | 
-mkDefMain :: ClassImportHeader 
+buildDefMain :: ClassImportHeader 
           -> String 
-mkDefMain header =
+buildDefMain header =
   let classes = [cihClass header]
       headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (unHdrName (cihSelfHeader header)) ++ "\"" 
       namespaceStr = (concatMap (\x->"using namespace " ++ unNamespace x ++ ";\n") . cihNamespace) header
       aclass = cihClass header
       cppBody = mkProtectedFunctionList (cihClass header) 
                 `connRet`
-                mkParentDef genCppDefInstVirtual (cihClass header)
+                buildParentDef genCppDefInstVirtual (cihClass header)
                 `connRet` 
                 if isAbstractClass aclass 
                   then "" 
@@ -221,11 +221,11 @@ mkDefMain header =
                                         , ("cppbody"  , cppBody      ) ])) 
 
 -- | 
-mkTopLevelFunctionHeader :: TypeMacro  -- ^ typemacro prefix 
+buildTopLevelFunctionHeader :: TypeMacro  -- ^ typemacro prefix 
                          -> String     -- ^ C prefix 
                          -> TopLevelImportHeader
                          -> String 
-mkTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
+buildTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix ++ "TOPLEVEL" ++ "__" 
       declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"")
                       . map (unHdrName . cihSelfHeader) . tihClassDep $ tih
@@ -236,8 +236,8 @@ mkTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
                                         , ("declarationbody"  , declBodyStr   ) ])
 
 -- | 
-mkTopLevelFunctionCppDef :: TopLevelImportHeader -> String 
-mkTopLevelFunctionCppDef tih =
+buildTopLevelFunctionCppDef :: TopLevelImportHeader -> String 
+buildTopLevelFunctionCppDef tih =
   let cihs = tihClassDep tih
       declHeaderStr = "#include \"" ++ tihHeaderFileName tih <.> "h" ++ "\""
                       `connRet2`
@@ -253,9 +253,36 @@ mkTopLevelFunctionCppDef tih =
                                        , ("namespace", namespaceStr )
                                        , ("cppbody"  , declBodyStr  ) ])
 
+
+
+templateTemplate :: Text
+templateTemplate = 
+  "#ifndef $typemacro\n\
+  \#define $typemacro\n\
+  \\n\
+  \$deffunc\n"
+                   
 -- | 
-mkFFIHsc :: ClassModule -> Module
-mkFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody 
+buildTemplateHeader :: TypeMacro  -- ^ typemacro prefix 
+                 -> String     -- ^ C prefix
+                 -> TemplateClass
+                 -> String 
+buildTemplateHeader (TypMcro typemacroprefix) cprefix t =
+  let typemacrostr = typemacroprefix ++ "TEMPLATE" ++ "__"
+      fs = tclass_funcs t
+      deffunc = intercalateWith connRet (genTmplFunCpp cprefix t) fs
+  in subst templateTemplate (context [ ("typemacro"        , typemacrostr  )
+                                     -- , ("cprefix"          , cprefix       )
+                                     , ("deffunc", deffunc )
+                                     ])
+
+
+
+
+
+-- | 
+buildFFIHsc :: ClassModule -> Module
+buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody 
   where mname = cmModule m
         headers = cmCIH m
         ffiImports = [ mkImport "Foreign.C", mkImport "Foreign.Ptr", mkImport (mname <.> "RawType") ]
@@ -264,8 +291,8 @@ mkFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiI
 
 
 -- |                      
-mkRawTypeHs :: ClassModule -> Module
-mkRawTypeHs m = mkModule (cmModule m <.> "RawType")
+buildRawTypeHs :: ClassModule -> Module
+buildRawTypeHs m = mkModule (cmModule m <.> "RawType")
                   [lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
                         , "FlexibleInstances", "TypeSynonymInstances"
                         , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
@@ -274,8 +301,8 @@ mkRawTypeHs m = mkModule (cmModule m <.> "RawType")
         rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
 
 -- | 
-mkInterfaceHs :: AnnotateMap -> ClassModule -> Module   
-mkInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
+buildInterfaceHs :: AnnotateMap -> ClassModule -> Module   
+buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
                          [lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
                                , "FlexibleInstances", "TypeSynonymInstances"
                                , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
@@ -295,8 +322,8 @@ mkInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
           ++ (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
 -- | 
-mkCastHs :: ClassModule -> Module
-mkCastHs m = mkModule (cmModule m <.> "Cast")
+buildCastHs :: ClassModule -> Module
+buildCastHs m = mkModule (cmModule m <.> "Cast")
                [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
                       , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
                castImports body
@@ -311,8 +338,8 @@ mkCastHs m = mkModule (cmModule m <.> "Cast")
                ++ mapMaybe genHsFrontInstCastableSelf classes
 
 -- | 
-mkImplementationHs :: AnnotateMap -> ClassModule -> Module
-mkImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
+buildImplementationHs :: AnnotateMap -> ClassModule -> Module
+buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                               [ lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
                                      , "FlexibleInstances", "TypeSynonymInstances", "EmptyDataDecls"
                                      , "OverlappingInstances", "IncoherentInstances"
@@ -338,78 +365,42 @@ mkImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    ++ map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
 
 
-mkTemplateHs :: TemplateClassModule -> Module
-mkTemplateHs m = mkModule (tcmModule m <.> "Template")
+buildTemplateHs :: TemplateClassModule -> Module
+buildTemplateHs m = mkModule (tcmModule m <.> "Template")
                    [lang  ["EmptyDataDecls", "TypeFamilies"] ]
                    [ mkImport "Foreign.C.Types"
                    , mkImport "Foreign.Ptr"     ]
                    body
   where ts = tcmTemplateClasses m
-        body = concatMap genTmplDecl ts 
-{- 
--- | 
-mkExistentialEach :: STGroup String 
-                  -> Class 
-                  -> [Class] 
-                  -> String 
-mkExistentialEach templates mother daughters =   
-  let makeOneDaughterGADTBody daughter = render hsExistentialGADTBodyTmpl 
-                                                [ ( "mother", (fst.hsClassName) mother ) 
-                                                , ( "daughter",(fst.hsClassName) daughter ) ] 
-      makeOneDaughterCastBody daughter = render hsExistentialCastBodyTmpl
-                                                [ ( "mother", (fst.hsClassName) mother ) 
-                                                , ( "daughter", (fst.hsClassName) daughter) ] 
-      gadtBody = intercalate "\n" (map makeOneDaughterGADTBody daughters)
-      castBody = intercalate "\n" (map makeOneDaughterCastBody daughters)
-      str = renderTemplateGroup 
-              templates 
-              [ ( "mother" , (fst.hsClassName) mother ) 
-              , ( "GADTbody" , gadtBody ) 
-              , ( "castbody" , castBody ) ]
-              "ExistentialEach.hs" 
-  in  str
+        body = concatMap genTmplInterface ts 
+
+buildTHHs :: TemplateClassModule -> Module
+buildTHHs m = mkModule (tcmModule m <.> "TH")
+             [lang  ["TemplateHaskell"] ]
+             ([ mkImport "Data.Char"
+              , mkImport "Foreign.C.Types"
+              , mkImport "Foreign.Ptr"
+              , mkImport "Language.Haskell.TH"
+              , mkImport "Language.Haskell.TH.Syntax"] ++ imports)
+             body
+  where ts = tcmTemplateClasses m
+        imports = [ mkImport (tcmModule m <.> "Template") ]
+        body = concatMap genTmplImplementation ts
+
 
 -- | 
-mkExistentialHs :: STGroup String 
-                -> ClassGlobal 
-                -> ClassModule 
-                -> String
-mkExistentialHs templates cglobal m = 
-  let classes = filter (not.isAbstractClass) (cmClass m)
-      dsmap = cgDaughterSelfMap cglobal
-      makeOneMother :: Class -> String 
-      makeOneMother mother = 
-        let daughters = case M.lookup (getClassModuleBase mother) dsmap of 
-                             Nothing -> error "error in mkExistential"
-                             Just lst -> filter (not.isAbstractClass) lst
-            str = mkExistentialEach templates mother daughters
-        in  str 
-      existEachBody = intercalateWith connRet makeOneMother classes
-      existHeaderStr = "module " ++ cmModule m <.> "Existential where"
-      existImportStr = genImportInExistential dsmap m
-      hsfilestr = renderTemplateGroup 
-                    templates 
-                    [ ("existHeader", existHeaderStr)
-                    , ("existImport", existImportStr)
-                    , ("modname", cmModule m)
-                    , ( "existEachBody" , existEachBody) ]
-                  "Existential.hs" 
-  in  hsfilestr
--}
-
--- | 
-mkInterfaceHSBOOT :: String -> Module
-mkInterfaceHSBOOT mname = mkModule (mname <.> "Interface") [] [] hsbootBody
+buildInterfaceHSBOOT :: String -> Module
+buildInterfaceHSBOOT mname = mkModule (mname <.> "Interface") [] [] hsbootBody
   where cname = last (splitOn "." mname)
         hsbootBody = [ mkClass [] ('I':cname) [mkTBind "a"] [] ]
 
 -- | 
-mkModuleHs :: ClassModule -> Module
-mkModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (genImportInModule (cmClass m)) []
+buildModuleHs :: ClassModule -> Module
+buildModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (genImportInModule (cmClass m)) []
 
 -- | 
-mkPkgHs :: String -> [ClassModule] -> TopLevelImportHeader -> String 
-mkPkgHs modname mods tih = 
+buildPkgHs :: String -> [ClassModule] -> TopLevelImportHeader -> String 
+buildPkgHs modname mods tih = 
     let tfns = tihFuncs tih 
         exportListStr = intercalateWith (conn "\n, ") ((\x->"module " ++ x).cmModule) mods 
                         ++ if null tfns 
@@ -442,11 +433,11 @@ mkPkgHs modname mods tih =
 
   
 -- |
-mkPackageInterface :: PackageInterface 
-                   -> PackageName 
-                   -> [ClassImportHeader] 
-                   -> PackageInterface
-mkPackageInterface pinfc pkgname = foldr f pinfc 
+buildPackageInterface :: PackageInterface 
+                      -> PackageName 
+                      -> [ClassImportHeader] 
+                      -> PackageInterface
+buildPackageInterface pinfc pkgname = foldr f pinfc 
   where f cih repo = 
           let name = (class_name . cihClass) cih 
               header = cihSelfHeader cih 

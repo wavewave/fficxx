@@ -432,12 +432,14 @@ data Class = Class { class_cabal :: Cabal
 
 data TemplateFunction = TFun { tfun_ret :: Types
                              , tfun_name :: String
+                             , tfun_oname :: String
                              , tfun_args :: Args
                              , tfun_alias :: Maybe String }
 
 
 data TemplateClass = TmplCls { tclass_cabal :: Cabal
                              , tclass_name :: String
+                             , tclass_oname :: String
                              , tclass_param :: String
                              , tclass_funcs :: [TemplateFunction]
                              }

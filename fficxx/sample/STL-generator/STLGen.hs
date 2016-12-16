@@ -10,18 +10,14 @@ cabal = Cabal { cabal_pkgname = "STL"
               , cabal_cheaderprefix = "STL"
               , cabal_moduleprefix = "STL" }
 
--- myclass = Class mycabal 
-
--- this is standard string library
-
 classes = [ ] 
 
 toplevelfunctions =  [ ]  
 
 
 
-templates = [ TmplCls cabal "Vector" "t"
-                [ TFun void_ "func1" [(TemplateParam "t","x")] Nothing
+templates = [ TmplCls cabal "Vector" "std::vector" "t"
+                [ TFun void_ "func1" "orignal" [(TemplateParam "t","x")] Nothing
                 ]
             ] 
 

@@ -460,33 +460,37 @@ tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing
                  ] 
 
 
-mkTmplFunc :: TemplateClass -> TemplateFunction -> [Decl]
-mkTmplFunc t f = mkFun n sig [p tp] rhs (Just binds)
-  where n = tfun_name f
-        sig = functionSignatureT t f
-        v = mkVar
-        p = mkPVar
-        tp = tclass_param t
-        lit = Lit (String n)
-        rhs = App (v "mkTFunc") (Tuple Boxed [v "nty", lit, v "tyf"])
-        sig' = functionSignatureTT t f
-        binds = BDecls [ mkBind1 "tyf" [mkPVar "n"]
-                           (Let (BDecls [ pbind (p tp) (UnGuardedRhs (v "return" `App` (con "ConT" `App` v "n"))) Nothing ])
-                             (BracketExp (TypeBracket sig')))
-                           Nothing 
-                       ]
         
-genTmplDecl :: TemplateClass -> [Decl]
-genTmplDecl t = [ mkData rname [mkTBind tp] [] []
-                , mkNewtype hname [mkTBind tp]
-                    [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyForeignPtr rawtype]) ] []
-                , mkClass [] (typeclassNameT t) [mkTBind tp] methods
-                ]
-                ++ tmplUtil
-                ++ concatMap (mkTmplFunc t) fs
+genTmplInterface :: TemplateClass -> [Decl]
+genTmplInterface t = [ mkData rname [mkTBind tp] [] []
+                         , mkNewtype hname [mkTBind tp]
+                             [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyForeignPtr rawtype]) ] []
+                         , mkClass [] (typeclassNameT t) [mkTBind tp] methods
+                         ]
   where (hname,rname) = hsTemplateClassName t
         tp = tclass_param t
         fs = tclass_funcs t
         rawtype = TyApp (tycon rname) (mkTVar tp)
         sigdecl f = mkFunSig (tfun_name f) (functionSignatureT t f)
         methods = map (ClsDecl . sigdecl) fs
+
+
+genTmplImplementation :: TemplateClass -> [Decl]
+genTmplImplementation t = tmplUtil ++ concatMap (gen t) (tclass_funcs t)
+  where
+    gen t f = mkFun n sig [p tp] rhs (Just binds)
+      where n = tfun_name f
+            sig = functionSignatureT t f
+            v = mkVar
+            p = mkPVar
+            tp = tclass_param t
+            lit = Lit (String n)
+            rhs = App (v "mkTFunc") (Tuple Boxed [v "nty", lit, v "tyf"])
+            sig' = functionSignatureTT t f
+            binds = BDecls [ mkBind1 "tyf" [mkPVar "n"]
+                               (Let (BDecls [ pbind (p tp) (UnGuardedRhs (v "return" `App` (con "ConT" `App` v "n"))) Nothing ])
+                                 (BracketExp (TypeBracket sig')))
+                               Nothing 
+                           ]
+
+
