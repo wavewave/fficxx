@@ -23,9 +23,6 @@ import qualified Data.HashMap.Strict               as HM
 import           Data.List                               ( intercalate )
 import           Data.Monoid (mempty)
 import           Data.Text                               ( Text )
-
-
-
 import           Language.Haskell.Exts.Pretty            ( prettyPrint )
 import           System.FilePath                         ( (</>), (<.>), splitExtension )
 import           System.Directory                        ( copyFile, doesDirectoryExist
@@ -94,14 +91,7 @@ buildCabalFile :: (Cabal, CabalAttr)
             -> [String] -- ^ extra libs
             -> FilePath
             -> IO ()
-buildCabalFile (cabal, cabalattr)
-            summarymodule
-            (tih,classmodules,tmods)
-            extralibs
-            cabalfile
-            = do
-  -- cpath <- getCurrentDirectory
-
+buildCabalFile (cabal, cabalattr) summarymodule (tih,classmodules,tmods) extralibs cabalfile = do
   let txt = subst cabalTemplate
               (context ([ ("licenseField", "license: " ++ license)
                           | Just license <- [cabalattr_license cabalattr] ] ++
@@ -136,7 +126,7 @@ macrofy :: String -> String
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
 simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))]
-              -> (Cabal, CabalAttr, [Class], [TopLevelFunction], [TemplateClass])
+              -> (Cabal, CabalAttr, [Class], [TopLevelFunction], [(TemplateClass,HeaderName)])
               -> [String] -- ^ extra libs
               ->  IO ()
 simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, templates) extralibs = do
@@ -150,11 +140,9 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg
 
-      (mods,cihs,tih,tcms) = mkAll_CM_CIH_TIH_TCM
-                            (pkgname, mkClassNSHeaderFromMap (HM.fromList lst))
-                            (classes, toplevelfunctions,templates)
+      pkgconfig@(PkgConfig mods cihs tih tcms tcihs) =
+        mkPackageConfig (pkgname, mkClassNSHeaderFromMap (HM.fromList lst)) (classes, toplevelfunctions,templates)
       hsbootlst = mkHSBOOTCandidateList mods
-      -- cglobal = mkGlobal classes
       cabalFileName = pkgname <.> "cabal" 
   --
   notExistThenCreate workingDir
@@ -163,8 +151,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   notExistThenCreate (installDir </> "csrc")
   --
   putStrLn "cabal file generation"
-  buildCabalFile (cabal, cabalattr) summarymodule (tih,mods,tcms)
-    extralibs (workingDir </> cabalFileName)
+  buildCabalFile (cabal,cabalattr) summarymodule (tih,mods,tcms) extralibs (workingDir</>cabalFileName)
   --
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")
@@ -177,7 +164,11 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   mapM_ (\hdr -> gen (unHdrName (cihSelfHeader hdr)) (buildDeclHeader typmacro pkgname hdr)) cihs
   gen (tihHeaderFileName tih <.> "h") (buildTopLevelFunctionHeader typmacro pkgname tih)
   forM_ tcms $ \m ->
-    gen ("Test.h") (concatMap (buildTemplateHeader typmacro pkgname) (tcmTemplateClasses m))
+    let tcihs = tcmTCIH m
+    in forM_ tcihs $ \tcih ->
+         let t = tcihTClass tcih
+             hdr = unHdrName (tcihSelfHeader tcih)
+         in gen hdr (buildTemplateHeader typmacro pkgname t)
   --
   putStrLn "cpp file generation"
   mapM_ (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr)) cihs
@@ -223,7 +214,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   copyFileWithMD5Check (workingDir </> cabalFileName)  (installDir </> cabalFileName)
   copyFileWithMD5Check (workingDir </> "LICENSE") (installDir </> "LICENSE")
 
-  copyCppFiles workingDir (csrcDir installDir) pkgname (tih,cihs)
+  copyCppFiles workingDir (csrcDir installDir) pkgname pkgconfig
   mapM_ (copyModule workingDir (srcDir installDir)) mods
   mapM_ (copyTemplateModule workingDir (srcDir installDir)) tcms  
   moduleFileCopy workingDir (srcDir installDir) $ summarymodule <.> "hs"
@@ -252,8 +243,8 @@ copyFileWithMD5Check src tgt = do
     else copyFile src tgt  
 
 
-copyCppFiles :: FilePath -> FilePath -> String -> (TopLevelImportHeader,[ClassImportHeader]) -> IO ()
-copyCppFiles wdir ddir cprefix (tih,cihs) = do 
+copyCppFiles :: FilePath -> FilePath -> String -> PackageConfig -> IO ()
+copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ tcihs) = do 
   let thfile = cprefix ++ "Type.h"
       tlhfile = tihHeaderFileName tih <.> "h"
       tlcppfile = tihHeaderFileName tih <.> "cpp"
@@ -267,6 +258,11 @@ copyCppFiles wdir ddir cprefix (tih,cihs) = do
         cppfile = cihSelfCpp header
     copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
     copyFileWithMD5Check (wdir </> cppfile) (ddir </> cppfile)
+
+  forM_ tcihs $ \header-> do 
+    let hfile = unHdrName (tcihSelfHeader header)
+    copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
+
 
 
 moduleFileCopy wdir ddir fname = do 

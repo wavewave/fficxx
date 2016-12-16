@@ -171,14 +171,15 @@ mkClassNSHeaderFromMap :: HM.HashMap String ([Namespace],[HeaderName]) -> Class 
 mkClassNSHeaderFromMap m c = fromMaybe ([],[]) (HM.lookup (class_name c) m)
 
 
-mkTCM :: TemplateClass -> TemplateClassModule 
-mkTCM t = TCM  (getTClassModuleBase t) [t]
+mkTCM :: (TemplateClass,HeaderName) -> TemplateClassModule 
+mkTCM (t,hdr) = TCM  (getTClassModuleBase t) [t] [TCIH t hdr]
 
-mkAll_CM_CIH_TIH_TCM
+
+mkPackageConfig
   :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
-  -> ([Class],[TopLevelFunction],[TemplateClass]) 
-  -> ([ClassModule],[ClassImportHeader],TopLevelImportHeader,[TemplateClassModule])
-mkAll_CM_CIH_TIH_TCM (pkgname,mkNSandIncHdrs) (cs,fs,ts) = 
+  -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)]) 
+  -> PackageConfig
+mkPackageConfig (pkgname,mkNSandIncHdrs) (cs,fs,ts) = 
   let ms = map (mkClassModule mkNSandIncHdrs) cs 
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
@@ -191,7 +192,8 @@ mkAll_CM_CIH_TIH_TCM (pkgname,mkNSandIncHdrs) (cs,fs,ts) =
       -- 
       tih = TopLevelImportHeader (pkgname ++ "TopLevel") tl_cihs fs
       tcms = map mkTCM ts
-  in (ms,cihs,tih,tcms)
+      tcihs = concatMap tcmTCIH tcms
+  in PkgConfig ms cihs tih tcms tcihs
 
 
 mkHSBOOTCandidateList :: [ClassModule] -> [String]

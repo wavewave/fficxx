@@ -40,12 +40,24 @@ data ClassModule = ClassModule
 
 data TemplateClassModule = TCM { tcmModule :: String
                                , tcmTemplateClasses :: [TemplateClass]
+                               , tcmTCIH :: [TemplateClassImportHeader]
                                } deriving (Show)
+
+
+data TemplateClassImportHeader = TCIH { tcihTClass :: TemplateClass
+                                      , tcihSelfHeader :: HeaderName
+                                      } deriving (Show)
 
 data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String
                                                  , tihClassDep :: [ClassImportHeader]
                                                  , tihFuncs :: [TopLevelFunction]
                                                  }
 
+data PackageConfig = PkgConfig { pcfg_classModules :: [ClassModule]
+                               , pcfg_classImportHeaders :: [ClassImportHeader]
+                               , pcfg_topLevelImportHeader :: TopLevelImportHeader
+                               , pcfg_templateClassModules :: [TemplateClassModule]
+                               , pcfg_templateClassImportHeaders :: [TemplateClassImportHeader]
+                               }
 
 
