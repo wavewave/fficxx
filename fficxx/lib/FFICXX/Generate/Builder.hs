@@ -90,13 +90,13 @@ cabalTemplate =
 -- |
 buildCabalFile :: (Cabal, CabalAttr)
             -> String
-            -> (TopLevelImportHeader,[ClassModule])
+            -> (TopLevelImportHeader,[ClassModule],[TemplateClassModule])
             -> [String] -- ^ extra libs
             -> FilePath
             -> IO ()
 buildCabalFile (cabal, cabalattr)
             summarymodule
-            (tih,classmodules)
+            (tih,classmodules,tmods)
             extralibs
             cabalfile
             = do
@@ -122,7 +122,7 @@ buildCabalFile (cabal, cabalattr)
                         , ("csrcFiles", genCsrcFiles (tih,classmodules))
                         , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) classmodules)
                         , ("cppFiles", genCppFiles (tih,classmodules))
-                        , ("exposedModules", genExposedModules summarymodule classmodules)
+                        , ("exposedModules", genExposedModules summarymodule (classmodules,tmods))
                         , ("otherModules", genOtherModules classmodules)
                         , ("extralibdirs", intercalate ", " $ cabalattr_extralibdirs cabalattr)
                         , ("extraincludedirs", intercalate ", " $ cabalattr_extraincludedirs cabalattr)
@@ -163,7 +163,8 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   notExistThenCreate (installDir </> "csrc")
   --
   putStrLn "cabal file generation"
-  buildCabalFile (cabal, cabalattr) summarymodule (tih,mods) extralibs (workingDir </> cabalFileName)
+  buildCabalFile (cabal, cabalattr) summarymodule (tih,mods,tcms)
+    extralibs (workingDir </> cabalFileName)
   --
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")
@@ -221,10 +222,11 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   touch (workingDir </> "LICENSE")
   copyFileWithMD5Check (workingDir </> cabalFileName)  (installDir </> cabalFileName)
   copyFileWithMD5Check (workingDir </> "LICENSE") (installDir </> "LICENSE")
-  -- copyPredefined templateDir (srcDir ibase) pkgname
 
   copyCppFiles workingDir (csrcDir installDir) pkgname (tih,cihs)
-  mapM_ (copyModule workingDir (srcDir installDir) summarymodule) mods
+  mapM_ (copyModule workingDir (srcDir installDir)) mods
+  mapM_ (copyTemplateModule workingDir (srcDir installDir)) tcms  
+  moduleFileCopy workingDir (srcDir installDir) $ summarymodule <.> "hs"
 
 
 -- | some dirty hack. later, we will do it with more proper approcah.
@@ -238,15 +240,6 @@ notExistThenCreate dir = do
     b <- doesDirectoryExist dir
     if b then return () else system ("mkdir -p " ++ dir) >> return ()
 
-
-{- 
--- | now only create directory
-copyPredefined :: FilePath -> FilePath -> String -> IO () 
-copyPredefined _tdir _ddir _prefix = do 
-    return () 
-    -- notExistThenCreate (ddir </> prefix)
-    -- copyFile (tdir </> "TypeCast.hs" ) (ddir </> prefix </> "TypeCast.hs") 
--}
 
 copyFileWithMD5Check :: FilePath -> FilePath -> IO () 
 copyFileWithMD5Check src tgt = do
@@ -275,26 +268,36 @@ copyCppFiles wdir ddir cprefix (tih,cihs) = do
     copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
     copyFileWithMD5Check (wdir </> cppfile) (ddir </> cppfile)
 
-copyModule :: FilePath -> FilePath -> String -> ClassModule -> IO ()
-copyModule wdir ddir summarymod m = do 
-  let modbase = cmModule m 
-  let onefilecopy fname = do 
-        let (fnamebody,fnameext) = splitExtension fname
-            (mdir,mfile) = moduleDirFile fnamebody
-            origfpath = wdir </> fname
-            (mfile',_mext') = splitExtension mfile
-            newfpath = ddir </> mdir </> mfile' ++ fnameext   
-        b <- doesFileExist origfpath 
-        when b $ do 
-          notExistThenCreate (ddir </> mdir) 
-          copyFileWithMD5Check origfpath newfpath 
 
-  onefilecopy $ modbase ++ ".hs"
-  onefilecopy $ modbase ++ ".RawType.hs"
-  onefilecopy $ modbase ++ ".FFI.hsc"
-  onefilecopy $ modbase ++ ".Interface.hs"
-  onefilecopy $ modbase ++ ".Cast.hs"
-  onefilecopy $ modbase ++ ".Implementation.hs"
-  onefilecopy $ modbase ++ ".Interface.hs-boot"
-  onefilecopy $ summarymod <.> "hs"
+moduleFileCopy wdir ddir fname = do 
+  let (fnamebody,fnameext) = splitExtension fname
+      (mdir,mfile) = moduleDirFile fnamebody
+      origfpath = wdir </> fname
+      (mfile',_mext') = splitExtension mfile
+      newfpath = ddir </> mdir </> mfile' ++ fnameext   
+  b <- doesFileExist origfpath 
+  when b $ do 
+    notExistThenCreate (ddir </> mdir) 
+    copyFileWithMD5Check origfpath newfpath 
+
+
+copyModule :: FilePath -> FilePath -> ClassModule -> IO ()
+copyModule wdir ddir m = do 
+  let modbase = cmModule m 
+
+  moduleFileCopy wdir ddir $ modbase ++ ".hs"
+  moduleFileCopy wdir ddir $ modbase ++ ".RawType.hs"
+  moduleFileCopy wdir ddir $ modbase ++ ".FFI.hsc"
+  moduleFileCopy wdir ddir $ modbase ++ ".Interface.hs"
+  moduleFileCopy wdir ddir $ modbase ++ ".Cast.hs"
+  moduleFileCopy wdir ddir $ modbase ++ ".Implementation.hs"
+  moduleFileCopy wdir ddir $ modbase ++ ".Interface.hs-boot"
   return ()
+
+copyTemplateModule :: FilePath -> FilePath -> TemplateClassModule -> IO ()
+copyTemplateModule wdir ddir m = do 
+  let modbase = tcmModule m 
+  moduleFileCopy wdir ddir $ modbase ++ ".Template.hs"
+  moduleFileCopy wdir ddir $ modbase ++ ".TH.hs"
+  return ()
+

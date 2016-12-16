@@ -85,6 +85,6 @@ mycabalattr =
 
 main :: IO ()
 main = do 
-  simpleBuilder "Snappy" headerMap (mycabal,mycabalattr,myclasses,toplevelfunctions) [ "snappy" ]
+  simpleBuilder "Snappy" headerMap (mycabal,mycabalattr,myclasses,toplevelfunctions,[]) [ "snappy" ]
 
 

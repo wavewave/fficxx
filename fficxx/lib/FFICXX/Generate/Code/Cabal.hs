@@ -19,8 +19,8 @@ cabalIndentation = replicate 23 ' '
 
 
 -- | generate exposed module list in cabal file 
-genExposedModules :: String -> [ClassModule] -> String
-genExposedModules summarymod cmods = 
+genExposedModules :: String -> ([ClassModule],[TemplateClassModule]) -> String
+genExposedModules summarymod (cmods,tmods) = 
     let indentspace = cabalIndentation
         summarystrs = indentspace ++ summarymod 
         cmodstrs = map ((\x->indentspace++x).cmModule) cmods 
@@ -29,7 +29,9 @@ genExposedModules summarymod cmods =
         interface= map ((\x->indentspace++x++".Interface").cmModule) cmods
         cast = map ((\x->indentspace++x++".Cast").cmModule) cmods 
         implementation = map ((\x->indentspace++x++".Implementation").cmModule) cmods
-    in  unlines ([summarystrs]++cmodstrs++rawType++ffi++interface++cast++implementation)
+        template = map ((\x->indentspace++x++".Template").tcmModule) tmods
+        th = map ((\x->indentspace++x++".TH").tcmModule) tmods        
+    in  unlines ([summarystrs]++cmodstrs++rawType++ffi++interface++cast++implementation++template++th)
 
 -- | generate other modules in cabal file 
 genOtherModules :: [ClassModule] -> String 
