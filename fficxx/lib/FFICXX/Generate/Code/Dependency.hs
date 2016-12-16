@@ -72,6 +72,7 @@ extractClassFromType (CT _ _)                = Nothing
 extractClassFromType (CPT (CPTClass c) _)    = Just c
 extractClassFromType (CPT (CPTClassRef c) _) = Just c
 extractClassFromType (TemplateType _)        = Nothing
+extractClassFromType (TemplateParam _)       = Nothing
 
 
 -- | class dependency for a given function 

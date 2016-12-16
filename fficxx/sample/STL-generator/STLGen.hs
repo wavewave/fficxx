@@ -20,8 +20,8 @@ toplevelfunctions =  [ ]
 
 
 
-templates = [ TmplCls cabal "Vector"
-                [ TFun void_ "func1" [] Nothing
+templates = [ TmplCls cabal "Vector" "t"
+                [ TFun void_ "func1" [(TemplateParam "t","x")] Nothing
                 ]
             ] 
 

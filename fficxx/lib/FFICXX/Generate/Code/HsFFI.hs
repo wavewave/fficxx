@@ -79,6 +79,7 @@ genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename ++ " TopLevel_" ++ fnam
           where rawname = snd (hsClassName c)
         hsrettype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName c)
-        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
+        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
+        hsrettype (TemplateParam p) = mkTVar p
 

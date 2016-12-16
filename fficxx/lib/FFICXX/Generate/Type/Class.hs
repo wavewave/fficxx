@@ -20,7 +20,7 @@ import           Data.Char
 import           Data.Default                      ( Default(def) )
 import           Data.List
 import qualified Data.Map                     as M
-import           Language.Haskell.Exts.Syntax      ( Asst(..), Context, Exp(..)
+import           Language.Haskell.Exts.Syntax      ( Asst(..), Context
                                                    , Splice(..), Type(..), unit_tycon
                                                    )
 import           System.FilePath
@@ -62,6 +62,7 @@ data Types = Void
            | CT  CTypes IsConst
            | CPT CPPTypes IsConst
            | TemplateType TemplateClass
+           | TemplateParam String
            deriving Show
 
 cvarToStr :: CTypes -> IsConst -> String -> String
@@ -388,6 +389,7 @@ rettypeToString SelfType = "Type ## _p"
 rettypeToString (CPT (CPTClass c) _) = class_name c ++ "_p"
 rettypeToString (CPT (CPTClassRef c) _) = class_name c ++ "_p"
 rettypeToString (TemplateType t) = tclass_name t ++ "_p"
+rettypeToString (TemplateParam _) = error "rettypeToString: TemplateParam"
 
 
 --------
@@ -436,11 +438,12 @@ data TemplateFunction = TFun { tfun_ret :: Types
 
 data TemplateClass = TmplCls { tclass_cabal :: Cabal
                              , tclass_name :: String
+                             , tclass_param :: String
                              , tclass_funcs :: [TemplateFunction]
                              }
 
 instance Show TemplateClass where
-  show x = show (tclass_name x)
+  show x = show (tclass_name x ++ " " ++ tclass_param x)
 
 
 
@@ -522,7 +525,8 @@ ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
 ctypToHsTyp _c (CT (CRef t) _) = hsCTypeName (CRef t)
 ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
-ctypToHsTyp _c (TemplateType t) = "("++ tclass_name t ++ " a)"
+ctypToHsTyp _c (TemplateType t) = "("++ tclass_name t ++ " " ++ tclass_param t ++ ")"
+ctypToHsTyp _c (TemplateParam p) = "("++ p ++ ")"
 
 
 -- |
@@ -550,7 +554,8 @@ convertCpp2HS Nothing SelfType         = error "convertCpp2HS : SelfType but no 
 convertCpp2HS _c (CT t _)              = convertC2HS t
 convertCpp2HS _c (CPT (CPTClass c') _)    = tycon (class_name c')
 convertCpp2HS _c (CPT (CPTClassRef c') _) = tycon (class_name c')
-convertCpp2HS _c (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVar "a")
+convertCpp2HS _c (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
+convertCpp2HS _c (TemplateParam p)         = mkTVar p
 
 
 
@@ -661,8 +666,9 @@ functionSignature c f =
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type
 functionSignatureT t f =
   let (hname,_) = hsTemplateClassName t
+      tp = tclass_param t
       ctyp = tycon $ (ctypToHsTyp Nothing . tfun_ret) f
-      arg0 =  (TyApp (tycon hname) (mkTVar "a") :)
+      arg0 =  (TyApp (tycon hname) (mkTVar tp) :)
       lst = arg0 (map (convertCpp2HS Nothing . fst) (tfun_args f))
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
 
@@ -672,7 +678,8 @@ functionSignatureTT t f =
       ctyp = tycon $ (ctypToHsTyp Nothing . tfun_ret) f
       arg0 = TyApp tyPtr (TyApp (tycon rname) spl)
         where spl = TySplice (ParenSplice e)
-              e = mkVar "return" `App` (con "ConT" `App` mkVar "n")
+              e = mkVar (tclass_param t)
+                  -- mkVar "return" `App` (con "ConT" `App` mkVar "n")
       lst = arg0 : map (convertCpp2HS Nothing . fst) (tfun_args f)
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
 
@@ -692,8 +699,9 @@ hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
           where rawname = snd (hsClassName d)
         hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
-        hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
+        hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
+        hsargtype (TemplateParam p) = mkTVar p
         hsargtype SelfType     = selftyp
         hsargtype _ = error "undefined hsargtype"
 
@@ -704,8 +712,9 @@ hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
           where rawname = snd (hsClassName d)
         hsrettype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
-        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
+        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
+        hsrettype (TemplateParam p) = mkTVar p
 
 
 -- | this is for FFI
@@ -722,8 +731,9 @@ hsFuncTypNoSelf c f = foldr1 TyFun (argtyps ++ [TyApp (tycon "IO") rettyp])
           where rawname = snd (hsClassName d)
         hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
-        hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
+        hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
+        hsargtype (TemplateParam p) = mkTVar p
         hsargtype SelfType     = selftyp
         hsargtype _ = error "undefined hsargtype"
 
@@ -736,4 +746,5 @@ hsFuncTypNoSelf c f = foldr1 TyFun (argtyps ++ [TyApp (tycon "IO") rettyp])
           where rawname = snd (hsClassName d)
         hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
           where rawname = snd (hsTemplateClassName t)
+        hsrettype (TemplateParam p) = mkTVar p
 
