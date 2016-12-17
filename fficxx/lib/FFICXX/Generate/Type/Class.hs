@@ -406,9 +406,14 @@ tmplArgToString _ (TemplateType _,v) = "void* " ++ v
 tmplArgToString _ (TemplateParam _,v) = "Type " ++ v
 tmplArgToString _ _ = error "tmplArgToString: undefined"
 
-tmplAllArgsToString :: TemplateClass -> Args -> String
-tmplAllArgsToString t args =
-  let args' = (TemplateType t, "p") : args
+tmplAllArgsToString :: Selfness
+                    -> TemplateClass
+                    -> Args
+                    -> String
+tmplAllArgsToString s t args =
+  let args' = case s of
+                Self -> (TemplateType t, "p") : args
+                NoSelf -> args
   in  intercalateWith conncomma (tmplArgToString t) args'
 
 
@@ -432,7 +437,7 @@ tmplRetTypeToString Void = "void"
 tmplRetTypeToString SelfType = "Type ## _p"
 tmplRetTypeToString (CPT (CPTClass c) _) = class_name c ++ "_p"
 tmplRetTypeToString (CPT (CPTClassRef c) _) = class_name c ++ "_p"
-tmplRetTypeToString (TemplateType t) = tclass_oname t ++ "*"
+tmplRetTypeToString (TemplateType _) = "void*"
 tmplRetTypeToString (TemplateParam _) = "Type"
 
 
@@ -480,7 +485,7 @@ data TemplateFunction = TFun { tfun_ret :: Types
                              , tfun_oname :: String
                              , tfun_args :: Args
                              , tfun_alias :: Maybe String }
-                     ---  | TFunNew { tfun_args :: Args }
+                      | TFunNew { tfun_new_args :: Args }
 
 
 data TemplateClass = TmplCls { tclass_cabal :: Cabal
@@ -499,6 +504,10 @@ data ClassGlobal = ClassGlobal
                    { cgDaughterSelfMap :: DaughterMap
                    , cgDaughterMap :: DaughterMap
                    }
+
+data Selfness = Self | NoSelf
+              
+
 
 -- | Check abstract class
 
@@ -606,15 +615,16 @@ convertCpp2HS _c (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVa
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 
 -- |
-convertCpp2HS4Tmpl :: Maybe Class -> Type -> Types -> Type
-convertCpp2HS4Tmpl _c _ Void                  = unit_tycon
-convertCpp2HS4Tmpl (Just c) _ SelfType        = tycon ((fst.hsClassName) c)
-convertCpp2HS4Tmpl Nothing _ SelfType         = error "convertCpp2HS4Tmpl : SelfType but no class "
-convertCpp2HS4Tmpl _c _ (CT t _)              = convertC2HS t
-convertCpp2HS4Tmpl _c _ (CPT (CPTClass c') _)    = tycon (class_name c')
-convertCpp2HS4Tmpl _c _ (CPT (CPTClassRef c') _) = tycon (class_name c')
-convertCpp2HS4Tmpl _c _ (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
-convertCpp2HS4Tmpl _c t (TemplateParam _)         = t
+convertCpp2HS4Tmpl :: Type -> Maybe Class -> Type -> Types -> Type
+convertCpp2HS4Tmpl _ _c _ Void                  = unit_tycon
+convertCpp2HS4Tmpl _ (Just c) _ SelfType        = tycon ((fst.hsClassName) c)
+convertCpp2HS4Tmpl _ Nothing _ SelfType         = error "convertCpp2HS4Tmpl : SelfType but no class "
+convertCpp2HS4Tmpl _ _c _ (CT t _)              = convertC2HS t
+convertCpp2HS4Tmpl _ _c _ (CPT (CPTClass c') _)    = tycon (class_name c')
+convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassRef c') _) = tycon (class_name c')
+convertCpp2HS4Tmpl e _c _ (TemplateType _)         = e
+  -- TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
+convertCpp2HS4Tmpl _ _c t (TemplateParam _)         = t
 
 
 
@@ -724,23 +734,44 @@ functionSignature c f =
 
 
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type
-functionSignatureT t f =
+functionSignatureT t TFun {..} =
   let (hname,_) = hsTemplateClassName t
       tp = tclass_param t
-      ctyp = tycon $ (ctypToHsTyp Nothing . tfun_ret) f
+      ctyp = convertCpp2HS Nothing tfun_ret
       arg0 =  (TyApp (tycon hname) (mkTVar tp) :)
-      lst = arg0 (map (convertCpp2HS Nothing . fst) (tfun_args f))
+      lst = arg0 (map (convertCpp2HS Nothing . fst) tfun_args)
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+functionSignatureT t TFunNew {..} =
+  let ctyp = convertCpp2HS Nothing (TemplateType t)
+      lst = map (convertCpp2HS Nothing . fst) tfun_new_args
+  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+
+
 
 functionSignatureTT :: TemplateClass -> TemplateFunction -> Type
-functionSignatureTT t f =
-  let (_,rname) = hsTemplateClassName t
-      ctyp = tycon $ (ctypToHsTyp Nothing . tfun_ret) f
-      arg0 = TyApp tyPtr (TyApp (tycon rname) spl)
-      spl = TySplice (ParenSplice (mkVar (tclass_param t)))
-      lst = arg0 : map (convertCpp2HS4Tmpl Nothing spl . fst) (tfun_args f)
-  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+functionSignatureTT t f = foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+ where
+  (_,rname) = hsTemplateClassName t
+  rettype = case f of
+              TFun {..}    -> tfun_ret
+              TFunNew {..} -> TemplateType t
+  ctyp = convertCpp2HS4Tmpl e Nothing spl rettype
+  e = TyApp tyPtr (TyApp (tycon rname) spl)
+  spl = TySplice (ParenSplice (mkVar (tclass_param t)))
+  lst =
+    case f of
+      TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_args
+      TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_new_args
 
+{- 
+functionSignatureTT t TFunNew {..} =
+  let (_,rname) = hsTemplateClassName t
+      ctyp = convertCpp2HS4Tmpl spl Nothing spl (TemplateType t)
+      e = TyApp tyPtr (TyApp (tycon rname) spl)
+      spl = TySplice (ParenSplice (mkVar (tclass_param t)))
+      lst = map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_new_args
+  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+-}
 
 
 -- | this is for FFI type.
