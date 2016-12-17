@@ -66,7 +66,7 @@ Library
                    FFICXX.Generate.Util.HaskellSrcExts
                    FFICXX.Generate.QQ.Verbatim
                    FFICXX.Generate.Type.Annotate
-                   FFICXX.Paths_fficxx
-  Other-Modules:
-                   Paths_fficxx
+                   -- FFICXX.Paths_fficxx
+  -- Other-Modules:
+  --                  Paths_fficxx
 
