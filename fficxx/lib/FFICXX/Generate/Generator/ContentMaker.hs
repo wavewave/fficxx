@@ -356,7 +356,9 @@ buildTemplateHs :: TemplateClassModule -> Module
 buildTemplateHs m = mkModule (tcmModule m <.> "Template")
                    [lang  ["EmptyDataDecls", "TypeFamilies"] ]
                    [ mkImport "Foreign.C.Types"
-                   , mkImport "Foreign.Ptr"     ]
+                   , mkImport "Foreign.Ptr"
+                   , mkImport "Foreign.ForeignPtr"
+                   ]
                    body
   where ts = tcmTemplateClasses m
         body = concatMap genTmplInterface ts 

@@ -604,6 +604,18 @@ convertCpp2HS _c (CPT (CPTClassRef c') _) = tycon (class_name c')
 convertCpp2HS _c (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 
+-- |
+convertCpp2HS4Tmpl :: Maybe Class -> Type -> Types -> Type
+convertCpp2HS4Tmpl _c _ Void                  = unit_tycon
+convertCpp2HS4Tmpl (Just c) _ SelfType        = tycon ((fst.hsClassName) c)
+convertCpp2HS4Tmpl Nothing _ SelfType         = error "convertCpp2HS4Tmpl : SelfType but no class "
+convertCpp2HS4Tmpl _c _ (CT t _)              = convertC2HS t
+convertCpp2HS4Tmpl _c _ (CPT (CPTClass c') _)    = tycon (class_name c')
+convertCpp2HS4Tmpl _c _ (CPT (CPTClassRef c') _) = tycon (class_name c')
+convertCpp2HS4Tmpl _c _ (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
+convertCpp2HS4Tmpl _c t (TemplateParam p)         = t
+
+
 
 
 typeclassName :: Class -> String
@@ -724,10 +736,8 @@ functionSignatureTT t f =
   let (_,rname) = hsTemplateClassName t
       ctyp = tycon $ (ctypToHsTyp Nothing . tfun_ret) f
       arg0 = TyApp tyPtr (TyApp (tycon rname) spl)
-        where spl = TySplice (ParenSplice e)
-              e = mkVar (tclass_param t)
-                  -- mkVar "return" `App` (con "ConT" `App` mkVar "n")
-      lst = arg0 : map (convertCpp2HS Nothing . fst) (tfun_args f)
+      spl = TySplice (ParenSplice (mkVar (tclass_param t)))
+      lst = arg0 : map (convertCpp2HS4Tmpl Nothing spl . fst) (tfun_args f)
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
 
 

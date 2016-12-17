@@ -446,12 +446,12 @@ tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing
         q = tycon "Q"
         tytyp = tycon "Type"
         typ = TyFun (TyTuple Boxed
-                       [tynm,TyFun tynm tystr,TyFun tynm (TyApp q tytyp)])
+                       [tynm,tystr,TyFun tynm (TyApp q tytyp)])
                     (tycon "ExpQ")
-        pats = [PTuple Boxed [p "nty", p "nf", p "tyf"] ]
-        rhs = Do [ LetStmt (BDecls [ pbind (p "fn")
-                                       (UnGuardedRhs (app "nf""nty")) Nothing ])
-                 , Generator noLoc (p "n") (app "newName" "fn")
+        pats = [PTuple Boxed [p "nty", p "fn", p "tyf"] ]
+        rhs = Do [ -- LetStmt (BDecls [ pbind (p "fn")
+                   --                     (UnGuardedRhs (app "nf""nty")) Nothing ])
+                   Generator noLoc (p "n") (app "newName" "fn")
                  , Generator noLoc (p "d")
                      (v "forImpD" `App` c "CCall" `App` v "unsafe" `App` v "fn" `App` v "n"
                         `App` ("tyf" `app` "nty") )
@@ -478,9 +478,9 @@ genTmplInterface t = [ mkData rname [mkTBind tp] [] []
 genTmplImplementation :: TemplateClass -> [Decl]
 genTmplImplementation t = tmplUtil ++ concatMap (gen t) (tclass_funcs t)
   where
-    gen t f = mkFun n sig [p tp] rhs (Just binds)
+    gen t f = mkFun n sig [p "nty"] rhs (Just binds)
       where n = tfun_name f
-            sig = functionSignatureT t f
+            sig = TyFun (tycon "Name") (tycon "ExpQ") -- functionSignatureT t f
             v = mkVar
             p = mkPVar
             tp = tclass_param t

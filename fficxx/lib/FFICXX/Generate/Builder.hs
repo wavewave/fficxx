@@ -71,7 +71,7 @@ cabalTemplate =
   \  ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind -fno-warn-orphans -fno-warn-unused-imports\n\
   \  ghc-prof-options: -caf-all -auto-all\n\
   \  cc-options: $ccOptions\n\
-  \  Build-Depends:      base>4 && < 5, fficxx-runtime >= 0.2 $deps\n\
+  \  Build-Depends:      base>4 && < 5, fficxx-runtime >= 0.2, template-haskell$deps\n\
   \  Exposed-Modules:\n\
   \$exposedModules\n\
   \  Other-Modules:\n\

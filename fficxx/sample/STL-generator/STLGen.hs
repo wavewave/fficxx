@@ -35,6 +35,6 @@ cabalattr =
 
 main :: IO ()
 main = do 
-  simpleBuilder "STL" headerMap (cabal,cabalattr,classes,toplevelfunctions,templates) [ "stl" ]
+  simpleBuilder "STL" headerMap (cabal,cabalattr,classes,toplevelfunctions,templates) [ ]
 
 
