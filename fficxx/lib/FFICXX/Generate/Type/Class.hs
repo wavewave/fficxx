@@ -388,7 +388,7 @@ rettypeToString Void = "void"
 rettypeToString SelfType = "Type ## _p"
 rettypeToString (CPT (CPTClass c) _) = class_name c ++ "_p"
 rettypeToString (CPT (CPTClassRef c) _) = class_name c ++ "_p"
-rettypeToString (TemplateType t) = "void*"
+rettypeToString (TemplateType _) = "void*"
 rettypeToString (TemplateParam _) = "Type ## _p"
 
 tmplArgToString :: TemplateClass -> (Types,String) -> String
@@ -402,7 +402,7 @@ tmplArgToString _ (CPT (CPTClassRef c) isconst, varname) =
   case isconst of
     Const   -> "const_" ++ class_name c ++ "_p " ++ varname
     NoConst -> class_name c ++ "_p " ++ varname
-tmplArgToString t (TemplateType t',v) = "void* " ++ v
+tmplArgToString _ (TemplateType _,v) = "void* " ++ v
 tmplArgToString _ (TemplateParam _,v) = "Type " ++ v
 tmplArgToString _ _ = error "tmplArgToString: undefined"
 
@@ -480,6 +480,7 @@ data TemplateFunction = TFun { tfun_ret :: Types
                              , tfun_oname :: String
                              , tfun_args :: Args
                              , tfun_alias :: Maybe String }
+                     ---  | TFunNew { tfun_args :: Args }
 
 
 data TemplateClass = TmplCls { tclass_cabal :: Cabal
@@ -613,7 +614,7 @@ convertCpp2HS4Tmpl _c _ (CT t _)              = convertC2HS t
 convertCpp2HS4Tmpl _c _ (CPT (CPTClass c') _)    = tycon (class_name c')
 convertCpp2HS4Tmpl _c _ (CPT (CPTClassRef c') _) = tycon (class_name c')
 convertCpp2HS4Tmpl _c _ (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
-convertCpp2HS4Tmpl _c t (TemplateParam p)         = t
+convertCpp2HS4Tmpl _c t (TemplateParam _)         = t
 
 
 

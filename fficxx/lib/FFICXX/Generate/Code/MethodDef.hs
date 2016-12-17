@@ -97,7 +97,7 @@ funcsToDefs c = intercalateWith connBSlash (funcToDef c)
 
 
 tmplFunToDecl :: TemplateClass -> TemplateFunction -> String 
-tmplFunToDecl t@TmplCls {..} f@TFun {..} =  
+tmplFunToDecl t@TmplCls {..} TFun {..} =  
   subst "$ret ${tname}_${fname}_ ## Type ( $args )"
     (context [ ("tname", tclass_name                     )  
              , ("fname", tfun_name                       ) 

@@ -65,16 +65,6 @@ mkPostComment str
      in unlines commented_lines 
   | otherwise = str                
 
-{-
-mkHsFuncRetType :: Types -> (String,[String])
-mkHsFuncRetType rtyp = 
-  case rtyp of 
-    SelfType -> ("a",[])
-    CPT (CPTClass c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
-    CPT (CPTClassRef c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
-    _ -> (ctypToHsTyp Nothing rtyp,[])
--}
-
 extractArgTypes :: Args -> ([Type],[Asst]) 
 extractArgTypes lst = 
   let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
@@ -479,9 +469,9 @@ genTmplInterface t = [ mkData rname [mkTBind tp] [] []
 
 
 genTmplImplementation :: TemplateClass -> [Decl]
-genTmplImplementation t = tmplUtil ++ concatMap (gen t) (tclass_funcs t)
+genTmplImplementation t = tmplUtil ++ concatMap gen (tclass_funcs t)
   where
-    gen t f = mkFun n sig [p "nty", p "ncty"] rhs (Just binds)
+    gen f = mkFun n sig [p "nty", p "ncty"] rhs (Just binds)
       where n = tfun_name f
             sig = tycon "Name" `TyFun` (tycon "String" `TyFun` tycon "ExpQ")
             v = mkVar

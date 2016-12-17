@@ -145,7 +145,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg
 
-      pkgconfig@(PkgConfig mods cihs tih tcms tcihs) =
+      pkgconfig@(PkgConfig mods cihs tih tcms _tcihs) =
         mkPackageConfig (pkgname, mkClassNSHeaderFromMap (HM.fromList lst)) (classes, toplevelfunctions,templates)
       hsbootlst = mkHSBOOTCandidateList mods
       cabalFileName = pkgname <.> "cabal" 
@@ -269,7 +269,7 @@ copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ tcihs) = do
     copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
 
 
-
+moduleFileCopy :: FilePath -> FilePath -> FilePath -> IO ()
 moduleFileCopy wdir ddir fname = do 
   let (fnamebody,fnameext) = splitExtension fname
       (mdir,mfile) = moduleDirFile fnamebody
