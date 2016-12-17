@@ -262,7 +262,8 @@ buildTemplateHeader (TypMcro typemacroprefix) cprefix t =
        "#ifndef $typemacro\n\
        \#define $typemacro\n\
        \\n\
-       \$deffunc\n"
+       \$deffunc\n\
+       \#endif\n"
        (context [ ("typemacro", typemacrostr )
                 , ("deffunc"  , deffunc      ) ])
 

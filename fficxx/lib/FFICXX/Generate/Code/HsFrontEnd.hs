@@ -444,14 +444,17 @@ tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing
         tynm = tycon "Name"
         tystr = tycon "String"
         q = tycon "Q"
+        cpre = Lit (String "c_")
         tytyp = tycon "Type"
         typ = TyFun (TyTuple Boxed
-                       [tynm,tystr,TyFun tynm (TyApp q tytyp)])
+                       [tynm,tystr, TyFun tystr tystr,TyFun tynm (TyApp q tytyp)])
                     (tycon "ExpQ")
-        pats = [PTuple Boxed [p "nty", p "fn", p "tyf"] ]
-        rhs = Do [ -- LetStmt (BDecls [ pbind (p "fn")
-                   --                     (UnGuardedRhs (app "nf""nty")) Nothing ])
-                   Generator noLoc (p "n") (app "newName" "fn")
+        pats = [PTuple Boxed [p "nty", p "ncty", p "nf", p "tyf"] ]
+        rhs = Do [ LetStmt (BDecls [ pbind (p "fn")
+                                       (UnGuardedRhs (app "nf" "ncty")) Nothing ])
+                 , LetStmt (BDecls [ pbind (p "fn'")
+                                       (UnGuardedRhs (cpre `App` v "++"  `App` v "fn")) Nothing ])
+                 , Generator noLoc (p "n") (app "newName" "fn'")
                  , Generator noLoc (p "d")
                      (v "forImpD" `App` c "CCall" `App` v "unsafe" `App` v "fn" `App` v "n"
                         `App` ("tyf" `app` "nty") )
@@ -478,14 +481,16 @@ genTmplInterface t = [ mkData rname [mkTBind tp] [] []
 genTmplImplementation :: TemplateClass -> [Decl]
 genTmplImplementation t = tmplUtil ++ concatMap (gen t) (tclass_funcs t)
   where
-    gen t f = mkFun n sig [p "nty"] rhs (Just binds)
+    gen t f = mkFun n sig [p "nty", p "ncty"] rhs (Just binds)
       where n = tfun_name f
-            sig = TyFun (tycon "Name") (tycon "ExpQ") -- functionSignatureT t f
+            sig = tycon "Name" `TyFun` (tycon "String" `TyFun` tycon "ExpQ")
             v = mkVar
             p = mkPVar
             tp = tclass_param t
-            lit = Lit (String n)
-            rhs = App (v "mkTFunc") (Tuple Boxed [v "nty", lit, v "tyf"])
+            prefix = tclass_name t
+            lit = Lit (String (prefix++"_"++n++"_"))
+            lam = Lambda noLoc [p "n"] ( lit `App` v "++" `App` v "n") 
+            rhs = App (v "mkTFunc") (Tuple Boxed [v "nty", v "ncty", lam, v "tyf"])
             sig' = functionSignatureTT t f
             binds = BDecls [ mkBind1 "tyf" [mkPVar "n"]
                                (Let (BDecls [ pbind (p tp) (UnGuardedRhs (v "return" `App` (con "ConT" `App` v "n"))) Nothing ])

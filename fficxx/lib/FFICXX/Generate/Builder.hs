@@ -87,12 +87,17 @@ cabalTemplate =
 -- |
 buildCabalFile :: (Cabal, CabalAttr)
             -> String
-            -> (TopLevelImportHeader,[ClassModule],[TemplateClassModule])
+            -> PackageConfig -- (TopLevelImportHeader,[ClassModule],[TemplateClassModule])
             -> [String] -- ^ extra libs
             -> FilePath
             -> IO ()
-buildCabalFile (cabal, cabalattr) summarymodule (tih,classmodules,tmods) extralibs cabalfile = do
-  let txt = subst cabalTemplate
+buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = do
+  let tih = pcfg_topLevelImportHeader pkgconfig
+      classmodules = pcfg_classModules pkgconfig
+      cih = pcfg_classImportHeaders pkgconfig
+      tmods = pcfg_templateClassModules pkgconfig
+      tcih = pcfg_templateClassImportHeaders pkgconfig
+      txt = subst cabalTemplate
               (context ([ ("licenseField", "license: " ++ license)
                           | Just license <- [cabalattr_license cabalattr] ] ++
                         [ ("licenseFileField", "license-file: " ++ licensefile)
@@ -110,7 +115,7 @@ buildCabalFile (cabal, cabalattr) summarymodule (tih,classmodules,tmods) extrali
                         , ("ccOptions","")
                         , ("deps", "")
                         , ("csrcFiles", genCsrcFiles (tih,classmodules))
-                        , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) classmodules)
+                        , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) (cih,tcih) )
                         , ("cppFiles", genCppFiles (tih,classmodules))
                         , ("exposedModules", genExposedModules summarymodule (classmodules,tmods))
                         , ("otherModules", genOtherModules classmodules)
@@ -151,7 +156,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   notExistThenCreate (installDir </> "csrc")
   --
   putStrLn "cabal file generation"
-  buildCabalFile (cabal,cabalattr) summarymodule (tih,mods,tcms) extralibs (workingDir</>cabalFileName)
+  buildCabalFile (cabal,cabalattr) summarymodule pkgconfig extralibs (workingDir</>cabalFileName)
   --
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")

@@ -148,15 +148,12 @@ genAllCppHeaderInclude header =
 ----
 
 genIncludeFiles :: String        -- ^ package name 
-                -> [ClassModule] 
+                -> ([ClassImportHeader],[TemplateClassImportHeader])
                 -> String
-genIncludeFiles pkgname cmods =
+genIncludeFiles pkgname (cih,tcih) =
   let indent = cabalIndentation 
-      selfheaders' = do 
-        x <- cmods
-        y <- cmCIH x
-        return (cihSelfHeader y) 
-      selfheaders = nub selfheaders'
+      selfheaders = map cihSelfHeader cih ++ map tcihSelfHeader tcih
+      -- selfheaders = nub selfheaders'
       includeFileStrs = map ((indent++).unHdrName) selfheaders
   in  unlines ((indent++pkgname++"Type.h") : includeFileStrs)
 
