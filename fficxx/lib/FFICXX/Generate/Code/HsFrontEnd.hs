@@ -464,7 +464,7 @@ tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing
 genTmplInterface :: TemplateClass -> [Decl]
 genTmplInterface t = [ mkData rname [mkTBind tp] [] []
                          , mkNewtype hname [mkTBind tp]
-                             [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyForeignPtr rawtype]) ] []
+                             [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyPtr rawtype]) ] []
                          , mkClass [] (typeclassNameT t) [mkTBind tp] methods
                          ]
   where (hname,rname) = hsTemplateClassName t
