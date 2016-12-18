@@ -34,16 +34,16 @@ mkTFunc (nty, ncty, nf, tyf)
 
 
 
-mkMember :: String -> String -> (Name -> Q Exp) -> Name -> Q Dec
-mkMember tname fname f n = do
+mkMember :: String -> String -> (Name -> String -> Q Exp) -> Name -> String -> Q Dec
+mkMember tname fname f n ctyp = do
   let x = mkNameS "x"
-  e <- f n
+  e <- f n ctyp
   return $
     FunD (mkNameS fname) [ Clause [ConP (mkNameS tname) [VarP x]] (NormalB (AppE e (VarE x))) [] ]
 
-mkNew :: String -> String -> (Name -> Q Exp) -> Name -> Q Dec
-mkNew tname fname f n = do
-  e <- f n
+mkNew :: String -> String -> (Name -> String -> Q Exp) -> Name -> String -> Q Dec
+mkNew tname fname f n ctyp = do
+  e <- f n ctyp
   return $
     FunD (mkNameS fname)
       [ Clause [] (NormalB (VarE (mkNameS "fmap") `AppE` ConE (mkNameS tname) `AppE` e)) [] ]

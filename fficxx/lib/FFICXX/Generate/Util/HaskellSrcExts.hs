@@ -46,8 +46,8 @@ mkPVar = PVar . Ident
 mkPVarSig :: String -> Type -> Pat
 mkPVarSig n typ = PatTypeSig noLoc (mkPVar n) typ
 
-pbind :: Pat -> Rhs -> Maybe Binds -> Decl
-pbind = PatBind noLoc
+pbind :: Pat -> Exp -> Maybe Binds -> Decl
+pbind pat exp = PatBind noLoc pat (UnGuardedRhs exp)
 
 mkTBind :: String -> TyVarBind
 mkTBind = UnkindedVar . Ident
