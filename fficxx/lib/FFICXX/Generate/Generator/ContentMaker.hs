@@ -376,7 +376,7 @@ buildTHHs m = mkModule (tcmModule m <.> "TH")
   where ts = tcmTemplateClasses m
         imports = [ mkImport (tcmModule m <.> "Template") ]
         body = concatMap genTmplImplementation ts
-
+               ++ concatMap (\t -> genTmplInstance t (tclass_funcs t)) ts
 
 -- | 
 buildInterfaceHSBOOT :: String -> Module

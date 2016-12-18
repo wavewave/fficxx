@@ -482,4 +482,6 @@ genTmplImplementation t = tmplUtil ++ concatMap gen (tclass_funcs t)
                                Nothing 
                            ]
 
+genTmplInstance :: TemplateClass -> [TemplateFunction] -> [Decl]
+genTmplInstance t fs = [] --  [ mkInstance [] "Test"  [] [] ]
 
