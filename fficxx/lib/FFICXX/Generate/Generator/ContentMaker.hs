@@ -251,21 +251,25 @@ buildTopLevelFunctionCppDef tih =
 
 -- | 
 buildTemplateHeader :: TypeMacro  -- ^ typemacro prefix 
-                 -> String     -- ^ C prefix
+                 -- -> String     -- ^ C prefix
                  -> TemplateClass
                  -> String 
-buildTemplateHeader (TypMcro typemacroprefix) cprefix t =
+buildTemplateHeader (TypMcro typemacroprefix) t =
   let typemacrostr = typemacroprefix ++ "TEMPLATE" ++ "__"
       fs = tclass_funcs t
-      deffunc = intercalateWith connRet (genTmplFunCpp cprefix t) fs
+      deffunc = intercalateWith connRet (genTmplFunCpp t) fs
+      classlevel = genTmplClassCpp t fs
   in subst
        "#ifndef $typemacro\n\
        \#define $typemacro\n\
        \\n\
        \$deffunc\n\
+       \$classlevel\n\
        \#endif\n"
        (context [ ("typemacro", typemacrostr )
-                , ("deffunc"  , deffunc      ) ])
+                , ("deffunc"  , deffunc      )
+                , ("classlevel" , classlevel )
+                ])
 
 
 -- | 

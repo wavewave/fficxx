@@ -173,7 +173,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
     in forM_ tcihs $ \tcih ->
          let t = tcihTClass tcih
              hdr = unHdrName (tcihSelfHeader tcih)
-         in gen hdr (buildTemplateHeader typmacro pkgname t)
+         in gen hdr (buildTemplateHeader typmacro t)
   --
   putStrLn "cpp file generation"
   mapM_ (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr)) cihs
