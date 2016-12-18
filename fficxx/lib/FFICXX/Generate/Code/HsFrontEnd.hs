@@ -413,6 +413,8 @@ genImportInImplementation m =
       ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
       ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
+
+{- 
 tmplUtil :: [Decl]
 tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing 
   where v = mkVar
@@ -439,7 +441,7 @@ tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing
                  , Qualifier (BracketExp (ExpBracket (SpliceExp (ParenSplice ("varE" `app` "n" )))))
                  ] 
 
-
+-}
         
 genTmplInterface :: TemplateClass -> [Decl]
 genTmplInterface t = [ mkData rname [mkTBind tp] [] []
@@ -458,7 +460,7 @@ genTmplInterface t = [ mkData rname [mkTBind tp] [] []
 
 
 genTmplImplementation :: TemplateClass -> [Decl]
-genTmplImplementation t = tmplUtil ++ concatMap gen (tclass_funcs t)
+genTmplImplementation t = concatMap gen (tclass_funcs t)
   where
     gen f = mkFun nh sig [p "nty", p "ncty"] rhs (Just binds)
       where nh = case f of

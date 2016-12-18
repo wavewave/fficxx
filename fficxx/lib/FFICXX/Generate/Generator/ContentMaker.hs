@@ -371,7 +371,9 @@ buildTHHs m = mkModule (tcmModule m <.> "TH")
               , mkImport "Foreign.C.Types"
               , mkImport "Foreign.Ptr"
               , mkImport "Language.Haskell.TH"
-              , mkImport "Language.Haskell.TH.Syntax"] ++ imports)
+              , mkImport "Language.Haskell.TH.Syntax"
+              , mkImport "FFICXX.Generate.Util.TH"
+              ] ++ imports)
              body
   where ts = tcmTemplateClasses m
         imports = [ mkImport (tcmModule m <.> "Template") ]

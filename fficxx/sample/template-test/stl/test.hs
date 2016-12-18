@@ -19,8 +19,8 @@ import Language.Haskell.TH.Syntax
 
 class Test a
 
-$(TH.createInstancesFor ''CInt)
-$(TH.createInstancesFor ''CDouble)
+$(TH.genVectorInstanceFor ''CInt)
+$(TH.genVectorInstanceFor ''CDouble)
 
 
 

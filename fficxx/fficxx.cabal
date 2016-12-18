@@ -64,6 +64,7 @@ Library
                    FFICXX.Generate.Generator.ContentMaker
                    FFICXX.Generate.Util
                    FFICXX.Generate.Util.HaskellSrcExts
+                   FFICXX.Generate.Util.TH
                    FFICXX.Generate.QQ.Verbatim
                    FFICXX.Generate.Type.Annotate
 
