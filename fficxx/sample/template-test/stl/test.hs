@@ -19,8 +19,8 @@ import Language.Haskell.TH.Syntax
 
 class Test a
 
-$(TH.genVectorInstanceFor ''CInt)
-$(TH.genVectorInstanceFor ''CDouble)
+$(TH.genVectorInstanceFor ''CInt    "int")
+$(TH.genVectorInstanceFor ''CDouble "double")
 
 
 
