@@ -61,3 +61,12 @@ void printout ( std::vector<T>* xs ) {
     }                                                                   \
     auto a_delete_ ## T = w_delete_ ## T  ; 
 
+
+#define vector_instance(T) \
+  w_printout(T) \
+  w_push_back(T) \
+  w_new(T) \
+  w_at(T) \
+  w_delete(T)
+
+
