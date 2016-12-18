@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Dependency
--- Copyright   : (c) 2011-2013,2015 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -14,7 +14,6 @@
 
 module FFICXX.Generate.Code.Dependency where
 
-import           Control.Applicative
 import           Data.Function (on)
 import           Data.List 
 import           Data.Maybe
@@ -22,6 +21,7 @@ import qualified Data.HashMap.Strict as HM
 import           System.FilePath 
 --
 import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 
 
@@ -66,11 +66,13 @@ mkCIH mkNSandIncHdrs c = let r = ClassImportHeader c
 
 -- |
 extractClassFromType :: Types -> Maybe Class
-extractClassFromType Void = Nothing
-extractClassFromType SelfType = Nothing
-extractClassFromType (CT _ _) = Nothing
-extractClassFromType (CPT (CPTClass c) _) = Just c
+extractClassFromType Void                    = Nothing
+extractClassFromType SelfType                = Nothing
+extractClassFromType (CT _ _)                = Nothing
+extractClassFromType (CPT (CPTClass c) _)    = Just c
 extractClassFromType (CPT (CPTClassRef c) _) = Just c
+extractClassFromType (TemplateType _)        = Nothing
+extractClassFromType (TemplateParam _)       = Nothing
 
 
 -- | class dependency for a given function 
@@ -151,30 +153,33 @@ mkModuleDepFFI c =
 mkClassModule :: (Class->([Namespace],[HeaderName]))
               -> Class 
               -> ClassModule 
-mkClassModule mkincheaders c = 
-    let r = (ClassModule <$> getClassModuleBase  
-                 <*> pure
-                 <*> return . mkCIH mkincheaders
-                 <*> highs_nonsource  
-                 <*> raws 
-                 <*> highs_source
-                 <*> ffis 
-            ) c
-    in r 
-    
+mkClassModule mkincheaders c = (ClassModule <$> getClassModuleBase  
+                                            <*> pure
+                                            <*> return . mkCIH mkincheaders
+                                            <*> highs_nonsource  
+                                            <*> raws 
+                                            <*> highs_source
+                                            <*> ffis
+                               ) c
   where highs_nonsource = map getClassModuleBase . mkModuleDepHighNonSource
         raws = map getClassModuleBase . mkModuleDepRaw 
         highs_source = map getClassModuleBase . mkModuleDepHighSource
-        ffis = map getClassModuleBase . mkModuleDepFFI 
+        ffis = map getClassModuleBase . mkModuleDepFFI
 
 
 mkClassNSHeaderFromMap :: HM.HashMap String ([Namespace],[HeaderName]) -> Class -> ([Namespace],[HeaderName])
 mkClassNSHeaderFromMap m c = fromMaybe ([],[]) (HM.lookup (class_name c) m)
 
-mkAll_ClassModules_CIH_TIH :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
-                        -> ([Class],[TopLevelFunction]) 
-                        -> ([ClassModule],[ClassImportHeader],TopLevelImportHeader)
-mkAll_ClassModules_CIH_TIH (pkgname,mkNSandIncHdrs) (cs,fs) = 
+
+mkTCM :: (TemplateClass,HeaderName) -> TemplateClassModule 
+mkTCM (t,hdr) = TCM  (getTClassModuleBase t) [t] [TCIH t hdr]
+
+
+mkPackageConfig
+  :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
+  -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)]) 
+  -> PackageConfig
+mkPackageConfig (pkgname,mkNSandIncHdrs) (cs,fs,ts) = 
   let ms = map (mkClassModule mkNSandIncHdrs) cs 
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
@@ -185,8 +190,10 @@ mkAll_ClassModules_CIH_TIH (pkgname,mkNSandIncHdrs) (cs,fs) =
       tl_cihs = catMaybes $ 
         foldr (\c acc-> (find (\x -> (class_name . cihClass) x == class_name c) cihs):acc) [] tl_cs 
       -- 
-      tih = TopLevelImportHeader (pkgname ++ "TopLevel") tl_cihs fs 
-  in (ms,cihs,tih)
+      tih = TopLevelImportHeader (pkgname ++ "TopLevel") tl_cihs fs
+      tcms = map mkTCM ts
+      tcihs = concatMap tcmTCIH tcms
+  in PkgConfig ms cihs tih tcms tcihs
 
 
 mkHSBOOTCandidateList :: [ClassModule] -> [String]

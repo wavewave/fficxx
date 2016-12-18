@@ -2,7 +2,7 @@ with (import <nixpkgs> {}).pkgs;
 let pkg = haskellPackages.callPackage
             ({ mkDerivation, base, bytestring, Cabal, containers
              , data-default, directory
-             , either, errors, filepath, hashable, HStringTemplate, lens, mtl
+             , either, errors, filepath, hashable, lens, mtl
              , process, pureMD5, split, stdenv, template-haskell, transformers
              , unordered-containers
              , template, haskell-src-exts
@@ -13,7 +13,7 @@ let pkg = haskellPackages.callPackage
                src = ./.;
                buildDepends = [
                  base bytestring Cabal containers data-default directory either errors filepath
-                 hashable HStringTemplate lens mtl process pureMD5 split
+                 hashable lens mtl process pureMD5 split
                  template-haskell transformers unordered-containers
                  template haskell-src-exts
                ];

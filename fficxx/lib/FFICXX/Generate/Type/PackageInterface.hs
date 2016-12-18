@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Type.PackageInterface
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -27,9 +27,6 @@ newtype HeaderName = HdrName { unHdrName :: String }
 
 instance IsString HeaderName where
   fromString = HdrName
-
-
-
 
 type PackageInterface = HM.HashMap (PackageName, ClassName) HeaderName 
 

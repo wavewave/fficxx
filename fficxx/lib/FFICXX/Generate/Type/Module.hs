@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Type.Module
--- Copyright   : (c) 2011-2013 Ian-Woo Kim
+-- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -12,11 +12,52 @@
 
 module FFICXX.Generate.Type.Module where
 
-data Module = Module { module_name :: String         
-                     , module_exports :: [String] 
-                     } 
+import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.PackageInterface
 
-mkModuleExports :: Module -> String
-mkModuleExports _mod = "" 
 
--- "\n  ( " ++ intercalate "\n  , " (module_exports mod) ++ ")"
+newtype Namespace = NS { unNamespace :: String } deriving (Show)
+
+data ClassImportHeader = ClassImportHeader
+                       { cihClass :: Class
+                       , cihSelfHeader :: HeaderName
+                       , cihNamespace :: [Namespace]
+                       , cihSelfCpp :: String
+                       , cihIncludedHPkgHeadersInH :: [HeaderName]
+                       , cihIncludedHPkgHeadersInCPP :: [HeaderName]
+                       , cihIncludedCPkgHeaders :: [HeaderName]
+                       } deriving (Show)
+
+data ClassModule = ClassModule
+                   { cmModule :: String
+                   , cmClass :: [Class]
+                   , cmCIH :: [ClassImportHeader]
+                   , cmImportedModulesHighNonSource :: [String]
+                   , cmImportedModulesRaw :: [String]
+                   , cmImportedModulesHighSource :: [String]
+                   , cmImportedModulesForFFI :: [String]
+                   } deriving (Show)
+
+data TemplateClassModule = TCM { tcmModule :: String
+                               , tcmTemplateClasses :: [TemplateClass]
+                               , tcmTCIH :: [TemplateClassImportHeader]
+                               } deriving (Show)
+
+
+data TemplateClassImportHeader = TCIH { tcihTClass :: TemplateClass
+                                      , tcihSelfHeader :: HeaderName
+                                      } deriving (Show)
+
+data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String
+                                                 , tihClassDep :: [ClassImportHeader]
+                                                 , tihFuncs :: [TopLevelFunction]
+                                                 }
+
+data PackageConfig = PkgConfig { pcfg_classModules :: [ClassModule]
+                               , pcfg_classImportHeaders :: [ClassImportHeader]
+                               , pcfg_topLevelImportHeader :: TopLevelImportHeader
+                               , pcfg_templateClassModules :: [TemplateClassModule]
+                               , pcfg_templateClassImportHeaders :: [TemplateClassImportHeader]
+                               }
+
+

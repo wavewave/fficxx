@@ -15,18 +15,18 @@
 
 module FFICXX.Generate.Type.Class where
 
-import           Control.Applicative               ((<$>),(<*>))
+import           Control.Applicative               ( (<$>),(<*>) )
 import           Data.Char
-import           Data.Default                      (Default(def))
+import           Data.Default                      ( Default(def) )
 import           Data.List
-import           Data.Monoid
 import qualified Data.Map                     as M
-import           Language.Haskell.Exts.Syntax      (Context(..), Asst(..), Type(..), unit_tycon)
+import           Language.Haskell.Exts.Syntax      ( Asst(..), Context
+                                                   , Splice(..), Type(..), unit_tycon
+                                                   )
 import           System.FilePath
 --
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
-import           FFICXX.Generate.Type.PackageInterface
 
 -- some type aliases
 
@@ -61,6 +61,8 @@ data Types = Void
            | SelfType
            | CT  CTypes IsConst
            | CPT CPPTypes IsConst
+           | TemplateType TemplateClass
+           | TemplateParam String
            deriving Show
 
 cvarToStr :: CTypes -> IsConst -> String -> String
@@ -264,10 +266,6 @@ hsCTypeName CTCharStarStar = "(Ptr (CString))"
 hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")"
 hsCTypeName (CRef t) = "(Ptr " ++ hsCTypeName t ++ ")"
 
-hsCppTypeName :: CPPTypes -> String
-hsCppTypeName (CPTClass c) =  "(Ptr "++rawname++")"  where rawname = snd (hsClassName c)
-hsCppTypeName (CPTClassRef c) = "(Ptr "++rawname++")" where rawname = snd (hsClassName c)
-
 -------------
 
 type Args = [(Types,String)]
@@ -311,11 +309,6 @@ hsFrontNameForTopLevelFunction tfn =
                    TopLevelVariable {..} -> maybe toplevelvar_name id toplevelvar_alias
     in toLower x : xs
 
-
-data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String
-                                                 , tihClassDep :: [ClassImportHeader]
-                                                 , tihFuncs :: [TopLevelFunction]
-                                                 }
 
 
 
@@ -393,10 +386,56 @@ rettypeToString :: Types -> String
 rettypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
 rettypeToString Void = "void"
 rettypeToString SelfType = "Type ## _p"
-rettypeToString (CPT (CPTClass c) _) = str ++ "_p"
-  where str = class_name c
-rettypeToString (CPT (CPTClassRef c) _) = str ++ "_p"
-  where str = class_name c
+rettypeToString (CPT (CPTClass c) _) = class_name c ++ "_p"
+rettypeToString (CPT (CPTClassRef c) _) = class_name c ++ "_p"
+rettypeToString (TemplateType t) = "void*"
+rettypeToString (TemplateParam _) = "Type ## _p"
+
+tmplArgToString :: TemplateClass -> (Types,String) -> String
+tmplArgToString _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
+tmplArgToString t (SelfType, varname) = tclass_oname t ++ "* " ++ varname
+tmplArgToString _ (CPT (CPTClass c) isconst, varname) =
+  case isconst of
+    Const   -> "const_" ++ class_name c ++ "_p " ++ varname
+    NoConst -> class_name c ++ "_p " ++ varname
+tmplArgToString _ (CPT (CPTClassRef c) isconst, varname) =
+  case isconst of
+    Const   -> "const_" ++ class_name c ++ "_p " ++ varname
+    NoConst -> class_name c ++ "_p " ++ varname
+tmplArgToString t (TemplateType t',v) = "void* " ++ v
+tmplArgToString _ (TemplateParam _,v) = "Type " ++ v
+tmplArgToString _ _ = error "tmplArgToString: undefined"
+
+tmplAllArgsToString :: TemplateClass -> Args -> String
+tmplAllArgsToString t args =
+  let args' = (TemplateType t, "p") : args
+  in  intercalateWith conncomma (tmplArgToString t) args'
+
+
+
+tmplArgToCallString :: (Types,String) -> String
+tmplArgToCallString (CPT (CPTClass c) _,varname) =
+    "to_nonconst<"++str++","++str++"_t>("++varname++")" where str = class_name c
+tmplArgToCallString (CPT (CPTClassRef c) _,varname) =
+    "to_nonconstref<"++str++","++str++"_t>(*"++varname++")" where str = class_name c
+tmplArgToCallString (CT (CRef _) _,varname) = "(*"++ varname++ ")"
+tmplArgToCallString (_,varname) = varname
+
+tmplAllArgsToCallString :: Args -> String
+tmplAllArgsToCallString = intercalateWith conncomma tmplArgToCallString
+
+
+
+tmplRetTypeToString :: Types -> String
+tmplRetTypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
+tmplRetTypeToString Void = "void"
+tmplRetTypeToString SelfType = "Type ## _p"
+tmplRetTypeToString (CPT (CPTClass c) _) = class_name c ++ "_p"
+tmplRetTypeToString (CPT (CPTClassRef c) _) = class_name c ++ "_p"
+tmplRetTypeToString (TemplateType t) = tclass_oname t ++ "*"
+tmplRetTypeToString (TemplateParam _) = "Type"
+
+
 
 --------
 
@@ -436,28 +475,24 @@ data Class = Class { class_cabal :: Cabal
                            , class_funcs :: [Function]
                            }
 
+data TemplateFunction = TFun { tfun_ret :: Types
+                             , tfun_name :: String
+                             , tfun_oname :: String
+                             , tfun_args :: Args
+                             , tfun_alias :: Maybe String }
 
-newtype Namespace = NS { unNamespace :: String } deriving (Show)
 
-data ClassImportHeader = ClassImportHeader
-                       { cihClass :: Class
-                       , cihSelfHeader :: HeaderName
-                       , cihNamespace :: [Namespace]
-                       , cihSelfCpp :: String
-                       , cihIncludedHPkgHeadersInH :: [HeaderName] -- [String]
-                       , cihIncludedHPkgHeadersInCPP :: [HeaderName] -- [String]
-                       , cihIncludedCPkgHeaders :: [HeaderName]
-                       } deriving (Show)
+data TemplateClass = TmplCls { tclass_cabal :: Cabal
+                             , tclass_name :: String
+                             , tclass_oname :: String
+                             , tclass_param :: String
+                             , tclass_funcs :: [TemplateFunction]
+                             }
 
-data ClassModule = ClassModule
-                   { cmModule :: String
-                   , cmClass :: [Class]
-                   , cmCIH :: [ClassImportHeader]
-                   , cmImportedModulesHighNonSource :: [String]
-                   , cmImportedModulesRaw :: [String]
-                   , cmImportedModulesHighSource :: [String]
-                   , cmImportedModulesForFFI :: [String]
-                   } deriving (Show)
+instance Show TemplateClass where
+  show x = show (tclass_name x ++ " " ++ tclass_param x)
+
+
 
 data ClassGlobal = ClassGlobal
                    { cgDaughterSelfMap :: DaughterMap
@@ -490,6 +525,9 @@ class_allparents c = let ps = class_parents c
 
 getClassModuleBase :: Class -> String
 getClassModuleBase = (<.>) <$> (cabal_moduleprefix.class_cabal) <*> (fst.hsClassName)
+
+getTClassModuleBase :: TemplateClass -> String
+getTClassModuleBase = (<.>) <$> (cabal_moduleprefix.tclass_cabal) <*> (fst.hsTemplateClassName)
 
 
 
@@ -534,6 +572,8 @@ ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
 ctypToHsTyp _c (CT (CRef t) _) = hsCTypeName (CRef t)
 ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
+ctypToHsTyp _c (TemplateType t) = "("++ tclass_name t ++ " " ++ tclass_param t ++ ")"
+ctypToHsTyp _c (TemplateParam p) = "("++ p ++ ")"
 
 
 -- |
@@ -561,11 +601,30 @@ convertCpp2HS Nothing SelfType         = error "convertCpp2HS : SelfType but no 
 convertCpp2HS _c (CT t _)              = convertC2HS t
 convertCpp2HS _c (CPT (CPTClass c') _)    = tycon (class_name c')
 convertCpp2HS _c (CPT (CPTClassRef c') _) = tycon (class_name c')
+convertCpp2HS _c (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
+convertCpp2HS _c (TemplateParam p)         = mkTVar p
+
+-- |
+convertCpp2HS4Tmpl :: Maybe Class -> Type -> Types -> Type
+convertCpp2HS4Tmpl _c _ Void                  = unit_tycon
+convertCpp2HS4Tmpl (Just c) _ SelfType        = tycon ((fst.hsClassName) c)
+convertCpp2HS4Tmpl Nothing _ SelfType         = error "convertCpp2HS4Tmpl : SelfType but no class "
+convertCpp2HS4Tmpl _c _ (CT t _)              = convertC2HS t
+convertCpp2HS4Tmpl _c _ (CPT (CPTClass c') _)    = tycon (class_name c')
+convertCpp2HS4Tmpl _c _ (CPT (CPTClassRef c') _) = tycon (class_name c')
+convertCpp2HS4Tmpl _c _ (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
+convertCpp2HS4Tmpl _c t (TemplateParam p)         = t
+
 
 
 
 typeclassName :: Class -> String
 typeclassName c = 'I' : fst (hsClassName c)
+
+typeclassNameT :: TemplateClass -> String
+typeclassNameT c = 'I' : fst (hsTemplateClassName c)
+
+
 
 typeclassNameFromStr :: String -> String
 typeclassNameFromStr = ('I':)
@@ -575,49 +634,14 @@ hsClassName c =
   let cname = maybe (class_name c) id (class_alias c)
   in (cname, "Raw" ++ cname)
 
+hsTemplateClassName :: TemplateClass -> (String, String)  -- ^ High-level, 'Raw'-level
+hsTemplateClassName t =
+  let tname = tclass_name t
+  in (tname, "Raw" ++ tname)
+
 existConstructorName :: Class -> String
 existConstructorName c = 'E' : (fst.hsClassName) c
 
-{- 
--- | this is for FFI type.
-hsFuncTyp :: Class -> Function -> String
-hsFuncTyp c f = let args = genericFuncArgs f
-                    ret  = genericFuncRet f
-                in  selfstr ++ " -> " ++ concatMap ((++ " -> ") . hsargtype . fst) args ++ hsrettype ret
-
-  where (_hcname,rcname) = hsClassName c
-        selfstr = "(Ptr " ++ rcname ++ ")"
-
-        hsargtype (CT ctype _) = hsCTypeName ctype
-        hsargtype (CPT x _) = hsCppTypeName x
-        hsargtype SelfType = selfstr
-        hsargtype _ = error "undefined hsargtype"
-
-        hsrettype Void = "IO ()"
-        hsrettype SelfType = "IO " ++ selfstr
-        hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
-        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
--}
-{-
--- | this is for FFI
-hsFuncTypNoSelf :: Class -> Function -> String
-hsFuncTypNoSelf c f = let args = genericFuncArgs f
-                          ret  = genericFuncRet f
-                      in  intercalateWith connArrow id $ map (hsargtype . fst) args ++ [hsrettype ret]
-
-  where (_hcname,rcname) = hsClassName c
-        selfstr = "(Ptr " ++ rcname ++ ")"
-
-        hsargtype (CT ctype _) = hsCTypeName ctype
-        hsargtype (CPT x _) = hsCppTypeName x
-        hsargtype SelfType = selfstr
-        hsargtype _ = error "undefined hsargtype"
-
-        hsrettype Void = "IO ()"
-        hsrettype SelfType = "IO " ++ selfstr
-        hsrettype (CT ctype _) = "IO " ++ hsCTypeName ctype
-        hsrettype (CPT x _ ) = "IO " ++ hsCppTypeName x
--}
 
 hscFuncName :: Class -> Function -> String
 hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (aliasedFuncName c f)
@@ -660,7 +684,6 @@ aliasedFuncName c f =
     Virtual _ str _ a -> maybe str id a
     NonVirtual _ str _ a-> maybe (nonvirtualName c str) id a
     Static _ str _ a -> maybe (nonvirtualName c str) id a
-    -- AliasVirtual _ _  _ alias -> alias
     Destructor a -> maybe destructorName id a
 
 cppStaticName :: Class -> Function -> String
@@ -672,7 +695,6 @@ cppFuncName c f =   case f of
     Virtual _ _  _ _ -> func_name f
     NonVirtual _ _ _ _-> func_name f
     Static _ _ _ _-> cppStaticName c f
-    -- AliasVirtual _ _  _ _ _ -> func_name f
     Destructor _ -> destructorName
 
 constructorName :: Class -> String
@@ -699,6 +721,27 @@ functionSignature c f =
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
 
 
+
+functionSignatureT :: TemplateClass -> TemplateFunction -> Type
+functionSignatureT t f =
+  let (hname,_) = hsTemplateClassName t
+      tp = tclass_param t
+      ctyp = tycon $ (ctypToHsTyp Nothing . tfun_ret) f
+      arg0 =  (TyApp (tycon hname) (mkTVar tp) :)
+      lst = arg0 (map (convertCpp2HS Nothing . fst) (tfun_args f))
+  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+
+functionSignatureTT :: TemplateClass -> TemplateFunction -> Type
+functionSignatureTT t f =
+  let (_,rname) = hsTemplateClassName t
+      ctyp = tycon $ (ctypToHsTyp Nothing . tfun_ret) f
+      arg0 = TyApp tyPtr (TyApp (tycon rname) spl)
+      spl = TySplice (ParenSplice (mkVar (tclass_param t)))
+      lst = arg0 : map (convertCpp2HS4Tmpl Nothing spl . fst) (tfun_args f)
+  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+
+
+
 -- | this is for FFI type.
 hsFuncTyp :: Class -> Function -> Type
 hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
@@ -709,14 +752,26 @@ hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
         selftyp = TyApp tyPtr (tycon rcname)
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsargtype (CPT x _)    = tycon (hsCppTypeName x)
+        hsargtype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
+          where rawname = snd (hsTemplateClassName t)
+        hsargtype (TemplateParam p) = mkTVar p
         hsargtype SelfType     = selftyp
         hsargtype _ = error "undefined hsargtype"
 
         hsrettype Void         = unit_tycon
         hsrettype SelfType     = selftyp
         hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsrettype (CPT x _ )   = tycon (hsCppTypeName x)
+        hsrettype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsrettype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
+          where rawname = snd (hsTemplateClassName t)
+        hsrettype (TemplateParam p) = mkTVar p
 
 
 -- | this is for FFI
@@ -729,12 +784,24 @@ hsFuncTypNoSelf c f = foldr1 TyFun (argtyps ++ [TyApp (tycon "IO") rettyp])
         selftyp = TyApp tyPtr (tycon rcname)
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsargtype (CPT x _)    = tycon (hsCppTypeName x)
+        hsargtype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
+          where rawname = snd (hsTemplateClassName t)
+        hsargtype (TemplateParam p) = mkTVar p
         hsargtype SelfType     = selftyp
         hsargtype _ = error "undefined hsargtype"
 
         hsrettype Void         = unit_tycon
         hsrettype SelfType     = selftyp
         hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsrettype (CPT x _ )   = tycon (hsCppTypeName x)
+        hsrettype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsrettype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
+          where rawname = snd (hsClassName d)
+        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
+          where rawname = snd (hsTemplateClassName t)
+        hsrettype (TemplateParam p) = mkTVar p
 

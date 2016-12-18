@@ -17,19 +17,16 @@ module FFICXX.Generate.Code.Cpp where
 
 import           Data.Char 
 import           Data.List
-import           Data.Text                              (Text)
-import qualified Data.Text                         as T
-import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                     hiding (render)
 import           System.FilePath
-
+--
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Code.MethodDef
 import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 --
-import Debug.Trace
+
 
 
 -- Class Declaration and Definition
@@ -148,28 +145,15 @@ genAllCppHeaderInclude header =
       map unHdrName (cihIncludedHPkgHeadersInCPP header
                      ++ cihIncludedCPkgHeaders header)
 
-{-
-
--- we do not use this. 
-genModuleIncludeHeader :: [ClassImportHeader] -> String 
-genModuleIncludeHeader headers =
-  let strlst = map ((\x->"#include \""++x++"\"") . unHdrName . cihSelfHeader) headers 
-  in  intercalate "\n" strlst 
--}
-
-
 ----
 
 genIncludeFiles :: String        -- ^ package name 
-                -> [ClassModule] 
+                -> ([ClassImportHeader],[TemplateClassImportHeader])
                 -> String
-genIncludeFiles pkgname cmods =
+genIncludeFiles pkgname (cih,tcih) =
   let indent = cabalIndentation 
-      selfheaders' = do 
-        x <- cmods
-        y <- cmCIH x
-        return (cihSelfHeader y) 
-      selfheaders = nub selfheaders'
+      selfheaders = map cihSelfHeader cih ++ map tcihSelfHeader tcih
+      -- selfheaders = nub selfheaders'
       includeFileStrs = map ((indent++).unHdrName) selfheaders
   in  unlines ((indent++pkgname++"Type.h") : includeFileStrs)
 
@@ -234,14 +218,16 @@ genTopLevelFuncCppDefinition TopLevelFunction {..} =
                 ++ argsToCallString toplevelfunc_args   
                 ++ ")"
       returnstr = case toplevelfunc_ret of          
-        Void -> callstr ++ ";"
-        SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
-        (CT (CRef _) _) -> "return ((*)"++callstr++");"
-        (CT _ctyp _isconst) -> "return "++callstr++";" 
-        (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
-                                  ++">(("++str++"*)"++callstr++");" 
-          where str = class_name c' 
-        (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
+        Void                    -> callstr ++ ";"
+        SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
+        CT (CRef _) _           -> "return ((*)"++callstr++");"
+        CT _ _                  -> "return "++callstr++";" 
+        CPT (CPTClass c') _     -> "return to_nonconst<"++str++"_t,"++str
+                                    ++">(("++str++"*)"++callstr++");" 
+                                    where str = class_name c' 
+        CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
+        TemplateType _          -> error "genTopLevelFuncCppDefinition: TemplateType"
+        TemplateParam _         -> error "genTopLevelFuncCppDefinition: TemplateParam"        
       funcDefStr = returnstr 
   in subst tmpl (context [ ("returntype", rettypeToString toplevelfunc_ret                )  
                          , ("funcname"  , "TopLevel_" 
@@ -253,17 +239,36 @@ genTopLevelFuncCppDefinition TopLevelVariable {..} =
       callstr = toplevelvar_name
       returnstr = case toplevelvar_ret of          
         Void -> callstr ++ ";"
-        SelfType -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
-        (CT _ctyp _isconst) -> "return "++callstr++";" 
-        (CT (CRef _) _) -> "return ((*)"++callstr++");"
-        (CPT (CPTClass c') _) -> "return to_nonconst<"++str++"_t,"++str
-                                  ++">(("++str++"*)"++callstr++");" 
-          where str = class_name c' 
-        (CPT (CPTClassRef _c') _) -> "return ((*)"++callstr++");" 
+        SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)" ++ callstr ++ ") ;"
+        CT (CRef _) _           -> "return ((*)"++callstr++");"
+        CT _ _                  -> "return "++callstr++";" 
+        CPT (CPTClass c') _     -> "return to_nonconst<"++str++"_t,"++str
+                                   ++">(("++str++"*)"++callstr++");" 
+                                   where str = class_name c' 
+        CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
+        TemplateType _          -> error "genTopLevelFuncCppDefinition: TemplateType"
+        TemplateParam _         -> error "genTopLevelFuncCppDefinition: TemplateParam"        
       funcDefStr = returnstr 
   in subst tmpl (context [ ("returntype", rettypeToString toplevelvar_ret               )  
                          , ("funcname"  , "TopLevel_" 
                                           ++ maybe toplevelvar_name id toplevelvar_alias)
                          , ("funcbody"  , funcDefStr                                    ) ])
 
+
+genTmplFunCpp :: String -> TemplateClass -> TemplateFunction -> String 
+genTmplFunCpp cprefix t@TmplCls {..} f@TFun {..} = 
+    subst "#define ${tname}_${fname}(Type) \\\n\
+          \  extern \"C\" { \\\n\
+          \    $decl; \\\n\
+          \  } \\\n\
+          \  inline $defn \\\n\
+          \  auto a_${tname}_${fname}_ ## Type = ${tname}_${fname}_ ## Type  ;\n" 
+      (context [ ("cprefix", cprefix           )
+               , ("tname"  , tclass_name       )
+               , ("otname" , tclass_oname      )
+               , ("ofname" , tfun_oname        )
+               , ("fname"  , tfun_name         )
+               , ("decl"   , tmplFunToDecl t f )
+               , ("defn"   , tmplFunToDef t f  )
+               ])
 

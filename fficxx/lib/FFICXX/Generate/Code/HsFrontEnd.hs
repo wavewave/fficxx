@@ -18,22 +18,23 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import           Control.Monad.State
 import           Control.Monad.Reader
-import           Data.Char                               (toLower)
+
 import           Data.List
-import qualified Data.Map             as M
-import           Data.Maybe
+
+
 import           Data.Text                               (Text)
-import qualified Data.Text                         as T
-import qualified Data.Text.Lazy                    as TL
-import           Data.Text.Template                      hiding (render)
-import           Language.Haskell.Exts.Syntax            ( Type(..), Exp(..), Decl(..)
-                                                         , ClassDecl(..), InstDecl(..), ImportDecl(..)
-                                                         , Pat(..), Name(..), QOp(..), Op(..)
-                                                         , Asst(..), ConDecl(..), QualConDecl(..)
-                                                         , DataOrNew(..), TyVarBind (..), Binds(..)
-                                                         , Rhs(..), ExportSpec(..), Namespace(..)
-                                                         , unit_tycon)
-import           Language.Haskell.Exts.Pretty
+
+
+
+import           Language.Haskell.Exts.Syntax            ( Asst(..), Binds(..), Boxed(..), Bracket(..)
+                                                         , ClassDecl(..), DataOrNew(..), Decl(..)
+                                                         , Exp(..), ExportSpec(..)
+                                                         , ImportDecl(..), InstDecl(..), Literal(..)
+                                                         , Name(..), Namespace(..), Pat(..)
+                                                         , QualConDecl(..), Rhs(..)
+                                                         , Splice(..), Stmt(..)
+                                                         , Type(..), TyVarBind (..)
+                                                         )
 import           Language.Haskell.Exts.SrcLoc            ( noLoc )
 import           System.FilePath                         ((<.>))
 -- 
@@ -42,10 +43,8 @@ import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
---
-import Debug.Trace
 
------------------
+
 
 mkComment :: Int -> String -> String
 mkComment indent str 
@@ -97,20 +96,6 @@ extractArgTypes lst =
            CPT (CPTClassRef c') _ -> addclass c' 
            _ -> error ("No such c type : " ++ show typ)  
 
-
-----------------
-{-
--- |
-hsModuleDeclTmpl :: Text
-hsModuleDeclTmpl = "module $moduleName $moduleExp where"
-
--- |
-genModuleDecl :: Module -> Reader AnnotateMap String 
-genModuleDecl m = do 
-  let modheader = subst hsModuleDeclTmpl (context [ ("moduleName", module_name m    ) 
-                                                  , ("moduleExp" , mkModuleExports m) ])
-  return (modheader)
--}
 
 ----------------
 -- | will be deprecated
@@ -200,7 +185,7 @@ genHsFrontInstExistVirtualMethod p c f =
         rhs = (mkVar "return" `dot` mkVar ename) `App`
               mkVar "=<<" `App`
               (mkVar fname `App` foldl1 App (mkVar "x":map mkVar args))
-        args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ [1..] 
+        args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ ([1..] :: [Int])
 
 ---------------------
 
@@ -234,6 +219,7 @@ genHsFrontInstStatic c =
 
 -----
 
+castBody :: [InstDecl]
 castBody = [ InsDecl (mkBind1 "cast" []
                        (mkVar "unsafeForeignPtrToPtr" `dot`
                         mkVar "castForeignPtr" `dot`
@@ -330,9 +316,8 @@ genHsFrontUpcastClass c = mkFun ("upcast"++highname) typ [mkPVar "h"] rhs Nothin
 
 genHsFrontDowncastClass :: Class -> [Decl]
 genHsFrontDowncastClass c = mkFun ("downcast"++highname) typ [mkPVar "h"] rhs Nothing
-  where (highname,rawname) = hsClassName c
+  where (highname,_rawname) = hsClassName c
         hightype = tycon highname
-        rawtype = tycon rawname
         iname = typeclassName c
         a_bind = UnkindedVar (Ident "a")
         a_tvar = mkTVar "a"
@@ -450,5 +435,67 @@ genImportInExistential dmap m =
   in  intercalateWith connRet getImportOneClass alldaughters
 -}
 
+
+tmplUtil :: [Decl]
+tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing 
+  where v = mkVar
+        c = Con . unqual
+        p = mkPVar
+        tynm = tycon "Name"
+        tystr = tycon "String"
+        q = tycon "Q"
+        cpre = Lit (String "c_")
+        tytyp = tycon "Type"
+        typ = TyFun (TyTuple Boxed
+                       [tynm,tystr, TyFun tystr tystr,TyFun tynm (TyApp q tytyp)])
+                    (tycon "ExpQ")
+        pats = [PTuple Boxed [p "nty", p "ncty", p "nf", p "tyf"] ]
+        rhs = Do [ LetStmt (BDecls [ pbind (p "fn")
+                                       (UnGuardedRhs (app "nf" "ncty")) Nothing ])
+                 , LetStmt (BDecls [ pbind (p "fn'")
+                                       (UnGuardedRhs (cpre `App` v "++"  `App` v "fn")) Nothing ])
+                 , Generator noLoc (p "n") (app "newName" "fn'")
+                 , Generator noLoc (p "d")
+                     (v "forImpD" `App` c "CCall" `App` v "unsafe" `App` v "fn" `App` v "n"
+                        `App` ("tyf" `app` "nty") )
+                 , Qualifier (App (v "addTopDecls") (List [v "d"]))
+                 , Qualifier (BracketExp (ExpBracket (SpliceExp (ParenSplice ("varE" `app` "n" )))))
+                 ] 
+
+
+        
+genTmplInterface :: TemplateClass -> [Decl]
+genTmplInterface t = [ mkData rname [mkTBind tp] [] []
+                         , mkNewtype hname [mkTBind tp]
+                             [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyPtr rawtype]) ] []
+                         , mkClass [] (typeclassNameT t) [mkTBind tp] methods
+                         ]
+  where (hname,rname) = hsTemplateClassName t
+        tp = tclass_param t
+        fs = tclass_funcs t
+        rawtype = TyApp (tycon rname) (mkTVar tp)
+        sigdecl f = mkFunSig (tfun_name f) (functionSignatureT t f)
+        methods = map (ClsDecl . sigdecl) fs
+
+
+genTmplImplementation :: TemplateClass -> [Decl]
+genTmplImplementation t = tmplUtil ++ concatMap (gen t) (tclass_funcs t)
+  where
+    gen t f = mkFun n sig [p "nty", p "ncty"] rhs (Just binds)
+      where n = tfun_name f
+            sig = tycon "Name" `TyFun` (tycon "String" `TyFun` tycon "ExpQ")
+            v = mkVar
+            p = mkPVar
+            tp = tclass_param t
+            prefix = tclass_name t
+            lit = Lit (String (prefix++"_"++n++"_"))
+            lam = Lambda noLoc [p "n"] ( lit `App` v "++" `App` v "n") 
+            rhs = App (v "mkTFunc") (Tuple Boxed [v "nty", v "ncty", lam, v "tyf"])
+            sig' = functionSignatureTT t f
+            binds = BDecls [ mkBind1 "tyf" [mkPVar "n"]
+                               (Let (BDecls [ pbind (p tp) (UnGuardedRhs (v "return" `App` (con "ConT" `App` v "n"))) Nothing ])
+                                 (BracketExp (TypeBracket sig')))
+                               Nothing 
+                           ]
 
 

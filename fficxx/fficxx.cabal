@@ -61,7 +61,6 @@ Library
                    FFICXX.Generate.Code.HsFFI
                    FFICXX.Generate.Code.Cabal
                    FFICXX.Generate.Code.Dependency
-                   FFICXX.Generate.Generator.Driver
                    FFICXX.Generate.Generator.ContentMaker
                    FFICXX.Generate.Util
                    FFICXX.Generate.Util.HaskellSrcExts
