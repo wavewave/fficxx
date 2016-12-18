@@ -57,30 +57,28 @@ con = ConT . mkNameS
 mkInstance = InstanceD Nothing
 
 
-myTest :: Q [Dec]
-myTest = do
-  e1 <- vector_printout  (mkNameS "CInt")
-  e2 <- vector_new       (mkNameS "CInt")
-  e3 <- vector_push_back (mkNameS "CInt")
-  e4 <- vector_at        (mkNameS "CInt")
-  e5 <- vector_delete    (mkNameS "CInt")
+mkMember :: String -> String -> (Name -> Q Exp) -> Name -> Q Dec
+mkMember tname fname f n = do
+  let x = mkNameS "x"
+  e <- f n
+  return $
+    FunD (mkNameS fname) [ Clause [ConP (mkNameS tname) [VarP x]] (NormalB (AppE e (VarE x))) [] ]
 
-  return
-    [
-      mkInstance [] (AppT (con "ISTLVector") (con "CInt"))
-      [ FunD (mkNameS "printout")
-          [ Clause [ConP (mkNameS "STLVector") [VarP (mkNameS "x")]] (NormalB (AppE e1 (VarE (mkNameS "x")))) [] ]
-      , FunD (mkNameS "new")
-          [ Clause [] (NormalB (VarE (mkNameS "fmap") `AppE` ConE (mkNameS "STLVector") `AppE` e2)) [] ]
-      , FunD (mkNameS "push_back")
-          [ Clause [ConP (mkNameS "STLVector") [VarP (mkNameS "x")]] (NormalB (AppE e3 (VarE (mkNameS "x")))) [] ]
-      , FunD (mkNameS "at")
-          [ Clause [ConP (mkNameS "STLVector") [VarP (mkNameS "x")]] (NormalB (AppE e4 (VarE (mkNameS "x")))) [] ]
-      , FunD (mkNameS "delete")
-          [ Clause [ConP (mkNameS "STLVector") [VarP (mkNameS "x")]] (NormalB (AppE e5 (VarE (mkNameS "x")))) [] ]
+mkNew :: String -> String -> (Name -> Q Exp) -> Name -> Q Dec
+mkNew tname fname f n = do
+  e <- f n
+  return $
+    FunD (mkNameS fname)
+      [ Clause [] (NormalB (VarE (mkNameS "fmap") `AppE` ConE (mkNameS tname) `AppE` e)) [] ]
 
-        
-      ]
-    ]
 
--- STLVector
+createInstancesFor :: Name -> Q [Dec]
+createInstancesFor n = do
+  f1 <- mkMember "STLVector" "printout"  vector_printout  n
+  f2 <- mkNew    "STLVector" "new"       vector_new       n
+  f3 <- mkMember "STLVector" "push_back" vector_push_back n
+  f4 <- mkMember "STLVector" "at"        vector_at        n
+  f5 <- mkMember "STLVector" "delete"    vector_delete    n
+
+  return [ mkInstance [] (AppT (con "ISTLVector") (ConT n)) [ f1, f2, f3, f4, f5 ] ]
+

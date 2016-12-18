@@ -19,10 +19,11 @@ import Language.Haskell.TH.Syntax
 
 class Test a
 
-$(TH.myTest)
+$(TH.createInstancesFor ''CInt)
+$(TH.createInstancesFor ''CDouble)
 
 
-{-
+
 withVec :: (ISTLVector a) => (STLVector a -> IO ()) -> IO ()
 withVec = bracket new delete 
 
@@ -48,7 +49,4 @@ main = do
   test_int
   test_double2
   
--}
 
-main = do
-  putStrLn "hello"
