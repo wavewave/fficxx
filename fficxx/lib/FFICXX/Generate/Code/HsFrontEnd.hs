@@ -65,16 +65,6 @@ mkPostComment str
      in unlines commented_lines 
   | otherwise = str                
 
-{-
-mkHsFuncRetType :: Types -> (String,[String])
-mkHsFuncRetType rtyp = 
-  case rtyp of 
-    SelfType -> ("a",[])
-    CPT (CPTClass c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
-    CPT (CPTClassRef c') _ -> (cname,[]) where cname = (fst.hsClassName) c' 
-    _ -> (ctypToHsTyp Nothing rtyp,[])
--}
-
 extractArgTypes :: Args -> ([Type],[Asst]) 
 extractArgTypes lst = 
   let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
@@ -423,19 +413,6 @@ genImportInImplementation m =
       ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
       ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
-{- 
--- | 
-genImportInExistential :: DaughterMap -> ClassModule -> String
-genImportInExistential dmap m = 
-  let daughters = concat . catMaybes $ (map (flip M.lookup dmap . getClassModuleBase)  (cmClass m))
-      alldaughters = nub . map getClassModuleBase $ daughters
-      getImportOneClass mname = 
-          intercalateWith connRet (importOneClass mname) 
-                          ["RawType", "Cast", "Interface", "Implementation"]
-  in  intercalateWith connRet getImportOneClass alldaughters
--}
-
-
 tmplUtil :: [Decl]
 tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing 
   where v = mkVar
@@ -474,21 +451,28 @@ genTmplInterface t = [ mkData rname [mkTBind tp] [] []
         tp = tclass_param t
         fs = tclass_funcs t
         rawtype = TyApp (tycon rname) (mkTVar tp)
-        sigdecl f = mkFunSig (tfun_name f) (functionSignatureT t f)
+        sigdecl f@TFun {..}    = mkFunSig tfun_name (functionSignatureT t f)
+        sigdecl f@TFunNew {..} = mkFunSig ("new"++tclass_name t) (functionSignatureT t f)
+        
         methods = map (ClsDecl . sigdecl) fs
 
 
 genTmplImplementation :: TemplateClass -> [Decl]
-genTmplImplementation t = tmplUtil ++ concatMap (gen t) (tclass_funcs t)
+genTmplImplementation t = tmplUtil ++ concatMap gen (tclass_funcs t)
   where
-    gen t f = mkFun n sig [p "nty", p "ncty"] rhs (Just binds)
-      where n = tfun_name f
+    gen f = mkFun nh sig [p "nty", p "ncty"] rhs (Just binds)
+      where nh = case f of
+                   TFun {..}    -> tfun_name
+                   TFunNew {..} -> "new" ++ tclass_name t
+            nc = case f of
+                   TFun {..}    -> tfun_name
+                   TFunNew {..} -> "new"                  
             sig = tycon "Name" `TyFun` (tycon "String" `TyFun` tycon "ExpQ")
             v = mkVar
             p = mkPVar
             tp = tclass_param t
             prefix = tclass_name t
-            lit = Lit (String (prefix++"_"++n++"_"))
+            lit = Lit (String (prefix++"_"++nc++"_"))
             lam = Lambda noLoc [p "n"] ( lit `App` v "++" `App` v "n") 
             rhs = App (v "mkTFunc") (Tuple Boxed [v "nty", v "ncty", lam, v "tyf"])
             sig' = functionSignatureTT t f
