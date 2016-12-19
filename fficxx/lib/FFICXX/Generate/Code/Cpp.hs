@@ -255,8 +255,8 @@ genTopLevelFuncCppDefinition TopLevelVariable {..} =
                          , ("funcbody"  , funcDefStr                                    ) ])
 
 
-genTmplFunCpp :: String -> TemplateClass -> TemplateFunction -> String 
-genTmplFunCpp cprefix t@TmplCls {..} f = subst tmpl ctxt
+genTmplFunCpp :: TemplateClass -> TemplateFunction -> String 
+genTmplFunCpp t@TmplCls {..} f = subst tmpl ctxt
  where
   tmpl = "#define ${tname}_${fname}(Type) \\\n\
          \  extern \"C\" { \\\n\
@@ -266,17 +266,28 @@ genTmplFunCpp cprefix t@TmplCls {..} f = subst tmpl ctxt
          \  auto a_${tname}_${fname}_ ## Type = ${tname}_${fname}_ ## Type  ;\n"
   ctxt = case f of
            TFunNew {..} ->
-             context [ ("cprefix", cprefix           )
-                     , ("tname"  , tclass_name       )
+             context [ ("tname"  , tclass_name       )
                      , ("otname" , tclass_oname      )
                      , ("fname"  , "new"             )
                      , ("decl"   , tmplFunToDecl t f )
                      , ("defn"   , tmplFunToDef t f  ) ]
            TFun {..} ->
-             context [ ("cprefix", cprefix           )
-                     , ("tname"  , tclass_name       )
+             context [ ("tname"  , tclass_name       )
                      , ("otname" , tclass_oname      )
                      , ("fname"  , tfun_name         )
                      , ("decl"   , tmplFunToDecl t f )
                      , ("defn"   , tmplFunToDef t f  ) ]
 
+genTmplClassCpp :: TemplateClass -> [TemplateFunction] -> String 
+genTmplClassCpp t@TmplCls {..} fs = subst tmpl ctxt
+ where
+  tmpl = "#define ${tname}_instance(Type) \\\n\
+         \$macro\n"
+  ctxt = context [ ("tname"  , tclass_name       )
+                 , ("macro"  , macro             ) ]
+  tname = tclass_name
+  
+  macro1 TFun {..}    = "  " ++ tname++ "_" ++ tfun_name ++ "(Type) \\"
+  macro1 TFunNew {..} = "  " ++ tname++ "_new(Type) \\"
+  macro = intercalateWith connRet macro1 fs
+                 
