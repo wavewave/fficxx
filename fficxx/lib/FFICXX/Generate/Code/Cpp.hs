@@ -277,9 +277,15 @@ genTmplFunCpp t@TmplCls {..} f = subst tmpl ctxt
                      , ("fname"  , tfun_name         )
                      , ("decl"   , tmplFunToDecl t f )
                      , ("defn"   , tmplFunToDef t f  ) ]
+           TFunDelete ->
+             context [ ("tname"  , tclass_name       )
+                     , ("otname" , tclass_oname      )
+                     , ("fname"  , "delete"          )
+                     , ("decl"   , tmplFunToDecl t f )
+                     , ("defn"   , tmplFunToDef t f  ) ]
 
 genTmplClassCpp :: TemplateClass -> [TemplateFunction] -> String 
-genTmplClassCpp t@TmplCls {..} fs = subst tmpl ctxt
+genTmplClassCpp TmplCls {..} fs = subst tmpl ctxt
  where
   tmpl = "#define ${tname}_instance(Type) \\\n\
          \$macro\n"
@@ -289,5 +295,6 @@ genTmplClassCpp t@TmplCls {..} fs = subst tmpl ctxt
   
   macro1 TFun {..}    = "  " ++ tname++ "_" ++ tfun_name ++ "(Type) \\"
   macro1 TFunNew {..} = "  " ++ tname++ "_new(Type) \\"
+  macro1 TFunDelete   = "  " ++ tname++ "_delete(Type) \\"                 
   macro = intercalateWith connRet macro1 fs
                  

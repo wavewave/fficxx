@@ -107,6 +107,11 @@ tmplFunToDecl t@TmplCls {..} TFunNew {..} =
     (context [ ("tname", tclass_name                     )  
              , ("args" , tmplAllArgsToString NoSelf t tfun_new_args )
              , ("ret"  , tmplRetTypeToString  (TemplateType t)) ]) 
+tmplFunToDecl t@TmplCls {..} TFunDelete =  
+  subst "$ret ${tname}_delete_ ## Type ( $args )"
+    (context [ ("tname", tclass_name                     )  
+             , ("args" , tmplAllArgsToString Self t [] )
+             , ("ret"  , "void" ) ]) 
 
 
 
@@ -123,9 +128,12 @@ tmplFunToDef t@TmplCls {..} f =intercalateWith connBSlash id [declstr, "  {", " 
       TFunNew {..} -> "new " ++ tclass_oname ++ "<Type>("
                       ++ tmplAllArgsToCallString tfun_new_args
                       ++ ")"
+      TFunDelete   -> "delete (reinterpret_cast<" ++ tclass_oname ++ "<Type>*>(p))"
+                      
   returnstr =
     case f of
       TFunNew {..} -> "return reinterpret_cast<void*>("++callstr++");"
+      TFunDelete   -> callstr ++ ";"
       TFun {..} -> case tfun_ret of          
                       Void                    -> callstr ++ ";"
                       SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"

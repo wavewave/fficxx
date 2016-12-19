@@ -8,15 +8,7 @@ import Foreign.Ptr
 import STL.Vector.Template
 import qualified STL.Vector.TH as TH
 
-{- 
-instance IVector CInt where
-  newVector = Vector <$> $(TH.newVector ''CInt "int")
-  push_back (Vector ptr) x = $(TH.push_back ''CInt "int") ptr x
-  size (Vector ptr) = $(TH.size ''CInt "int") ptr
--}
-
 $(TH.genVectorInstanceFor ''CInt "int")
-
 
 main = do
   v :: Vector CInt <- newVector
@@ -27,4 +19,8 @@ main = do
   print =<< size v
   mapM_ (push_back v) [1..100]
   print =<< size v
+  pop_back v
+  print =<< size v
+
+  deleteVector v
   
