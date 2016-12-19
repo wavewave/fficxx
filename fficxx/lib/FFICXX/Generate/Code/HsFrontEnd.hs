@@ -292,9 +292,9 @@ genHsFrontUpcastClass c = mkFun ("upcast"++highname) typ [mkPVar "h"] rhs Nothin
                 [ClassA (unqual "FPtr") [a_tvar], ClassA (unqual iname) [a_tvar]]
                 (TyFun a_tvar hightype)
         rhs = Let (BDecls
-                    [ pbind (mkPVar "fh") (UnGuardedRhs (App (mkVar "get_fptr") (mkVar "h"))) Nothing
+                    [ pbind (mkPVar "fh") (App (mkVar "get_fptr") (mkVar "h")) Nothing
                     , pbind (mkPVarSig "fh2" (TyApp tyForeignPtr rawtype))
-                        (UnGuardedRhs (App (mkVar "castForeignPtr") (mkVar "fh"))) Nothing
+                        (App (mkVar "castForeignPtr") (mkVar "fh")) Nothing
                     ] 
                   ) 
                   (mkVar "cast_fptr_to_obj" `App` mkVar "fh2")
@@ -315,8 +315,8 @@ genHsFrontDowncastClass c = mkFun ("downcast"++highname) typ [mkPVar "h"] rhs No
                 [ClassA (unqual "FPtr") [a_tvar], ClassA (unqual iname) [a_tvar]]
                 (TyFun hightype a_tvar)
         rhs = Let (BDecls
-                    [ pbind (mkPVar "fh") (UnGuardedRhs (App (mkVar "get_fptr") (mkVar "h"))) Nothing
-                    , pbind (mkPVar "fh2") (UnGuardedRhs (App (mkVar "castForeignPtr") (mkVar "fh"))) Nothing
+                    [ pbind (mkPVar "fh") (App (mkVar "get_fptr") (mkVar "h")) Nothing
+                    , pbind (mkPVar "fh2") (App (mkVar "castForeignPtr") (mkVar "fh")) Nothing
                     ] 
                   ) 
                   (mkVar "cast_fptr_to_obj" `App` mkVar "fh2")
@@ -413,6 +413,8 @@ genImportInImplementation m =
       ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
       ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
+
+{- 
 tmplUtil :: [Decl]
 tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing 
   where v = mkVar
@@ -439,7 +441,7 @@ tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing
                  , Qualifier (BracketExp (ExpBracket (SpliceExp (ParenSplice ("varE" `app` "n" )))))
                  ] 
 
-
+-}
         
 genTmplInterface :: TemplateClass -> [Decl]
 genTmplInterface t = [ mkData rname [mkTBind tp] [] []
@@ -458,12 +460,12 @@ genTmplInterface t = [ mkData rname [mkTBind tp] [] []
 
 
 genTmplImplementation :: TemplateClass -> [Decl]
-genTmplImplementation t = tmplUtil ++ concatMap gen (tclass_funcs t)
+genTmplImplementation t = concatMap gen (tclass_funcs t)
   where
     gen f = mkFun nh sig [p "nty", p "ncty"] rhs (Just binds)
       where nh = case f of
-                   TFun {..}    -> tfun_name
-                   TFunNew {..} -> "new" ++ tclass_name t
+                   TFun {..}    -> "t_" ++ tfun_name
+                   TFunNew {..} -> "t_" ++ "new" ++ tclass_name t
             nc = case f of
                    TFun {..}    -> tfun_name
                    TFunNew {..} -> "new"                  
@@ -477,9 +479,47 @@ genTmplImplementation t = tmplUtil ++ concatMap gen (tclass_funcs t)
             rhs = App (v "mkTFunc") (Tuple Boxed [v "nty", v "ncty", lam, v "tyf"])
             sig' = functionSignatureTT t f
             binds = BDecls [ mkBind1 "tyf" [mkPVar "n"]
-                               (Let (BDecls [ pbind (p tp) (UnGuardedRhs (v "return" `App` (con "ConT" `App` v "n"))) Nothing ])
+                               (Let (BDecls [ pbind (p tp) (v "return" `App` (con "ConT" `App` v "n")) Nothing ])
                                  (BracketExp (TypeBracket sig')))
                                Nothing 
                            ]
 
+
+genTmplInstance :: TemplateClass -> [TemplateFunction] -> [Decl]
+genTmplInstance t fs = mkFun fname sig [p "n", p "ctyp"] rhs Nothing
+  where tname = tclass_name t 
+        fname = "gen" ++ tname ++ "InstanceFor"
+        p = mkPVar
+        v = mkVar
+        l = Lit . String
+        sig = tycon "Name" `TyFun` (tycon "String" `TyFun` (TyApp (tycon "Q") (TyList (tycon "Dec"))))
+
+        nfs = zip [1..] fs
+        rhs = Do (map genstmt nfs ++ [LetStmt (lststmt nfs), Qualifier retstmt])
+
+        nfname = "new" ++ tname
+        genstmt (n,TFun    {..}) = Generator noLoc (p ("f"++show n))
+                                   (v "mkMember" `App` l tname
+                                                 `App` l tfun_name
+                                                 `App` v ("t_" ++ tfun_name)
+                                                 `App` v "n"
+                                                 `App` v "ctyp"
+                                   )
+        genstmt (n,TFunNew {..}) = Generator noLoc (p ("f"++show n)) 
+                                   (v "mkNew"    `App` l tname
+                                                 `App` l nfname
+                                                 `App` v ("t_" ++ nfname)
+                                                 `App` v "n"
+                                                 `App` v "ctyp"
+                                   )
+        lststmt lst = BDecls [ pbind (p "lst") (List (map (v . (\n -> "f" ++ show n) . fst) lst)) Nothing ]
+        retstmt = v "return"
+                  `App` List [ v "mkInstance"
+                               `App` List []
+                               `App` (con "AppT"
+                                      `App` (v "con" `App` l (typeclassNameT t))
+                                      `App` (con "ConT" `App` (v "n"))
+                                     )
+                               `App` (v "lst")
+                             ] 
 

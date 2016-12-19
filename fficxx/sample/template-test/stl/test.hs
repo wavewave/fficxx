@@ -2,6 +2,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-} 
+
 import Control.Exception
 import Foreign.C.Types
 import Foreign.Ptr
@@ -9,7 +13,16 @@ import Foreign.Storable
 
 import STL
 import qualified STL.TH as TH
-import STL.Instances 
+-- import STL.Instances 
+
+import Language.Haskell.TH.Syntax
+
+class Test a
+
+$(TH.genVectorInstanceFor ''CInt    "int")
+$(TH.genVectorInstanceFor ''CDouble "double")
+
+
 
 withVec :: (ISTLVector a) => (STLVector a -> IO ()) -> IO ()
 withVec = bracket new delete 
@@ -36,3 +49,4 @@ main = do
   test_int
   test_double2
   
+
