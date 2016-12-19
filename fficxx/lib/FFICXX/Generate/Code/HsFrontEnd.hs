@@ -471,22 +471,19 @@ genTmplInstance t fs = mkFun fname sig [p "n", p "ctyp"] rhs Nothing
         rhs = Do (map genstmt nfs ++ [LetStmt (lststmt nfs), Qualifier retstmt])
 
         genstmt (n,TFun    {..}) = Generator noLoc (p ("f"++show n))
-                                   (v "mkMember" `App` l tname
-                                                 `App` l tfun_name
+                                   (v "mkMember" `App` l tfun_name
                                                  `App` v ("t_" ++ tfun_name)
                                                  `App` v "n"
                                                  `App` v "ctyp"
                                    )
         genstmt (n,TFunNew {..}) = Generator noLoc (p ("f"++show n)) 
-                                   (v "mkNew"    `App` l tname
-                                                 `App` l ("new" ++ tname)
+                                   (v "mkNew"    `App` l ("new" ++ tname)
                                                  `App` v ("t_new" ++ tname)
                                                  `App` v "n"
                                                  `App` v "ctyp"
                                    )
         genstmt (n,TFunDelete)   = Generator noLoc (p ("f"++show n)) 
-                                   (v "mkDelete" `App` l tname
-                                                 `App` l ("delete"++tname)
+                                   (v "mkDelete" `App` l ("delete"++tname)
                                                  `App` v ("t_delete" ++ tname)
                                                  `App` v "n"
                                                  `App` v "ctyp"
