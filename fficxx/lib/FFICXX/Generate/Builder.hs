@@ -59,8 +59,6 @@ cabalTemplate =
   \Build-Type:  $buildtype\n\
   \cabal-version:  >=1.10\n\
   \Extra-source-files:\n\
-  \${cabalIndentation}CHANGES\n\
-  \${cabalIndentation}Config.hs\n\
   \$csrcFiles\n\
   \\n\
   \$sourcerepository\n\

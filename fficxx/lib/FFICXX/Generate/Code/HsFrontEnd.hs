@@ -31,8 +31,7 @@ import           Language.Haskell.Exts.Syntax            ( Asst(..), Binds(..), 
                                                          , Exp(..), ExportSpec(..)
                                                          , ImportDecl(..), InstDecl(..), Literal(..)
                                                          , Name(..), Namespace(..), Pat(..)
-                                                         , QualConDecl(..), Rhs(..)
-                                                         , Splice(..), Stmt(..)
+                                                         , QualConDecl(..), Stmt(..)
                                                          , Type(..), TyVarBind (..)
                                                          )
 import           Language.Haskell.Exts.SrcLoc            ( noLoc )
@@ -413,35 +412,6 @@ genImportInImplementation m =
       ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
       ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
-
-{- 
-tmplUtil :: [Decl]
-tmplUtil = mkFun "mkTFunc" typ pats rhs Nothing 
-  where v = mkVar
-        c = Con . unqual
-        p = mkPVar
-        tynm = tycon "Name"
-        tystr = tycon "String"
-        q = tycon "Q"
-        cpre = Lit (String "c_")
-        tytyp = tycon "Type"
-        typ = TyFun (TyTuple Boxed
-                       [tynm,tystr, TyFun tystr tystr,TyFun tynm (TyApp q tytyp)])
-                    (tycon "ExpQ")
-        pats = [PTuple Boxed [p "nty", p "ncty", p "nf", p "tyf"] ]
-        rhs = Do [ LetStmt (BDecls [ pbind (p "fn")
-                                       (UnGuardedRhs (app "nf" "ncty")) Nothing ])
-                 , LetStmt (BDecls [ pbind (p "fn'")
-                                       (UnGuardedRhs (cpre `App` v "++"  `App` v "fn")) Nothing ])
-                 , Generator noLoc (p "n") (app "newName" "fn'")
-                 , Generator noLoc (p "d")
-                     (v "forImpD" `App` c "CCall" `App` v "unsafe" `App` v "fn" `App` v "n"
-                        `App` ("tyf" `app` "nty") )
-                 , Qualifier (App (v "addTopDecls") (List [v "d"]))
-                 , Qualifier (BracketExp (ExpBracket (SpliceExp (ParenSplice ("varE" `app` "n" )))))
-                 ] 
-
--}
         
 genTmplInterface :: TemplateClass -> [Decl]
 genTmplInterface t = [ mkData rname [mkTBind tp] [] []
@@ -455,6 +425,7 @@ genTmplInterface t = [ mkData rname [mkTBind tp] [] []
         rawtype = TyApp (tycon rname) (mkTVar tp)
         sigdecl f@TFun {..}    = mkFunSig tfun_name (functionSignatureT t f)
         sigdecl f@TFunNew {..} = mkFunSig ("new"++tclass_name t) (functionSignatureT t f)
+        sigdecl f@TFunDelete = mkFunSig ("delete"++tclass_name t) (functionSignatureT t f)        
         
         methods = map (ClsDecl . sigdecl) fs
 
@@ -466,9 +437,11 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
       where nh = case f of
                    TFun {..}    -> "t_" ++ tfun_name
                    TFunNew {..} -> "t_" ++ "new" ++ tclass_name t
+                   TFunDelete   -> "t_" ++ "delete" ++ tclass_name t                   
             nc = case f of
                    TFun {..}    -> tfun_name
-                   TFunNew {..} -> "new"                  
+                   TFunNew {..} -> "new"
+                   TFunDelete   -> "delete"                   
             sig = tycon "Name" `TyFun` (tycon "String" `TyFun` tycon "ExpQ")
             v = mkVar
             p = mkPVar
@@ -494,10 +467,9 @@ genTmplInstance t fs = mkFun fname sig [p "n", p "ctyp"] rhs Nothing
         l = Lit . String
         sig = tycon "Name" `TyFun` (tycon "String" `TyFun` (TyApp (tycon "Q") (TyList (tycon "Dec"))))
 
-        nfs = zip [1..] fs
+        nfs = zip ([1..] :: [Int]) fs
         rhs = Do (map genstmt nfs ++ [LetStmt (lststmt nfs), Qualifier retstmt])
 
-        nfname = "new" ++ tname
         genstmt (n,TFun    {..}) = Generator noLoc (p ("f"++show n))
                                    (v "mkMember" `App` l tname
                                                  `App` l tfun_name
@@ -507,11 +479,18 @@ genTmplInstance t fs = mkFun fname sig [p "n", p "ctyp"] rhs Nothing
                                    )
         genstmt (n,TFunNew {..}) = Generator noLoc (p ("f"++show n)) 
                                    (v "mkNew"    `App` l tname
-                                                 `App` l nfname
-                                                 `App` v ("t_" ++ nfname)
+                                                 `App` l ("new" ++ tname)
+                                                 `App` v ("t_new" ++ tname)
                                                  `App` v "n"
                                                  `App` v "ctyp"
                                    )
+        genstmt (n,TFunDelete)   = Generator noLoc (p ("f"++show n)) 
+                                   (v "mkDelete" `App` l tname
+                                                 `App` l ("delete"++tname)
+                                                 `App` v ("t_delete" ++ tname)
+                                                 `App` v "n"
+                                                 `App` v "ctyp"
+                                   )                                   
         lststmt lst = BDecls [ pbind (p "lst") (List (map (v . (\n -> "f" ++ show n) . fst) lst)) Nothing ]
         retstmt = v "return"
                   `App` List [ v "mkInstance"

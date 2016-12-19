@@ -19,8 +19,10 @@ import Language.Haskell.TH.Syntax
 
 -------
 
+con :: String -> Type
 con = ConT . mkNameS
 
+mkInstance :: Cxt -> Type -> [Dec] -> Dec
 mkInstance = InstanceD Nothing
 
 mkTFunc :: (Name, String, String -> String, Name -> Q Type) -> ExpQ
@@ -48,3 +50,5 @@ mkNew tname fname f n ctyp = do
     FunD (mkNameS fname)
       [ Clause [] (NormalB (VarE (mkNameS "fmap") `AppE` ConE (mkNameS tname) `AppE` e)) [] ]
 
+mkDelete :: String -> String -> (Name -> String -> Q Exp) -> Name -> String -> Q Dec
+mkDelete = mkMember

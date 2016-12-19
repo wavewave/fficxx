@@ -486,7 +486,7 @@ data TemplateFunction = TFun { tfun_ret :: Types
                              , tfun_args :: Args
                              , tfun_alias :: Maybe String }
                       | TFunNew { tfun_new_args :: Args }
-
+                      | TFunDelete
 
 data TemplateClass = TmplCls { tclass_cabal :: Cabal
                              , tclass_name :: String
@@ -745,6 +745,9 @@ functionSignatureT t TFunNew {..} =
   let ctyp = convertCpp2HS Nothing (TemplateType t)
       lst = map (convertCpp2HS Nothing . fst) tfun_new_args
   in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+functionSignatureT t TFunDelete =
+  let ctyp = convertCpp2HS Nothing (TemplateType t)
+  in ctyp `TyFun` (TyApp (tycon "IO") unit_tycon)
 
 
 
@@ -752,26 +755,18 @@ functionSignatureTT :: TemplateClass -> TemplateFunction -> Type
 functionSignatureTT t f = foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
  where
   (_,rname) = hsTemplateClassName t
-  rettype = case f of
-              TFun {..}    -> tfun_ret
-              TFunNew {..} -> TemplateType t
-  ctyp = convertCpp2HS4Tmpl e Nothing spl rettype
+  ctyp = case f of
+           TFun {..}    -> convertCpp2HS4Tmpl e Nothing spl tfun_ret
+           TFunNew {..} -> convertCpp2HS4Tmpl e Nothing spl (TemplateType t)
+           TFunDelete   -> unit_tycon
   e = TyApp tyPtr (TyApp (tycon rname) spl)
   spl = TySplice (ParenSplice (mkVar (tclass_param t)))
   lst =
     case f of
       TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_args
       TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_new_args
+      TFunDelete -> [e]
 
-{- 
-functionSignatureTT t TFunNew {..} =
-  let (_,rname) = hsTemplateClassName t
-      ctyp = convertCpp2HS4Tmpl spl Nothing spl (TemplateType t)
-      e = TyApp tyPtr (TyApp (tycon rname) spl)
-      spl = TySplice (ParenSplice (mkVar (tclass_param t)))
-      lst = map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_new_args
-  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
--}
 
 
 -- | this is for FFI type.
