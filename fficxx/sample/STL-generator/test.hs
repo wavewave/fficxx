@@ -22,5 +22,6 @@ main = do
   pop_back v
   print =<< size v
 
+  print =<< at v 5
   deleteVector v
   
