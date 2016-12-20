@@ -314,6 +314,7 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
           <> (concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
           <> (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
+{- 
 -- | 
 buildCastHs :: ClassModule -> Module
 buildCastHs m = mkModule (cmModule m <.> "Cast")
@@ -329,6 +330,8 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                       <> genImportInCast m
         body = mapMaybe genHsFrontInstCastable classes
                <> mapMaybe genHsFrontInstCastableSelf classes
+-}
+
 
 -- | 
 buildImplementationHs :: AnnotateMap -> ClassModule -> Module

@@ -624,7 +624,6 @@ convertCpp2HS4Tmpl _ _c _ (CT t _)              = convertC2HS t
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClass c') _)    = tycon (class_name c')
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassRef c') _) = tycon (class_name c')
 convertCpp2HS4Tmpl e _c _ (TemplateType _)         = e
-  -- TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
 convertCpp2HS4Tmpl _ _c t (TemplateParam _)         = t
 
 

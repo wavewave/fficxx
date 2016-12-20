@@ -217,6 +217,7 @@ castBody = [ InsDecl (mkBind1 "cast" []
                        Nothing)
            ]
 
+{- 
 genHsFrontInstCastable :: Class -> Maybe Decl
 genHsFrontInstCastable c 
   | (not.isAbstractClass) c = 
@@ -233,7 +234,7 @@ genHsFrontInstCastableSelf c
     let (cname,rname) = hsClassName c
     in Just (mkInstance [] "Castable" [tycon cname, TyApp tyPtr (tycon rname)] castBody)
   | otherwise = Nothing
-
+-}
 
 --------------------------
 
@@ -390,9 +391,11 @@ genImportInInterface m =
       <> map (\x -> mkImportSrc (x<.>"Interface")) modlsthigh
 
 -- |
+{-
 genImportInCast :: ClassModule -> [ImportDecl]
 genImportInCast m = [ mkImport (cmModule m <.> "RawType")
                    ,  mkImport (cmModule m <.> "Interface") ]
+-}
 
 -- | 
 genImportInImplementation :: ClassModule -> [ImportDecl]
@@ -403,9 +406,10 @@ genImportInImplementation m =
   in  [ mkImport (cmModule m <.> "RawType")
       , mkImport (cmModule m <.> "FFI")
       , mkImport (cmModule m <.> "Interface")
-      , mkImport (cmModule m <.> "Cast") ]
-      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
-      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
+      -- , mkImport (cmModule m <.> "Cast")
+      ]
+      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType", {- "Cast", -} "Interface"]) modlstraw
+      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType", {- "Cast", -} "Interface"]) modlsthigh
 
         
 genTmplInterface :: TemplateClass -> [Decl]
