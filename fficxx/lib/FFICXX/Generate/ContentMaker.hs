@@ -3,7 +3,7 @@
 
 -----------------------------------------------------------------------------
 -- |
--- Module      : FFICXX.Generate.Generator.ContentMaker
+-- Module      : FFICXX.Generate.ContentMaker
 -- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
@@ -13,7 +13,7 @@
 --
 -----------------------------------------------------------------------------
 
-module FFICXX.Generate.Generator.ContentMaker where 
+module FFICXX.Generate.ContentMaker where 
 
 import           Control.Lens                           ( set,at )
 import           Control.Monad.Trans.Reader
