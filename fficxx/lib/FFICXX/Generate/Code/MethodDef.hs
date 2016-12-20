@@ -68,7 +68,7 @@ funcToDef c func
                                      where str = class_name c' 
           CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
           TemplateType _          -> error "funcToDef: TemplateType"
-          TemplateParam _         -> error "funcToDef: TemplateParam"          
+          TemplateParam _         -> "return (" ++ callstr ++ ");"
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | otherwise = 
     let declstr = funcToDecl c func
@@ -86,7 +86,7 @@ funcToDef c func
                                      where str = class_name c'
           CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
           TemplateType _          -> error "funcToDef: TemplateType"
-          TemplateParam _         -> error "funcToDef: TemplateParam"          
+          TemplateParam _         -> "return (" ++ callstr ++ ");"
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
 
 
@@ -143,8 +143,8 @@ tmplFunToDef t@TmplCls {..} f =intercalateWith connBSlash id [declstr, "  {", " 
                                                  ++">(("++str++"*)"++callstr++");"
                                                  where str = class_name c'
                       CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
-                      TemplateType _          -> error "funcToDef: TemplateType"
-                      TemplateParam _         -> error "funcToDef: TemplateParam"          
+                      TemplateType _          -> error "tmplFunToDef: TemplateType"
+                      TemplateParam _         -> "return (" ++ callstr ++ ");"
 
 
 

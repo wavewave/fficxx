@@ -15,6 +15,6 @@ class ISTLVector a where
   printout  :: STLVector a -> IO ()
   new       :: IO (STLVector a)
   push_back :: STLVector a -> a -> IO ()
-  at        :: STLVector a -> CInt -> IO (Ptr a)
+  at        :: STLVector a -> CInt -> IO a
   delete    :: STLVector a -> IO ()
 

@@ -41,8 +41,8 @@ test_double2 = do
     mapM_ (push_back b) [1.1,1.2..2.0]
     printout b
     c <- at b 5
-    v <- peek c
-    putStrLn ("b[5]= " ++ show v)
+    -- v <- peek c
+    putStrLn ("b[5]= " ++ show c)
 
 
 main = do

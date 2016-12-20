@@ -754,12 +754,12 @@ functionSignatureT t TFunDelete =
 functionSignatureTT :: TemplateClass -> TemplateFunction -> Type
 functionSignatureTT t f = foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
  where
-  (_,rname) = hsTemplateClassName t
+  (hname,_) = hsTemplateClassName t
   ctyp = case f of
            TFun {..}    -> convertCpp2HS4Tmpl e Nothing spl tfun_ret
            TFunNew {..} -> convertCpp2HS4Tmpl e Nothing spl (TemplateType t)
            TFunDelete   -> unit_tycon
-  e = TyApp tyPtr (TyApp (tycon rname) spl)
+  e = TyApp (tycon hname) spl
   spl = TySplice (ParenSplice (mkVar (tclass_param t)))
   lst =
     case f of
