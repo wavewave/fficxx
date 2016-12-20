@@ -12,6 +12,7 @@
 
 module FFICXX.Generate.Code.Cabal where
 
+import           Data.Monoid                 ( (<>) )
 import           FFICXX.Generate.Type.Module
 
 cabalIndentation :: String 
@@ -22,16 +23,16 @@ cabalIndentation = replicate 23 ' '
 genExposedModules :: String -> ([ClassModule],[TemplateClassModule]) -> String
 genExposedModules summarymod (cmods,tmods) = 
     let indentspace = cabalIndentation
-        summarystrs = indentspace ++ summarymod 
-        cmodstrs = map ((\x->indentspace++x).cmModule) cmods 
-        rawType = map ((\x->indentspace++x++".RawType").cmModule) cmods
-        ffi = map ((\x->indentspace++x++".FFI").cmModule) cmods
-        interface= map ((\x->indentspace++x++".Interface").cmModule) cmods
-        cast = map ((\x->indentspace++x++".Cast").cmModule) cmods 
-        implementation = map ((\x->indentspace++x++".Implementation").cmModule) cmods
-        template = map ((\x->indentspace++x++".Template").tcmModule) tmods
-        th = map ((\x->indentspace++x++".TH").tcmModule) tmods        
-    in  unlines ([summarystrs]++cmodstrs++rawType++ffi++interface++cast++implementation++template++th)
+        summarystrs = indentspace <> summarymod 
+        cmodstrs = map ((\x->indentspace<>x).cmModule) cmods 
+        rawType = map ((\x->indentspace<>x<>".RawType").cmModule) cmods
+        ffi = map ((\x->indentspace<>x<>".FFI").cmModule) cmods
+        interface= map ((\x->indentspace<>x<>".Interface").cmModule) cmods
+        cast = map ((\x->indentspace<>x<>".Cast").cmModule) cmods 
+        implementation = map ((\x->indentspace<>x<>".Implementation").cmModule) cmods
+        template = map ((\x->indentspace<>x<>".Template").tcmModule) tmods
+        th = map ((\x->indentspace<>x<>".TH").tcmModule) tmods        
+    in  unlines ([summarystrs]<>cmodstrs<>rawType<>ffi<>interface<>cast<>implementation<>template<>th)
 
 -- | generate other modules in cabal file 
 genOtherModules :: [ClassModule] -> String 

@@ -20,6 +20,7 @@ import           Data.Char
 import           Data.Default                      ( Default(def) )
 import           Data.List
 import qualified Data.Map                     as M
+import           Data.Monoid                       ( (<>) )
 import           Language.Haskell.Exts.Syntax      ( Asst(..), Context
                                                    , Splice(..), Type(..), unit_tycon
                                                    )
@@ -66,7 +67,7 @@ data Types = Void
            deriving Show
 
 cvarToStr :: CTypes -> IsConst -> String -> String
-cvarToStr ctyp isconst varname = (ctypToStr ctyp isconst) `connspace` varname
+cvarToStr ctyp isconst varname = ctypToStr ctyp isconst <> " " <> varname
 
 ctypToStr :: CTypes -> IsConst -> String
 ctypToStr ctyp isconst =
@@ -83,10 +84,10 @@ ctypToStr ctyp isconst =
         CTVoidStar -> "void*"
         CTIntStar -> "int*"
         CTCharStarStar -> "char**"
-        CPointer s -> ctypToStr s NoConst ++ "*"
-        CRef s -> ctypToStr s NoConst ++ "*"
+        CPointer s -> ctypToStr s NoConst <> "*"
+        CRef s -> ctypToStr s NoConst <> "*"
   in case isconst of
-        Const   -> "const" `connspace` typword
+        Const   -> "const" <> " " <> typword
         NoConst -> typword
 
 
@@ -263,8 +264,8 @@ hsCTypeName CTBool   = "CInt"
 hsCTypeName CTVoidStar = "(Ptr ())"
 hsCTypeName CTIntStar = "(Ptr CInt)"
 hsCTypeName CTCharStarStar = "(Ptr (CString))"
-hsCTypeName (CPointer t) = "(Ptr " ++ hsCTypeName t ++ ")"
-hsCTypeName (CRef t) = "(Ptr " ++ hsCTypeName t ++ ")"
+hsCTypeName (CPointer t) = "(Ptr " <> hsCTypeName t <> ")"
+hsCTypeName (CRef t) = "(Ptr " <> hsCTypeName t <> ")"
 
 -------------
 
@@ -350,14 +351,14 @@ staticFuncs = filter isStaticFunc
 
 argToString :: (Types,String) -> String
 argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
-argToString (SelfType, varname) = "Type ## _p " ++ varname
+argToString (SelfType, varname) = "Type ## _p " <> varname
 argToString (CPT (CPTClass c) isconst, varname) = case isconst of
-    Const   -> "const_" ++ cname ++ "_p " ++ varname
-    NoConst -> cname ++ "_p " ++ varname
+    Const   -> "const_" <> cname <> "_p " <> varname
+    NoConst -> cname <> "_p " <> varname
   where cname = class_name c
 argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of
-    Const   -> "const_" ++ cname ++ "_p " ++ varname
-    NoConst -> cname ++ "_p " ++ varname
+    Const   -> "const_" <> cname <> "_p " <> varname
+    NoConst -> cname <> "_p " <> varname
   where cname = class_name c
 argToString _ = error "undefined argToString"
 
@@ -372,10 +373,10 @@ argsToStringNoSelf = intercalateWith conncomma argToString
 
 argToCallString :: (Types,String) -> String
 argToCallString (CPT (CPTClass c) _,varname) =
-    "to_nonconst<"++str++","++str++"_t>("++varname++")" where str = class_name c
+    "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")" where str = class_name c
 argToCallString (CPT (CPTClassRef c) _,varname) =
-    "to_nonconstref<"++str++","++str++"_t>(*"++varname++")" where str = class_name c
-argToCallString (CT (CRef _) _,varname) = "(*"++ varname++ ")"
+    "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")" where str = class_name c
+argToCallString (CT (CRef _) _,varname) = "(*"<> varname<> ")"
 argToCallString (_,varname) = varname
 
 argsToCallString :: Args -> String
@@ -386,24 +387,24 @@ rettypeToString :: Types -> String
 rettypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
 rettypeToString Void = "void"
 rettypeToString SelfType = "Type ## _p"
-rettypeToString (CPT (CPTClass c) _) = class_name c ++ "_p"
-rettypeToString (CPT (CPTClassRef c) _) = class_name c ++ "_p"
+rettypeToString (CPT (CPTClass c) _) = class_name c <> "_p"
+rettypeToString (CPT (CPTClassRef c) _) = class_name c <> "_p"
 rettypeToString (TemplateType _) = "void*"
 rettypeToString (TemplateParam _) = "Type ## _p"
 
 tmplArgToString :: TemplateClass -> (Types,String) -> String
 tmplArgToString _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
-tmplArgToString t (SelfType, varname) = tclass_oname t ++ "* " ++ varname
+tmplArgToString t (SelfType, varname) = tclass_oname t <> "* " <> varname
 tmplArgToString _ (CPT (CPTClass c) isconst, varname) =
   case isconst of
-    Const   -> "const_" ++ class_name c ++ "_p " ++ varname
-    NoConst -> class_name c ++ "_p " ++ varname
+    Const   -> "const_" <> class_name c <> "_p " <> varname
+    NoConst -> class_name c <> "_p " <> varname
 tmplArgToString _ (CPT (CPTClassRef c) isconst, varname) =
   case isconst of
-    Const   -> "const_" ++ class_name c ++ "_p " ++ varname
-    NoConst -> class_name c ++ "_p " ++ varname
-tmplArgToString _ (TemplateType _,v) = "void* " ++ v
-tmplArgToString _ (TemplateParam _,v) = "Type " ++ v
+    Const   -> "const_" <> class_name c <> "_p " <> varname
+    NoConst -> class_name c <> "_p " <> varname
+tmplArgToString _ (TemplateType _,v) = "void* " <> v
+tmplArgToString _ (TemplateParam _,v) = "Type " <> v
 tmplArgToString _ _ = error "tmplArgToString: undefined"
 
 tmplAllArgsToString :: Selfness
@@ -420,10 +421,10 @@ tmplAllArgsToString s t args =
 
 tmplArgToCallString :: (Types,String) -> String
 tmplArgToCallString (CPT (CPTClass c) _,varname) =
-    "to_nonconst<"++str++","++str++"_t>("++varname++")" where str = class_name c
+    "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")" where str = class_name c
 tmplArgToCallString (CPT (CPTClassRef c) _,varname) =
-    "to_nonconstref<"++str++","++str++"_t>(*"++varname++")" where str = class_name c
-tmplArgToCallString (CT (CRef _) _,varname) = "(*"++ varname++ ")"
+    "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")" where str = class_name c
+tmplArgToCallString (CT (CRef _) _,varname) = "(*"<> varname<> ")"
 tmplArgToCallString (_,varname) = varname
 
 tmplAllArgsToCallString :: Args -> String
@@ -435,8 +436,8 @@ tmplRetTypeToString :: Types -> String
 tmplRetTypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
 tmplRetTypeToString Void = "void"
 tmplRetTypeToString SelfType = "Type ## _p"
-tmplRetTypeToString (CPT (CPTClass c) _) = class_name c ++ "_p"
-tmplRetTypeToString (CPT (CPTClassRef c) _) = class_name c ++ "_p"
+tmplRetTypeToString (CPT (CPTClass c) _) = class_name c <> "_p"
+tmplRetTypeToString (CPT (CPTClassRef c) _) = class_name c <> "_p"
 tmplRetTypeToString (TemplateType _) = "void*"
 tmplRetTypeToString (TemplateParam _) = "Type"
 
@@ -496,7 +497,7 @@ data TemplateClass = TmplCls { tclass_cabal :: Cabal
                              }
 
 instance Show TemplateClass where
-  show x = show (tclass_name x ++ " " ++ tclass_param x)
+  show x = show (tclass_name x <> " " <> tclass_param x)
 
 
 
@@ -530,7 +531,7 @@ class_allparents :: Class -> [Class]
 class_allparents c = let ps = class_parents c
                      in  if null ps
                            then []
-                           else nub (ps ++ (concatMap class_allparents ps))
+                           else nub (ps <> (concatMap class_allparents ps))
 
 
 getClassModuleBase :: Class -> String
@@ -582,8 +583,8 @@ ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
 ctypToHsTyp _c (CT (CRef t) _) = hsCTypeName (CRef t)
 ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
-ctypToHsTyp _c (TemplateType t) = "("++ tclass_name t ++ " " ++ tclass_param t ++ ")"
-ctypToHsTyp _c (TemplateParam p) = "("++ p ++ ")"
+ctypToHsTyp _c (TemplateType t) = "("<> tclass_name t <> " " <> tclass_param t <> ")"
+ctypToHsTyp _c (TemplateParam p) = "("<> p <> ")"
 
 
 -- |
@@ -643,19 +644,19 @@ typeclassNameFromStr = ('I':)
 hsClassName :: Class -> (String, String)  -- ^ High-level, 'Raw'-level
 hsClassName c =
   let cname = maybe (class_name c) id (class_alias c)
-  in (cname, "Raw" ++ cname)
+  in (cname, "Raw" <> cname)
 
 hsTemplateClassName :: TemplateClass -> (String, String)  -- ^ High-level, 'Raw'-level
 hsTemplateClassName t =
   let tname = tclass_name t
-  in (tname, "Raw" ++ tname)
+  in (tname, "Raw" <> tname)
 
 existConstructorName :: Class -> String
 existConstructorName c = 'E' : (fst.hsClassName) c
 
 
 hscFuncName :: Class -> Function -> String
-hscFuncName c f = "c_" ++ toLowers (class_name c) ++ "_" ++ toLowers (aliasedFuncName c f)
+hscFuncName c f = "c_" <> toLowers (class_name c) <> "_" <> toLowers (aliasedFuncName c f)
 
 hsFuncName :: Class -> Function -> String
 hsFuncName c f = let (x:xs) = aliasedFuncName c f
@@ -664,15 +665,15 @@ hsFuncName c f = let (x:xs) = aliasedFuncName c f
 hsFuncXformer :: Function -> String
 hsFuncXformer func@(Constructor _ _) = let len = length (genericFuncArgs func)
                                        in if len > 0
-                                          then "xform" ++ show (len - 1)
+                                          then "xform" <> show (len - 1)
                                           else "xformnull"
 hsFuncXformer func@(Static _ _ _ _) =
   let len = length (genericFuncArgs func)
   in if len > 0
-     then "xform" ++ show (len - 1)
+     then "xform" <> show (len - 1)
      else "xformnull"
 hsFuncXformer func = let len = length (genericFuncArgs func)
-                     in "xform" ++ show len
+                     in "xform" <> show len
 
 
 genericFuncRet :: Function -> Types
@@ -698,7 +699,7 @@ aliasedFuncName c f =
     Destructor a -> maybe destructorName id a
 
 cppStaticName :: Class -> Function -> String
-cppStaticName c f = class_name c ++ "::" ++ func_name f
+cppStaticName c f = class_name c <> "::" <> func_name f
 
 cppFuncName :: Class -> Function -> String
 cppFuncName c f =   case f of
@@ -709,10 +710,10 @@ cppFuncName c f =   case f of
     Destructor _ -> destructorName
 
 constructorName :: Class -> String
-constructorName c = "new" ++ (fst.hsClassName) c
+constructorName c = "new" <> (fst.hsClassName) c
 
 nonvirtualName :: Class -> String -> String
-nonvirtualName c str = (firstLower.fst.hsClassName) c ++ str
+nonvirtualName c str = (firstLower.fst.hsClassName) c <> str
 
 destructorName :: String
 destructorName = "delete"
@@ -729,7 +730,7 @@ functionSignature c f =
         | isNonVirtualFunc f = (mkTVar (class_name c) :)
         | otherwise          = id
       lst = arg0 (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
-  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+  in foldr1 TyFun (lst <> [TyApp (tycon "IO") ctyp])
 
 
 
@@ -740,11 +741,11 @@ functionSignatureT t TFun {..} =
       ctyp = convertCpp2HS Nothing tfun_ret
       arg0 =  (TyApp (tycon hname) (mkTVar tp) :)
       lst = arg0 (map (convertCpp2HS Nothing . fst) tfun_args)
-  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+  in foldr1 TyFun (lst <> [TyApp (tycon "IO") ctyp])
 functionSignatureT t TFunNew {..} =
   let ctyp = convertCpp2HS Nothing (TemplateType t)
       lst = map (convertCpp2HS Nothing . fst) tfun_new_args
-  in foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+  in foldr1 TyFun (lst <> [TyApp (tycon "IO") ctyp])
 functionSignatureT t TFunDelete =
   let ctyp = convertCpp2HS Nothing (TemplateType t)
   in ctyp `TyFun` (TyApp (tycon "IO") unit_tycon)
@@ -752,7 +753,7 @@ functionSignatureT t TFunDelete =
 
 
 functionSignatureTT :: TemplateClass -> TemplateFunction -> Type
-functionSignatureTT t f = foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
+functionSignatureTT t f = foldr1 TyFun (lst <> [TyApp (tycon "IO") ctyp])
  where
   (hname,_) = hsTemplateClassName t
   ctyp = case f of
@@ -771,7 +772,7 @@ functionSignatureTT t f = foldr1 TyFun (lst ++ [TyApp (tycon "IO") ctyp])
 
 -- | this is for FFI type.
 hsFuncTyp :: Class -> Function -> Type
-hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
+hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps <> [TyApp (tycon "IO") rettyp])
   where argtyps = map (hsargtype . fst) $ genericFuncArgs f
         rettyp  = hsrettype (genericFuncRet f)
         (_hcname,rcname) = hsClassName c
@@ -803,7 +804,7 @@ hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps ++ [TyApp (tycon "IO") rettyp])
 
 -- | this is for FFI
 hsFuncTypNoSelf :: Class -> Function -> Type
-hsFuncTypNoSelf c f = foldr1 TyFun (argtyps ++ [TyApp (tycon "IO") rettyp])
+hsFuncTypNoSelf c f = foldr1 TyFun (argtyps <> [TyApp (tycon "IO") rettyp])
   where argtyps = map (hsargtype . fst) $ genericFuncArgs f
         rettyp  = hsrettype (genericFuncRet f)
         (_hcname,rcname) = hsClassName c

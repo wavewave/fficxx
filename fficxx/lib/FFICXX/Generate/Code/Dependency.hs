@@ -14,10 +14,11 @@
 
 module FFICXX.Generate.Code.Dependency where
 
-import           Data.Function (on)
+import           Data.Function             ( on )
+import qualified Data.HashMap.Strict as HM
 import           Data.List 
 import           Data.Maybe
-import qualified Data.HashMap.Strict as HM
+import           Data.Monoid               ( (<>) )
 import           System.FilePath 
 --
 import           FFICXX.Generate.Type.Class
@@ -28,20 +29,20 @@ import           FFICXX.Generate.Type.PackageInterface
 -- | 
 mkPkgHeaderFileName ::Class -> HeaderName
 mkPkgHeaderFileName c = 
-    HdrName ((cabal_cheaderprefix.class_cabal) c ++ class_name c <.> "h")
+    HdrName ((cabal_cheaderprefix.class_cabal) c <> class_name c <.> "h")
 
 -- | 
 mkPkgCppFileName ::Class -> String 
 mkPkgCppFileName c = 
-    (cabal_cheaderprefix.class_cabal) c ++ class_name c <.> "cpp"
+    (cabal_cheaderprefix.class_cabal) c <> class_name c <.> "cpp"
 
 -- | 
 mkPkgIncludeHeadersInH :: Class -> [HeaderName]
 mkPkgIncludeHeadersInH c =
     let pkgname = (cabal_pkgname . class_cabal) c
         extclasses = (filter ((/= pkgname) . cabal_pkgname . class_cabal) . mkModuleDepCpp) c
-        extheaders = nub . map ((++"Type.h") .  cabal_pkgname . class_cabal) $ extclasses  
-    in map mkPkgHeaderFileName (class_allparents c) ++ map HdrName extheaders
+        extheaders = nub . map ((<>"Type.h") .  cabal_pkgname . class_cabal) $ extclasses  
+    in map mkPkgHeaderFileName (class_allparents c) <> map HdrName extheaders
 
                            
 
@@ -114,7 +115,7 @@ mkModuleDepHighNonSource c =
       pkgname = (cabal_pkgname . class_cabal) c 
       extclasses = (filter (\x-> x /= c && ((/= pkgname) . cabal_pkgname . class_cabal) x) . concatMap (argumentDependency.extractClassDep)) fs
       parents = class_parents c 
-  in  nub (parents ++ extclasses) 
+  in  nub (parents <> extclasses) 
 
 
 -- | 
@@ -130,14 +131,14 @@ mkModuleDepCpp c =
   let fs = class_funcs c 
   in  nub . filter (/= c)  $ 
         mapMaybe (returnDependency.extractClassDep) fs   
-        ++ concatMap (argumentDependency.extractClassDep) fs
-        ++ (class_parents c) 
+        <> concatMap (argumentDependency.extractClassDep) fs
+        <> (class_parents c) 
 
 -- | 
 mkModuleDepFFI4One :: Class -> [Class] 
 mkModuleDepFFI4One c = 
   let fs = class_funcs c 
-  in  (++) <$> mapMaybe (returnDependency.extractClassDep)  
+  in  (<>) <$> mapMaybe (returnDependency.extractClassDep)  
            <*> concatMap (argumentDependency.extractClassDep) 
       $ fs
 
@@ -145,7 +146,7 @@ mkModuleDepFFI4One c =
 mkModuleDepFFI :: Class -> [Class] 
 mkModuleDepFFI c = 
   let ps = class_allparents c 
-      alldeps' = (concatMap mkModuleDepFFI4One ps) ++ mkModuleDepFFI4One c
+      alldeps' = (concatMap mkModuleDepFFI4One ps) <> mkModuleDepFFI4One c
       alldeps = nub (filter (/= c) alldeps')
   in  alldeps
 
@@ -186,11 +187,11 @@ mkPackageConfig (pkgname,mkNSandIncHdrs) (cs,fs,ts) =
       -- for toplevel 
       tl_cs1 = concatMap (argumentDependency . extractClassDepForTopLevelFunction) fs 
       tl_cs2 = mapMaybe (returnDependency . extractClassDepForTopLevelFunction) fs 
-      tl_cs = nubBy ((==) `on` class_name) (tl_cs1 ++ tl_cs2)
+      tl_cs = nubBy ((==) `on` class_name) (tl_cs1 <> tl_cs2)
       tl_cihs = catMaybes $ 
         foldr (\c acc-> (find (\x -> (class_name . cihClass) x == class_name c) cihs):acc) [] tl_cs 
       -- 
-      tih = TopLevelImportHeader (pkgname ++ "TopLevel") tl_cihs fs
+      tih = TopLevelImportHeader (pkgname <> "TopLevel") tl_cihs fs
       tcms = map mkTCM ts
       tcihs = concatMap tcmTCIH tcms
   in PkgConfig ms cihs tih tcms tcihs

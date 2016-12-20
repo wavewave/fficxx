@@ -16,7 +16,8 @@ module FFICXX.Generate.Util where
 import           Data.Char 
 import           Data.List
 import           Data.List.Split
-import           Data.Text                (Text)
+import           Data.Monoid              ( (<>) )
+import           Data.Text                ( Text )
 import qualified Data.Text          as T
 import qualified Data.Text.Lazy     as TL
 import           Data.Text.Template
@@ -26,7 +27,7 @@ moduleDirFile :: String -> (String,String)
 moduleDirFile mname = 
   let splitted = splitOn "." mname
       moddir  = intercalate "/" (init splitted )
-      modfile = (last splitted) ++ ".hs" 
+      modfile = (last splitted) <> ".hs" 
   in  (moddir, modfile)
 
 hline :: IO ()
@@ -44,7 +45,7 @@ firstLower [] = []
 firstLower (x:xs) = (toLower x) : xs 
 
 conn :: String -> String -> String -> String 
-conn st x y = x ++ st ++ y  
+conn st x y = x <> st <> y  
 
 connspace :: String -> String -> String
 connspace = conn " " 
@@ -82,7 +83,7 @@ intercalateWithM f mapper x
 
 context :: [(Text,String)] -> Context
 context assocs x = maybe err (T.pack) . lookup x $ assocs
-  where err = error $ "Could not find key: " ++ (T.unpack x)
+  where err = error $ "Could not find key: " <> (T.unpack x)
 
         
 subst :: Text -> Context -> String

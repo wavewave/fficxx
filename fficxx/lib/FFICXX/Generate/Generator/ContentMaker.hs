@@ -15,16 +15,17 @@
 
 module FFICXX.Generate.Generator.ContentMaker where 
 
-import           Control.Lens                           (set,at)
+import           Control.Lens                           ( set,at )
 import           Control.Monad.Trans.Reader
-import           Data.Function                          (on)
+import           Data.Function                          ( on )
 import qualified Data.Map                          as M
+import           Data.Monoid                            ( (<>) )
 import           Data.List 
-import           Data.List.Split                        (splitOn) 
+import           Data.List.Split                        ( splitOn ) 
 import           Data.Maybe
-import           Data.Text                              (Text)
-import           Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
-import           Language.Haskell.Exts.Pretty           (prettyPrint)
+import           Data.Text                              ( Text )
+import           Language.Haskell.Exts.Syntax           ( Module(..), Decl(..) )
+import           Language.Haskell.Exts.Pretty           ( prettyPrint )
 import           System.FilePath
 -- 
 import           FFICXX.Generate.Code.Cpp
@@ -72,7 +73,7 @@ buildParentDef f cls = g (class_allparents cls,cls)
 mkProtectedFunctionList :: Class -> String 
 mkProtectedFunctionList c = 
     (unlines 
-     . map (\x->"#define IS_" ++ class_name c ++ "_" ++ x ++ "_PROTECTED ()") 
+     . map (\x->"#define IS_" <> class_name c <> "_" <> x <> "_PROTECTED ()") 
      . unProtected . class_protected) c 
 
 -- |
@@ -130,8 +131,8 @@ buildDeclHeader :: TypeMacro  -- ^ typemacro prefix
 buildDeclHeader (TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
-      typemacrostr = typemacroprefix ++ class_name aclass ++ "__" 
-      declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"") $
+      typemacrostr = typemacroprefix <> class_name aclass <> "__" 
+      declHeaderStr = intercalateWith connRet (\x->"#include \""<>x<>"\"") $
                         map unHdrName (cihIncludedHPkgHeadersInH header)
       declDefStr    = genAllCppHeaderTmplVirtual classes 
                       `connRet2`
@@ -200,8 +201,8 @@ buildDefMain :: ClassImportHeader
           -> String 
 buildDefMain header =
   let classes = [cihClass header]
-      headerStr = genAllCppHeaderInclude header ++ "\n#include \"" ++ (unHdrName (cihSelfHeader header)) ++ "\"" 
-      namespaceStr = (concatMap (\x->"using namespace " ++ unNamespace x ++ ";\n") . cihNamespace) header
+      headerStr = genAllCppHeaderInclude header <> "\n#include \"" <> (unHdrName (cihSelfHeader header)) <> "\"" 
+      namespaceStr = (concatMap (\x->"using namespace " <> unNamespace x <> ";\n") . cihNamespace) header
       aclass = cihClass header
       cppBody = mkProtectedFunctionList (cihClass header) 
                 `connRet`
@@ -222,8 +223,8 @@ buildTopLevelFunctionHeader :: TypeMacro  -- ^ typemacro prefix
                          -> TopLevelImportHeader
                          -> String 
 buildTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
-  let typemacrostr = typemacroprefix ++ "TOPLEVEL" ++ "__" 
-      declHeaderStr = intercalateWith connRet (\x->"#include \""++x++"\"")
+  let typemacrostr = typemacroprefix <> "TOPLEVEL" <> "__" 
+      declHeaderStr = intercalateWith connRet (\x->"#include \""<>x<>"\"")
                       . map (unHdrName . cihSelfHeader) . tihClassDep $ tih
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
   in subst declarationTemplate (context [ ("typemacro"        , typemacrostr  )
@@ -235,14 +236,14 @@ buildTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
 buildTopLevelFunctionCppDef :: TopLevelImportHeader -> String 
 buildTopLevelFunctionCppDef tih =
   let cihs = tihClassDep tih
-      declHeaderStr = "#include \"" ++ tihHeaderFileName tih <.> "h" ++ "\""
+      declHeaderStr = "#include \"" <> tihHeaderFileName tih <.> "h" <> "\""
                       `connRet2`
                       (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
                       `connRet2`
-                      ((intercalateWith connRet (\x->"#include \""++x++"\"") . map (unHdrName . cihSelfHeader)) cihs)
+                      ((intercalateWith connRet (\x->"#include \""<>x<>"\"") . map (unHdrName . cihSelfHeader)) cihs)
       allns = nubBy ((==) `on` unNamespace) (tihClassDep tih >>= cihNamespace)
       namespaceStr = do ns <- allns 
-                        ("using namespace " ++ unNamespace ns ++ ";\n")
+                        ("using namespace " <> unNamespace ns <> ";\n")
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
   in subst definitionTemplate (context [ ("header"   , declHeaderStr)
@@ -255,7 +256,7 @@ buildTemplateHeader :: TypeMacro  -- ^ typemacro prefix
                  -> TemplateClass
                  -> String 
 buildTemplateHeader (TypMcro typemacroprefix) t =
-  let typemacrostr = typemacroprefix ++ "TEMPLATE" ++ "__"
+  let typemacrostr = typemacroprefix <> "TEMPLATE" <> "__"
       fs = tclass_funcs t
       deffunc = intercalateWith connRet (genTmplFunCpp t) fs
       classlevel = genTmplClassCpp t fs
@@ -278,7 +279,7 @@ buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] f
   where mname = cmModule m
         headers = cmCIH m
         ffiImports = [ mkImport "Foreign.C", mkImport "Foreign.Ptr", mkImport (mname <.> "RawType") ]
-                     ++ genImportInFFI m
+                     <> genImportInFFI m
         hscBody = concatMap genHsFFI headers
 
 
@@ -306,12 +307,12 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
           , mkImport "Foreign.Ptr"
           , mkImport "Foreign.ForeignPtr"
           , mkImport "FFICXX.Runtime.Cast" ]
-          ++ genImportInInterface m
+          <> genImportInInterface m
         ifaceBody = 
           runReader (mapM genHsFrontDecl classes) amap 
-          ++ (map hsClassExistType .  filter (not.isAbstractClass)) classes
-          ++ (concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
-          ++ (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
+          <> (map hsClassExistType .  filter (not.isAbstractClass)) classes
+          <> (concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
+          <> (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
 -- | 
 buildCastHs :: ClassModule -> Module
@@ -325,9 +326,9 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                       , mkImport "Foreign.ForeignPtr.Unsafe"
                       , mkImport "FFICXX.Runtime.Cast"
                       , mkImport "System.IO.Unsafe" ]
-                      ++ genImportInCast m
+                      <> genImportInCast m
         body = mapMaybe genHsFrontInstCastable classes
-               ++ mapMaybe genHsFrontInstCastableSelf classes
+               <> mapMaybe genHsFrontInstCastableSelf classes
 
 -- | 
 buildImplementationHs :: AnnotateMap -> ClassModule -> Module
@@ -344,17 +345,17 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                       , mkImport "Foreign.Ptr"
                       , mkImport "Foreign.ForeignPtr"
                       , mkImport "System.IO.Unsafe" ]
-                      ++ genImportInImplementation m
+                      <> genImportInImplementation m
         f :: Class -> [Decl]
         f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
         g :: Class -> [Decl]
         g y = map (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
-        implBody = concatMap f classes ++ concatMap g (filter (not.isAbstractClass) classes)
-                   ++ runReader (concat <$> mapM genHsFrontInstNew classes) amap
-                   ++ concatMap genHsFrontInstNonVirtual classes
-                   ++ concatMap genHsFrontInstStatic classes
-                   ++ map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
+        implBody = concatMap f classes <> concatMap g (filter (not.isAbstractClass) classes)
+                   <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
+                   <> concatMap genHsFrontInstNonVirtual classes
+                   <> concatMap genHsFrontInstStatic classes
+                   <> map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
 
 
 buildTemplateHs :: TemplateClassModule -> Module
@@ -377,12 +378,12 @@ buildTHHs m = mkModule (tcmModule m <.> "TH")
               , mkImport "Language.Haskell.TH"
               , mkImport "Language.Haskell.TH.Syntax"
               , mkImport "FFICXX.Generate.Util.TH"
-              ] ++ imports)
+              ] <> imports)
              body
   where ts = tcmTemplateClasses m
         imports = [ mkImport (tcmModule m <.> "Template") ]
         body = concatMap genTmplImplementation ts
-               ++ concatMap (\t -> genTmplInstance t (tclass_funcs t)) ts
+               <> concatMap (\t -> genTmplInstance t (tclass_funcs t)) ts
 
 -- | 
 buildInterfaceHSBOOT :: String -> Module
@@ -398,18 +399,18 @@ buildModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (g
 buildPkgHs :: String -> [ClassModule] -> TopLevelImportHeader -> String 
 buildPkgHs modname mods tih = 
     let tfns = tihFuncs tih 
-        exportListStr = intercalateWith (conn "\n, ") ((\x->"module " ++ x).cmModule) mods 
-                        ++ if null tfns 
+        exportListStr = intercalateWith (conn "\n, ") ((\x->"module " <> x).cmModule) mods 
+                        <> if null tfns 
                            then "" 
-                           else "\n, " ++ intercalateWith (conn "\n, ") hsFrontNameForTopLevelFunction tfns 
-        importListStr = intercalateWith connRet ((\x->"import " ++ x).cmModule) mods
-                        ++ if null tfns 
+                           else "\n, " <> intercalateWith (conn "\n, ") hsFrontNameForTopLevelFunction tfns 
+        importListStr = intercalateWith connRet ((\x->"import " <> x).cmModule) mods
+                        <> if null tfns 
                            then "" 
                            else "" `connRet2` "import Foreign.C" `connRet` "import Foreign.Ptr"
                                 `connRet` "import FFICXX.Runtime.Cast" 
                                 `connRet`
                                 intercalateWith connRet 
-                                  ((\x->"import " ++ modname ++ "." ++ x ++ ".RawType")
+                                  ((\x->"import " <> modname <> "." <> x <> ".RawType")
                                    .fst.hsClassName.cihClass) (tihClassDep tih)
         topLevelDefStr = intercalate "\n" (map (prettyPrint . genTopLevelFuncFFI tih) tfns)
                          `connRet2`
