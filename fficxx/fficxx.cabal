@@ -51,9 +51,6 @@ Library
 
   Exposed-Modules:
                    FFICXX.Generate.Builder
-                   FFICXX.Generate.Type.Class
-                   FFICXX.Generate.Type.Module
-                   FFICXX.Generate.Type.PackageInterface
                    FFICXX.Generate.Config
                    FFICXX.Generate.Code.MethodDef
                    FFICXX.Generate.Code.Cpp
@@ -61,11 +58,14 @@ Library
                    FFICXX.Generate.Code.HsFFI
                    FFICXX.Generate.Code.Cabal
                    FFICXX.Generate.Code.Dependency
-                   FFICXX.Generate.Generator.ContentMaker
+                   FFICXX.Generate.ContentMaker
+                   FFICXX.Generate.QQ.Verbatim
                    FFICXX.Generate.Util
                    FFICXX.Generate.Util.HaskellSrcExts
                    FFICXX.Generate.Util.TH
-                   FFICXX.Generate.QQ.Verbatim
                    FFICXX.Generate.Type.Annotate
+                   FFICXX.Generate.Type.Class
+                   FFICXX.Generate.Type.Module
+                   FFICXX.Generate.Type.PackageInterface
 
 
