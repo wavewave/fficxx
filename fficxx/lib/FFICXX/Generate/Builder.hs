@@ -21,7 +21,7 @@ import           Data.Char                               ( toUpper )
 import           Data.Digest.Pure.MD5                    ( md5 )
 import qualified Data.HashMap.Strict               as HM
 import           Data.List                               ( intercalate )
-import           Data.Monoid (mempty)
+import           Data.Monoid                             ( (<>), mempty )
 import           Data.Text                               ( Text )
 import           Language.Haskell.Exts.Pretty            ( prettyPrint )
 import           System.FilePath                         ( (</>), (<.>), splitExtension )
@@ -96,10 +96,10 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
       tmods = pcfg_templateClassModules pkgconfig
       tcih = pcfg_templateClassImportHeaders pkgconfig
       txt = subst cabalTemplate
-              (context ([ ("licenseField", "license: " ++ license)
-                          | Just license <- [cabalattr_license cabalattr] ] ++
-                        [ ("licenseFileField", "license-file: " ++ licensefile)
-                          | Just licensefile <- [cabalattr_licensefile cabalattr] ] ++
+              (context ([ ("licenseField", "license: " <> license)
+                          | Just license <- [cabalattr_license cabalattr] ] <>
+                        [ ("licenseFileField", "license-file: " <> licensefile)
+                          | Just licensefile <- [cabalattr_licensefile cabalattr] ] <>
                         [ ("pkgname", cabal_pkgname cabal)
                         , ("version",  "0.0")
                         , ("buildtype", "Simple")
@@ -119,7 +119,7 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
                         , ("otherModules", genOtherModules classmodules)
                         , ("extralibdirs", intercalate ", " $ cabalattr_extralibdirs cabalattr)
                         , ("extraincludedirs", intercalate ", " $ cabalattr_extraincludedirs cabalattr)
-                        , ("extraLibraries", concatMap (", " ++) extralibs)
+                        , ("extraLibraries", concatMap (", " <>) extralibs)
                         , ("cabalIndentation", cabalIndentation)
                         ]))
   writeFile cabalfile txt
@@ -134,7 +134,7 @@ simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))]
               ->  IO ()
 simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, templates) extralibs = do
   let pkgname = cabal_pkgname cabal
-  putStrLn ("generating " ++ pkgname)
+  putStrLn ("generating " <> pkgname)
   cwd <- getCurrentDirectory
   let cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd
                           , fficxxconfig_workingDir = cwd </> "working"
@@ -157,13 +157,13 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   buildCabalFile (cabal,cabalattr) summarymodule pkgconfig extralibs (workingDir</>cabalFileName)
   --
   putStrLn "header file generation"
-  let typmacro = TypMcro ("__"  ++ macrofy (cabal_pkgname cabal) ++ "__")
+  let typmacro = TypMcro ("__"  <> macrofy (cabal_pkgname cabal) <> "__")
       gen :: FilePath -> String -> IO ()
       gen file str =
         let path = workingDir </> file in withFile path WriteMode (flip hPutStrLn str)
 
 
-  gen (pkgname ++ "Type.h") (buildTypeDeclHeader typmacro (map cihClass cihs))
+  gen (pkgname <> "Type.h") (buildTypeDeclHeader typmacro (map cihClass cihs))
   mapM_ (\hdr -> gen (unHdrName (cihSelfHeader hdr)) (buildDeclHeader typmacro pkgname hdr)) cihs
   gen (tihHeaderFileName tih <.> "h") (buildTopLevelFunctionHeader typmacro pkgname tih)
   forM_ tcms $ \m ->
@@ -232,7 +232,7 @@ touch fp = void (readProcess "touch" [fp] "")
 notExistThenCreate :: FilePath -> IO () 
 notExistThenCreate dir = do 
     b <- doesDirectoryExist dir
-    if b then return () else system ("mkdir -p " ++ dir) >> return ()
+    if b then return () else system ("mkdir -p " <> dir) >> return ()
 
 
 copyFileWithMD5Check :: FilePath -> FilePath -> IO () 
@@ -248,7 +248,7 @@ copyFileWithMD5Check src tgt = do
 
 copyCppFiles :: FilePath -> FilePath -> String -> PackageConfig -> IO ()
 copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ tcihs) = do 
-  let thfile = cprefix ++ "Type.h"
+  let thfile = cprefix <> "Type.h"
       tlhfile = tihHeaderFileName tih <.> "h"
       tlcppfile = tihHeaderFileName tih <.> "cpp"
   copyFileWithMD5Check (wdir </> thfile) (ddir </> thfile) 
@@ -273,7 +273,7 @@ moduleFileCopy wdir ddir fname = do
       (mdir,mfile) = moduleDirFile fnamebody
       origfpath = wdir </> fname
       (mfile',_mext') = splitExtension mfile
-      newfpath = ddir </> mdir </> mfile' ++ fnameext   
+      newfpath = ddir </> mdir </> mfile' <> fnameext   
   b <- doesFileExist origfpath 
   when b $ do 
     notExistThenCreate (ddir </> mdir) 
@@ -284,19 +284,19 @@ copyModule :: FilePath -> FilePath -> ClassModule -> IO ()
 copyModule wdir ddir m = do 
   let modbase = cmModule m 
 
-  moduleFileCopy wdir ddir $ modbase ++ ".hs"
-  moduleFileCopy wdir ddir $ modbase ++ ".RawType.hs"
-  moduleFileCopy wdir ddir $ modbase ++ ".FFI.hsc"
-  moduleFileCopy wdir ddir $ modbase ++ ".Interface.hs"
-  moduleFileCopy wdir ddir $ modbase ++ ".Cast.hs"
-  moduleFileCopy wdir ddir $ modbase ++ ".Implementation.hs"
-  moduleFileCopy wdir ddir $ modbase ++ ".Interface.hs-boot"
+  moduleFileCopy wdir ddir $ modbase <> ".hs"
+  moduleFileCopy wdir ddir $ modbase <> ".RawType.hs"
+  moduleFileCopy wdir ddir $ modbase <> ".FFI.hsc"
+  moduleFileCopy wdir ddir $ modbase <> ".Interface.hs"
+  moduleFileCopy wdir ddir $ modbase <> ".Cast.hs"
+  moduleFileCopy wdir ddir $ modbase <> ".Implementation.hs"
+  moduleFileCopy wdir ddir $ modbase <> ".Interface.hs-boot"
   return ()
 
 copyTemplateModule :: FilePath -> FilePath -> TemplateClassModule -> IO ()
 copyTemplateModule wdir ddir m = do 
   let modbase = tcmModule m 
-  moduleFileCopy wdir ddir $ modbase ++ ".Template.hs"
-  moduleFileCopy wdir ddir $ modbase ++ ".TH.hs"
+  moduleFileCopy wdir ddir $ modbase <> ".Template.hs"
+  moduleFileCopy wdir ddir $ modbase <> ".TH.hs"
   return ()
 

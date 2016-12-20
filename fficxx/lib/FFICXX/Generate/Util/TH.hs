@@ -14,6 +14,7 @@
 
 module FFICXX.Generate.Util.TH where
 
+import Data.Monoid                ( (<>) )
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 
@@ -28,7 +29,7 @@ mkInstance = InstanceD Nothing
 mkTFunc :: (Name, String, String -> String, Name -> Q Type) -> ExpQ
 mkTFunc (nty, ncty, nf, tyf)
   = do let fn = nf ncty
-       let fn' = "c_" ++ fn
+       let fn' = "c_" <> fn
        n <- newName fn'
        d <- forImpD CCall unsafe fn n (tyf nty)
        addTopDecls [d]

@@ -15,6 +15,8 @@
 
 module FFICXX.Generate.Code.MethodDef where
 
+import           Data.Monoid                ( (<>) )
+--
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util 
 
@@ -46,8 +48,8 @@ funcToDef :: Class -> Function -> String
 funcToDef c func 
   | isNewFunc func = 
     let declstr = funcToDecl c func
-        callstr = "(" ++ argsToCallString (genericFuncArgs func) ++ ")"
-        returnstr = "Type * newp = new Type " ++ callstr ++ "; \\\nreturn to_nonconst<Type ## _t, Type >(newp);"
+        callstr = "(" <> argsToCallString (genericFuncArgs func) <> ")"
+        returnstr = "Type * newp = new Type " <> callstr <> "; \\\nreturn to_nonconst<Type ## _t, Type >(newp);"
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | isDeleteFunc func = 
     let declstr = funcToDecl c func
@@ -55,38 +57,38 @@ funcToDef c func
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | isStaticFunc func = 
     let declstr = funcToDecl c func
-        callstr = cppFuncName c func ++ "("
-                  ++ argsToCallString (genericFuncArgs func)   
-                  ++ ")"
+        callstr = cppFuncName c func <> "("
+                  <> argsToCallString (genericFuncArgs func)   
+                  <> ")"
         returnstr = case (genericFuncRet func) of          
-          Void                    -> callstr ++ ";"
+          Void                    -> callstr <> ";"
           SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
-                                     ++ callstr ++ ") ;"
-          CT _ _                  -> "return "++callstr++";" 
-          CPT (CPTClass c') _     -> "return to_nonconst<"++str++"_t,"++str
-                                     ++">(("++str++"*)"++callstr++");" 
+                                     <> callstr <> ") ;"
+          CT _ _                  -> "return "<>callstr<>";" 
+          CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
+                                     <>">(("<>str<>"*)"<>callstr<>");" 
                                      where str = class_name c' 
-          CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
+          CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
           TemplateType _          -> error "funcToDef: TemplateType"
-          TemplateParam _         -> "return (" ++ callstr ++ ");"
+          TemplateParam _         -> "return (" <> callstr <> ");"
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | otherwise = 
     let declstr = funcToDecl c func
-        callstr = "TYPECASTMETHOD(Type,"++ aliasedFuncName c func ++ "," ++ class_name c ++ ")(p)->"
-                  ++ cppFuncName c func ++ "("
-                  ++ argsToCallString (genericFuncArgs func)   
-                  ++ ")"
+        callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
+                  <> cppFuncName c func <> "("
+                  <> argsToCallString (genericFuncArgs func)   
+                  <> ")"
         returnstr = case (genericFuncRet func) of          
-          Void                    -> callstr ++ ";"
+          Void                    -> callstr <> ";"
           SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
-                                      ++ callstr ++ ") ;"
-          CT _ _                  -> "return "++callstr++";" 
-          CPT (CPTClass c') _     -> "return to_nonconst<"++str++"_t,"++str
-                                     ++">(("++str++"*)"++callstr++");"
+                                      <> callstr <> ") ;"
+          CT _ _                  -> "return "<>callstr<>";" 
+          CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
+                                     <>">(("<>str<>"*)"<>callstr<>");"
                                      where str = class_name c'
-          CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
+          CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
           TemplateType _          -> error "funcToDef: TemplateType"
-          TemplateParam _         -> "return (" ++ callstr ++ ");"
+          TemplateParam _         -> "return (" <> callstr <> ");"
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
 
 
@@ -116,35 +118,35 @@ tmplFunToDecl t@TmplCls {..} TFunDelete =
 
 
 tmplFunToDef :: TemplateClass -> TemplateFunction -> String
-tmplFunToDef t@TmplCls {..} f =intercalateWith connBSlash id [declstr, "  {", "    "++returnstr, "  }"]
+tmplFunToDef t@TmplCls {..} f =intercalateWith connBSlash id [declstr, "  {", "    "<>returnstr, "  }"]
  where
   declstr = tmplFunToDecl t f
   callstr =
     case f of
-      TFun {..}    -> "(reinterpret_cast<" ++ tclass_oname ++ "<Type>*>(p))->"
-                      ++ tfun_oname ++ "("
-                      ++ tmplAllArgsToCallString tfun_args   
-                      ++ ")"
-      TFunNew {..} -> "new " ++ tclass_oname ++ "<Type>("
-                      ++ tmplAllArgsToCallString tfun_new_args
-                      ++ ")"
-      TFunDelete   -> "delete (reinterpret_cast<" ++ tclass_oname ++ "<Type>*>(p))"
+      TFun {..}    -> "(reinterpret_cast<" <> tclass_oname <> "<Type>*>(p))->"
+                      <> tfun_oname <> "("
+                      <> tmplAllArgsToCallString tfun_args   
+                      <> ")"
+      TFunNew {..} -> "new " <> tclass_oname <> "<Type>("
+                      <> tmplAllArgsToCallString tfun_new_args
+                      <> ")"
+      TFunDelete   -> "delete (reinterpret_cast<" <> tclass_oname <> "<Type>*>(p))"
                       
   returnstr =
     case f of
-      TFunNew {..} -> "return reinterpret_cast<void*>("++callstr++");"
-      TFunDelete   -> callstr ++ ";"
+      TFunNew {..} -> "return reinterpret_cast<void*>("<>callstr<>");"
+      TFunDelete   -> callstr <> ";"
       TFun {..} -> case tfun_ret of          
-                      Void                    -> callstr ++ ";"
+                      Void                    -> callstr <> ";"
                       SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
-                                                 ++ callstr ++ ") ;"
-                      CT _ _                  -> "return "++callstr++";" 
-                      CPT (CPTClass c') _     -> "return to_nonconst<"++str++"_t,"++str
-                                                 ++">(("++str++"*)"++callstr++");"
+                                                 <> callstr <> ") ;"
+                      CT _ _                  -> "return "<>callstr<>";" 
+                      CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
+                                                 <>">(("<>str<>"*)"<>callstr<>");"
                                                  where str = class_name c'
-                      CPT (CPTClassRef _c') _ -> "return ((*)"++callstr++");"
+                      CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
                       TemplateType _          -> error "tmplFunToDef: TemplateType"
-                      TemplateParam _         -> "return (" ++ callstr ++ ");"
+                      TemplateParam _         -> "return (" <> callstr <> ");"
 
 
 

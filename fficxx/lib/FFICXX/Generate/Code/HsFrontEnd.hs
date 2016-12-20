@@ -18,14 +18,9 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import           Control.Monad.State
 import           Control.Monad.Reader
-
 import           Data.List
-
-
-import           Data.Text                               (Text)
-
-
-
+import           Data.Monoid                             ( (<>) )
+import           Data.Text                               ( Text )
 import           Language.Haskell.Exts.Syntax            ( Asst(..), Binds(..), Boxed(..), Bracket(..)
                                                          , ClassDecl(..), DataOrNew(..), Decl(..)
                                                          , Exp(..), ExportSpec(..)
@@ -51,7 +46,7 @@ mkComment indent str
     let str_lines = lines str
         indentspace = replicate indent ' ' 
         commented_lines = 
-          (indentspace ++ "-- | "++head str_lines) : map (\x->indentspace ++ "--   "++x) (tail str_lines)
+          (indentspace <> "-- | "<>head str_lines) : map (\x->indentspace <> "--   "<>x) (tail str_lines)
      in unlines commented_lines 
   | otherwise = str                
 
@@ -60,7 +55,7 @@ mkPostComment str
   | (not.null) str = 
     let str_lines = lines str 
         commented_lines = 
-          ("-- ^ "++head str_lines) : map (\x->"--   "++x) (tail str_lines)
+          ("-- ^ "<>head str_lines) : map (\x->"--   "<>x) (tail str_lines)
      in unlines commented_lines 
   | otherwise = str                
 
@@ -83,7 +78,7 @@ extractArgTypes lst =
            CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
            CPT (CPTClass c') _    -> addclass c'
            CPT (CPTClassRef c') _ -> addclass c' 
-           _ -> error ("No such c type : " ++ show typ)  
+           _ -> error ("No such c type : " <> show typ)  
 
 
 ----------------
@@ -92,7 +87,7 @@ classprefix :: Class -> String
 classprefix c = let ps = (map typeclassName . class_parents) c
                 in  if null ps 
                     then "" 
-                    else "(" ++ intercalate "," (map (++ " a") ps) ++ ") => "
+                    else "(" <> intercalate "," (map (<> " a") ps) <> ") => "
 
 
 -- |
@@ -280,7 +275,7 @@ hsClassExistType c = mkInstance [] "Existable" [hightype]
 ------------
 
 genHsFrontUpcastClass :: Class -> [Decl]
-genHsFrontUpcastClass c = mkFun ("upcast"++highname) typ [mkPVar "h"] rhs Nothing
+genHsFrontUpcastClass c = mkFun ("upcast"<>highname) typ [mkPVar "h"] rhs Nothing
   where (highname,rawname) = hsClassName c
         hightype = tycon highname
         rawtype = tycon rawname
@@ -304,7 +299,7 @@ genHsFrontUpcastClass c = mkFun ("upcast"++highname) typ [mkPVar "h"] rhs Nothin
 --------------
 
 genHsFrontDowncastClass :: Class -> [Decl]
-genHsFrontDowncastClass c = mkFun ("downcast"++highname) typ [mkPVar "h"] rhs Nothing
+genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs Nothing
   where (highname,_rawname) = hsClassName c
         hightype = tycon highname
         iname = typeclassName c
@@ -330,15 +325,15 @@ genTopLevelFuncDef f@TopLevelFunction {..} =
     let fname = hsFrontNameForTopLevelFunction f
         (atyps,ctxts) = extractArgTypes toplevelfunc_args
         rtyp = (tycon . ctypToHsTyp Nothing) toplevelfunc_ret
-        sig = TyForall Nothing ctxts (foldr1 TyFun (atyps ++ [TyApp (tycon "IO") rtyp]))
-        xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" ++ show (len-1) else "xformnull"
-        cfname = "c_" ++ toLowers fname 
+        sig = TyForall Nothing ctxts (foldr1 TyFun (atyps <> [TyApp (tycon "IO") rtyp]))
+        xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len-1) else "xformnull"
+        cfname = "c_" <> toLowers fname 
         rhs = App (mkVar xformerstr) (mkVar cfname)
         
     in mkFun fname sig [] rhs Nothing 
 genTopLevelFuncDef v@TopLevelVariable {..} = 
     let fname = hsFrontNameForTopLevelFunction v
-        cfname = "c_" ++ toLowers fname 
+        cfname = "c_" <> toLowers fname 
         rtyp = (tycon . ctypToHsTyp Nothing) toplevelvar_ret
         sig = TyApp (tycon "IO") rtyp
         rhs = App (mkVar "xformnull") (mkVar cfname)
@@ -359,17 +354,17 @@ genExport c =
        then [ espec (typeclassName c) ]
        else [ EThingAll (unqual ((fst.hsClassName) c))
             , espec (typeclassName c)
-            , EVar (unqual ("upcast" ++ (fst.hsClassName) c))
-            , EVar (unqual ("downcast" ++ (fst.hsClassName) c)) ]
-            ++ genExportConstructorAndNonvirtual c 
-            ++ genExportStatic c 
+            , EVar (unqual ("upcast" <> (fst.hsClassName) c))
+            , EVar (unqual ("downcast" <> (fst.hsClassName) c)) ]
+            <> genExportConstructorAndNonvirtual c 
+            <> genExportStatic c 
 
 -- | constructor and non-virtual function 
 genExportConstructorAndNonvirtual :: Class -> [ExportSpec]
 genExportConstructorAndNonvirtual c = map (EVar . unqual) fns
   where fs = class_funcs c
         fns = map (aliasedFuncName c) (constructorFuncs fs 
-                                       ++ nonVirtualNotNewFuncs fs)
+                                       <> nonVirtualNotNewFuncs fs)
 
 -- | staic function export list 
 genExportStatic :: Class -> [ExportSpec]
@@ -390,9 +385,9 @@ genImportInInterface m =
       modlstparent = cmImportedModulesHighNonSource m 
       modlsthigh = cmImportedModulesHighSource m
   in  [mkImport (cmModule m <.> "RawType")]
-      ++ map (\x -> mkImport (x<.>"RawType")) modlstraw
-      ++ map (\x -> mkImport (x<.>"Interface")) modlstparent 
-      ++ map (\x -> mkImportSrc (x<.>"Interface")) modlsthigh
+      <> map (\x -> mkImport (x<.>"RawType")) modlstraw
+      <> map (\x -> mkImport (x<.>"Interface")) modlstparent 
+      <> map (\x -> mkImportSrc (x<.>"Interface")) modlsthigh
 
 -- |
 genImportInCast :: ClassModule -> [ImportDecl]
@@ -409,8 +404,8 @@ genImportInImplementation m =
       , mkImport (cmModule m <.> "FFI")
       , mkImport (cmModule m <.> "Interface")
       , mkImport (cmModule m <.> "Cast") ]
-      ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
-      ++ concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
+      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
+      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
         
 genTmplInterface :: TemplateClass -> [Decl]
@@ -424,8 +419,8 @@ genTmplInterface t = [ mkData rname [mkTBind tp] [] []
         fs = tclass_funcs t
         rawtype = TyApp (tycon rname) (mkTVar tp)
         sigdecl f@TFun {..}    = mkFunSig tfun_name (functionSignatureT t f)
-        sigdecl f@TFunNew {..} = mkFunSig ("new"++tclass_name t) (functionSignatureT t f)
-        sigdecl f@TFunDelete = mkFunSig ("delete"++tclass_name t) (functionSignatureT t f)        
+        sigdecl f@TFunNew {..} = mkFunSig ("new"<>tclass_name t) (functionSignatureT t f)
+        sigdecl f@TFunDelete = mkFunSig ("delete"<>tclass_name t) (functionSignatureT t f)        
         
         methods = map (ClsDecl . sigdecl) fs
 
@@ -435,9 +430,9 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
   where
     gen f = mkFun nh sig [p "nty", p "ncty"] rhs (Just binds)
       where nh = case f of
-                   TFun {..}    -> "t_" ++ tfun_name
-                   TFunNew {..} -> "t_" ++ "new" ++ tclass_name t
-                   TFunDelete   -> "t_" ++ "delete" ++ tclass_name t                   
+                   TFun {..}    -> "t_" <> tfun_name
+                   TFunNew {..} -> "t_" <> "new" <> tclass_name t
+                   TFunDelete   -> "t_" <> "delete" <> tclass_name t                   
             nc = case f of
                    TFun {..}    -> tfun_name
                    TFunNew {..} -> "new"
@@ -447,8 +442,8 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
             p = mkPVar
             tp = tclass_param t
             prefix = tclass_name t
-            lit = Lit (String (prefix++"_"++nc++"_"))
-            lam = Lambda noLoc [p "n"] ( lit `App` v "++" `App` v "n") 
+            lit = Lit (String (prefix<>"_"<>nc<>"_"))
+            lam = Lambda noLoc [p "n"] ( lit `App` v "<>" `App` v "n") 
             rhs = App (v "mkTFunc") (Tuple Boxed [v "nty", v "ncty", lam, v "tyf"])
             sig' = functionSignatureTT t f
             binds = BDecls [ mkBind1 "tyf" [mkPVar "n"]
@@ -461,34 +456,34 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
 genTmplInstance :: TemplateClass -> [TemplateFunction] -> [Decl]
 genTmplInstance t fs = mkFun fname sig [p "n", p "ctyp"] rhs Nothing
   where tname = tclass_name t 
-        fname = "gen" ++ tname ++ "InstanceFor"
+        fname = "gen" <> tname <> "InstanceFor"
         p = mkPVar
         v = mkVar
         l = Lit . String
         sig = tycon "Name" `TyFun` (tycon "String" `TyFun` (TyApp (tycon "Q") (TyList (tycon "Dec"))))
 
         nfs = zip ([1..] :: [Int]) fs
-        rhs = Do (map genstmt nfs ++ [LetStmt (lststmt nfs), Qualifier retstmt])
+        rhs = Do (map genstmt nfs <> [LetStmt (lststmt nfs), Qualifier retstmt])
 
-        genstmt (n,TFun    {..}) = Generator noLoc (p ("f"++show n))
+        genstmt (n,TFun    {..}) = Generator noLoc (p ("f"<>show n))
                                    (v "mkMember" `App` l tfun_name
-                                                 `App` v ("t_" ++ tfun_name)
+                                                 `App` v ("t_" <> tfun_name)
                                                  `App` v "n"
                                                  `App` v "ctyp"
                                    )
-        genstmt (n,TFunNew {..}) = Generator noLoc (p ("f"++show n)) 
-                                   (v "mkNew"    `App` l ("new" ++ tname)
-                                                 `App` v ("t_new" ++ tname)
+        genstmt (n,TFunNew {..}) = Generator noLoc (p ("f"<>show n)) 
+                                   (v "mkNew"    `App` l ("new" <> tname)
+                                                 `App` v ("t_new" <> tname)
                                                  `App` v "n"
                                                  `App` v "ctyp"
                                    )
-        genstmt (n,TFunDelete)   = Generator noLoc (p ("f"++show n)) 
-                                   (v "mkDelete" `App` l ("delete"++tname)
-                                                 `App` v ("t_delete" ++ tname)
+        genstmt (n,TFunDelete)   = Generator noLoc (p ("f"<>show n)) 
+                                   (v "mkDelete" `App` l ("delete"<>tname)
+                                                 `App` v ("t_delete" <> tname)
                                                  `App` v "n"
                                                  `App` v "ctyp"
                                    )                                   
-        lststmt lst = BDecls [ pbind (p "lst") (List (map (v . (\n -> "f" ++ show n) . fst) lst)) Nothing ]
+        lststmt lst = BDecls [ pbind (p "lst") (List (map (v . (\n -> "f" <> show n) . fst) lst)) Nothing ]
         retstmt = v "return"
                   `App` List [ v "mkInstance"
                                `App` List []

@@ -16,6 +16,7 @@
 module FFICXX.Generate.Code.HsFFI where
 
 import           Data.Maybe                              ( fromMaybe, mapMaybe )
+import           Data.Monoid                             ( (<>) )
 import           Language.Haskell.Exts.Syntax            ( Type(..), Decl(..), unit_tycon)
 import           System.FilePath ((<.>))
 -- 
@@ -31,7 +32,7 @@ genHsFFI header =
       h = cihSelfHeader header
       allfns = concatMap (virtualFuncs . class_funcs) 
                          (class_allparents c)
-               ++ (class_funcs c) 
+               <> (class_funcs c) 
   in mapMaybe (hsFFIClassFunc h c) allfns
 
 --------
@@ -42,27 +43,27 @@ hsFFIClassFunc headerfilename c f =
   then Nothing
   else if (isNewFunc f || isStaticFunc f)
        then let hfile = unHdrName headerfilename
-                cname = class_name c ++ "_" ++ aliasedFuncName c f
+                cname = class_name c <> "_" <> aliasedFuncName c f
                 typ = hsFuncTypNoSelf c f
-            in Just (mkForImpCcall (hfile ++ " " ++ cname) (hscFuncName c f) typ)
+            in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
        else let hfile = unHdrName headerfilename
-                cname = class_name c ++ "_" ++ aliasedFuncName c f
+                cname = class_name c <> "_" <> aliasedFuncName c f
                 typ = hsFuncTyp c f
-            in Just (mkForImpCcall (hfile ++ " " ++ cname) (hscFuncName c f) typ)
+            in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
          
 ----------------------------
 -- for top level function -- 
 ----------------------------
 
 genTopLevelFuncFFI :: TopLevelImportHeader -> TopLevelFunction -> Decl
-genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename ++ " TopLevel_" ++ fname) cfname typ
+genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) cfname typ
   where (fname,args,ret) =
           case tfn of
             TopLevelFunction {..} -> (fromMaybe toplevelfunc_name toplevelfunc_alias, toplevelfunc_args, toplevelfunc_ret)
             TopLevelVariable {..} -> (fromMaybe toplevelvar_name toplevelvar_alias, [], toplevelvar_ret)
         hfilename = tihHeaderFileName header <.> "h"
-        cfname = "c_" ++ toLowers fname
-        typ = foldr1 TyFun (map (hsargtype . fst) args ++ [TyApp (tycon "IO") (hsrettype ret)])
+        cfname = "c_" <> toLowers fname
+        typ = foldr1 TyFun (map (hsargtype . fst) args <> [TyApp (tycon "IO") (hsrettype ret)])
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
         hsargtype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
