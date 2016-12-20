@@ -66,21 +66,17 @@ genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fnam
         typ = foldr1 TyFun (map (hsargtype . fst) args <> [TyApp (tycon "IO") (hsrettype ret)])
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsargtype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
-        hsargtype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
+        hsargtype (CPT (CPTClass c) _)    = tycon (fst (hsClassName c))
+        hsargtype (CPT (CPTClassRef c) _) = tycon (fst (hsClassName c))
         hsargtype SelfType     = error "no self for top level function"
         hsargtype _ = error "undefined hsargtype"
 
         hsrettype Void         = unit_tycon
         hsrettype SelfType     = error "no self fro top level function"
         hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsrettype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
-        hsrettype (CPT (CPTClassRef c) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName c)
-        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
-          where rawname = snd (hsTemplateClassName t)
+        hsrettype (CPT (CPTClass c) _)    = tycon (fst (hsClassName c))
+        hsrettype (CPT (CPTClassRef c) _) = tycon (fst (hsClassName c))
+        hsrettype (TemplateType t) = TyApp (tycon n) (mkTVar (tclass_param t))
+          where n = fst (hsTemplateClassName t)
         hsrettype (TemplateParam p) = mkTVar p
 

@@ -290,7 +290,7 @@ buildRawTypeHs m = mkModule (cmModule m <.> "RawType")
                         , "FlexibleInstances", "TypeSynonymInstances"
                         , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
                   rawtypeImports rawtypeBody
-  where rawtypeImports = [ mkImport "Foreign.ForeignPtr", mkImport "FFICXX.Runtime.Cast" ] 
+  where rawtypeImports = [ mkImport "Foreign.Ptr", mkImport "FFICXX.Runtime.Cast" ] 
         rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
 
 -- | 
@@ -305,33 +305,15 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
           [ mkImport "Data.Word"
           , mkImport "Foreign.C"
           , mkImport "Foreign.Ptr"
-          , mkImport "Foreign.ForeignPtr"
-          , mkImport "FFICXX.Runtime.Cast" ]
+          -- , mkImport "Foreign.ForeignPtr"
+          , mkImport "FFICXX.Runtime.Cast"
+          ]
           <> genImportInInterface m
         ifaceBody = 
           runReader (mapM genHsFrontDecl classes) amap 
           <> (map hsClassExistType .  filter (not.isAbstractClass)) classes
           <> (concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
           <> (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
-
-{- 
--- | 
-buildCastHs :: ClassModule -> Module
-buildCastHs m = mkModule (cmModule m <.> "Cast")
-               [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
-                      , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
-               castImports body
-  where classes = cmClass m
-        castImports = [ mkImport "Foreign.Ptr"
-                      , mkImportExp "Foreign.ForeignPtr" [ "castForeignPtr", "newForeignPtr_" ]
-                      , mkImport "Foreign.ForeignPtr.Unsafe"
-                      , mkImport "FFICXX.Runtime.Cast"
-                      , mkImport "System.IO.Unsafe" ]
-                      <> genImportInCast m
-        body = mapMaybe genHsFrontInstCastable classes
-               <> mapMaybe genHsFrontInstCastableSelf classes
--}
-
 
 -- | 
 buildImplementationHs :: AnnotateMap -> ClassModule -> Module
@@ -346,7 +328,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                       , mkImport "Data.Word"
                       , mkImport "Foreign.C"
                       , mkImport "Foreign.Ptr"
-                      , mkImport "Foreign.ForeignPtr"
+                      -- , mkImport "Foreign.ForeignPtr"
                       , mkImport "System.IO.Unsafe" ]
                       <> genImportInImplementation m
         f :: Class -> [Decl]
@@ -366,7 +348,7 @@ buildTemplateHs m = mkModule (tcmModule m <.> "Template")
                    [lang  ["EmptyDataDecls", "TypeFamilies"] ]
                    [ mkImport "Foreign.C.Types"
                    , mkImport "Foreign.Ptr"
-                   , mkImport "Foreign.ForeignPtr"
+                   -- , mkImport "Foreign.ForeignPtr"
                    ]
                    body
   where ts = tcmTemplateClasses m
