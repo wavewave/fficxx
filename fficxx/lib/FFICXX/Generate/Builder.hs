@@ -186,8 +186,8 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   putStrLn "Interface.hs file generation"
   mapM_ (\m -> gen (cmModule m <.> "Interface" <.> "hs") (prettyPrint (buildInterfaceHs mempty m))) mods
   --
-  -- putStrLn "Cast.hs file generation"
-  -- mapM_ (\m -> gen (cmModule m <.> "Cast" <.> "hs") (prettyPrint (buildCastHs m))) mods
+  putStrLn "Cast.hs file generation"
+  mapM_ (\m -> gen (cmModule m <.> "Cast" <.> "hs") (prettyPrint (buildCastHs m))) mods
   --
   putStrLn "Implementation.hs file generation"
   mapM_ (\m -> gen (cmModule m <.> "Implementation" <.> "hs") (prettyPrint (buildImplementationHs mempty m))) mods

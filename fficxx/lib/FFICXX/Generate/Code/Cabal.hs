@@ -28,11 +28,11 @@ genExposedModules summarymod (cmods,tmods) =
         rawType = map ((\x->indentspace<>x<>".RawType").cmModule) cmods
         ffi = map ((\x->indentspace<>x<>".FFI").cmModule) cmods
         interface= map ((\x->indentspace<>x<>".Interface").cmModule) cmods
-        cast = map ((\x->indentspace<>x<>".Cast").cmModule) cmods 
+        -- cast = map ((\x->indentspace<>x<>".Cast").cmModule) cmods 
         implementation = map ((\x->indentspace<>x<>".Implementation").cmModule) cmods
         template = map ((\x->indentspace<>x<>".Template").tcmModule) tmods
         th = map ((\x->indentspace<>x<>".TH").tcmModule) tmods        
-    in  unlines ([summarystrs]<>cmodstrs<>rawType<>ffi<>interface<>cast<>implementation<>template<>th)
+    in  unlines ([summarystrs]<>cmodstrs<>rawType<>ffi<>interface<>implementation<>template<>th)
 
 -- | generate other modules in cabal file 
 genOtherModules :: [ClassModule] -> String 

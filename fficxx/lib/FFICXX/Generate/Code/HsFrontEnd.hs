@@ -69,8 +69,8 @@ extractArgTypes lst =
              iname = typeclassNameFromStr cname 
              tvar = mkTVar ('c' : show n)
              ctxt1 = ClassA (unqual iname) [tvar]
-             ctxt2 = ClassA (unqual "FPtr") [tvar]
-         put (ctxt1:ctxt2:ctxts,n+1)
+             -- ctxt2 = ClassA (unqual "FPtr") [tvar]
+         put (ctxt1:ctxts,n+1)
          return tvar
        mkFuncArgTypeWorker (typ,_var) = 
          case typ of                  
@@ -112,7 +112,7 @@ genHsFrontInst parent child
   | (not.isAbstractClass) child = 
     let idecl = mkInstance [] (typeclassName parent) [convertCpp2HS (Just child) SelfType] body
         defn f = mkBind1 (hsFuncName child f) [] rhs Nothing 
-          where rhs = mkVar (hscFuncName child f)
+          where rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName child f))
         body = map (InsDecl . defn) . virtualFuncs . class_funcs $ parent
     in [idecl]
   | otherwise = []
@@ -120,7 +120,7 @@ genHsFrontInst parent child
 
       
 ---------------------
-
+{- 
 genHsFrontInstExistCommon :: Class -> Decl 
 genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
   where (highname,rawname) = hsClassName c
@@ -144,7 +144,7 @@ genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
                             Nothing)
                ]
 
-
+-}
 
 -------------------
 
@@ -183,13 +183,13 @@ genHsFrontInstNew c = do
         -- for the time being, let's ignore annotation.
         -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
         -- newfuncann = mkComment 0 cann
-        rhs = mkVar (hscFuncName c f)
+        rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
     in mkFun (constructorName c) (functionSignature c f) [] rhs Nothing
 
 genHsFrontInstNonVirtual :: Class -> [Decl]
 genHsFrontInstNonVirtual c =
   flip concatMap nonvirtualFuncs $ \f -> 
-    let rhs = mkVar (hscFuncName c f)
+    let rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
     in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
  where nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
 
@@ -198,10 +198,37 @@ genHsFrontInstNonVirtual c =
 genHsFrontInstStatic :: Class -> [Decl]
 genHsFrontInstStatic c =
   flip concatMap (staticFuncs (class_funcs c)) $ \f ->
-    let rhs = mkVar (hscFuncName c f)
+    let rhs = App (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
     in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
 
 --------------------------
+
+
+castBody :: String -> [InstDecl]
+castBody h = [ InsDecl (mkBind1 "cast" []  (mkVar ("upcast"<>h )) Nothing)
+             , InsDecl (mkBind1 "uncast" [] (mkVar ("downcast"<>h)) Nothing)
+             ]
+            
+genHsFrontInstCastable :: Class -> Maybe Decl
+genHsFrontInstCastable c
+  | (not.isAbstractClass) c =
+    let iname = typeclassName c
+        (hname,rname) = hsClassName c
+        a = mkTVar "a"
+        ctxt = [ ClassA (unqual iname) [a] ]
+    in Just (mkInstance ctxt "Castable" [a, tycon hname] (castBody hname))
+  | otherwise = Nothing
+
+{- 
+genHsFrontInstCastableSelf :: Class -> Maybe Decl
+genHsFrontInstCastableSelf c
+  | (not.isAbstractClass) c =
+    let (cname,rname) = hsClassName c
+    in Just (mkInstance [] "Castable" [tycon cname, tycon cname] castBody)
+  | otherwise = Nothing
+ -}
+
+---------------------------
 
 hsClassRawType :: Class -> [Decl]
 hsClassRawType c =
@@ -240,6 +267,7 @@ hsClassExistType c = mkInstance [] "Existable" [hightype]
 -- upcast --
 ------------
 
+
 genHsFrontUpcastClass :: Class -> [Decl]
 genHsFrontUpcastClass c = mkFun ("upcast"<>highname) typ [mkPVar "h"] rhs Nothing
   where (highname,rawname) = hsClassName c
@@ -259,10 +287,10 @@ genHsFrontUpcastClass c = mkFun ("upcast"<>highname) typ [mkPVar "h"] rhs Nothin
                   ) 
                   (mkVar "cast_fptr_to_obj" `App` mkVar "fh2")
 
-
 --------------
 -- downcast --
 --------------
+
 
 genHsFrontDowncastClass :: Class -> [Decl]
 genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs Nothing
@@ -292,8 +320,10 @@ genTopLevelFuncDef f@TopLevelFunction {..} =
         (atyps,ctxts) = extractArgTypes toplevelfunc_args
         rtyp = (tycon . ctypToHsTyp Nothing) toplevelfunc_ret
         sig = TyForall Nothing ctxts (foldr1 TyFun (atyps <> [TyApp (tycon "IO") rtyp]))
+        
         cfname = "c_" <> toLowers fname 
-        rhs = mkVar cfname
+        xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len-1) else "xformnull"
+        rhs = App (mkVar xformerstr) (mkVar cfname)
         
     in mkFun fname sig [] rhs Nothing 
 genTopLevelFuncDef v@TopLevelVariable {..} = 
@@ -318,8 +348,9 @@ genExport c =
        then [ espec (typeclassName c) ]
        else [ EThingAll (unqual ((fst.hsClassName) c))
             , espec (typeclassName c)
-            , EVar (unqual ("upcast" <> (fst.hsClassName) c))
-            , EVar (unqual ("downcast" <> (fst.hsClassName) c)) ]
+            -- , EVar (unqual ("upcast" <> (fst.hsClassName) c))
+            -- , EVar (unqual ("downcast" <> (fst.hsClassName) c))
+            ]
             <> genExportConstructorAndNonvirtual c 
             <> genExportStatic c 
 
@@ -353,6 +384,11 @@ genImportInInterface m =
       <> map (\x -> mkImport (x<.>"Interface")) modlstparent 
       <> map (\x -> mkImportSrc (x<.>"Interface")) modlsthigh
 
+
+genImportInCast :: ClassModule -> [ImportDecl]
+genImportInCast m = [ mkImport (cmModule m <.> "RawType")
+                   ,  mkImport (cmModule m <.> "Interface") ]
+
 -- | 
 genImportInImplementation :: ClassModule -> [ImportDecl]
 genImportInImplementation m = 
@@ -362,9 +398,10 @@ genImportInImplementation m =
   in  [ mkImport (cmModule m <.> "RawType")
       , mkImport (cmModule m <.> "FFI")
       , mkImport (cmModule m <.> "Interface")
+      , mkImport (cmModule m <.> "Cast")
       ]
-      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType", "Interface"]) modlstraw
-      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType", "Interface"]) modlsthigh
+      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType", "Cast", "Interface"]) modlstraw
+      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType", "Cast", "Interface"]) modlsthigh
 
         
 genTmplInterface :: TemplateClass -> [Decl]

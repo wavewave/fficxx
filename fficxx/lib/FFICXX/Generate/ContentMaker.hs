@@ -315,6 +315,22 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
           <> (concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
           <> (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
+-- |
+buildCastHs :: ClassModule -> Module
+buildCastHs m = mkModule (cmModule m <.> "Cast")
+                 [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
+                        , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
+                 castImports body
+    where classes = cmClass m
+          castImports = [ mkImport "Foreign.Ptr"
+                        -- , mkImportExp "Foreign.ForeignPtr" [ "castForeignPtr", "newForeignPtr_" ]
+                        -- , mkImport "Foreign.ForeignPtr.Unsafe"
+                        , mkImport "FFICXX.Runtime.Cast"
+                        , mkImport "System.IO.Unsafe" ]
+                        <> genImportInCast m
+          body = mapMaybe genHsFrontInstCastable classes
+                 -- <> mapMaybe genHsFrontInstCastableSelf classes
+
 -- | 
 buildImplementationHs :: AnnotateMap -> ClassModule -> Module
 buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
@@ -340,7 +356,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
-                   <> map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
+                   -- <> map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
 
 
 buildTemplateHs :: TemplateClassModule -> Module

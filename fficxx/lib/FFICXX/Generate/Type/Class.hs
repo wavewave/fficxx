@@ -661,6 +661,18 @@ hsFuncName :: Class -> Function -> String
 hsFuncName c f = let (x:xs) = aliasedFuncName c f
                  in (toLower x) : xs
 
+hsFuncXformer :: Function -> String
+hsFuncXformer func@(Constructor _ _) = let len = length (genericFuncArgs func)
+                                       in if len > 0
+                                          then "xform" <> show (len - 1)
+                                          else "xformnull"
+hsFuncXformer func@(Static _ _ _ _)  = let len = length (genericFuncArgs func)
+                                       in if len > 0
+                                          then "xform" <> show (len - 1)
+                                          else "xformnull"
+hsFuncXformer func = let len = length (genericFuncArgs func)
+                     in "xform" <> show len
+                                                         
 genericFuncRet :: Function -> Types
 genericFuncRet f =
   case f of
