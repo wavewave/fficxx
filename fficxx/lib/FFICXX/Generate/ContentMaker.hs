@@ -258,8 +258,10 @@ buildTemplateHeader :: TypeMacro  -- ^ typemacro prefix
 buildTemplateHeader (TypMcro typemacroprefix) t =
   let typemacrostr = typemacroprefix <> "TEMPLATE" <> "__"
       fs = tclass_funcs t
-      deffunc = intercalateWith connRet (genTmplFunCpp t) fs
-      classlevel = genTmplClassCpp t fs
+      deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
+                ++ "\n\n"
+                ++ intercalateWith connRet (genTmplFunCpp True t) fs
+      classlevel = genTmplClassCpp False t fs ++ "\n\n" ++ genTmplClassCpp True t fs
   in subst
        "#ifndef $typemacro\n\
        \#define $typemacro\n\

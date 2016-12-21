@@ -20,7 +20,6 @@ import           Control.Monad.State
 import           Control.Monad.Reader
 import           Data.List
 import           Data.Monoid                             ( (<>) )
-import           Data.Text                               ( Text )
 import           Language.Haskell.Exts.Syntax            ( Asst(..), Binds(..), Boxed(..), Bracket(..)
                                                          , ClassDecl(..), DataOrNew(..), Decl(..)
                                                          , Exp(..), ExportSpec(..)
@@ -90,9 +89,6 @@ classprefix c = let ps = (map typeclassName . class_parents) c
                     else "(" <> intercalate "," (map (<> " a") ps) <> ") => "
 
 
--- |
-hsClassDeclHeaderTmpl :: Text
-hsClassDeclHeaderTmpl = "$classann\nclass ${constraint}${classname} a where"
 
 genHsFrontDecl :: Class -> Reader AnnotateMap Decl
 genHsFrontDecl c = do

@@ -432,14 +432,18 @@ tmplAllArgsToCallString = intercalateWith conncomma tmplArgToCallString
 
 
 
-tmplRetTypeToString :: Types -> String
-tmplRetTypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
-tmplRetTypeToString Void = "void"
-tmplRetTypeToString SelfType = "Type ## _p"
-tmplRetTypeToString (CPT (CPTClass c) _) = class_name c <> "_p"
-tmplRetTypeToString (CPT (CPTClassRef c) _) = class_name c <> "_p"
-tmplRetTypeToString (TemplateType _) = "void*"
-tmplRetTypeToString (TemplateParam _) = "Type"
+tmplRetTypeToString :: Bool   -- ^ is Simple type?
+                    -> Types
+                    -> String
+tmplRetTypeToString _ (CT ctyp isconst) = ctypToStr ctyp isconst
+tmplRetTypeToString _ Void = "void"
+tmplRetTypeToString _ SelfType = "void*"
+tmplRetTypeToString _ (CPT (CPTClass c) _) = class_name c <> "_p"
+tmplRetTypeToString _ (CPT (CPTClassRef c) _) = class_name c <> "_p"
+tmplRetTypeToString _ (TemplateType _) = "void*"
+tmplRetTypeToString b (TemplateParam _) = if b
+                                          then "Type"
+                                          else "Type ## _p"
 
 
 

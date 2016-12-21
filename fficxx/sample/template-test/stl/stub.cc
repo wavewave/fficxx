@@ -1,7 +1,10 @@
 #include "template.hh"
+#include "Foo.h"
 
-vector_instance(int)
-vector_instance(double)
+//vector_instance(int)
+//vector_instance(double)
+
+vector_instance(Foo)
 
 // w_printout(int)
 // w_printout(double)

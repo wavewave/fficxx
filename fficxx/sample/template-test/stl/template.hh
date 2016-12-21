@@ -4,7 +4,7 @@
 template <class T>
 void printout ( std::vector<T>* xs ) {
   for( auto x : *xs ) { 
-    std::cout << x << std::endl;
+    std::cout << "-" << std::endl;
   }
 }
 
@@ -42,11 +42,11 @@ void printout ( std::vector<T>* xs ) {
 
 #define w_at(T)                                                         \
     extern "C" {                                                        \
-	T w_at_ ## T ( void*, int );	                        	\
+	T* w_at_ ## T ( void*, int );	                        	\
     }                                                                   \
-    inline T w_at_ ## T ( void* v, int i ) {	              		\
+    inline T* w_at_ ## T ( void* v, int i ) {	              		\
 	std::vector<T>* v1 = reinterpret_cast<std::vector<T>* >(v);     \
-	return (v1->at(i));		                         	\
+	return &(v1->at(i));		                         	\
     }                                                                   \
     auto a_at_ ## T = w_at_ ## T  ; 
 

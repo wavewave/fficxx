@@ -97,19 +97,19 @@ funcsToDefs :: Class -> [Function] -> String
 funcsToDefs c = intercalateWith connBSlash (funcToDef c)
 
 
-tmplFunToDecl :: TemplateClass -> TemplateFunction -> String 
-tmplFunToDecl t@TmplCls {..} TFun {..} =  
+tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> String 
+tmplFunToDecl b t@TmplCls {..} TFun {..} =  
   subst "$ret ${tname}_${fname}_ ## Type ( $args )"
     (context [ ("tname", tclass_name                     )  
              , ("fname", tfun_name                       ) 
              , ("args" , tmplAllArgsToString Self t tfun_args )
-             , ("ret"  , tmplRetTypeToString tfun_ret    ) ]) 
-tmplFunToDecl t@TmplCls {..} TFunNew {..} =  
+             , ("ret"  , tmplRetTypeToString b tfun_ret    ) ]) 
+tmplFunToDecl b t@TmplCls {..} TFunNew {..} =  
   subst "$ret ${tname}_new_ ## Type ( $args )"
     (context [ ("tname", tclass_name                     )  
              , ("args" , tmplAllArgsToString NoSelf t tfun_new_args )
-             , ("ret"  , tmplRetTypeToString  (TemplateType t)) ]) 
-tmplFunToDecl t@TmplCls {..} TFunDelete =  
+             , ("ret"  , tmplRetTypeToString b (TemplateType t)) ]) 
+tmplFunToDecl _ t@TmplCls {..} TFunDelete =  
   subst "$ret ${tname}_delete_ ## Type ( $args )"
     (context [ ("tname", tclass_name                     )  
              , ("args" , tmplAllArgsToString Self t [] )
@@ -117,10 +117,13 @@ tmplFunToDecl t@TmplCls {..} TFunDelete =
 
 
 
-tmplFunToDef :: TemplateClass -> TemplateFunction -> String
-tmplFunToDef t@TmplCls {..} f =intercalateWith connBSlash id [declstr, "  {", "    "<>returnstr, "  }"]
+tmplFunToDef :: Bool -- ^ for simple type
+             -> TemplateClass
+             -> TemplateFunction
+             -> String
+tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {", "    "<>returnstr, "  }"]
  where
-  declstr = tmplFunToDecl t f
+  declstr = tmplFunToDecl b t f
   callstr =
     case f of
       TFun {..}    -> "(reinterpret_cast<" <> tclass_oname <> "<Type>*>(p))->"
@@ -146,7 +149,10 @@ tmplFunToDef t@TmplCls {..} f =intercalateWith connBSlash id [declstr, "  {", " 
                                                  where str = class_name c'
                       CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
                       TemplateType _          -> error "tmplFunToDef: TemplateType"
-                      TemplateParam _         -> "return (" <> callstr <> ");"
+                      TemplateParam _         ->
+                        if b then "return (" <> callstr <> ");"
+                             else "return to_nonconst<Type ## _t, Type>((Type *)&("
+                                  <> callstr <> ")) ;"
 
 
 
