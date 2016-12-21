@@ -8,6 +8,8 @@ import Foreign.Ptr
 import STL.Vector.Template
 import qualified STL.Vector.TH as TH
 
+import STL.Foo
+
 $(TH.genVectorInstanceFor ''CInt "int")
 
 main = do
@@ -24,4 +26,8 @@ main = do
 
   print =<< at v 5
   deleteVector v
-  
+
+
+  --
+  f <- newFoo 9
+  showme f
