@@ -9,8 +9,10 @@ import STL.Vector.Template
 import qualified STL.Vector.TH as TH
 
 import STL.Foo
+import STL.Foo.RawType
 
 $(TH.genVectorInstanceFor ''CInt "int")
+$(TH.genVectorInstanceFor ''Foo  "Foo")
 
 main = do
   v :: Vector CInt <- newVector
@@ -31,3 +33,12 @@ main = do
   --
   f <- newFoo 9
   showme f
+
+  g <- newFoo 10
+  w <- newVector
+  push_back w g
+
+  -- x <- at w 0
+  showme g
+  -- deleteVector w
+  

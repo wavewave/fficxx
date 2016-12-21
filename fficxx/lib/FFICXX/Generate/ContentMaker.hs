@@ -290,7 +290,10 @@ buildRawTypeHs m = mkModule (cmModule m <.> "RawType")
                         , "FlexibleInstances", "TypeSynonymInstances"
                         , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
                   rawtypeImports rawtypeBody
-  where rawtypeImports = [ mkImport "Foreign.ForeignPtr", mkImport "FFICXX.Runtime.Cast" ] 
+  where rawtypeImports = [ {- mkImport "Foreign.ForeignPtr", -}
+                           mkImport "Foreign.Ptr"
+                         , mkImport "FFICXX.Runtime.Cast"
+                         ] 
         rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
 
 -- | 
@@ -305,7 +308,7 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
           [ mkImport "Data.Word"
           , mkImport "Foreign.C"
           , mkImport "Foreign.Ptr"
-          , mkImport "Foreign.ForeignPtr"
+          -- , mkImport "Foreign.ForeignPtr"
           , mkImport "FFICXX.Runtime.Cast" ]
           <> genImportInInterface m
         ifaceBody = 
@@ -322,8 +325,8 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                castImports body
   where classes = cmClass m
         castImports = [ mkImport "Foreign.Ptr"
-                      , mkImportExp "Foreign.ForeignPtr" [ "castForeignPtr", "newForeignPtr_" ]
-                      , mkImport "Foreign.ForeignPtr.Unsafe"
+                      -- , mkImportExp "Foreign.ForeignPtr" [ "castForeignPtr", "newForeignPtr_" ]
+                      -- , mkImport "Foreign.ForeignPtr.Unsafe"
                       , mkImport "FFICXX.Runtime.Cast"
                       , mkImport "System.IO.Unsafe" ]
                       <> genImportInCast m
@@ -343,7 +346,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                       , mkImport "Data.Word"
                       , mkImport "Foreign.C"
                       , mkImport "Foreign.Ptr"
-                      , mkImport "Foreign.ForeignPtr"
+                      -- , mkImport "Foreign.ForeignPtr"
                       , mkImport "System.IO.Unsafe" ]
                       <> genImportInImplementation m
         f :: Class -> [Decl]
@@ -363,7 +366,7 @@ buildTemplateHs m = mkModule (tcmModule m <.> "Template")
                    [lang  ["EmptyDataDecls", "TypeFamilies"] ]
                    [ mkImport "Foreign.C.Types"
                    , mkImport "Foreign.Ptr"
-                   , mkImport "Foreign.ForeignPtr"
+                   -- , mkImport "Foreign.ForeignPtr"
                    ]
                    body
   where ts = tcmTemplateClasses m

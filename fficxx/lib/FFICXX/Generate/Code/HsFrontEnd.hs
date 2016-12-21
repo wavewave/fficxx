@@ -130,13 +130,13 @@ genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
         ename = existConstructorName c
         body = [ InsType noLoc (TyApp (tycon "Raw") existtype) rawtype
                , InsDecl (mkBind1 "get_fptr" [PApp (unqual ename) [PVar (Ident "obj")] ]
-                            ((mkVar "castForeignPtr") `App` ((mkVar "get_fptr") `App` (mkVar "obj")))
+                            ((mkVar "castPtr") `App` ((mkVar "get_fptr") `App` (mkVar "obj")))
                             Nothing)
                , InsDecl (mkBind1 "cast_fptr_to_obj" [PVar (Ident "fptr")]
                             (App (mkVar ename)
                               (ExpTypeSig noLoc
                                 (App (mkVar "cast_fptr_to_obj")
-                                  (ExpTypeSig noLoc (mkVar "fptr") (TyApp (tycon "ForeignPtr") rawtype))
+                                  (ExpTypeSig noLoc (mkVar "fptr") (TyApp tyPtr rawtype))
                                 )
                                 hightype
                               )
@@ -205,15 +205,17 @@ genHsFrontInstStatic c =
 
 castBody :: [InstDecl]
 castBody = [ InsDecl (mkBind1 "cast" []
-                       (mkVar "unsafeForeignPtrToPtr" `dot`
+                        (mkVar "castPtr" `dot` mkVar "get_fptr")
+                       {- (mkVar "unsafeForeignPtrToPtr" `dot`
                         mkVar "castForeignPtr" `dot`
-                        mkVar "get_fptr")
+                        mkVar "get_fptr") -}
                        Nothing)
            , InsDecl (mkBind1 "uncast" []
-                       (mkVar "cast_fptr_to_obj" `dot`
+                       (mkVar "cast_fptr_to_obj" `dot` mkVar "castPtr")
+                       {- (mkVar "cast_fptr_to_obj" `dot`
                         mkVar "castForeignPtr" `dot`
                         mkVar "unsafePerformIO" `dot`
-                        mkVar "newForeignPtr_")
+                        mkVar "newForeignPtr_") -}
                        Nothing)
            ]
 
@@ -242,12 +244,12 @@ hsClassRawType c =
   [ mkData    rawname [] [] []
   , mkNewtype highname []
       [ QualConDecl noLoc [] []
-          (conDecl highname [TyApp tyForeignPtr rawtype])
+          (conDecl highname [TyApp tyPtr rawtype])
       ]
       derivs
   , mkInstance [] "FPtr" [hightype]
       [ InsType noLoc (TyApp (tycon "Raw") hightype) rawtype
-      , InsDecl (mkBind1 "get_fptr" [PApp (unqual highname) [mkPVar "fptr"]] (mkVar "fptr") Nothing)
+      , InsDecl (mkBind1 "get_fptr" [PApp (unqual highname) [mkPVar "ptr"]] (mkVar "ptr") Nothing)
       , InsDecl (mkBind1 "cast_fptr_to_obj" [] (con highname) Nothing)
       ]
       
@@ -292,10 +294,10 @@ genHsFrontUpcastClass c = mkFun ("upcast"<>highname) typ [mkPVar "h"] rhs Nothin
                 (TyFun a_tvar hightype)
         rhs = Let (BDecls
                     [ pbind (mkPVar "fh") (App (mkVar "get_fptr") (mkVar "h")) Nothing
-                    , pbind (mkPVarSig "fh2" (TyApp tyForeignPtr rawtype))
-                        (App (mkVar "castForeignPtr") (mkVar "fh")) Nothing
-                    ] 
-                  ) 
+                    , pbind (mkPVarSig "fh2" (TyApp tyPtr rawtype))
+                        (App (mkVar "castPtr") (mkVar "fh")) Nothing
+                    ]
+                  )
                   (mkVar "cast_fptr_to_obj" `App` mkVar "fh2")
 
 
@@ -315,7 +317,7 @@ genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs No
                 (TyFun hightype a_tvar)
         rhs = Let (BDecls
                     [ pbind (mkPVar "fh") (App (mkVar "get_fptr") (mkVar "h")) Nothing
-                    , pbind (mkPVar "fh2") (App (mkVar "castForeignPtr") (mkVar "fh")) Nothing
+                    , pbind (mkPVar "fh2") (App (mkVar "castPtr") (mkVar "fh")) Nothing
                     ] 
                   ) 
                   (mkVar "cast_fptr_to_obj" `App` mkVar "fh2")
