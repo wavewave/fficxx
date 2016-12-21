@@ -1,7 +1,7 @@
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module STL where
+module STL.Template where
 
 import Foreign.C.Types
 -- import Foreign.ForeignPtr

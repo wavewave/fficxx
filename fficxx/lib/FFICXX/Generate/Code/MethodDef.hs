@@ -146,7 +146,8 @@ tmplFunToDef t@TmplCls {..} f =intercalateWith connBSlash id [declstr, "  {", " 
                                                  where str = class_name c'
                       CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
                       TemplateType _          -> error "tmplFunToDef: TemplateType"
-                      TemplateParam _         -> "return (" <> callstr <> ");"
+                      TemplateParam _         -> "return (&("<>callstr<>"));"
+                                                 -- "return (" <> callstr <> ");"
 
 
 

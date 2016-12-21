@@ -8,9 +8,9 @@ import Foreign.Ptr
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 --
-import FFICXX.Generate.Util.TH
+import FFICXX.Runtime.TH
 --
-import STL
+import STL.Template
   
 
 std_namefun str nty = "w_" ++ str ++ "_" ++ nty
