@@ -41,8 +41,8 @@ class Castable a b where
 
 class FPtr a where
   type Raw a :: *
-  get_fptr :: a -> ForeignPtr (Raw a) 
-  cast_fptr_to_obj :: ForeignPtr (Raw a) -> a
+  get_fptr :: a -> Ptr (Raw a) 
+  cast_fptr_to_obj :: Ptr (Raw a) -> a
 
 
 class FunPtrWrappable a where
@@ -74,23 +74,13 @@ instance IsCType CLong
 instance IsString CString where
   fromString str = unsafePerformIO (newCString str)
 
--- cause incoherent instances but cannot avoid it now
-{-
-instance Castable a a where
-  cast = id
-  uncast = id
--}
-
 instance Castable () () where
   cast = id 
   uncast = id 
 
-
 instance Castable CDouble CDouble where
   cast = id
   uncast = id
-
-
 
 instance Castable CUInt CUInt where
   cast = id 

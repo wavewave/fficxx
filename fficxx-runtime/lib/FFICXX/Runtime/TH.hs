@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 -- |
--- Module      : FFICXX.Generate.Util.HaskellSrcExts
+-- Module      : FFICXX.Runtime.TH
 -- Copyright   : (c) 2011-2016 Ian-Woo Kim
 --
 -- License     : BSD3
@@ -12,7 +12,7 @@
 --
 -----------------------------------------------------------------------------
 
-module FFICXX.Generate.Util.TH where
+module FFICXX.Runtime.TH where
 
 import Data.Monoid                ( (<>) )
 import Language.Haskell.TH

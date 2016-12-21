@@ -10,7 +10,24 @@ cabal = Cabal { cabal_pkgname = "STL"
               , cabal_cheaderprefix = "STL"
               , cabal_moduleprefix = "STL" }
 
-classes = [ ] 
+cabalattr = 
+    CabalAttr 
+    { cabalattr_license = Just "BSD3"
+    , cabalattr_licensefile = Just "LICENSE"
+    , cabalattr_extraincludedirs = [ ".." ]
+    , cabalattr_extralibdirs = []
+    }
+
+
+
+class1 :: Class
+class1 =
+  Class cabal "Foo" [] mempty Nothing
+  [ Constructor [ int "n" ] Nothing
+  , Virtual void_ "showme" [] Nothing
+  ]
+
+classes = [ class1 ]
 
 toplevelfunctions =  [ ]  
 
@@ -28,15 +45,7 @@ templates = [ ( TmplCls cabal "Vector" "std::vector" "t"
             ] 
 
 
-headerMap = [ ]
-
-cabalattr = 
-    CabalAttr 
-    { cabalattr_license = Just "BSD3"
-    , cabalattr_licensefile = Just "LICENSE"
-    , cabalattr_extraincludedirs = []
-    , cabalattr_extralibdirs = []
-    }
+headerMap = [ ( "Foo", ([], [HdrName "Foo.h"])) ]
 
 main :: IO ()
 main = do 

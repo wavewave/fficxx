@@ -1,5 +1,5 @@
 Name:		fficxx-runtime
-Version:	0.2.1
+Version:	0.2.999
 Synopsis:	Runtime for fficxx-generated library
 Description: 	Runtime for fficxx-generated library
 License:        BSD3
@@ -20,10 +20,13 @@ Library
   ghc-options: 	-Wall -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: 
-                   base == 4.*
+                 base == 4.*,
+                 template-haskell
 
   Exposed-Modules: 
                    FFICXX.Runtime.Cast
+                   FFICXX.Runtime.TH
 
+                   
   Include-dirs:    csrc
   Install-includes: MacroPatternMatch.h
