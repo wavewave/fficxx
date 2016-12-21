@@ -69,6 +69,7 @@ funcToDef c func
                                      <>">(("<>str<>"*)"<>callstr<>");" 
                                      where str = class_name c' 
           CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
+          TemplateApp _ _ _       -> "return (" <> callstr <> ");"
           TemplateType _          -> error "funcToDef: TemplateType"
           TemplateParam _         -> "return (" <> callstr <> ");"
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
@@ -87,6 +88,7 @@ funcToDef c func
                                      <>">(("<>str<>"*)"<>callstr<>");"
                                      where str = class_name c'
           CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
+          TemplateApp _ _ _       -> "return (" <> callstr <> ");"          
           TemplateType _          -> error "funcToDef: TemplateType"
           TemplateParam _         -> "return (" <> callstr <> ");"
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
@@ -148,6 +150,7 @@ tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {",
                                                  <>">(("<>str<>"*)"<>callstr<>");"
                                                  where str = class_name c'
                       CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
+                      TemplateApp _ _ _       -> "return "<>callstr<>";" 
                       TemplateType _          -> error "tmplFunToDef: TemplateType"
                       TemplateParam _         ->
                         if b then "return (" <> callstr <> ");"

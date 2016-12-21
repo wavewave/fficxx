@@ -72,6 +72,7 @@ extractClassFromType SelfType                = Nothing
 extractClassFromType (CT _ _)                = Nothing
 extractClassFromType (CPT (CPTClass c) _)    = Just c
 extractClassFromType (CPT (CPTClassRef c) _) = Just c
+extractClassFromType (TemplateApp _ _ _)     = Nothing
 extractClassFromType (TemplateType _)        = Nothing
 extractClassFromType (TemplateParam _)       = Nothing
 

@@ -25,23 +25,24 @@ class1 =
   Class cabal "Foo" [] mempty Nothing
   [ Constructor [ int "n" ] Nothing
   , Virtual void_ "showme" [] Nothing
+  , Virtual (tmplclass_ "Vector" "CInt") "getVector" [] Nothing 
   ]
 
 classes = [ class1 ]
 
 toplevelfunctions =  [ ]  
 
+t_vector = TmplCls cabal "Vector" "std::vector" "t"
+             [ TFunNew []
+             , TFun void_ "push_back" "push_back" [(TemplateParam "t","x")] Nothing
+             , TFun void_ "pop_back"  "pop_back"  []                        Nothing
+             , TFun (TemplateParam "t") "at" "at" [int "n"]                 Nothing
+             , TFun int_  "size"      "size"      []                        Nothing
+             , TFunDelete
+             ]
 
 
-templates = [ ( TmplCls cabal "Vector" "std::vector" "t"
-                  [ TFunNew []
-                  , TFun void_ "push_back" "push_back" [(TemplateParam "t","x")] Nothing
-                  , TFun void_ "pop_back"  "pop_back"  []                        Nothing
-                  , TFun (TemplateParam "t") "at" "at" [int "n"]                 Nothing
-                  , TFun int_  "size"      "size"      []                        Nothing
-                  , TFunDelete
-                  ]
-              , HdrName "Vector.h" ) 
+templates = [ ( t_vector, HdrName "Vector.h" ) 
             ] 
 
 
