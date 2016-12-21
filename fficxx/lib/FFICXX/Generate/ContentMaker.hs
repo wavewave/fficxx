@@ -373,6 +373,7 @@ buildTHHs :: TemplateClassModule -> Module
 buildTHHs m = mkModule (tcmModule m <.> "TH")
              [lang  ["TemplateHaskell"] ]
              ([ mkImport "Data.Char"
+              , mkImport "Data.Monoid"
               , mkImport "Foreign.C.Types"
               , mkImport "Foreign.Ptr"
               , mkImport "Language.Haskell.TH"
