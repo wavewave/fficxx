@@ -439,7 +439,7 @@ tmplRetTypeToString SelfType = "Type ## _p"
 tmplRetTypeToString (CPT (CPTClass c) _) = class_name c <> "_p"
 tmplRetTypeToString (CPT (CPTClassRef c) _) = class_name c <> "_p"
 tmplRetTypeToString (TemplateType _) = "void*"
-tmplRetTypeToString (TemplateParam _) = "Type"
+tmplRetTypeToString (TemplateParam _) = "Type ## _p"
 
 
 

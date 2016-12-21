@@ -39,11 +39,13 @@ main = do
   w <- newVector
   push_back w g
 
-  pop_back w
+  -- pop_back w
 
   print =<< size w
 
   x <- at w 0
-  showme g
-  -- deleteVector w
+  showme x
+
+  
+  deleteVector w
   
