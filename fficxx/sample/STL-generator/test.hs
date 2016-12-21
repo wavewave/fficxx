@@ -11,11 +11,10 @@ import qualified STL.Vector.TH as TH
 import STL.Foo
 import STL.Foo.RawType
 
----  $(TH.genVectorInstanceFor ''CInt "int")
+$(TH.genVectorInstanceFor ''CInt "int")
 $(TH.genVectorInstanceFor ''Foo  "Foo")
 
 main = do
-  {- 
   v :: Vector CInt <- newVector
   n <- size v 
   print =<< size v
@@ -29,7 +28,6 @@ main = do
 
   print =<< at v 5
   deleteVector v
-  -}
 
   --
   f <- newFoo 9

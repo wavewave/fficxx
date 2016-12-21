@@ -256,45 +256,49 @@ genTopLevelFuncCppDefinition TopLevelVariable {..} =
                          , ("funcbody"  , funcDefStr                                    ) ])
 
 
-genTmplFunCpp :: TemplateClass -> TemplateFunction -> String 
-genTmplFunCpp t@TmplCls {..} f = subst tmpl ctxt
+genTmplFunCpp :: Bool -- ^ is for simple type?
+              -> TemplateClass
+              -> TemplateFunction
+              -> String 
+genTmplFunCpp b t@TmplCls {..} f = subst tmpl ctxt
  where
-  tmpl = "#define ${tname}_${fname}(Type) \\\n\
+  tmpl = "#define ${tname}_${fname}${suffix}(Type) \\\n\
          \  extern \"C\" { \\\n\
          \    $decl; \\\n\
          \  } \\\n\
          \  inline $defn \\\n\
          \  auto a_${tname}_${fname}_ ## Type = ${tname}_${fname}_ ## Type  ;\n"
-  ctxt = case f of
-           TFunNew {..} ->
-             context [ ("tname"  , tclass_name       )
-                     , ("otname" , tclass_oname      )
-                     , ("fname"  , "new"             )
-                     , ("decl"   , tmplFunToDecl t f )
-                     , ("defn"   , tmplFunToDef t f  ) ]
-           TFun {..} ->
-             context [ ("tname"  , tclass_name       )
-                     , ("otname" , tclass_oname      )
-                     , ("fname"  , tfun_name         )
-                     , ("decl"   , tmplFunToDecl t f )
-                     , ("defn"   , tmplFunToDef t f  ) ]
-           TFunDelete ->
-             context [ ("tname"  , tclass_name       )
-                     , ("otname" , tclass_oname      )
-                     , ("fname"  , "delete"          )
-                     , ("decl"   , tmplFunToDecl t f )
-                     , ("defn"   , tmplFunToDef t f  ) ]
+  ctxt = context . (("suffix",if b then "_s" else ""):) $
+                   case f of
+                     TFunNew {..} -> [ ("tname"  , tclass_name       )
+                                     , ("fname"  , "new"             )
+                                     , ("decl"   , tmplFunToDecl b t f )
+                                     , ("defn"   , tmplFunToDef b t f  ) ]
+                     TFun {..}    -> [ ("tname"  , tclass_name       )
+                                     , ("fname"  , tfun_name         )
+                                     , ("decl"   , tmplFunToDecl b t f )
+                                     , ("defn"   , tmplFunToDef b t f  ) ]
+                     TFunDelete   -> [ ("tname"  , tclass_name       )
+                                     , ("fname"  , "delete"          )
+                                     , ("decl"   , tmplFunToDecl b t f )
+                                     , ("defn"   , tmplFunToDef b t f  ) ]
 
-genTmplClassCpp :: TemplateClass -> [TemplateFunction] -> String 
-genTmplClassCpp TmplCls {..} fs = subst tmpl ctxt
+genTmplClassCpp :: Bool -- ^ is for simple type
+                -> TemplateClass
+                -> [TemplateFunction]
+                -> String 
+genTmplClassCpp b TmplCls {..} fs = subst tmpl ctxt
  where
-  tmpl = "#define ${tname}_instance(Type) \\\n\
+  tmpl = "#define ${tname}_instance${suffix}(Type) \\\n\
          \$macro\n"
-  ctxt = context [ ("tname"  , tclass_name       )
-                 , ("macro"  , macro             ) ]
+  suffix = if b then "_s" else ""
+  ctxt = context [ ("tname"  , tclass_name )
+                 , ("suffix" , suffix      ) 
+                 , ("macro"  , macro       ) ]
   tname = tclass_name
   
-  macro1 TFun {..}    = "  " <> tname<> "_" <> tfun_name <> "(Type) \\"
+  macro1 TFun {..}    = "  " <> tname<> "_" <> tfun_name <> suffix <> "(Type) \\"
+                 
   macro1 TFunNew {..} = "  " <> tname<> "_new(Type) \\"
   macro1 TFunDelete   = "  " <> tname<> "_delete(Type) \\"                 
   macro = intercalateWith connRet macro1 fs

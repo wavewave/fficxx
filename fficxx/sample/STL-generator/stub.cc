@@ -12,6 +12,6 @@ ToType* to_nonconst(FromType* x) {
 }
 
 
-// Vector_instance(int)
+Vector_instance_s(int)
 Vector_instance(Foo)
 
