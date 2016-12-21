@@ -245,7 +245,12 @@ hsClassRawType c =
           (conDecl highname [TyApp tyForeignPtr rawtype])
       ]
       derivs
-  , mkInstance [] "FPtr" [hightype] [ InsType noLoc (TyApp (tycon "Raw") hightype) rawtype ]
+  , mkInstance [] "FPtr" [hightype]
+      [ InsType noLoc (TyApp (tycon "Raw") hightype) rawtype
+      , InsDecl (mkBind1 "get_fptr" [PApp (unqual highname) [mkPVar "fptr"]] (mkVar "fptr") Nothing)
+      , InsDecl (mkBind1 "cast_fptr_to_obj" [] (con highname) Nothing)
+      ]
+      
   ]
  where (highname,rawname) = hsClassName c
        hightype = tycon highname
