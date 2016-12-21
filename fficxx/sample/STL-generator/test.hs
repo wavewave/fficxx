@@ -38,7 +38,10 @@ main = do
   w <- newVector
   push_back w g
 
+
+  print =<< size w
+
   -- x <- at w 0
-  showme g
+  -- showme g
   -- deleteVector w
   

@@ -62,7 +62,7 @@ Library
                    FFICXX.Generate.QQ.Verbatim
                    FFICXX.Generate.Util
                    FFICXX.Generate.Util.HaskellSrcExts
-                   FFICXX.Generate.Util.TH
+                   -- FFICXX.Generate.Util.TH
                    FFICXX.Generate.Type.Annotate
                    FFICXX.Generate.Type.Class
                    FFICXX.Generate.Type.Module
