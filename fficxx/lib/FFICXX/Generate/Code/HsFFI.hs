@@ -44,8 +44,8 @@ hsFFIClassFunc headerfilename c f =
   else let hfile = unHdrName headerfilename
            cname = class_name c <> "_" <> aliasedFuncName c f
            typ = if (isNewFunc f || isStaticFunc f)
-                 then hsFFIFuncTyp NoSelf c f
-                 else hsFFIFuncTyp Self c f
+                 then hsFFIFuncTyp (Just (NoSelf,c)) (genericFuncArgs f, genericFuncRet f)
+                 else hsFFIFuncTyp (Just (Self,c)  ) (genericFuncArgs f, genericFuncRet f)
        in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
          
 ----------------------------
@@ -60,7 +60,10 @@ genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fnam
             TopLevelVariable {..} -> (fromMaybe toplevelvar_name toplevelvar_alias, [], toplevelvar_ret)
         hfilename = tihHeaderFileName header <.> "h"
         cfname = "c_" <> toLowers fname
-        typ = foldr1 TyFun (map (hsargtype . fst) args <> [TyApp (tycon "IO") (hsrettype ret)])
+        typ =hsFFIFuncTyp Nothing (args,ret)
+
+
+          {- foldr1 TyFun (map (hsargtype . fst) args <> [TyApp (tycon "IO") (hsrettype ret)])
 
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
         hsargtype (CPT (CPTClass c) _)    = TyApp tyPtr (tycon rawname)
@@ -83,3 +86,4 @@ genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fnam
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p) = mkTVar p
 
+-}
