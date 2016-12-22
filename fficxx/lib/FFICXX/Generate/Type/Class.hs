@@ -787,20 +787,17 @@ functionSignatureTT t f = foldr1 TyFun (lst <> [TyApp (tycon "IO") ctyp])
 
 
 -- | this is for FFI type.
-hsFFIFuncTyp :: Maybe (Selfness, Class) -> (Args,Types) {- Function -} -> Type
+hsFFIFuncTyp :: Maybe (Selfness, Class) -> (Args,Types) -> Type
 hsFFIFuncTyp msc (args,ret) =
   foldr1 TyFun $ case msc of
                    Nothing         -> argtyps <> [TyApp (tycon "IO") rettyp]
                    Just (Self,_)   -> selftyp: argtyps <> [TyApp (tycon "IO") rettyp]
                    Just (NoSelf,_) -> argtyps <> [TyApp (tycon "IO") rettyp]
-  where argtyps = map (hsargtype . fst) args --   $ genericFuncArgs f
-        rettyp  = hsrettype ret --   (genericFuncRet f)
-        -- (_hcname,rcname) = hsClassName c
-
+  where argtyps = map (hsargtype . fst) args
+        rettyp  = hsrettype ret
         selftyp = case msc of
                     Just (_,c) -> TyApp tyPtr (tycon (snd (hsClassName c)))
                     Nothing    -> error "hsFFIFuncTyp: no self for top level function"
-                    
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
         hsargtype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
