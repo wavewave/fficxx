@@ -787,8 +787,11 @@ functionSignatureTT t f = foldr1 TyFun (lst <> [TyApp (tycon "IO") ctyp])
 
 
 -- | this is for FFI type.
-hsFuncTyp :: Class -> Function -> Type
-hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps <> [TyApp (tycon "IO") rettyp])
+hsFFIFuncTyp :: Selfness -> Class -> Function -> Type
+hsFFIFuncTyp s c f =
+  foldr1 TyFun $ case s of
+                   Self   -> selftyp: argtyps <> [TyApp (tycon "IO") rettyp]
+                   NoSelf -> argtyps <> [TyApp (tycon "IO") rettyp]
   where argtyps = map (hsargtype . fst) $ genericFuncArgs f
         rettyp  = hsrettype (genericFuncRet f)
         (_hcname,rcname) = hsClassName c
@@ -818,42 +821,6 @@ hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps <> [TyApp (tycon "IO") rettyp])
         hsrettype (TemplateApp t p _) = TyApp tyPtr (TyApp (tycon rawname) (tycon p))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
-          where rawname = snd (hsTemplateClassName t)
-        hsrettype (TemplateParam p) = mkTVar p
-
-
--- | this is for FFI
-hsFuncTypNoSelf :: Class -> Function -> Type
-hsFuncTypNoSelf c f = foldr1 TyFun (argtyps <> [TyApp (tycon "IO") rettyp])
-  where argtyps = map (hsargtype . fst) $ genericFuncArgs f
-        rettyp  = hsrettype (genericFuncRet f)
-        (_hcname,rcname) = hsClassName c
-        
-        selftyp = TyApp tyPtr (tycon rcname)
-
-        hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsargtype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName d)
-        hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName d)
-        hsargtype (TemplateApp t p _) = TyApp tyPtr (TyApp (tycon rawname) (tycon p))
-          where rawname = snd (hsTemplateClassName t)
-        hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
-          where rawname = snd (hsTemplateClassName t)
-        hsargtype (TemplateParam p) = mkTVar p
-        hsargtype SelfType     = selftyp
-        hsargtype _ = error "undefined hsargtype"
-
-        hsrettype Void         = unit_tycon
-        hsrettype SelfType     = selftyp
-        hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsrettype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName d)
-        hsrettype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName d)
-        hsrettype (TemplateApp t p _) = TyApp tyPtr (TyApp (tycon rawname) (tycon p))
-          where rawname = snd (hsTemplateClassName t)
-        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p) = mkTVar p
 

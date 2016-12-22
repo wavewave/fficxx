@@ -148,9 +148,7 @@ mkModuleDepFFI :: Class -> [Class]
 mkModuleDepFFI c = 
   let ps = class_allparents c 
       alldeps' = (concatMap mkModuleDepFFI4One ps) <> mkModuleDepFFI4One c
-      alldeps = nub (filter (/= c) alldeps')
-  in  alldeps
-
+  in nub (filter (/= c) alldeps')
                     
 mkClassModule :: (Class->([Namespace],[HeaderName]))
               -> Class 

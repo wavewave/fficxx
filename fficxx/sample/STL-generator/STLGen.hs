@@ -25,7 +25,7 @@ class1 =
   Class cabal "Foo" [] mempty Nothing
   [ Constructor [ int "n" ] Nothing
   , Virtual void_ "showme" [] Nothing
-  , Virtual (tmplclass_ "Vector" "CInt") "getVector" [] Nothing 
+  -- , Virtual (TemplateApp t_vector "CInt" "std::vector<int>") "getVector" [] Nothing 
   ]
 
 classes = [ class1 ]

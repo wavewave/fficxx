@@ -41,15 +41,12 @@ hsFFIClassFunc :: HeaderName -> Class -> Function -> Maybe Decl
 hsFFIClassFunc headerfilename c f =
   if isAbstractClass c 
   then Nothing
-  else if (isNewFunc f || isStaticFunc f)
-       then let hfile = unHdrName headerfilename
-                cname = class_name c <> "_" <> aliasedFuncName c f
-                typ = hsFuncTypNoSelf c f
-            in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
-       else let hfile = unHdrName headerfilename
-                cname = class_name c <> "_" <> aliasedFuncName c f
-                typ = hsFuncTyp c f
-            in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
+  else let hfile = unHdrName headerfilename
+           cname = class_name c <> "_" <> aliasedFuncName c f
+           typ = if (isNewFunc f || isStaticFunc f)
+                 then hsFFIFuncTyp NoSelf c f
+                 else hsFFIFuncTyp Self c f
+       in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
          
 ----------------------------
 -- for top level function -- 
