@@ -36,6 +36,7 @@ data ClassModule = ClassModule
                    , cmImportedModulesRaw :: [String]
                    , cmImportedModulesHighSource :: [String]
                    , cmImportedModulesForFFI :: [String]
+                   , cmExtraImport :: [String]
                    } deriving (Show)
 
 data TemplateClassModule = TCM { tcmModule :: String

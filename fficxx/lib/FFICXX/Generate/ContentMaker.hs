@@ -282,6 +282,7 @@ buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] f
         headers = cmCIH m
         ffiImports = [ mkImport "Foreign.C", mkImport "Foreign.Ptr", mkImport (mname <.> "RawType") ]
                      <> genImportInFFI m
+                     <> genExtraImport m
         hscBody = concatMap genHsFFI headers
 
 
@@ -306,13 +307,12 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
                                , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
                          ifaceImports ifaceBody
   where classes = cmClass m
-        ifaceImports =
-          [ mkImport "Data.Word"
-          , mkImport "Foreign.C"
-          , mkImport "Foreign.Ptr"
-          -- , mkImport "Foreign.ForeignPtr"
-          , mkImport "FFICXX.Runtime.Cast" ]
-          <> genImportInInterface m
+        ifaceImports = [ mkImport "Data.Word"
+                       , mkImport "Foreign.C"
+                       , mkImport "Foreign.Ptr"
+                       , mkImport "FFICXX.Runtime.Cast" ]
+                       <> genImportInInterface m
+                       <> genExtraImport m
         ifaceBody = 
           runReader (mapM genHsFrontDecl classes) amap 
           <> (map hsClassExistType .  filter (not.isAbstractClass)) classes
@@ -348,9 +348,9 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                       , mkImport "Data.Word"
                       , mkImport "Foreign.C"
                       , mkImport "Foreign.Ptr"
-                      -- , mkImport "Foreign.ForeignPtr"
                       , mkImport "System.IO.Unsafe" ]
                       <> genImportInImplementation m
+                      <> genExtraImport m
         f :: Class -> [Decl]
         f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
         g :: Class -> [Decl]

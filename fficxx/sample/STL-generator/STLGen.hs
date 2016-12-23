@@ -10,6 +10,9 @@ cabal = Cabal { cabal_pkgname = "STL"
               , cabal_cheaderprefix = "STL"
               , cabal_moduleprefix = "STL" }
 
+extraDep = [ ("Foo", ["STL.Vector.Template"]) ]
+
+
 cabalattr = 
     CabalAttr 
     { cabalattr_license = Just "BSD3"
@@ -25,7 +28,7 @@ class1 =
   Class cabal "Foo" [] mempty Nothing
   [ Constructor [ int "n" ] Nothing
   , Virtual void_ "showme" [] Nothing
-  -- , Virtual (TemplateApp t_vector "CInt" "std::vector<int>") "getVector" [] Nothing 
+  , Virtual (TemplateApp t_vector "CInt" "std::vector<int>") "getVector" [] Nothing 
   ]
 
 classes = [ class1 ]
@@ -50,6 +53,7 @@ headerMap = [ ( "Foo", ([], [HdrName "Foo.h"])) ]
 
 main :: IO ()
 main = do 
-  simpleBuilder "STL" headerMap (cabal,cabalattr,classes,toplevelfunctions,templates) [ ]
+  simpleBuilder "STL" headerMap (cabal,cabalattr,classes,toplevelfunctions,templates)
+    [ ] extraDep
 
 

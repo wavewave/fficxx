@@ -55,14 +55,13 @@ mkPkgIncludeHeadersInCPP = map mkPkgHeaderFileName . mkModuleDepCpp
 mkCIH :: (Class->([Namespace],[HeaderName]))  -- ^ (mk namespace and include headers)  
       -> Class 
       -> ClassImportHeader
-mkCIH mkNSandIncHdrs c = let r = ClassImportHeader c 
-                                   (mkPkgHeaderFileName c) 
-                                   ((fst . mkNSandIncHdrs) c)
-                                   (mkPkgCppFileName c) 
-                                   (mkPkgIncludeHeadersInH c) 
-                                   (mkPkgIncludeHeadersInCPP c)
-                                   ((snd . mkNSandIncHdrs) c)
-                         in r 
+mkCIH mkNSandIncHdrs c = ClassImportHeader c 
+                           (mkPkgHeaderFileName c) 
+                           ((fst . mkNSandIncHdrs) c)
+                           (mkPkgCppFileName c) 
+                           (mkPkgIncludeHeadersInH c) 
+                           (mkPkgIncludeHeadersInCPP c)
+                           ((snd . mkNSandIncHdrs) c)
 
 
 -- |
@@ -151,20 +150,19 @@ mkModuleDepFFI c =
   in nub (filter (/= c) alldeps')
                     
 mkClassModule :: (Class->([Namespace],[HeaderName]))
+              -> [(String,[String])]
               -> Class 
               -> ClassModule 
-mkClassModule mkincheaders c = (ClassModule <$> getClassModuleBase  
-                                            <*> pure
-                                            <*> return . mkCIH mkincheaders
-                                            <*> highs_nonsource  
-                                            <*> raws 
-                                            <*> highs_source
-                                            <*> ffis
-                               ) c
-  where highs_nonsource = map getClassModuleBase . mkModuleDepHighNonSource
-        raws = map getClassModuleBase . mkModuleDepRaw 
-        highs_source = map getClassModuleBase . mkModuleDepHighSource
-        ffis = map getClassModuleBase . mkModuleDepFFI
+mkClassModule mkincheaders extra c =
+  ClassModule (getClassModuleBase c) [c] (map (mkCIH mkincheaders) [c]) highs_nonsource
+              raws highs_source ffis extraimports
+
+  where highs_nonsource = (map getClassModuleBase . mkModuleDepHighNonSource) c
+        raws = (map getClassModuleBase . mkModuleDepRaw) c
+        highs_source = (map getClassModuleBase . mkModuleDepHighSource) c
+        ffis = (map getClassModuleBase . mkModuleDepFFI) c
+        extraimports = fromMaybe [] (lookup (class_name c) extra)
+
 
 
 mkClassNSHeaderFromMap :: HM.HashMap String ([Namespace],[HeaderName]) -> Class -> ([Namespace],[HeaderName])
@@ -177,10 +175,10 @@ mkTCM (t,hdr) = TCM  (getTClassModuleBase t) [t] [TCIH t hdr]
 
 mkPackageConfig
   :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
-  -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)]) 
+  -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)],[(String,[String])]) 
   -> PackageConfig
-mkPackageConfig (pkgname,mkNSandIncHdrs) (cs,fs,ts) = 
-  let ms = map (mkClassModule mkNSandIncHdrs) cs 
+mkPackageConfig (pkgname,mkNS_IncHdrs) (cs,fs,ts,extra) = 
+  let ms = map (mkClassModule mkNS_IncHdrs extra) cs 
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
       -- for toplevel 

@@ -375,12 +375,16 @@ genExportStatic c = map (EVar . unqual) fns
   where fs = class_funcs c
         fns = map (aliasedFuncName c) (staticFuncs fs) 
 
+
+genExtraImport :: ClassModule -> [ImportDecl]
+genExtraImport cm = map mkImport (cmExtraImport cm)
+
+
 genImportInModule :: [Class] -> [ImportDecl]
 genImportInModule = concatMap (\x -> map (\y -> mkImport (getClassModuleBase x<.>y)) ["RawType","Interface","Implementation"])
 
 genImportInFFI :: ClassModule -> [ImportDecl]
 genImportInFFI = map (\x->mkImport (x <.> "RawType")) . cmImportedModulesForFFI
-
 
 genImportInInterface :: ClassModule -> [ImportDecl]
 genImportInInterface m = 
