@@ -62,6 +62,9 @@ data Types = Void
            | SelfType
            | CT  CTypes IsConst
            | CPT CPPTypes IsConst
+           | TemplateApp { tapp_hstemplate :: TemplateClass
+                         , tapp_hstypparam :: String
+                         , tapp_cpptypparam :: String }
            | TemplateType TemplateClass
            | TemplateParam String
            deriving Show
@@ -241,6 +244,8 @@ cppclass_ c =  CPT (CPTClass c) NoConst
 cppclass :: Class -> String -> (Types, String)
 cppclass c vname = ( cppclass_ c, vname)
 
+
+
 cppclassconst :: Class -> String -> (Types, String)
 cppclassconst c vname = ( CPT (CPTClass c) Const, vname)
 
@@ -250,6 +255,8 @@ cppclassref_ c = CPT (CPTClassRef c) NoConst
 cppclassref :: Class -> String -> (Types, String)
 cppclassref c vname = (cppclassref_ c, vname)
 
+-- tmplclass_ :: String -> String -> Types
+-- tmplclass_ tmpl param = TemplateApp tmpl param
 
 hsCTypeName :: CTypes -> String
 hsCTypeName CTString = "CString"
@@ -360,6 +367,7 @@ argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
   where cname = class_name c
+argToString (TemplateApp _ _ _,varname) = "void* " <> varname
 argToString _ = error "undefined argToString"
 
 argsToString :: Args -> String
@@ -389,6 +397,7 @@ rettypeToString Void = "void"
 rettypeToString SelfType = "Type ## _p"
 rettypeToString (CPT (CPTClass c) _) = class_name c <> "_p"
 rettypeToString (CPT (CPTClassRef c) _) = class_name c <> "_p"
+rettypeToString (TemplateApp _ _ _) = "void*"
 rettypeToString (TemplateType _) = "void*"
 rettypeToString (TemplateParam _) = "Type ## _p"
 
@@ -403,6 +412,7 @@ tmplArgToString _ (CPT (CPTClassRef c) isconst, varname) =
   case isconst of
     Const   -> "const_" <> class_name c <> "_p " <> varname
     NoConst -> class_name c <> "_p " <> varname
+tmplArgToString _ (TemplateApp _ _ _,_v) = error "tmpArgToString: TemplateApp"
 tmplArgToString _ (TemplateType _,v) = "void* " <> v
 tmplArgToString _ (TemplateParam _,v) = "Type " <> v
 tmplArgToString _ _ = error "tmplArgToString: undefined"
@@ -440,6 +450,7 @@ tmplRetTypeToString _ Void = "void"
 tmplRetTypeToString _ SelfType = "void*"
 tmplRetTypeToString _ (CPT (CPTClass c) _) = class_name c <> "_p"
 tmplRetTypeToString _ (CPT (CPTClassRef c) _) = class_name c <> "_p"
+tmplRetTypeToString _ (TemplateApp _ _ _) = "void*"
 tmplRetTypeToString _ (TemplateType _) = "void*"
 tmplRetTypeToString b (TemplateParam _) = if b
                                           then "Type"
@@ -587,6 +598,7 @@ ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
 ctypToHsTyp _c (CT (CRef t) _) = hsCTypeName (CRef t)
 ctypToHsTyp _c (CPT (CPTClass c') _) = class_name c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = class_name c'
+ctypToHsTyp _c (TemplateApp t p _) = "("<> tclass_name t <> " " <> p <> ")"
 ctypToHsTyp _c (TemplateType t) = "("<> tclass_name t <> " " <> tclass_param t <> ")"
 ctypToHsTyp _c (TemplateParam p) = "("<> p <> ")"
 
@@ -616,6 +628,7 @@ convertCpp2HS Nothing SelfType         = error "convertCpp2HS : SelfType but no 
 convertCpp2HS _c (CT t _)              = convertC2HS t
 convertCpp2HS _c (CPT (CPTClass c') _)    = tycon (class_name c')
 convertCpp2HS _c (CPT (CPTClassRef c') _) = tycon (class_name c')
+convertCpp2HS _c (TemplateApp t p _)      = TyApp (tycon (tclass_name t)) (tycon p)
 convertCpp2HS _c (TemplateType t)         = TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 
@@ -627,9 +640,9 @@ convertCpp2HS4Tmpl _ Nothing _ SelfType         = error "convertCpp2HS4Tmpl : Se
 convertCpp2HS4Tmpl _ _c _ (CT t _)              = convertC2HS t
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClass c') _)    = tycon (class_name c')
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassRef c') _) = tycon (class_name c')
+convertCpp2HS4Tmpl e _c _ (TemplateApp _ _ _ )     = e
 convertCpp2HS4Tmpl e _c _ (TemplateType _)         = e
-  -- TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t))
-convertCpp2HS4Tmpl _ _c t (TemplateParam _)         = t
+convertCpp2HS4Tmpl _ _c t (TemplateParam _)        = t
 
 
 
@@ -775,24 +788,29 @@ functionSignatureTT t f = foldr1 TyFun (lst <> [TyApp (tycon "IO") ctyp])
 
 
 -- | this is for FFI type.
-hsFuncTyp :: Class -> Function -> Type
-hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps <> [TyApp (tycon "IO") rettyp])
-  where argtyps = map (hsargtype . fst) $ genericFuncArgs f
-        rettyp  = hsrettype (genericFuncRet f)
-        (_hcname,rcname) = hsClassName c
-
-        selftyp = TyApp tyPtr (tycon rcname)
-
+hsFFIFuncTyp :: Maybe (Selfness, Class) -> (Args,Types) -> Type
+hsFFIFuncTyp msc (args,ret) =
+  foldr1 TyFun $ case msc of
+                   Nothing         -> argtyps <> [TyApp (tycon "IO") rettyp]
+                   Just (Self,_)   -> selftyp: argtyps <> [TyApp (tycon "IO") rettyp]
+                   Just (NoSelf,_) -> argtyps <> [TyApp (tycon "IO") rettyp]
+  where argtyps = map (hsargtype . fst) args
+        rettyp  = hsrettype ret
+        selftyp = case msc of
+                    Just (_,c) -> TyApp tyPtr (tycon (snd (hsClassName c)))
+                    Nothing    -> error "hsFFIFuncTyp: no self for top level function"
         hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
         hsargtype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
         hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
+        hsargtype (TemplateApp t p _) = TyApp tyPtr (TyApp (tycon rawname) (tycon p))
+          where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateParam p) = mkTVar p
         hsargtype SelfType     = selftyp
-        hsargtype _ = error "undefined hsargtype"
+        hsargtype _ = error "hsFuncTyp: undefined hsargtype"
 
         hsrettype Void         = unit_tycon
         hsrettype SelfType     = selftyp
@@ -801,39 +819,9 @@ hsFuncTyp c f = foldr1 TyFun (selftyp: argtyps <> [TyApp (tycon "IO") rettyp])
           where rawname = snd (hsClassName d)
         hsrettype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
+        hsrettype (TemplateApp t p _) = TyApp tyPtr (TyApp (tycon rawname) (tycon p))
+          where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
-          where rawname = snd (hsTemplateClassName t)
-        hsrettype (TemplateParam p) = mkTVar p
-
-
--- | this is for FFI
-hsFuncTypNoSelf :: Class -> Function -> Type
-hsFuncTypNoSelf c f = foldr1 TyFun (argtyps <> [TyApp (tycon "IO") rettyp])
-  where argtyps = map (hsargtype . fst) $ genericFuncArgs f
-        rettyp  = hsrettype (genericFuncRet f)
-        (_hcname,rcname) = hsClassName c
-        
-        selftyp = TyApp tyPtr (tycon rcname)
-
-        hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsargtype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName d)
-        hsargtype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName d)
-        hsargtype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar (tclass_param t)))
-          where rawname = snd (hsTemplateClassName t)
-        hsargtype (TemplateParam p) = mkTVar p
-        hsargtype SelfType     = selftyp
-        hsargtype _ = error "undefined hsargtype"
-
-        hsrettype Void         = unit_tycon
-        hsrettype SelfType     = selftyp
-        hsrettype (CT ctype _) = tycon (hsCTypeName ctype)
-        hsrettype (CPT (CPTClass d) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName d)
-        hsrettype (CPT (CPTClassRef d) _)    = TyApp tyPtr (tycon rawname)
-          where rawname = snd (hsClassName d)
-        hsrettype (TemplateType t) = TyApp tyPtr (TyApp (tycon rawname) (mkTVar "a"))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p) = mkTVar p
 

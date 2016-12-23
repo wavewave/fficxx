@@ -200,20 +200,10 @@ genHsFrontInstStatic c =
 -----
 
 castBody :: [InstDecl]
-castBody = [ InsDecl (mkBind1 "cast" []
-                        (mkVar "castPtr" `dot` mkVar "get_fptr")
-                       {- (mkVar "unsafeForeignPtrToPtr" `dot`
-                        mkVar "castForeignPtr" `dot`
-                        mkVar "get_fptr") -}
-                       Nothing)
-           , InsDecl (mkBind1 "uncast" []
-                       (mkVar "cast_fptr_to_obj" `dot` mkVar "castPtr")
-                       {- (mkVar "cast_fptr_to_obj" `dot`
-                        mkVar "castForeignPtr" `dot`
-                        mkVar "unsafePerformIO" `dot`
-                        mkVar "newForeignPtr_") -}
-                       Nothing)
-           ]
+castBody =
+  [ InsDecl (mkBind1 "cast" [] (mkVar "castPtr" `dot` mkVar "get_fptr") Nothing)
+  , InsDecl (mkBind1 "uncast" [] (mkVar "cast_fptr_to_obj" `dot` mkVar "castPtr") Nothing)
+  ]
 
 genHsFrontInstCastable :: Class -> Maybe Decl
 genHsFrontInstCastable c 
@@ -375,12 +365,16 @@ genExportStatic c = map (EVar . unqual) fns
   where fs = class_funcs c
         fns = map (aliasedFuncName c) (staticFuncs fs) 
 
+
+genExtraImport :: ClassModule -> [ImportDecl]
+genExtraImport cm = map mkImport (cmExtraImport cm)
+
+
 genImportInModule :: [Class] -> [ImportDecl]
 genImportInModule = concatMap (\x -> map (\y -> mkImport (getClassModuleBase x<.>y)) ["RawType","Interface","Implementation"])
 
 genImportInFFI :: ClassModule -> [ImportDecl]
 genImportInFFI = map (\x->mkImport (x <.> "RawType")) . cmImportedModulesForFFI
-
 
 genImportInInterface :: ClassModule -> [ImportDecl]
 genImportInInterface m = 
@@ -412,20 +406,27 @@ genImportInImplementation m =
 
         
 genTmplInterface :: TemplateClass -> [Decl]
-genTmplInterface t = [ mkData rname [mkTBind tp] [] []
-                         , mkNewtype hname [mkTBind tp]
-                             [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyPtr rawtype]) ] []
-                         , mkClass [] (typeclassNameT t) [mkTBind tp] methods
-                         ]
-  where (hname,rname) = hsTemplateClassName t
-        tp = tclass_param t
-        fs = tclass_funcs t
-        rawtype = TyApp (tycon rname) (mkTVar tp)
-        sigdecl f@TFun {..}    = mkFunSig tfun_name (functionSignatureT t f)
-        sigdecl f@TFunNew {..} = mkFunSig ("new"<>tclass_name t) (functionSignatureT t f)
-        sigdecl f@TFunDelete = mkFunSig ("delete"<>tclass_name t) (functionSignatureT t f)        
-        
-        methods = map (ClsDecl . sigdecl) fs
+genTmplInterface t =
+  [ mkData rname [mkTBind tp] [] []
+  , mkNewtype hname [mkTBind tp]
+      [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyPtr rawtype]) ] []
+  , mkClass [] (typeclassNameT t) [mkTBind tp] methods
+  , mkInstance [] "FPtr" [ hightype ] fptrbody
+  , mkInstance [] "Castable" [ hightype, TyApp tyPtr rawtype ] castBody
+  ]
+ where (hname,rname) = hsTemplateClassName t
+       tp = tclass_param t
+       fs = tclass_funcs t
+       rawtype = TyApp (tycon rname) (mkTVar tp)
+       hightype = TyApp (tycon hname) (mkTVar tp)
+       sigdecl f@TFun {..}    = mkFunSig tfun_name (functionSignatureT t f)
+       sigdecl f@TFunNew {..} = mkFunSig ("new"<>tclass_name t) (functionSignatureT t f)
+       sigdecl f@TFunDelete = mkFunSig ("delete"<>tclass_name t) (functionSignatureT t f)
+       methods = map (ClsDecl . sigdecl) fs
+       fptrbody = [ InsType noLoc (TyApp (tycon "Raw") hightype) rawtype
+                  , InsDecl (mkBind1 "get_fptr" [PApp (unqual hname) [mkPVar "ptr"]] (mkVar "ptr") Nothing)
+                  , InsDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
+                  ]
 
 
 genTmplImplementation :: TemplateClass -> [Decl]

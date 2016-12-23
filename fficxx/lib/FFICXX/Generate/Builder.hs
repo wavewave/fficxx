@@ -110,7 +110,7 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
                         , ("maintainer","")
                         , ("category","")
                         , ("sourcerepository","")
-                        , ("ccOptions","")
+                        , ("ccOptions","-std=c++14 -fpermissive")
                         , ("deps", "")
                         , ("csrcFiles", genCsrcFiles (tih,classmodules))
                         , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) (cih,tcih) )
@@ -131,8 +131,9 @@ macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))]
               -> (Cabal, CabalAttr, [Class], [TopLevelFunction], [(TemplateClass,HeaderName)])
               -> [String] -- ^ extra libs
+              -> [(String,[String])] -- ^ extra module
               ->  IO ()
-simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, templates) extralibs = do
+simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, templates) extralibs extramods = do
   let pkgname = cabal_pkgname cabal
   putStrLn ("generating " <> pkgname)
   cwd <- getCurrentDirectory
@@ -144,7 +145,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
       installDir = fficxxconfig_installBaseDir cfg
 
       pkgconfig@(PkgConfig mods cihs tih tcms _tcihs) =
-        mkPackageConfig (pkgname, mkClassNSHeaderFromMap (HM.fromList lst)) (classes, toplevelfunctions,templates)
+        mkPackageConfig (pkgname, mkClassNSHeaderFromMap (HM.fromList lst)) (classes, toplevelfunctions,templates,extramods)
       hsbootlst = mkHSBOOTCandidateList mods
       cabalFileName = pkgname <.> "cabal" 
   --

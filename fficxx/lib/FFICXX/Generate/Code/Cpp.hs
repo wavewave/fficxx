@@ -28,9 +28,9 @@ import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 --
 
-
-
+--
 -- Class Declaration and Definition
+--
 
 ----
 ---- Declaration
@@ -227,8 +227,9 @@ genTopLevelFuncCppDefinition TopLevelFunction {..} =
                                     <>">(("<>str<>"*)"<>callstr<>");" 
                                     where str = class_name c' 
         CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
+        TemplateApp _ _ _       -> error "genTopLevelFuncCppDefinition: TemplateApp"
         TemplateType _          -> error "genTopLevelFuncCppDefinition: TemplateType"
-        TemplateParam _         -> error "genTopLevelFuncCppDefinition: TemplateParam"        
+        TemplateParam _         -> error "genTopLevelFuncCppDefinition: TemplateParam"   
       funcDefStr = returnstr 
   in subst tmpl (context [ ("returntype", rettypeToString toplevelfunc_ret                )  
                          , ("funcname"  , "TopLevel_" 
@@ -247,8 +248,9 @@ genTopLevelFuncCppDefinition TopLevelVariable {..} =
                                    <>">(("<>str<>"*)"<>callstr<>");" 
                                    where str = class_name c' 
         CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
+        TemplateApp _ _ _       -> error "genTopLevelFuncCppDefinition: TemplateApp"
         TemplateType _          -> error "genTopLevelFuncCppDefinition: TemplateType"
-        TemplateParam _         -> error "genTopLevelFuncCppDefinition: TemplateParam"        
+        TemplateParam _         -> error "genTopLevelFuncCppDefinition: TemplateParam"   
       funcDefStr = returnstr 
   in subst tmpl (context [ ("returntype", rettypeToString toplevelvar_ret               )  
                          , ("funcname"  , "TopLevel_" 

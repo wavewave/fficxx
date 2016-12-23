@@ -163,29 +163,6 @@ definitionTemplate =
   "#include <MacroPatternMatch.h>\n\
   \$header\n\
   \\n\
-  \using namespace std;\n\
-  \$namespace\n\
-  \\n\
-  \template<class ToType, class FromType>\n\
-  \const ToType* to_const(const FromType* x) {\n\
-  \  return reinterpret_cast<const ToType*>(x);\n\
-  \}\n\
-  \\n\
-  \template<class ToType, class FromType>\n\
-  \ToType* to_nonconst(FromType* x) {\n\
-  \  return reinterpret_cast<ToType*>(x);\n\
-  \}\n\
-  \\n\
-  \template<class ToType, class FromType>\n\
-  \const ToType& to_constref(const FromType& x) {\n\
-  \  return reinterpret_cast<const ToType&>(x);\n\
-  \}\n\
-  \\n\
-  \template<class ToType, class FromType>\n\
-  \ToType& to_nonconstref(FromType& x) {\n\
-  \  return reinterpret_cast<ToType&>(x);\n\
-  \}\n\
-  \\n\
   \#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n\
   \\n\
   \#define TYPECASTMETHOD(cname,mname,oname) \\\n\
@@ -282,6 +259,7 @@ buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] f
         headers = cmCIH m
         ffiImports = [ mkImport "Foreign.C", mkImport "Foreign.Ptr", mkImport (mname <.> "RawType") ]
                      <> genImportInFFI m
+                     <> genExtraImport m
         hscBody = concatMap genHsFFI headers
 
 
@@ -306,13 +284,12 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
                                , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
                          ifaceImports ifaceBody
   where classes = cmClass m
-        ifaceImports =
-          [ mkImport "Data.Word"
-          , mkImport "Foreign.C"
-          , mkImport "Foreign.Ptr"
-          -- , mkImport "Foreign.ForeignPtr"
-          , mkImport "FFICXX.Runtime.Cast" ]
-          <> genImportInInterface m
+        ifaceImports = [ mkImport "Data.Word"
+                       , mkImport "Foreign.C"
+                       , mkImport "Foreign.Ptr"
+                       , mkImport "FFICXX.Runtime.Cast" ]
+                       <> genImportInInterface m
+                       <> genExtraImport m
         ifaceBody = 
           runReader (mapM genHsFrontDecl classes) amap 
           <> (map hsClassExistType .  filter (not.isAbstractClass)) classes
@@ -327,8 +304,6 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                castImports body
   where classes = cmClass m
         castImports = [ mkImport "Foreign.Ptr"
-                      -- , mkImportExp "Foreign.ForeignPtr" [ "castForeignPtr", "newForeignPtr_" ]
-                      -- , mkImport "Foreign.ForeignPtr.Unsafe"
                       , mkImport "FFICXX.Runtime.Cast"
                       , mkImport "System.IO.Unsafe" ]
                       <> genImportInCast m
@@ -348,9 +323,9 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                       , mkImport "Data.Word"
                       , mkImport "Foreign.C"
                       , mkImport "Foreign.Ptr"
-                      -- , mkImport "Foreign.ForeignPtr"
                       , mkImport "System.IO.Unsafe" ]
                       <> genImportInImplementation m
+                      <> genExtraImport m
         f :: Class -> [Decl]
         f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
         g :: Class -> [Decl]
@@ -365,10 +340,11 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
 
 buildTemplateHs :: TemplateClassModule -> Module
 buildTemplateHs m = mkModule (tcmModule m <.> "Template")
-                   [lang  ["EmptyDataDecls", "TypeFamilies"] ]
+                   [lang  [ "EmptyDataDecls", "FlexibleInstances", "MultiParamTypeClasses"
+                          , "TypeFamilies"] ]
                    [ mkImport "Foreign.C.Types"
                    , mkImport "Foreign.Ptr"
-                   -- , mkImport "Foreign.ForeignPtr"
+                   , mkImport "FFICXX.Runtime.Cast"
                    ]
                    body
   where ts = tcmTemplateClasses m
