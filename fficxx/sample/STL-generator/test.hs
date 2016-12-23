@@ -8,8 +8,10 @@ import Foreign.Ptr
 import STL.Vector.Template
 import qualified STL.Vector.TH as TH
 
+ 
 import STL.Foo
 import STL.Foo.RawType
+
 
 $(TH.genVectorInstanceFor ''CInt "int")
 $(TH.genVectorInstanceFor ''Foo  "Foo")
@@ -29,6 +31,7 @@ main = do
   print =<< at v 5
   deleteVector v
 
+
   --
   f <- newFoo 9
   showme f
@@ -43,7 +46,14 @@ main = do
 
   x <- at w 0
   showme x
-
-  
   deleteVector w
   
+  --
+
+  v2 <- getVector f
+  print =<< size v2
+  print =<< v2 `at` 0
+  print =<< v2 `at` 2
+  
+
+

@@ -28,9 +28,9 @@ import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 --
 
-
-
+--
 -- Class Declaration and Definition
+--
 
 ----
 ---- Declaration
