@@ -327,8 +327,6 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                castImports body
   where classes = cmClass m
         castImports = [ mkImport "Foreign.Ptr"
-                      -- , mkImportExp "Foreign.ForeignPtr" [ "castForeignPtr", "newForeignPtr_" ]
-                      -- , mkImport "Foreign.ForeignPtr.Unsafe"
                       , mkImport "FFICXX.Runtime.Cast"
                       , mkImport "System.IO.Unsafe" ]
                       <> genImportInCast m
@@ -365,10 +363,11 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
 
 buildTemplateHs :: TemplateClassModule -> Module
 buildTemplateHs m = mkModule (tcmModule m <.> "Template")
-                   [lang  ["EmptyDataDecls", "TypeFamilies"] ]
+                   [lang  [ "EmptyDataDecls", "FlexibleInstances", "MultiParamTypeClasses"
+                          , "TypeFamilies"] ]
                    [ mkImport "Foreign.C.Types"
                    , mkImport "Foreign.Ptr"
-                   -- , mkImport "Foreign.ForeignPtr"
+                   , mkImport "FFICXX.Runtime.Cast"
                    ]
                    body
   where ts = tcmTemplateClasses m
