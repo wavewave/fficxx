@@ -367,6 +367,7 @@ argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
   where cname = class_name c
+argToString (TemplateApp _ _ _,varname) = "void* " <> varname
 argToString _ = error "undefined argToString"
 
 argsToString :: Args -> String

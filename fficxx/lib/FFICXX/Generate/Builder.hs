@@ -110,7 +110,7 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
                         , ("maintainer","")
                         , ("category","")
                         , ("sourcerepository","")
-                        , ("ccOptions","")
+                        , ("ccOptions","-std=c++14 -fpermissive")
                         , ("deps", "")
                         , ("csrcFiles", genCsrcFiles (tih,classmodules))
                         , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) (cih,tcih) )

@@ -54,6 +54,11 @@ main = do
   print =<< size v2
   print =<< v2 `at` 0
   print =<< v2 `at` 2
-  
+
+  v3 <- newVector
+  mapM_ (push_back v3) [1..1000]
+
+  addContents f v3
+  print =<< size v2
 
 

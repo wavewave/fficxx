@@ -20,6 +20,11 @@ class Foo
   }; 
   virtual void showme( ) { cout << "Foo: " << n << endl; }
   virtual vector<int>* getVector() { return &t ; }
+  virtual void addContents( vector<int>* v ) {
+    for( auto& x : *v ) {
+      t.push_back( x ); 
+    }
+  }
   
 }; 
 

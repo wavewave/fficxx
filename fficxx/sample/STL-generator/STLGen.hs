@@ -22,13 +22,15 @@ cabalattr =
     }
 
 
+vectorint_ = TemplateApp t_vector "CInt" "std::vector<int>"
 
 class1 :: Class
 class1 =
   Class cabal "Foo" [] mempty Nothing
   [ Constructor [ int "n" ] Nothing
   , Virtual void_ "showme" [] Nothing
-  , Virtual (TemplateApp t_vector "CInt" "std::vector<int>") "getVector" [] Nothing 
+  , Virtual vectorint_ "getVector" [] Nothing
+  , Virtual void_ "addContents" [ (vectorint_, "v") ] Nothing
   ]
 
 classes = [ class1 ]
