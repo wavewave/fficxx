@@ -409,22 +409,25 @@ genTmplInterface :: TemplateClass -> [Decl]
 genTmplInterface t =
   [ mkData rname [mkTBind tp] [] []
   , mkNewtype hname [mkTBind tp]
-      [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyPtr rawtype]) ]
-      []
+      [ QualConDecl noLoc [] [] (conDecl hname [TyApp tyPtr rawtype]) ] []
   , mkClass [] (typeclassNameT t) [mkTBind tp] methods
-  , mkInstance [] "Castable"
-      [ TyApp (tycon hname) (mkTVar "a")
-      , TyApp tyPtr (TyApp (tycon rname) (mkTVar "a")) ]
-      castBody
+  , mkInstance [] "FPtr" [ hightype ] fptrbody
+  , mkInstance [] "Castable" [ hightype, TyApp tyPtr rawtype ] castBody
   ]
  where (hname,rname) = hsTemplateClassName t
        tp = tclass_param t
        fs = tclass_funcs t
        rawtype = TyApp (tycon rname) (mkTVar tp)
+       hightype = TyApp (tycon hname) (mkTVar tp)
        sigdecl f@TFun {..}    = mkFunSig tfun_name (functionSignatureT t f)
        sigdecl f@TFunNew {..} = mkFunSig ("new"<>tclass_name t) (functionSignatureT t f)
        sigdecl f@TFunDelete = mkFunSig ("delete"<>tclass_name t) (functionSignatureT t f)
        methods = map (ClsDecl . sigdecl) fs
+       fptrbody = [ InsType noLoc (TyApp (tycon "Raw") hightype) rawtype
+                  , InsDecl (mkBind1 "get_fptr" [PApp (unqual hname) [mkPVar "ptr"]] (mkVar "ptr") Nothing)
+                  , InsDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
+                  ]
+
 
 genTmplImplementation :: TemplateClass -> [Decl]
 genTmplImplementation t = concatMap gen (tclass_funcs t)
