@@ -163,29 +163,6 @@ definitionTemplate =
   "#include <MacroPatternMatch.h>\n\
   \$header\n\
   \\n\
-  \using namespace std;\n\
-  \$namespace\n\
-  \\n\
-  \template<class ToType, class FromType>\n\
-  \const ToType* to_const(const FromType* x) {\n\
-  \  return reinterpret_cast<const ToType*>(x);\n\
-  \}\n\
-  \\n\
-  \template<class ToType, class FromType>\n\
-  \ToType* to_nonconst(FromType* x) {\n\
-  \  return reinterpret_cast<ToType*>(x);\n\
-  \}\n\
-  \\n\
-  \template<class ToType, class FromType>\n\
-  \const ToType& to_constref(const FromType& x) {\n\
-  \  return reinterpret_cast<const ToType&>(x);\n\
-  \}\n\
-  \\n\
-  \template<class ToType, class FromType>\n\
-  \ToType& to_nonconstref(FromType& x) {\n\
-  \  return reinterpret_cast<ToType&>(x);\n\
-  \}\n\
-  \\n\
   \#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n\
   \\n\
   \#define TYPECASTMETHOD(cname,mname,oname) \\\n\

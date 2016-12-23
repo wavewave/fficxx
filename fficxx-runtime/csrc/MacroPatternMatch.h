@@ -16,5 +16,28 @@
 #define IS_PAREN(x) CHECK(IS_PAREN_PROBE x)
 #define IS_PAREN_PROBE(...) PROBE(~)
 
+
+
+template<class ToType, class FromType>
+const ToType* to_const(const FromType* x) {
+  return reinterpret_cast<const ToType*>(x);
+}
+
+template<class ToType, class FromType>
+ToType* to_nonconst(FromType* x) {
+  return reinterpret_cast<ToType*>(x);
+}
+
+template<class ToType, class FromType>
+const ToType& to_constref(const FromType& x) {
+  return reinterpret_cast<const ToType&>(x);
+}
+
+template<class ToType, class FromType>
+ToType& to_nonconstref(FromType& x) {
+  return reinterpret_cast<ToType&>(x);
+}
+
+
 #endif // __MACROPATTERNMATCH__ 
 
