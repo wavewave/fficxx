@@ -35,7 +35,6 @@ import           FFICXX.Generate.Code.Cpp
 import           FFICXX.Generate.Code.Dependency
 import           FFICXX.Generate.Config
 import           FFICXX.Generate.ContentMaker
--- import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class 
 import           FFICXX.Generate.Type.Module  
 import           FFICXX.Generate.Type.PackageInterface

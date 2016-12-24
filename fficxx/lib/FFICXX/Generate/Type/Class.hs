@@ -63,8 +63,8 @@ data Types = Void
            | CT  CTypes IsConst
            | CPT CPPTypes IsConst
            | TemplateApp { tapp_hstemplate :: TemplateClass
-                         , tapp_hstypparam :: String
-                         , tapp_cpptypparam :: String }
+                         , tapp_HaskellTypeForParam :: String
+                         , tapp_CppTypeForParam :: String }
            | TemplateType TemplateClass
            | TemplateParam String
            deriving Show
@@ -380,11 +380,13 @@ argsToStringNoSelf = intercalateWith conncomma argToString
 
 
 argToCallString :: (Types,String) -> String
+argToCallString (CT (CRef _) _,varname) = "(*"<> varname<> ")"
 argToCallString (CPT (CPTClass c) _,varname) =
     "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")" where str = class_name c
 argToCallString (CPT (CPTClassRef c) _,varname) =
     "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")" where str = class_name c
-argToCallString (CT (CRef _) _,varname) = "(*"<> varname<> ")"
+argToCallString (TemplateApp t tp cp,varname) =
+    "to_nonconst<"<>str<>",void>("<>varname<>")" where str = cp  
 argToCallString (_,varname) = varname
 
 argsToCallString :: Args -> String

@@ -19,7 +19,6 @@ import           Data.Monoid                 ( (<>) )
 import           Data.Text                   ( Text )
 import           System.FilePath             ( (<.>), (</>) )
 --
--- import           FFICXX.Generate.Code.Cpp
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
@@ -165,7 +164,7 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
                         , ("maintainer","")
                         , ("category","")
                         , ("sourcerepository","")
-                        , ("ccOptions","-std=c++14 -fpermissive")
+                        , ("ccOptions","-std=c++14")
                         , ("deps", "")
                         , ("csrcFiles", genCsrcFiles (tih,classmodules))
                         , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) (cih,tcih) )
