@@ -66,14 +66,15 @@ mkCIH mkNSandIncHdrs c = ClassImportHeader c
 
 -- |
 extractClassFromType :: Types -> Maybe Class
-extractClassFromType Void                    = Nothing
-extractClassFromType SelfType                = Nothing
-extractClassFromType (CT _ _)                = Nothing
-extractClassFromType (CPT (CPTClass c) _)    = Just c
-extractClassFromType (CPT (CPTClassRef c) _) = Just c
-extractClassFromType (TemplateApp _ _ _)     = Nothing
-extractClassFromType (TemplateType _)        = Nothing
-extractClassFromType (TemplateParam _)       = Nothing
+extractClassFromType Void                     = Nothing
+extractClassFromType SelfType                 = Nothing
+extractClassFromType (CT _ _)                 = Nothing
+extractClassFromType (CPT (CPTClass c) _)     = Just c
+extractClassFromType (CPT (CPTClassRef c) _)  = Just c
+extractClassFromType (CPT (CPTClassCopy c) _) = Just c
+extractClassFromType (TemplateApp _ _ _)      = Nothing
+extractClassFromType (TemplateType _)         = Nothing
+extractClassFromType (TemplateParam _)        = Nothing
 
 
 -- | class dependency for a given function 
