@@ -36,7 +36,8 @@ returnCpp b ret callstr =
                                <>">(("<>str<>"*)"<>callstr<>");"
                                where str = class_name c'
     CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
-    CPT (CPTClassCopy c') _ -> "return (new "<>str<>"("<>callstr<>"));"
+    CPT (CPTClassCopy c') _ -> "return to_nonconst<"<>str<>"_t,"<>str
+                               <>">(new "<>str<>"("<>callstr<>"));"
                                where str = class_name c'
 
     TemplateApp _ _ _       -> "return (" <> callstr <> ");"          
