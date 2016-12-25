@@ -16,13 +16,10 @@
 module FFICXX.Generate.Code.Cpp where
 
 import           Data.Char 
-import           Data.List
 import           Data.Monoid                           ( (<>) )
-import           System.FilePath
 --
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Code.MethodDef
-import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
@@ -173,19 +170,7 @@ genTopLevelFuncCppDefinition TopLevelFunction {..} =
       callstr = toplevelfunc_name <> "("
                 <> argsToCallString toplevelfunc_args   
                 <> ")"
-      returnstr = case toplevelfunc_ret of          
-        Void                    -> callstr <> ";"
-        SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ") ;"
-        CT (CRef _) _           -> "return ((*)"<>callstr<>");"
-        CT _ _                  -> "return "<>callstr<>";" 
-        CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
-                                    <>">(("<>str<>"*)"<>callstr<>");" 
-                                    where str = class_name c' 
-        CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
-        TemplateApp _ _ _       -> error "genTopLevelFuncCppDefinition: TemplateApp"
-        TemplateType _          -> error "genTopLevelFuncCppDefinition: TemplateType"
-        TemplateParam _         -> error "genTopLevelFuncCppDefinition: TemplateParam"   
-      funcDefStr = returnstr 
+      funcDefStr = returnCpp False (toplevelfunc_ret) callstr
   in subst tmpl (context [ ("returntype", rettypeToString toplevelfunc_ret                )  
                          , ("funcname"  , "TopLevel_" 
                                           <> maybe toplevelfunc_name id toplevelfunc_alias)
@@ -194,19 +179,7 @@ genTopLevelFuncCppDefinition TopLevelFunction {..} =
 genTopLevelFuncCppDefinition TopLevelVariable {..} =  
   let tmpl = "$returntype $funcname ( ) { \n  $funcbody\n}" 
       callstr = toplevelvar_name
-      returnstr = case toplevelvar_ret of          
-        Void -> callstr <> ";"
-        SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ") ;"
-        CT (CRef _) _           -> "return ((*)"<>callstr<>");"
-        CT _ _                  -> "return "<>callstr<>";" 
-        CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
-                                   <>">(("<>str<>"*)"<>callstr<>");" 
-                                   where str = class_name c' 
-        CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
-        TemplateApp _ _ _       -> error "genTopLevelFuncCppDefinition: TemplateApp"
-        TemplateType _          -> error "genTopLevelFuncCppDefinition: TemplateType"
-        TemplateParam _         -> error "genTopLevelFuncCppDefinition: TemplateParam"   
-      funcDefStr = returnstr 
+      funcDefStr = returnCpp False (toplevelvar_ret) callstr
   in subst tmpl (context [ ("returntype", rettypeToString toplevelvar_ret               )  
                          , ("funcname"  , "TopLevel_" 
                                           <> maybe toplevelvar_name id toplevelvar_alias)

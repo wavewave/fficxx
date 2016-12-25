@@ -21,6 +21,34 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util 
 
 
+returnCpp :: Bool  -- ^ for simple type
+          -> Types
+          -> String -- ^ call string
+          -> String
+returnCpp b ret callstr = 
+  case ret of          
+    Void                    -> callstr <> ";"
+    SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
+                                <> callstr <> ") ;"
+    CT (CRef _) _           -> "return ((*)"<>callstr<>");"
+    CT _ _                  -> "return "<>callstr<>";" 
+    CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
+                               <>">(("<>str<>"*)"<>callstr<>");"
+                               where str = class_name c'
+    CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
+    CPT (CPTClassCopy c') _ -> "return to_nonconst<"<>str<>"_t,"<>str
+                               <>">(new "<>str<>"("<>callstr<>"));"
+                               where str = class_name c'
+
+    TemplateApp _ _ _       -> "return (" <> callstr <> ");"          
+    TemplateType _          -> error "returnCpp: TemplateType"
+    TemplateParam _         ->
+      if b then "return (" <> callstr <> ");"
+           else "return to_nonconst<Type ## _t, Type>((Type *)&("
+                <> callstr <> ")) ;"
+
+
+
 -- Function Declaration and Definition
 
 funcToDecl :: Class -> Function -> String 
@@ -60,37 +88,15 @@ funcToDef c func
         callstr = cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)   
                   <> ")"
-        returnstr = case (genericFuncRet func) of          
-          Void                    -> callstr <> ";"
-          SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
-                                     <> callstr <> ") ;"
-          CT _ _                  -> "return "<>callstr<>";" 
-          CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
-                                     <>">(("<>str<>"*)"<>callstr<>");" 
-                                     where str = class_name c' 
-          CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
-          TemplateApp _ _ _       -> "return (" <> callstr <> ");"
-          TemplateType _          -> error "funcToDef: TemplateType"
-          TemplateParam _         -> "return (" <> callstr <> ");"
-    in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
+        returnstr = returnCpp False (genericFuncRet func) callstr
+    in intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | otherwise = 
     let declstr = funcToDecl c func
         callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
                   <> cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)   
                   <> ")"
-        returnstr = case (genericFuncRet func) of          
-          Void                    -> callstr <> ";"
-          SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
-                                      <> callstr <> ") ;"
-          CT _ _                  -> "return "<>callstr<>";" 
-          CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
-                                     <>">(("<>str<>"*)"<>callstr<>");"
-                                     where str = class_name c'
-          CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
-          TemplateApp _ _ _       -> "return (" <> callstr <> ");"          
-          TemplateType _          -> error "funcToDef: TemplateType"
-          TemplateParam _         -> "return (" <> callstr <> ");"
+        returnstr = returnCpp False (genericFuncRet func) callstr
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
 
 
@@ -141,22 +147,7 @@ tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {",
     case f of
       TFunNew {..} -> "return reinterpret_cast<void*>("<>callstr<>");"
       TFunDelete   -> callstr <> ";"
-      TFun {..} -> case tfun_ret of          
-                      Void                    -> callstr <> ";"
-                      SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
-                                                 <> callstr <> ") ;"
-                      CT _ _                  -> "return "<>callstr<>";" 
-                      CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
-                                                 <>">(("<>str<>"*)"<>callstr<>");"
-                                                 where str = class_name c'
-                      CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
-                      TemplateApp _ _ _       -> "return "<>callstr<>";" 
-                      TemplateType _          -> error "tmplFunToDef: TemplateType"
-                      TemplateParam _         ->
-                        if b then "return (" <> callstr <> ");"
-                             else "return to_nonconst<Type ## _t, Type>((Type *)&("
-                                  <> callstr <> ")) ;"
-
+      TFun {..} -> returnCpp b (tfun_ret) callstr
 
 
 

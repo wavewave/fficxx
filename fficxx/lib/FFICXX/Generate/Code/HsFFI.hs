@@ -17,7 +17,7 @@ module FFICXX.Generate.Code.HsFFI where
 
 import           Data.Maybe                              ( fromMaybe, mapMaybe )
 import           Data.Monoid                             ( (<>) )
-import           Language.Haskell.Exts.Syntax            ( Type(..), Decl(..), unit_tycon)
+import           Language.Haskell.Exts.Syntax            ( Decl(..) )
 import           System.FilePath ((<.>))
 -- 
 import           FFICXX.Generate.Util
