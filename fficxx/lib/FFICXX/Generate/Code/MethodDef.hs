@@ -40,7 +40,7 @@ returnCpp b ret callstr =
                                where str = class_name c'
 
     TemplateApp _ _ _       -> "return (" <> callstr <> ");"          
-    TemplateType _          -> error "funcToDef: TemplateType"
+    TemplateType _          -> error "returnCpp: TemplateType"
     TemplateParam _         ->
       if b then "return (" <> callstr <> ");"
            else "return to_nonconst<Type ## _t, Type>((Type *)&("
@@ -88,21 +88,7 @@ funcToDef c func
                   <> argsToCallString (genericFuncArgs func)   
                   <> ")"
         returnstr = returnCpp False (genericFuncRet func) callstr
-        {- 
-          Void                    -> callstr <> ";"
-          SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
-                                     <> callstr <> ") ;"
-          CT _ _                  -> "return "<>callstr<>";" 
-          CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
-                                     <>">(("<>str<>"*)"<>callstr<>");" 
-                                     where str = class_name c' 
-          CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
-          CPT (CPTClassCopy c') _ -> "return (new "<>str<>"("<>callstr<>"));"
-                                     where str = class_name c'
-          TemplateApp _ _ _       -> "return (" <> callstr <> ");"
-          TemplateType _          -> error "funcToDef: TemplateType"
-          TemplateParam _         -> "return (" <> callstr <> ");" -}
-    in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
+    in intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | otherwise = 
     let declstr = funcToDecl c func
         callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
@@ -110,21 +96,6 @@ funcToDef c func
                   <> argsToCallString (genericFuncArgs func)   
                   <> ")"
         returnstr = returnCpp False (genericFuncRet func) callstr
-        {- 
-          Void                    -> callstr <> ";"
-          SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
-                                      <> callstr <> ") ;"
-          CT _ _                  -> "return "<>callstr<>";" 
-          CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
-                                     <>">(("<>str<>"*)"<>callstr<>");"
-                                     where str = class_name c'
-          CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
-          CPT (CPTClassCopy c') _ -> "return (new "<>str<>"("<>callstr<>"));"
-                                     where str = class_name c'
-          
-          TemplateApp _ _ _       -> "return (" <> callstr <> ");"          
-          TemplateType _          -> error "funcToDef: TemplateType"
-          TemplateParam _         -> "return (" <> callstr <> ");" -}
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
 
 
@@ -176,24 +147,6 @@ tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {",
       TFunNew {..} -> "return reinterpret_cast<void*>("<>callstr<>");"
       TFunDelete   -> callstr <> ";"
       TFun {..} -> returnCpp b (tfun_ret) callstr
-      {-
-                      Void                    -> callstr <> ";"
-                      SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
-                                                 <> callstr <> ") ;"
-                      CT _ _                  -> "return "<>callstr<>";" 
-                      CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
-                                                 <>">(("<>str<>"*)"<>callstr<>");"
-                                                 where str = class_name c'
-                      CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
-                      CPT (CPTClassCopy c') _ -> "return (new "<>str<>"("<>callstr<>"));"
-                                                 where str = class_name c'
-                      TemplateApp _ _ _       -> "return "<>callstr<>";" 
-                      TemplateType _          -> error "tmplFunToDef: TemplateType"
-                      TemplateParam _         ->
-                        if b then "return (" <> callstr <> ");"
-                             else "return to_nonconst<Type ## _t, Type>((Type *)&("
-                                  <> callstr <> ")) ;"
-    -}
 
 
 
