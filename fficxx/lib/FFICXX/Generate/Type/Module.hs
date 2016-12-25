@@ -52,7 +52,7 @@ data TemplateClassImportHeader = TCIH { tcihTClass :: TemplateClass
 data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String
                                                  , tihClassDep :: [ClassImportHeader]
                                                  , tihFuncs :: [TopLevelFunction]
-                                                 }
+                                                 } deriving (Show)
 
 data PackageConfig = PkgConfig { pcfg_classModules :: [ClassModule]
                                , pcfg_classImportHeaders :: [ClassImportHeader]
