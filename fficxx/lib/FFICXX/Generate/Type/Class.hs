@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -16,6 +17,7 @@
 module FFICXX.Generate.Type.Class where
 
 import           Control.Applicative               ( (<$>),(<*>) )
+import           Control.Monad.State
 import           Data.Char
 import           Data.Default                      ( Default(def) )
 import           Data.List
@@ -754,8 +756,48 @@ destructorName = "delete"
 classConstraints :: Class -> Context
 classConstraints = map ((\n->ClassA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents 
 
+extractArgRetTypes :: Maybe Class -> Bool -> (Args,Types) -> ([Type],[Asst]) 
+extractArgRetTypes mc isvirtual (args,ret) = 
+  let  (typs,s) = flip runState ([],(0 :: Int)) $ do
+                    as <- mapM (mktyp . fst) args
+                    r <- case ret of 
+                           SelfType -> case mc of
+                                         Nothing -> error "extractArgRetTypes: SelfType return but no class"
+                                         Just c -> if isvirtual then return (mkTVar "a") else return $ tycon ((fst.hsClassName) c)
+                           x -> (return . tycon . ctypToHsTyp Nothing) x
+                    return (as ++ [TyApp (tycon "IO") r])
+  in   (typs,fst s)
+ where addclass c = do
+         (ctxts,n) <- get 
+         let cname = (fst.hsClassName) c 
+             iname = typeclassNameFromStr cname 
+             tvar = mkTVar ('c' : show n)
+             ctxt1 = ClassA (unqual iname) [tvar]
+             ctxt2 = ClassA (unqual "FPtr") [tvar]
+         put (ctxt1:ctxt2:ctxts,n+1)
+         return tvar
+       -- go (typ,_var) =
+       mktyp typ = 
+         case typ of                  
+           SelfType -> return (mkTVar "a")
+           CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
+           CPT (CPTClass c') _    -> addclass c'
+           CPT (CPTClassRef c') _ -> addclass c'
+           Void -> return unit_tycon
+           -- _ -> error ("No such c type : " <> show typ)  
+
 functionSignature :: Class -> Function -> Type
 functionSignature c f =
+  let (typs,ctxts) = extractArgRetTypes (Just c) (isVirtualFunc f) (genericFuncArgs f,genericFuncRet f)
+      arg0
+        | isVirtualFunc f    = (mkTVar "a" :)
+        | isNonVirtualFunc f = (mkTVar (class_name c) :)
+        | otherwise          = id
+  in TyForall Nothing ctxts (foldr1 TyFun (arg0 typs))
+
+{- 
+  -- wrong definition!
+
   let ctyp = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
       arg0
         | isVirtualFunc f    = (mkTVar "a" :)
@@ -764,6 +806,7 @@ functionSignature c f =
       lst = arg0 (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
   in foldr1 TyFun (lst <> [TyApp (tycon "IO") ctyp])
 
+-}
 
 
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type

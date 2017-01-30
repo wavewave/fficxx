@@ -58,45 +58,13 @@ mkPostComment str
      in unlines commented_lines 
   | otherwise = str                
 
-extractArgTypes :: Args -> ([Type],[Asst]) 
-extractArgTypes lst = 
-  let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
-  in   (args,fst st)
- where addclass c = do
-         (ctxts,n) <- get 
-         let cname = (fst.hsClassName) c 
-             iname = typeclassNameFromStr cname 
-             tvar = mkTVar ('c' : show n)
-             ctxt1 = ClassA (unqual iname) [tvar]
-             ctxt2 = ClassA (unqual "FPtr") [tvar]
-         put (ctxt1:ctxt2:ctxts,n+1)
-         return tvar
-       mkFuncArgTypeWorker (typ,_var) = 
-         case typ of                  
-           SelfType -> return (mkTVar "a")
-           CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
-           CPT (CPTClass c') _    -> addclass c'
-           CPT (CPTClassRef c') _ -> addclass c' 
-           _ -> error ("No such c type : " <> show typ)  
-
-
-----------------
--- | will be deprecated
-classprefix :: Class -> String 
-classprefix c = let ps = (map typeclassName . class_parents) c
-                in  if null ps 
-                    then "" 
-                    else "(" <> intercalate "," (map (<> " a") ps) <> ") => "
-
-
 
 genHsFrontDecl :: Class -> Reader AnnotateMap Decl
 genHsFrontDecl c = do
   -- for the time being, let's ignore annotation.
   -- amap <- ask  
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap 
-  let 
-      cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
+  let cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
       sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
       body = map (ClsDecl . sigdecl) . virtualFuncs . class_funcs $ c 
   return cdecl
@@ -116,7 +84,7 @@ genHsFrontInst parent child
 
       
 ---------------------
-
+{- 
 genHsFrontInstExistCommon :: Class -> Decl 
 genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
   where (highname,rawname) = hsClassName c
@@ -139,18 +107,20 @@ genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
                             )
                             Nothing)
                ]
-
+-}
 
 
 -------------------
 
-
+{-
 genHsFrontInstExistVirtual :: Class -> Class -> Decl
 genHsFrontInstExistVirtual p c = mkInstance [] iparent [existtype] body
   where body = map (genHsFrontInstExistVirtualMethod p c) . virtualFuncs.class_funcs $ p
         iparent = typeclassName p
         existtype = TyApp (tycon "Exist") (tycon ((fst.hsClassName) c))
+-}
 
+{- 
 genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> InstDecl
 genHsFrontInstExistVirtualMethod p c f =
     case f of
@@ -166,6 +136,7 @@ genHsFrontInstExistVirtualMethod p c f =
               mkVar "=<<" `App`
               (mkVar fname `App` foldl1 App (mkVar "x":map mkVar args))
         args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ ([1..] :: [Int])
+-}
 
 ---------------------
 
@@ -245,6 +216,7 @@ hsClassRawType c =
        rawtype = tycon rawname
        derivs = [(unqual "Eq",[]),(unqual "Ord",[]),(unqual "Show",[])]
 
+{- 
 hsClassExistType :: Class -> Decl
 hsClassExistType c = mkInstance [] "Existable" [hightype]
                        [ InsData noLoc DataType (TyApp (tycon "Exist") hightype)
@@ -260,7 +232,7 @@ hsClassExistType c = mkInstance [] "Existable" [hightype]
         a_tvar = mkTVar "a"
         iname = typeclassName c 
         ename = existConstructorName c
-
+-}
 
 
 ------------
@@ -316,9 +288,9 @@ genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs No
 genTopLevelFuncDef :: TopLevelFunction -> [Decl]
 genTopLevelFuncDef f@TopLevelFunction {..} = 
     let fname = hsFrontNameForTopLevelFunction f
-        (atyps,ctxts) = extractArgTypes toplevelfunc_args
-        rtyp = convertCpp2HS Nothing toplevelfunc_ret
-        sig = TyForall Nothing ctxts (foldr1 TyFun (atyps <> [TyApp (tycon "IO") rtyp]))
+        (typs,ctxts) = extractArgRetTypes Nothing False (toplevelfunc_args,toplevelfunc_ret)
+        -- rtyp = (tycon . ctypToHsTyp Nothing) toplevelfunc_ret
+        sig = TyForall Nothing ctxts (foldr1 TyFun typs)
         xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len-1) else "xformnull"
         cfname = "c_" <> toLowers fname 
         rhs = App (mkVar xformerstr) (mkVar cfname)
