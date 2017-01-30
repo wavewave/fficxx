@@ -288,9 +288,9 @@ genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs No
 genTopLevelFuncDef :: TopLevelFunction -> [Decl]
 genTopLevelFuncDef f@TopLevelFunction {..} = 
     let fname = hsFrontNameForTopLevelFunction f
-        (atyps,ctxts) = extractArgTypes toplevelfunc_args
-        rtyp = (tycon . ctypToHsTyp Nothing) toplevelfunc_ret
-        sig = TyForall Nothing ctxts (foldr1 TyFun (atyps <> [TyApp (tycon "IO") rtyp]))
+        (typs,ctxts) = extractArgRetTypes Nothing False (toplevelfunc_args,toplevelfunc_ret)
+        -- rtyp = (tycon . ctypToHsTyp Nothing) toplevelfunc_ret
+        sig = TyForall Nothing ctxts (foldr1 TyFun typs)
         xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len-1) else "xformnull"
         cfname = "c_" <> toLowers fname 
         rhs = App (mkVar xformerstr) (mkVar cfname)

@@ -743,10 +743,17 @@ destructorName = "delete"
 classConstraints :: Class -> Context
 classConstraints = map ((\n->ClassA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents 
 
-extractArgTypes :: Args -> ([Type],[Asst]) 
-extractArgTypes lst = 
-  let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
-  in   (args,fst st)
+extractArgRetTypes :: Maybe Class -> Bool -> (Args,Types) -> ([Type],[Asst]) 
+extractArgRetTypes mc isvirtual (args,ret) = 
+  let  (typs,s) = flip runState ([],(0 :: Int)) $ do
+                    as <- mapM (mktyp . fst) args
+                    r <- case ret of 
+                           SelfType -> case mc of
+                                         Nothing -> error "extractArgRetTypes: SelfType return but no class"
+                                         Just c -> if isvirtual then return (mkTVar "a") else return $ tycon ((fst.hsClassName) c)
+                           x -> (return . tycon . ctypToHsTyp Nothing) x
+                    return (as ++ [TyApp (tycon "IO") r])
+  in   (typs,fst s)
  where addclass c = do
          (ctxts,n) <- get 
          let cname = (fst.hsClassName) c 
@@ -756,23 +763,24 @@ extractArgTypes lst =
              ctxt2 = ClassA (unqual "FPtr") [tvar]
          put (ctxt1:ctxt2:ctxts,n+1)
          return tvar
-       mkFuncArgTypeWorker (typ,_var) = 
+       -- go (typ,_var) =
+       mktyp typ = 
          case typ of                  
            SelfType -> return (mkTVar "a")
            CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
            CPT (CPTClass c') _    -> addclass c'
-           CPT (CPTClassRef c') _ -> addclass c' 
-           _ -> error ("No such c type : " <> show typ)  
+           CPT (CPTClassRef c') _ -> addclass c'
+           Void -> return unit_tycon
+           -- _ -> error ("No such c type : " <> show typ)  
 
 functionSignature :: Class -> Function -> Type
 functionSignature c f =
-  let (atyps,ctxts) = extractArgTypes (genericFuncArgs f)
-      rtyp = (tycon . ctypToHsTyp (Just c)) (genericFuncRet f)
+  let (typs,ctxts) = extractArgRetTypes (Just c) (isVirtualFunc f) (genericFuncArgs f,genericFuncRet f)
       arg0
         | isVirtualFunc f    = (mkTVar "a" :)
         | isNonVirtualFunc f = (mkTVar (class_name c) :)
         | otherwise          = id
-  in TyForall Nothing ctxts (foldr1 TyFun (arg0 (atyps <> [TyApp (tycon "IO") rtyp])))
+  in TyForall Nothing ctxts (foldr1 TyFun (arg0 typs))
 
 {- 
   -- wrong definition!
