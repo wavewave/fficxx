@@ -118,8 +118,8 @@ genHsFrontInstStatic c =
 
 castBody :: [InstDecl]
 castBody =
-  [ InsDecl (mkBind1 "cast" [] (mkVar "castPtr" `dot` mkVar "get_fptr") Nothing)
-  , InsDecl (mkBind1 "uncast" [] (mkVar "cast_fptr_to_obj" `dot` mkVar "castPtr") Nothing)
+  [ InsDecl (mkBind1 "cast" [mkPVar "x",mkPVar "f"] (App (mkVar "f") (App (mkVar "castPtr") (App (mkVar "get_fptr") (mkVar "x")))) Nothing)
+  , InsDecl (mkBind1 "uncast" [mkPVar "x",mkPVar "f"] (App (mkVar "f") (App (mkVar "cast_fptr_to_obj") (App (mkVar "castPtr") (mkVar "x")))) Nothing)
   ]
 
 genHsFrontInstCastable :: Class -> Maybe Decl
