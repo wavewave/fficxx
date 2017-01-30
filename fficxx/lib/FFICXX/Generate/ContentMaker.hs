@@ -292,7 +292,7 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
                        <> genExtraImport m
         ifaceBody = 
           runReader (mapM genHsFrontDecl classes) amap 
-          <> (map hsClassExistType .  filter (not.isAbstractClass)) classes
+          -- <> (map hsClassExistType .  filter (not.isAbstractClass)) classes
           <> (concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
           <> (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
@@ -328,14 +328,14 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                       <> genExtraImport m
         f :: Class -> [Decl]
         f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
-        g :: Class -> [Decl]
-        g y = map (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
+        -- g :: Class -> [Decl]
+        -- g y = map (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
-        implBody = concatMap f classes <> concatMap g (filter (not.isAbstractClass) classes)
+        implBody = concatMap f classes  -- <> concatMap g (filter (not.isAbstractClass) classes)
                    <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
-                   <> map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
+                   -- <> map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
 
 
 buildTemplateHs :: TemplateClassModule -> Module

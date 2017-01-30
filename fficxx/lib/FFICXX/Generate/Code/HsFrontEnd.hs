@@ -84,7 +84,7 @@ genHsFrontInst parent child
 
       
 ---------------------
-
+{- 
 genHsFrontInstExistCommon :: Class -> Decl 
 genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
   where (highname,rawname) = hsClassName c
@@ -107,18 +107,20 @@ genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
                             )
                             Nothing)
                ]
-
+-}
 
 
 -------------------
 
-
+{-
 genHsFrontInstExistVirtual :: Class -> Class -> Decl
 genHsFrontInstExistVirtual p c = mkInstance [] iparent [existtype] body
   where body = map (genHsFrontInstExistVirtualMethod p c) . virtualFuncs.class_funcs $ p
         iparent = typeclassName p
         existtype = TyApp (tycon "Exist") (tycon ((fst.hsClassName) c))
+-}
 
+{- 
 genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> InstDecl
 genHsFrontInstExistVirtualMethod p c f =
     case f of
@@ -134,6 +136,7 @@ genHsFrontInstExistVirtualMethod p c f =
               mkVar "=<<" `App`
               (mkVar fname `App` foldl1 App (mkVar "x":map mkVar args))
         args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ ([1..] :: [Int])
+-}
 
 ---------------------
 
@@ -213,6 +216,7 @@ hsClassRawType c =
        rawtype = tycon rawname
        derivs = [(unqual "Eq",[]),(unqual "Ord",[]),(unqual "Show",[])]
 
+{- 
 hsClassExistType :: Class -> Decl
 hsClassExistType c = mkInstance [] "Existable" [hightype]
                        [ InsData noLoc DataType (TyApp (tycon "Exist") hightype)
@@ -228,7 +232,7 @@ hsClassExistType c = mkInstance [] "Existable" [hightype]
         a_tvar = mkTVar "a"
         iname = typeclassName c 
         ename = existConstructorName c
-
+-}
 
 
 ------------
