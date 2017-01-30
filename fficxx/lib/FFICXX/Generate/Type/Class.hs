@@ -5,7 +5,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Type.Class
--- Copyright   : (c) 2011-2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2017 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -264,9 +264,6 @@ cppclasscopy_ c = CPT (CPTClassCopy c) NoConst
 cppclasscopy :: Class -> String -> (Types, String)
 cppclasscopy c vname = (cppclasscopy_ c, vname)
 
-
--- tmplclass_ :: String -> String -> Types
--- tmplclass_ tmpl param = TemplateApp tmpl param
 
 hsCTypeName :: CTypes -> String
 hsCTypeName CTString = "CString"
@@ -776,10 +773,17 @@ extractArgRetTypes mc isvirtual (args,ret) =
              ctxt2 = ClassA (unqual "FPtr") [tvar]
          put (ctxt1:ctxt2:ctxts,n+1)
          return tvar
-       -- go (typ,_var) =
+       addstring = do 
+         (ctxts,n) <- get 
+         let tvar = mkTVar ('c' : show n)
+             ctxt = ClassA (unqual "Castable") [tvar,tycon "CString"]
+         put (ctxt:ctxts,n+1)
+         return tvar
+
        mktyp typ = 
          case typ of                  
            SelfType -> return (mkTVar "a")
+           CT CTString Const -> addstring
            CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
            CPT (CPTClass c') _    -> addclass c'
            CPT (CPTClassRef c') _ -> addclass c'

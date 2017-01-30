@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.ContentMaker
--- Copyright   : (c) 2011-2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2017 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -281,10 +281,13 @@ buildRawTypeHs m = mkModule (cmModule m <.> "RawType")
 -- | 
 buildInterfaceHs :: AnnotateMap -> ClassModule -> Module   
 buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
-                         [lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
-                               , "FlexibleInstances", "TypeSynonymInstances"
-                               , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
-                         ifaceImports ifaceBody
+                            [lang [ "EmptyDataDecls", "ExistentialQuantification"
+                                  , "FlexibleContexts", "FlexibleInstances", "ForeignFunctionInterface"
+                                  , "MultiParamTypeClasses"
+                                  , "ScopedTypeVariables"                                 
+                                  , "TypeFamilies", "TypeSynonymInstances"
+                                  ]]
+                            ifaceImports ifaceBody
   where classes = cmClass m
         ifaceImports = [ mkImport "Data.Word"
                        , mkImport "Foreign.C"
@@ -294,7 +297,6 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
                        <> genExtraImport m
         ifaceBody = 
           runReader (mapM genHsFrontDecl classes) amap 
-          -- <> (map hsClassExistType .  filter (not.isAbstractClass)) classes
           <> (concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
           <> (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
@@ -315,11 +317,14 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
 -- | 
 buildImplementationHs :: AnnotateMap -> ClassModule -> Module
 buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
-                              [ lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
-                                     , "FlexibleInstances", "TypeSynonymInstances", "EmptyDataDecls"
-                                     , "OverlappingInstances", "IncoherentInstances"
-                                     ] ]
-                              implImports implBody
+                                 [ lang [ "EmptyDataDecls"
+                                        , "FlexibleContexts", "FlexibleInstances", "ForeignFunctionInterface"
+                                        , "IncoherentInstances"                                                                                
+                                        , "MultiParamTypeClasses"
+                                        , "OverlappingInstances"
+                                        , "TypeFamilies", "TypeSynonymInstances"
+                                        ] ]
+                                 implImports implBody
   where classes = cmClass m
         implImports = [ mkImport "FFICXX.Runtime.Cast"
                       , mkImport "Data.Word"
@@ -330,15 +335,11 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                       <> genExtraImport m
         f :: Class -> [Decl]
         f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
-        -- g :: Class -> [Decl]
-        -- g y = map (flip genHsFrontInstExistVirtual y) (y:class_allparents y )
 
-        implBody = concatMap f classes  -- <> concatMap g (filter (not.isAbstractClass) classes)
+        implBody = concatMap f classes
                    <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
-                   -- <> map genHsFrontInstExistCommon (filter (not.isAbstractClass) classes)
-
 
 buildTemplateHs :: TemplateClassModule -> Module
 buildTemplateHs m = mkModule (tcmModule m <.> "Template")

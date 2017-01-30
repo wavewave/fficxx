@@ -83,60 +83,6 @@ genHsFrontInst parent child
         
 
       
----------------------
-{- 
-genHsFrontInstExistCommon :: Class -> Decl 
-genHsFrontInstExistCommon c = mkInstance [] "FPtr" [existtype] body
-  where (highname,rawname) = hsClassName c
-        hightype = tycon highname
-        rawtype = tycon rawname
-        existtype = TyApp (tycon "Exist") hightype
-        ename = existConstructorName c
-        body = [ InsType noLoc (TyApp (tycon "Raw") existtype) rawtype
-               , InsDecl (mkBind1 "get_fptr" [PApp (unqual ename) [PVar (Ident "obj")] ]
-                            ((mkVar "castPtr") `App` ((mkVar "get_fptr") `App` (mkVar "obj")))
-                            Nothing)
-               , InsDecl (mkBind1 "cast_fptr_to_obj" [PVar (Ident "fptr")]
-                            (App (mkVar ename)
-                              (ExpTypeSig noLoc
-                                (App (mkVar "cast_fptr_to_obj")
-                                  (ExpTypeSig noLoc (mkVar "fptr") (TyApp tyPtr rawtype))
-                                )
-                                hightype
-                              )
-                            )
-                            Nothing)
-               ]
--}
-
-
--------------------
-
-{-
-genHsFrontInstExistVirtual :: Class -> Class -> Decl
-genHsFrontInstExistVirtual p c = mkInstance [] iparent [existtype] body
-  where body = map (genHsFrontInstExistVirtualMethod p c) . virtualFuncs.class_funcs $ p
-        iparent = typeclassName p
-        existtype = TyApp (tycon "Exist") (tycon ((fst.hsClassName) c))
--}
-
-{- 
-genHsFrontInstExistVirtualMethod :: Class -> Class -> Function -> InstDecl
-genHsFrontInstExistVirtualMethod p c f =
-    case f of
-      Constructor _  _ -> error "error in genHsFrontInstExistVirtualMethod"  
-      Destructor _ -> InsDecl (mkBind1 fname [existx] ((mkVar fname) `App` (mkVar "x")) Nothing)
-      _ -> case func_ret f of
-             SelfType -> InsDecl (mkBind1 fname (existx:map mkPVar args) rhs Nothing)
-             _ -> InsDecl (mkBind1 fname [existx] ((mkVar fname) `App` (mkVar "x")) Nothing)
-  where fname = hsFuncName p f
-        ename = existConstructorName c
-        existx = PApp (unqual ename) [PVar (Ident "x")]
-        rhs = (mkVar "return" `dot` mkVar ename) `App`
-              mkVar "=<<" `App`
-              (mkVar fname `App` foldl1 App (mkVar "x":map mkVar args))
-        args  = take (length (func_args f)) . map (\x -> 'a':(show x)) $ ([1..] :: [Int])
--}
 
 ---------------------
 
@@ -215,24 +161,6 @@ hsClassRawType c =
        hightype = tycon highname
        rawtype = tycon rawname
        derivs = [(unqual "Eq",[]),(unqual "Ord",[]),(unqual "Show",[])]
-
-{- 
-hsClassExistType :: Class -> Decl
-hsClassExistType c = mkInstance [] "Existable" [hightype]
-                       [ InsData noLoc DataType (TyApp (tycon "Exist") hightype)
-                           [ QualConDecl noLoc [a_bind]
-                               [ClassA (unqual "FPtr") [a_tvar], ClassA (unqual iname) [a_tvar] ]
-                               (conDecl ename [a_tvar])
-                           ]
-                           []
-                       ]
-  where (highname,_) = hsClassName c
-        hightype = tycon highname
-        a_bind = UnkindedVar (Ident "a")
-        a_tvar = mkTVar "a"
-        iname = typeclassName c 
-        ename = existConstructorName c
--}
 
 
 ------------
