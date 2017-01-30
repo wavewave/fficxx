@@ -58,45 +58,13 @@ mkPostComment str
      in unlines commented_lines 
   | otherwise = str                
 
-extractArgTypes :: Args -> ([Type],[Asst]) 
-extractArgTypes lst = 
-  let  (args,st) = runState (mapM mkFuncArgTypeWorker lst) ([],(0 :: Int))
-  in   (args,fst st)
- where addclass c = do
-         (ctxts,n) <- get 
-         let cname = (fst.hsClassName) c 
-             iname = typeclassNameFromStr cname 
-             tvar = mkTVar ('c' : show n)
-             ctxt1 = ClassA (unqual iname) [tvar]
-             ctxt2 = ClassA (unqual "FPtr") [tvar]
-         put (ctxt1:ctxt2:ctxts,n+1)
-         return tvar
-       mkFuncArgTypeWorker (typ,_var) = 
-         case typ of                  
-           SelfType -> return (mkTVar "a")
-           CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
-           CPT (CPTClass c') _    -> addclass c'
-           CPT (CPTClassRef c') _ -> addclass c' 
-           _ -> error ("No such c type : " <> show typ)  
-
-
-----------------
--- | will be deprecated
-classprefix :: Class -> String 
-classprefix c = let ps = (map typeclassName . class_parents) c
-                in  if null ps 
-                    then "" 
-                    else "(" <> intercalate "," (map (<> " a") ps) <> ") => "
-
-
 
 genHsFrontDecl :: Class -> Reader AnnotateMap Decl
 genHsFrontDecl c = do
   -- for the time being, let's ignore annotation.
   -- amap <- ask  
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap 
-  let 
-      cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
+  let cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
       sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
       body = map (ClsDecl . sigdecl) . virtualFuncs . class_funcs $ c 
   return cdecl
