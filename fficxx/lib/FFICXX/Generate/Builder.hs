@@ -20,9 +20,7 @@ import qualified Data.ByteString.Lazy.Char8        as L
 import           Data.Char                               ( toUpper )
 import           Data.Digest.Pure.MD5                    ( md5 )
 import qualified Data.HashMap.Strict               as HM
-import           Data.List                               ( intercalate )
 import           Data.Monoid                             ( (<>), mempty )
-import           Data.Text                               ( Text )
 import           Language.Haskell.Exts.Pretty            ( prettyPrint )
 import           System.FilePath                         ( (</>), (<.>), splitExtension )
 import           System.Directory                        ( copyFile, doesDirectoryExist
@@ -31,7 +29,6 @@ import           System.IO                               ( hPutStrLn, withFile, 
 import           System.Process                          ( readProcess, system )
 --
 import           FFICXX.Generate.Code.Cabal
-import           FFICXX.Generate.Code.Cpp
 import           FFICXX.Generate.Code.Dependency
 import           FFICXX.Generate.Config
 import           FFICXX.Generate.ContentMaker
