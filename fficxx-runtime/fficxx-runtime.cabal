@@ -1,5 +1,5 @@
 Name:		fficxx-runtime
-Version:	0.2.999
+Version:	0.3
 Synopsis:	Runtime for fficxx-generated library
 Description: 	Runtime for fficxx-generated library
 License:        BSD3
@@ -21,6 +21,7 @@ Library
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: 
                  base == 4.*,
+                 bytestring,
                  template-haskell
 
   Exposed-Modules: 
