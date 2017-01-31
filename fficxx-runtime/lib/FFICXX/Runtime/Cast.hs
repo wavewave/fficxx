@@ -24,7 +24,7 @@
 module FFICXX.Runtime.Cast where
 
 import Control.Monad         ((>=>))
-import Data.ByteString.Char8 (ByteString)
+import Data.ByteString.Char8 (ByteString,packCString, useAsCString)
 import Data.String
 import Data.Word
 import Foreign.C
@@ -160,6 +160,10 @@ instance Castable [Double] (Ptr CDouble) where
 instance Castable [Int] (Ptr CInt) where
   cast xs f = newArray (map fromIntegral xs) >>= f
   uncast xs f = undefined 
+
+instance Castable ByteString CString where
+  cast x f = useAsCString x f
+  uncast x f = packCString x >>= f 
 
 {- 
 instance Castable String CString where
