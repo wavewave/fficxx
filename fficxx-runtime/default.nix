@@ -1,9 +1,9 @@
-{ mkDerivation, base, stdenv, template-haskell }:
+{ mkDerivation, base, bytestring, stdenv, template-haskell }:
 mkDerivation {
   pname = "fficxx-runtime";
-  version = "0.2.999";
+  version = "0.3";
   src = ./.;
-  libraryHaskellDepends = [ base template-haskell ];
+  libraryHaskellDepends = [ base bytestring template-haskell ];
   description = "Runtime for fficxx-generated library";
   license = stdenv.lib.licenses.bsd3;
 }
