@@ -29,11 +29,12 @@ import Data.String
 import Data.Word
 import Foreign.C
 import Foreign.C.String
-import Foreign.Ptr
 import Foreign.ForeignPtr
 import Foreign.Marshal.Array
+import Foreign.Ptr
+import Foreign.Storable
+-- import System.IO.Unsafe
 
-import System.IO.Unsafe
 
 class IsRawType a 
 
@@ -54,16 +55,6 @@ class FunPtrWrappable a where
   fptrWrap :: FunPtrWrapped a -> IO (FunPtr (FunPtrType a)) 
   wrap :: FunPtrHsType a -> FunPtrWrapped a 
 
-{- 
-class Existable a where
-  data Exist a :: *  
-
-data BottomType
-
-class GADTTypeable a where
-  data GADTType a :: * -> *
-  data EGADTType a :: *
--}
 
 class IsCType a where 
 
@@ -73,11 +64,6 @@ instance IsCType CUInt
 instance IsCType CString 
 instance IsCType CULong 
 instance IsCType CLong
-
-{- 
-instance IsString CString where
-  fromString str = unsafePerformIO (newCString str)
--}
 
 instance Castable () () where
   cast x f = f x
@@ -165,14 +151,17 @@ instance Castable ByteString CString where
   cast x f = useAsCString x f
   uncast x f = packCString x >>= f 
 
+
+instance Castable [ByteString] (Ptr CString) where
+  cast xs f = do ys <- mapM (\x -> useAsCString x return) xs
+                 withArray ys $ \cptr -> f cptr
+  uncast xs f = undefined 
+
 {- 
 instance Castable String CString where
   cast x = unsafePerformIO (newCString x)
   uncast x = unsafePerformIO (peekCString x) 
 
-instance Castable [String] (Ptr CString) where
-  cast xs = unsafePerformIO (mapM  newCString xs >>= newArray)
-  uncast _c_xs = undefined
 
 instance (Castable a a', Castable b b') => Castable (a->b) (a'->b') where
   cast f = cast . f . uncast

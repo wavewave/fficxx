@@ -787,8 +787,12 @@ extractArgRetTypes mc isvirtual (args,ret) =
            CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
            CPT (CPTClass c') _    -> addclass c'
            CPT (CPTClassRef c') _ -> addclass c'
+           -- it is not clear whether the following is okay or not.
+           (TemplateApp t p _)    -> return (TyApp (tycon (tclass_name t)) (tycon p))
+           (TemplateType t)       -> return (TyApp (tycon (tclass_name t)) (mkTVar (tclass_param t)))
+           (TemplateParam p)      -> return (mkTVar p)
            Void -> return unit_tycon
-           -- _ -> error ("No such c type : " <> show typ)  
+           _ -> error ("No such c type : " <> show typ)  
 
 functionSignature :: Class -> Function -> Type
 functionSignature c f =
@@ -798,20 +802,6 @@ functionSignature c f =
         | isNonVirtualFunc f = (mkTVar (class_name c) :)
         | otherwise          = id
   in TyForall Nothing ctxts (foldr1 TyFun (arg0 typs))
-
-{- 
-  -- wrong definition!
-
-  let ctyp = tycon $ (ctypToHsTyp (Just c) . genericFuncRet) f
-      arg0
-        | isVirtualFunc f    = (mkTVar "a" :)
-        | isNonVirtualFunc f = (mkTVar (class_name c) :)
-        | otherwise          = id
-      lst = arg0 (map (convertCpp2HS (Just c) . fst) (genericFuncArgs f))
-  in foldr1 TyFun (lst <> [TyApp (tycon "IO") ctyp])
-
--}
-
 
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type
 functionSignatureT t TFun {..} =
