@@ -483,6 +483,7 @@ data CabalAttr = CabalAttr  { cabalattr_license          :: Maybe String
                             , cabalattr_licensefile      :: Maybe String
                             , cabalattr_extraincludedirs :: [FilePath]
                             , cabalattr_extralibdirs     :: [FilePath]
+                            , cabalattr_extrafiles       :: [FilePath]
                             }
 
 instance Default CabalAttr where
@@ -490,6 +491,7 @@ instance Default CabalAttr where
                     , cabalattr_licensefile      = Nothing
                     , cabalattr_extraincludedirs = []
                     , cabalattr_extralibdirs     = []
+                    , cabalattr_extrafiles       = []
                     }
 
 data Class = Class { class_cabal :: Cabal

@@ -113,6 +113,7 @@ cabalTemplate =
   \Build-Type:  $buildtype\n\
   \cabal-version:  >=1.10\n\
   \Extra-source-files:\n\
+  \$extraFiles\n\
   \$csrcFiles\n\
   \\n\
   \$sourcerepository\n\
@@ -149,6 +150,7 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
       cih = pcfg_classImportHeaders pkgconfig
       tmods = pcfg_templateClassModules pkgconfig
       tcih = pcfg_templateClassImportHeaders pkgconfig
+      extrafiles = cabalattr_extrafiles cabalattr
       txt = subst cabalTemplate
               (context ([ ("licenseField", "license: " <> license)
                           | Just license <- [cabalattr_license cabalattr] ] <>
@@ -166,6 +168,7 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
                         , ("sourcerepository","")
                         , ("ccOptions","-std=c++14")
                         , ("deps", "")
+                        , ("extraFiles", concatMap (\x -> cabalIndentation <> x <> "\n") extrafiles)
                         , ("csrcFiles", genCsrcFiles (tih,classmodules))
                         , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) (cih,tcih) )
                         , ("cppFiles", genCppFiles (tih,classmodules))
