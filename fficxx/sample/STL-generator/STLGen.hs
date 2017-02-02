@@ -19,6 +19,7 @@ cabalattr =
     , cabalattr_licensefile = Just "LICENSE"
     , cabalattr_extraincludedirs = [ ".." ]
     , cabalattr_extralibdirs = []
+    , cabalattr_extrafiles = []
     }
 
 
