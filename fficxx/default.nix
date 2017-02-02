@@ -5,7 +5,7 @@
 }:
 mkDerivation {
   pname = "fficxx";
-  version = "0.3";
+  version = "0.3.1";
   src = ./.;
   libraryHaskellDepends = [
     base bytestring Cabal containers data-default directory either
