@@ -401,7 +401,8 @@ buildPkgHs modname mods tih =
                          `connRet2`
                          intercalate "\n\n" (map (intercalateWith connRet prettyPrint) (map genTopLevelFuncDef tfns))
     in subst
-         "module $summarymod (\n\
+         "{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}\n\
+         \module $summarymod (\n\
          \  $exportList\n\
          \) where\n\
          \\n\
