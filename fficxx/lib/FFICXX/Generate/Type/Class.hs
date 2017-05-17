@@ -518,6 +518,16 @@ data Class = Class { class_cabal :: Cabal
                            , class_funcs :: [Function]
                            }
 
+instance Show Class where
+  show x = show (class_name x)
+
+instance Eq Class where
+  (==) x y = class_name x == class_name y
+
+instance Ord Class where
+  compare x y = compare (class_name x) (class_name y)
+
+
 data TemplateFunction = TFun { tfun_ret :: Types
                              , tfun_name :: String
                              , tfun_oname :: String
@@ -525,6 +535,7 @@ data TemplateFunction = TFun { tfun_ret :: Types
                              , tfun_alias :: Maybe String }
                       | TFunNew { tfun_new_args :: Args }
                       | TFunDelete
+--                       deriving (Show,Eq,Ord)
 
 data TemplateClass = TmplCls { tclass_cabal :: Cabal
                              , tclass_name :: String
@@ -532,10 +543,16 @@ data TemplateClass = TmplCls { tclass_cabal :: Cabal
                              , tclass_param :: String
                              , tclass_funcs :: [TemplateFunction]
                              }
+--                     deriving (Show,Eq,Ord)
 
 instance Show TemplateClass where
   show x = show (tclass_name x <> " " <> tclass_param x)
 
+instance Eq TemplateClass where
+  (==) x y = tclass_name x == tclass_name y
+
+instance Ord TemplateClass where
+  compare x y = compare (tclass_name x) (tclass_name y)
 
 
 data ClassGlobal = ClassGlobal
@@ -553,14 +570,9 @@ isAbstractClass :: Class -> Bool
 isAbstractClass Class{}         = False
 isAbstractClass AbstractClass{} = True
 
-instance Show Class where
-  show x = show (class_name x)
 
-instance Eq Class where
-  (==) x y = class_name x == class_name y
 
-instance Ord Class where
-  compare x y = compare (class_name x) (class_name y)
+
 
 type DaughterMap = M.Map String [Class]
 
