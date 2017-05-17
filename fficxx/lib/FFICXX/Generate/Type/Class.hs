@@ -399,7 +399,7 @@ argToCallString (CPT (CPTClassRef c) _,varname) =
 argToCallString (TemplateApp _ _ cp,varname) =
     "to_nonconst<"<>str<>",void>("<>varname<>")" where str = cp
 argToCallString (TemplateAppRef _ _ cp,varname) =
-    "to_nonconst<"<>str<>",void>(&("<>varname<>"))" where str = cp  
+    "*( ("<> str   <> "*) " <>varname<>")" where str = cp  
 argToCallString (_,varname) = varname
 
 argsToCallString :: Args -> String
