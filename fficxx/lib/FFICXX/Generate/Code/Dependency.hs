@@ -25,7 +25,8 @@ import           System.FilePath
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
-
+--
+import           Debug.Trace
 
 
 -- utility functions
