@@ -45,7 +45,8 @@ returnCpp b ret callstr =
                                <>">(new "<>str<>"("<>callstr<>"));"
                                where str = class_name c'
 
-    TemplateApp _ _ _       -> "return (" <> callstr <> ");"          
+    TemplateApp _ _ _       -> "return (" <> callstr <> ");"
+    TemplateAppRef _ _ _    -> error "returnCpp: TemplateAppRef" -- "return (" <> callstr <> ");"  
     TemplateType _          -> error "returnCpp: TemplateType"
     TemplateParam _         ->
       if b then "return (" <> callstr <> ");"
