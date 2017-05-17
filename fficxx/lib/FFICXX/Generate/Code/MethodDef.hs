@@ -35,7 +35,12 @@ returnCpp b ret callstr =
     CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
                                <>">(("<>str<>"*)"<>callstr<>");"
                                where str = class_name c'
-    CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
+    CPT (CPTClassRef c') _  -> "return to_nonconst<"<>str<>"_t,"<>str
+                               <>">(&("<>callstr<>"));"
+                               where str = class_name c'
+
+    -- CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
+
     CPT (CPTClassCopy c') _ -> "return to_nonconst<"<>str<>"_t,"<>str
                                <>">(new "<>str<>"("<>callstr<>"));"
                                where str = class_name c'
