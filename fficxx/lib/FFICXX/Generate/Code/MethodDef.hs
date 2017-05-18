@@ -38,14 +38,12 @@ returnCpp b ret callstr =
     CPT (CPTClassRef c') _  -> "return to_nonconst<"<>str<>"_t,"<>str
                                <>">(&("<>callstr<>"));"
                                where str = class_name c'
-
-    -- CPT (CPTClassRef _c') _ -> "return ((*)"<>callstr<>");"
-
     CPT (CPTClassCopy c') _ -> "return to_nonconst<"<>str<>"_t,"<>str
                                <>">(new "<>str<>"("<>callstr<>"));"
                                where str = class_name c'
 
-    TemplateApp _ _ _       -> "return (" <> callstr <> ");"          
+    TemplateApp _ _ _       -> "return (" <> callstr <> ");"
+    TemplateAppRef _ _ _    -> "return (&(" <> callstr <> "));"  
     TemplateType _          -> error "returnCpp: TemplateType"
     TemplateParam _         ->
       if b then "return (" <> callstr <> ");"
