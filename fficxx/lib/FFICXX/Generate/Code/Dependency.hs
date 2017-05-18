@@ -14,6 +14,24 @@
 
 module FFICXX.Generate.Code.Dependency where
 
+--
+-- fficxx generates one module per one C++ class, and C++ class depends on other classes,
+-- so we need to import other modules corresponding to C++ classes in the dependency list.
+-- Calculating the import list from dependency graph is what this module does.
+
+-- Previously, we have only `Class` type, but added `TemplateClass` recently. Therefore
+-- we have to calculate dependency graph for both types of classes. So we needed to change
+-- `Class` to `Either TemplateClass Class` in many of routines that calculates module import
+-- list.
+
+-- `Dep4Func` contains a list of classes (both ordinary and template types) that is needed
+-- for the definition of a member function.
+-- The goal of `extractClassDep...` functions are to extract Dep4Func, and from the definition
+-- of a class or a template class, we get a list of `Dep4Func`s and then we deduplicate the
+-- dependency class list and finally get the import list for the module corresponding to
+-- a given class.   
+-- 
+
 import           Data.Either               ( rights )
 import           Data.Function             ( on )
 import qualified Data.HashMap.Strict as HM
