@@ -255,7 +255,7 @@ buildTemplateHeader (TypMcro typemacroprefix) t =
 
 
 -- | 
-buildFFIHsc :: ClassModule -> Module
+buildFFIHsc :: ClassModule -> Module ()
 buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody 
   where mname = cmModule m
         headers = cmCIH m
@@ -266,7 +266,7 @@ buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] f
 
 
 -- |                      
-buildRawTypeHs :: ClassModule -> Module
+buildRawTypeHs :: ClassModule -> Module ()
 buildRawTypeHs m = mkModule (cmModule m <.> "RawType")
                   [lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
                         , "FlexibleInstances", "TypeSynonymInstances"
@@ -279,7 +279,7 @@ buildRawTypeHs m = mkModule (cmModule m <.> "RawType")
         rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
 
 -- | 
-buildInterfaceHs :: AnnotateMap -> ClassModule -> Module   
+buildInterfaceHs :: AnnotateMap -> ClassModule -> Module ()
 buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
                             [lang [ "EmptyDataDecls", "ExistentialQuantification"
                                   , "FlexibleContexts", "FlexibleInstances", "ForeignFunctionInterface"
@@ -301,7 +301,7 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
           <> (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
 -- | 
-buildCastHs :: ClassModule -> Module
+buildCastHs :: ClassModule -> Module ()
 buildCastHs m = mkModule (cmModule m <.> "Cast")
                [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
                       , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
@@ -315,7 +315,7 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                <> mapMaybe genHsFrontInstCastableSelf classes
 
 -- | 
-buildImplementationHs :: AnnotateMap -> ClassModule -> Module
+buildImplementationHs :: AnnotateMap -> ClassModule -> Module ()
 buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                                  [ lang [ "EmptyDataDecls"
                                         , "FlexibleContexts", "FlexibleInstances", "ForeignFunctionInterface"
@@ -333,7 +333,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                       , mkImport "System.IO.Unsafe" ]
                       <> genImportInImplementation m
                       <> genExtraImport m
-        f :: Class -> [Decl]
+        f :: Class -> [Decl ()]
         f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
 
         implBody = concatMap f classes
@@ -341,7 +341,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
 
-buildTemplateHs :: TemplateClassModule -> Module
+buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m = mkModule (tcmModule m <.> "Template")
                    [lang  [ "EmptyDataDecls", "FlexibleInstances", "MultiParamTypeClasses"
                           , "TypeFamilies"] ]
@@ -353,7 +353,7 @@ buildTemplateHs m = mkModule (tcmModule m <.> "Template")
   where ts = tcmTemplateClasses m
         body = concatMap genTmplInterface ts 
 
-buildTHHs :: TemplateClassModule -> Module
+buildTHHs :: TemplateClassModule -> Module ()
 buildTHHs m = mkModule (tcmModule m <.> "TH")
              [lang  ["TemplateHaskell"] ]
              ([ mkImport "Data.Char"
@@ -371,13 +371,13 @@ buildTHHs m = mkModule (tcmModule m <.> "TH")
                <> concatMap (\t -> genTmplInstance t (tclass_funcs t)) ts
 
 -- | 
-buildInterfaceHSBOOT :: String -> Module
+buildInterfaceHSBOOT :: String -> Module ()
 buildInterfaceHSBOOT mname = mkModule (mname <.> "Interface") [] [] hsbootBody
   where cname = last (splitOn "." mname)
-        hsbootBody = [ mkClass [] ('I':cname) [mkTBind "a"] [] ]
+        hsbootBody = [ mkClass cxEmpty ('I':cname) [mkTBind "a"] [] ]
 
 -- | 
-buildModuleHs :: ClassModule -> Module
+buildModuleHs :: ClassModule -> Module ()
 buildModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (genImportInModule (cmClass m)) []
 
 -- | 

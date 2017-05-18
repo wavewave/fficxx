@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.HsFFI
--- Copyright   : (c) 2011-2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2017 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -26,7 +26,7 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 
-genHsFFI :: ClassImportHeader -> [Decl]
+genHsFFI :: ClassImportHeader -> [Decl ()]
 genHsFFI header =
   let c = cihClass header
       h = cihSelfHeader header
@@ -37,7 +37,7 @@ genHsFFI header =
 
 --------
 
-hsFFIClassFunc :: HeaderName -> Class -> Function -> Maybe Decl
+hsFFIClassFunc :: HeaderName -> Class -> Function -> Maybe (Decl ())
 hsFFIClassFunc headerfilename c f =
   if isAbstractClass c 
   then Nothing
@@ -52,7 +52,7 @@ hsFFIClassFunc headerfilename c f =
 -- for top level function -- 
 ----------------------------
 
-genTopLevelFuncFFI :: TopLevelImportHeader -> TopLevelFunction -> Decl
+genTopLevelFuncFFI :: TopLevelImportHeader -> TopLevelFunction -> Decl ()
 genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) cfname typ
   where (fname,args,ret) =
           case tfn of
