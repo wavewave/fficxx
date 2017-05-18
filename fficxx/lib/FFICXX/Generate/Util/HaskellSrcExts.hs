@@ -102,7 +102,8 @@ mkDeclHead n tbinds = foldl' (DHApp ()) (dhead n) tbinds
 mkInstance :: Context () -> String -> [Type ()] -> [InstDecl ()] -> Decl ()
 mkInstance ctxt n typs idecls = InstDecl () Nothing instrule (Just idecls)
   where instrule = IRule () Nothing (Just ctxt) insthead
-        insthead  = foldl' (IHApp ()) (IHCon () (unqual n)) typs
+        insthead  = foldl' f (IHCon () (unqual n)) typs
+          where f acc x = IHApp () acc (tyParen x)
 
 mkData :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
 mkData n tbinds qdecls mderiv  = DataDecl () (DataType ()) Nothing declhead qdecls mderiv
@@ -143,6 +144,8 @@ dot :: Exp () -> Exp () -> Exp ()
 x `dot` y = x `app` mkVar "." `app` y
 
 tyForall = TyForall ()
+
+tyParen = TyParen ()
 
 tyPtr :: Type ()
 tyPtr = tycon "Ptr"
