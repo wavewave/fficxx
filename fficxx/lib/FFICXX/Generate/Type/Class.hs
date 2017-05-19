@@ -825,7 +825,7 @@ functionSignature c f =
       ctxt = cxTuple assts
       arg0
         | isVirtualFunc f    = (mkTVar "a" :)
-        | isNonVirtualFunc f = (mkTVar (class_name c) :)
+        | isNonVirtualFunc f = (mkTVar (fst (hsClassName c)) :)
         | otherwise          = id
   in TyForall () Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
 
