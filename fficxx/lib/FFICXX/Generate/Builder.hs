@@ -124,7 +124,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   mapM_ (\m -> gen (cmModule m <.> "hs") (prettyPrint (buildModuleHs m))) mods
   --
   putStrLn "summary module generation generation"
-  gen (summarymodule <.> "hs") (buildPkgHs summarymodule mods tih)
+  gen (summarymodule <.> "hs") (buildPkgHs summarymodule (mods,tcms) tih)
   --
   putStrLn "copying"
   touch (workingDir </> "LICENSE")

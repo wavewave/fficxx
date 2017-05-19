@@ -381,8 +381,8 @@ buildModuleHs :: ClassModule -> Module
 buildModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (genImportInModule (cmClass m)) []
 
 -- | 
-buildPkgHs :: String -> [ClassModule] -> TopLevelImportHeader -> String 
-buildPkgHs modname mods tih = 
+buildPkgHs :: String -> ([ClassModule],[TemplateClassModule]) -> TopLevelImportHeader -> String 
+buildPkgHs modname (mods,tmods) tih = 
     let tfns = tihFuncs tih 
         exportListStr = intercalateWith (conn "\n, ") ((\x->"module " <> x).cmModule) mods 
                         <> if null tfns 
@@ -391,12 +391,16 @@ buildPkgHs modname mods tih =
         importListStr = intercalateWith connRet ((\x->"import " <> x).cmModule) mods
                         <> if null tfns 
                            then "" 
-                           else "" `connRet2` "import Foreign.C" `connRet` "import Foreign.Ptr"
-                                `connRet` "import FFICXX.Runtime.Cast" 
-                                `connRet`
+                           else "" `connRet2`
+                                "import Foreign.C" `connRet`
+                                "import Foreign.Ptr" `connRet`
+                                "import FFICXX.Runtime.Cast" `connRet`
                                 intercalateWith connRet 
                                   ((\x->"import " <> modname <> "." <> x <> ".RawType")
                                    .fst.hsClassName.cihClass) (tihClassDep tih)
+                                `connRet`
+                                intercalateWith connRet
+                                  ((\x->"import " <> x <> ".Template").tcmModule) tmods
         topLevelDefStr = intercalate "\n" (map (prettyPrint . genTopLevelFuncFFI tih) tfns)
                          `connRet2`
                          intercalate "\n\n" (map (intercalateWith connRet prettyPrint) (map genTopLevelFuncDef tfns))
