@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Util.HaskellSrcExts
--- Copyright   : (c) 2011-2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2017 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -13,95 +13,188 @@
 
 module FFICXX.Generate.Util.HaskellSrcExts where
 
-import           Language.Haskell.Exts
-import           Language.Haskell.Exts.SrcLoc
+import           Data.List (foldl')
+import           Language.Haskell.Exts        hiding (unit_tycon)
+import qualified Language.Haskell.Exts               (unit_tycon)
 
-unqual :: String  -> QName
-unqual = UnQual . Ident
 
-tycon :: String -> Type
-tycon = TyCon . unqual
+unqual :: String  -> QName ()
+unqual = UnQual () . Ident ()
 
-conDecl :: String -> [Type] -> ConDecl
-conDecl n ys = ConDecl (Ident n) ys
+tycon :: String -> Type ()
+tycon = TyCon () . unqual
 
-recDecl :: String -> [([Name],Type)] -> ConDecl
-recDecl n rs = RecDecl (Ident n) rs
+tyapp :: Type () -> Type () -> Type ()
+tyapp = TyApp ()
 
-app :: String -> String -> Exp
-app x y = App (mkVar x) (mkVar y)
+tyfun :: Type () -> Type () -> Type ()
+tyfun = TyFun ()
 
-mkVar :: String -> Exp
-mkVar = Var . unqual
+tylist :: Type () -> Type ()
+tylist = TyList ()
 
-con :: String -> Exp
-con = Con . unqual
+unit_tycon :: Type ()
+unit_tycon = Language.Haskell.Exts.unit_tycon ()
 
-mkTVar :: String -> Type
-mkTVar = TyVar . Ident
+conDecl :: String -> [Type ()] -> ConDecl ()
+conDecl n ys = ConDecl () (Ident () n) ys
 
-mkPVar :: String -> Pat
-mkPVar = PVar . Ident
+qualConDecl = QualConDecl ()
 
-mkPVarSig :: String -> Type -> Pat
-mkPVarSig n typ = PatTypeSig noLoc (mkPVar n) typ
+recDecl :: String -> [FieldDecl ()] -> ConDecl () -- [([Name ()],Type ())] -> ConDecl ()
+recDecl n rs = RecDecl () (Ident () n) rs
 
-pbind :: Pat -> Exp -> Maybe Binds -> Decl
-pbind pat e = PatBind noLoc pat (UnGuardedRhs e)
+-- app :: Exp () -> Exp () -> Exp ()
+-- app = App ()
 
-mkTBind :: String -> TyVarBind
-mkTBind = UnkindedVar . Ident
+app' :: String -> String -> Exp ()
+app' x y = App () (mkVar x) (mkVar y)
 
-mkBind1 :: String -> [Pat] -> Exp -> Maybe Binds -> Decl
+
+lit :: Literal () -> Exp ()
+lit = Lit ()
+
+
+mkVar :: String -> Exp () 
+mkVar = Var () . unqual
+
+con :: String -> Exp ()
+con = Con () . unqual
+
+mkTVar :: String -> Type () 
+mkTVar = TyVar () . Ident ()
+
+mkPVar :: String -> Pat ()
+mkPVar = PVar () . Ident ()
+
+mkIVar :: String -> ImportSpec ()
+mkIVar = IVar () . Ident ()
+
+mkPVarSig :: String -> Type () -> Pat ()
+mkPVarSig n typ = PatTypeSig () (mkPVar n) typ
+
+pbind :: Pat () -> Exp () -> Maybe (Binds ()) -> Decl ()
+pbind pat e = PatBind () pat (UnGuardedRhs () e)
+
+mkTBind :: String -> TyVarBind ()
+mkTBind = UnkindedVar () . Ident ()
+
+mkBind1 :: String -> [Pat ()] -> Exp () -> Maybe (Binds ()) -> Decl ()
 mkBind1 n pat rhs mbinds =
-  FunBind [ Match noLoc (Ident n) pat Nothing (UnGuardedRhs rhs) mbinds ]
+  FunBind () [ Match () (Ident () n) pat (UnGuardedRhs () rhs) mbinds ]
 
-mkFun :: String -> Type -> [Pat] -> Exp -> Maybe Binds -> [Decl]
+mkFun :: String -> Type () -> [Pat ()] -> Exp () -> Maybe (Binds ()) -> [Decl ()]
 mkFun fname typ pats rhs mbinds = [mkFunSig fname typ, mkBind1 fname pats rhs mbinds]
 
-mkFunSig :: String -> Type -> Decl
-mkFunSig fname typ = TypeSig noLoc [Ident fname] typ
+mkFunSig :: String -> Type () -> Decl ()
+mkFunSig fname typ = TypeSig () [Ident () fname] typ
 
-mkClass :: Context -> String -> [TyVarBind] -> [ClassDecl] -> Decl
-mkClass ctxt n tbinds cdecls = ClassDecl noLoc ctxt (Ident n) tbinds [] cdecls
+mkClass :: Context () -> String -> [TyVarBind ()] -> [ClassDecl ()] -> Decl ()
+mkClass ctxt n tbinds cdecls = ClassDecl () (Just ctxt) (mkDeclHead n tbinds)  [] (Just cdecls)
 
-mkInstance :: Context -> String -> [Type] -> [InstDecl] -> Decl
-mkInstance ctxt n typs idecls = InstDecl noLoc Nothing [] ctxt (unqual n) typs idecls
 
-mkData :: String -> [TyVarBind] -> [QualConDecl] -> [Deriving] -> Decl
-mkData n tbinds qdecls derivs  = DataDecl noLoc DataType [] (Ident n) tbinds qdecls derivs
+dhead :: String -> DeclHead ()
+dhead n = DHead () (Ident () n)
 
-mkNewtype :: String -> [TyVarBind] -> [QualConDecl] -> [Deriving] -> Decl
-mkNewtype n tbinds qdecls derivs  = DataDecl noLoc NewType [] (Ident n) tbinds qdecls derivs
+mkDeclHead :: String -> [TyVarBind ()] -> DeclHead ()
+mkDeclHead n tbinds = foldl' (DHApp ()) (dhead n) tbinds
 
-mkForImpCcall :: String -> String -> Type -> Decl
-mkForImpCcall quote n typ = ForImp noLoc CCall (PlaySafe False) quote (Ident n) typ
+mkInstance :: Context () -> String -> [Type ()] -> [InstDecl ()] -> Decl ()
+mkInstance ctxt n typs idecls = InstDecl () Nothing instrule (Just idecls)
+  where instrule = IRule () Nothing (Just ctxt) insthead
+        insthead  = foldl' f (IHCon () (unqual n)) typs
+          where f acc x = IHApp () acc (tyParen x)
 
-mkModule :: String -> [ModulePragma] -> [ImportDecl] -> [Decl] -> Module
-mkModule n pragmas idecls decls = Module noLoc (ModuleName n) pragmas Nothing Nothing idecls decls
+mkData :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
+mkData n tbinds qdecls mderiv  = DataDecl () (DataType ()) Nothing declhead qdecls mderiv
+  where declhead = mkDeclHead n tbinds 
 
-mkModuleE :: String -> [ModulePragma] -> [ExportSpec] -> [ImportDecl] -> [Decl] -> Module
-mkModuleE n pragmas exps idecls decls = Module noLoc (ModuleName n) pragmas Nothing (Just exps) idecls decls
+mkNewtype :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
+mkNewtype n tbinds qdecls mderiv  = DataDecl () (NewType ()) Nothing declhead qdecls mderiv
+  where declhead = mkDeclHead n tbinds
 
-mkImport :: String -> ImportDecl
-mkImport m = ImportDecl noLoc (ModuleName m) False False False Nothing Nothing Nothing
+mkForImpCcall :: String -> String -> Type () -> Decl ()
+mkForImpCcall quote n typ = ForImp () (CCall ()) (Just (PlaySafe () False)) (Just quote) (Ident () n) typ
 
-mkImportExp :: String -> [String] -> ImportDecl
-mkImportExp m lst = ImportDecl noLoc (ModuleName m) False False False Nothing Nothing
-                        (Just (False,map (IVar . Ident) lst))
+mkModule :: String -> [ModulePragma ()] -> [ImportDecl ()] -> [Decl ()] -> Module ()
+mkModule n pragmas idecls decls = Module () (Just mhead) pragmas idecls decls
+  where mhead = ModuleHead () (ModuleName () n) Nothing Nothing
 
-mkImportSrc :: String -> ImportDecl                        
-mkImportSrc m = ImportDecl noLoc (ModuleName m) False True False Nothing Nothing Nothing
+mkModuleE :: String -> [ModulePragma ()] -> [ExportSpec ()] -> [ImportDecl ()] -> [Decl ()] -> Module ()
+mkModuleE n pragmas exps idecls decls = Module () (Just mhead) pragmas  idecls decls
+  where mhead = ModuleHead () (ModuleName () n) Nothing (Just eslist)
+        eslist = ExportSpecList () exps
 
-lang :: [String] -> ModulePragma
-lang ns = LanguagePragma noLoc (map Ident ns)
+mkImport :: String -> ImportDecl ()
+mkImport m = ImportDecl () (ModuleName () m) False False False Nothing Nothing Nothing
 
-dot :: Exp -> Exp -> Exp
-x `dot` y = x `App` mkVar "." `App` y
+mkImportExp :: String -> [String] -> ImportDecl ()
+mkImportExp m lst =
+  ImportDecl () (ModuleName () m) False False False Nothing Nothing (Just islist)
+  where islist = ImportSpecList () False (map mkIVar lst)
 
-tyPtr :: Type
+    
+mkImportSrc :: String -> ImportDecl ()          
+mkImportSrc m = ImportDecl () (ModuleName () m) False True False Nothing Nothing Nothing
+
+lang :: [String] -> ModulePragma ()
+lang ns = LanguagePragma () (map (Ident ()) ns)
+
+dot :: Exp () -> Exp () -> Exp ()
+x `dot` y = x `app` mkVar "." `app` y
+
+tyForall = TyForall ()
+
+tyParen = TyParen ()
+
+tyPtr :: Type ()
 tyPtr = tycon "Ptr"
 
-tyForeignPtr :: Type
+tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
 
+classA :: QName () -> [Type ()] -> Asst ()
+classA = ClassA ()
+
+cxEmpty :: Context ()
+cxEmpty = CxEmpty ()
+
+cxTuple :: [Asst ()] -> Context ()
+cxTuple = CxTuple ()
+
+tySplice :: Splice () -> Type ()
+tySplice = TySplice ()
+
+parenSplice :: Exp () -> Splice ()
+parenSplice = ParenSplice ()
+
+bracketExp = BracketExp ()
+typeBracket = TypeBracket ()
+
+
+mkDeriving = Deriving ()
+
+irule = IRule ()
+
+ihcon = IHCon ()
+
+evar = EVar ()
+eabs = EAbs ()
+ethingwith = EThingWith ()
+
+ethingall q = ethingwith (EWildcard () 0) q []
+
+nonamespace = NoNamespace ()
+
+list = List ()
+lambda = Lambda ()
+
+insType = InsType ()
+insDecl = InsDecl ()
+
+generator = Generator ()
+
+clsDecl = ClsDecl ()
+
+
+unkindedVar = UnkindedVar ()

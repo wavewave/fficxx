@@ -36,7 +36,7 @@ Library
                  errors,
                  filepath>1,
                  hashable,
-                 haskell-src-exts,
+                 haskell-src-exts >= 1.18,
                  lens > 3,
                  mtl>2,
                  process,
