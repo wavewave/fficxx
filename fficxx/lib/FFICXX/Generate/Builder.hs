@@ -61,7 +61,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
         mkPackageConfig
           (pkgname, mkClassNSHeaderFromMap (HM.fromList lst))
           (classes, toplevelfunctions,templates,extramods)
-          (cabal_additional_c_includes cabal)
+          (cabal_additional_c_incs cabal)
           (cabal_additional_c_srcs cabal)
       hsbootlst = mkHSBOOTCandidateList mods
       cabalFileName = pkgname <.> "cabal" 
@@ -96,7 +96,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   gen (tihHeaderFileName tih <.> "cpp") (buildTopLevelFunctionCppDef tih)
   --
   putStrLn "additional header/source generation"
-  mapM_ (\(AddCInclude hdr txt) -> gen hdr txt) (cabal_additional_c_includes cabal)
+  mapM_ (\(AddCInc hdr txt) -> gen hdr txt) (cabal_additional_c_incs cabal)
   mapM_ (\(AddCSrc hdr txt) -> gen hdr txt) (cabal_additional_c_srcs cabal)
   -- 
   putStrLn "RawType.hs file generation"
@@ -188,7 +188,7 @@ copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ tcihs acincs acsrcs) = do
     let hfile = unHdrName (tcihSelfHeader header)
     copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
 
-  forM_ acincs $ \(AddCInclude header _) -> 
+  forM_ acincs $ \(AddCInc header _) -> 
     copyFileWithMD5Check (wdir </> header) (ddir </> header)
 
   forM_ acsrcs $ \(AddCSrc csrc _) -> 

@@ -205,7 +205,7 @@ mkTCM (t,hdr) = TCM  (getTClassModuleBase t) [t] [TCIH t hdr]
 mkPackageConfig
   :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
   -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)],[(String,[String])])
-  -> [AddCInclude]
+  -> [AddCInc]
   -> [AddCSrc]
   -> PackageConfig
 mkPackageConfig (pkgname,mkNS_IncHdrs) (cs,fs,ts,extra) acincs acsrcs = 
