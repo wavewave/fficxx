@@ -29,18 +29,12 @@ cabalIndentation :: String
 cabalIndentation = replicate 23 ' ' 
 
 
-genIncludeFiles :: String        -- ^ package name 
-                -> ([ClassImportHeader],[TemplateClassImportHeader])
-                -> String
-genIncludeFiles pkgname (cih,tcih) =
-  let indent = cabalIndentation 
-      selfheaders = map cihSelfHeader cih <> map tcihSelfHeader tcih
-      -- selfheaders = nub selfheaders'
-      includeFileStrs = map ((indent<>).unHdrName) selfheaders
-  in  unlines ((indent<>pkgname<>"Type.h") : includeFileStrs)
-
-genCsrcFiles :: (TopLevelImportHeader,[ClassModule]) -> String
-genCsrcFiles (tih,cmods) =
+-- for source distribution
+genCsrcFiles :: (TopLevelImportHeader,[ClassModule])
+             -> [AddCInc]
+             -> [AddCSrc]
+             -> String
+genCsrcFiles (tih,cmods) acincs acsrcs =
   let indent = cabalIndentation 
       selfheaders' = do 
         x <- cmods
@@ -54,15 +48,34 @@ genCsrcFiles (tih,cmods) =
       selfcpp = nub selfcpp' 
       tlh = tihHeaderFileName tih <.> "h"
       tlcpp = tihHeaderFileName tih <.> "cpp"
-      includeFileStrsWithCsrc = map (\x->indent<>"csrc"</> x) 
+      includeFileStrsWithCsrc = map (\x->indent<>"csrc"</> x) $ 
                                  (if (null.tihFuncs) tih then map unHdrName selfheaders else tlh:(map unHdrName selfheaders))
-      cppFilesWithCsrc = map (\x->indent<>"csrc"</>x) 
+                                 ++ map (\(AddCInc hdr _) -> hdr) acincs
+      cppFilesWithCsrc = map (\x->indent<>"csrc"</>x)  $
                            (if (null.tihFuncs) tih then selfcpp else tlcpp:selfcpp)
+                           ++ map (\(AddCSrc src _) -> src) acsrcs
+
       
   in  unlines (includeFileStrsWithCsrc <> cppFilesWithCsrc)
 
-genCppFiles :: (TopLevelImportHeader,[ClassModule]) -> String 
-genCppFiles (tih,cmods) = 
+
+-- for library
+genIncludeFiles :: String        -- ^ package name 
+                -> ([ClassImportHeader],[TemplateClassImportHeader])
+                -> [AddCInc]
+                -> String
+genIncludeFiles pkgname (cih,tcih) acincs =
+  let indent = cabalIndentation 
+      selfheaders = map cihSelfHeader cih <> map tcihSelfHeader tcih
+      includeFileStrs = map ((indent<>).unHdrName) (selfheaders ++ map (\(AddCInc hdr _) -> HdrName hdr) acincs)
+  in  unlines ((indent<>pkgname<>"Type.h") : includeFileStrs)
+
+
+-- for library
+genCppFiles :: (TopLevelImportHeader,[ClassModule])
+            -> [AddCSrc]
+            -> String 
+genCppFiles (tih,cmods) acsrcs = 
   let indent = cabalIndentation 
       selfcpp' = do 
         x <- cmods
@@ -70,8 +83,9 @@ genCppFiles (tih,cmods) =
         return (cihSelfCpp y) 
       selfcpp = nub selfcpp'
       tlcpp = tihHeaderFileName tih <.> "cpp"
-      cppFileStrs = map (\x->indent<> "csrc" </> x) 
+      cppFileStrs = map (\x->indent<> "csrc" </> x)  $ 
                       (if (null.tihFuncs) tih then selfcpp else tlcpp:selfcpp)
+                      ++ map (\(AddCSrc src _) -> src) acsrcs
   in  unlines cppFileStrs 
 
 
@@ -140,7 +154,7 @@ cabalTemplate =
 -- |
 buildCabalFile :: (Cabal, CabalAttr)
             -> String
-            -> PackageConfig -- (TopLevelImportHeader,[ClassModule],[TemplateClassModule])
+            -> PackageConfig
             -> [String] -- ^ extra libs
             -> FilePath
             -> IO ()
@@ -150,6 +164,8 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
       cih = pcfg_classImportHeaders pkgconfig
       tmods = pcfg_templateClassModules pkgconfig
       tcih = pcfg_templateClassImportHeaders pkgconfig
+      acincs = pcfg_additional_c_incs pkgconfig
+      acsrcs = pcfg_additional_c_srcs pkgconfig 
       extrafiles = cabalattr_extrafiles cabalattr
       txt = subst cabalTemplate
               (context ([ ("licenseField", "license: " <> license)
@@ -169,9 +185,9 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
                         , ("ccOptions","-std=c++14")
                         , ("deps", "")
                         , ("extraFiles", concatMap (\x -> cabalIndentation <> x <> "\n") extrafiles)
-                        , ("csrcFiles", genCsrcFiles (tih,classmodules))
-                        , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) (cih,tcih) )
-                        , ("cppFiles", genCppFiles (tih,classmodules))
+                        , ("csrcFiles", genCsrcFiles (tih,classmodules) acincs acsrcs)
+                        , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) (cih,tcih) acincs)
+                        , ("cppFiles", genCppFiles (tih,classmodules) acsrcs)
                         , ("exposedModules", genExposedModules summarymodule (classmodules,tmods))
                         , ("otherModules", genOtherModules classmodules)
                         , ("extralibdirs", intercalate ", " $ cabalattr_extralibdirs cabalattr)
