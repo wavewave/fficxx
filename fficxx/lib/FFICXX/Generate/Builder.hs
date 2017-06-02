@@ -57,8 +57,12 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
       workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg
 
-      pkgconfig@(PkgConfig mods cihs tih tcms _tcihs) =
-        mkPackageConfig (pkgname, mkClassNSHeaderFromMap (HM.fromList lst)) (classes, toplevelfunctions,templates,extramods)
+      pkgconfig@(PkgConfig mods cihs tih tcms _tcihs _ _) =
+        mkPackageConfig
+          (pkgname, mkClassNSHeaderFromMap (HM.fromList lst))
+          (classes, toplevelfunctions,templates,extramods)
+          (cabal_additional_c_incs cabal)
+          (cabal_additional_c_srcs cabal)
       hsbootlst = mkHSBOOTCandidateList mods
       cabalFileName = pkgname <.> "cabal" 
   --
@@ -91,6 +95,10 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   mapM_ (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr)) cihs
   gen (tihHeaderFileName tih <.> "cpp") (buildTopLevelFunctionCppDef tih)
   --
+  putStrLn "additional header/source generation"
+  mapM_ (\(AddCInc hdr txt) -> gen hdr txt) (cabal_additional_c_incs cabal)
+  mapM_ (\(AddCSrc hdr txt) -> gen hdr txt) (cabal_additional_c_srcs cabal)
+  -- 
   putStrLn "RawType.hs file generation"
   mapM_ (\m -> gen (cmModule m <.> "RawType" <.> "hs") (prettyPrint (buildRawTypeHs m))) mods
   --
@@ -161,7 +169,7 @@ copyFileWithMD5Check src tgt = do
 
 
 copyCppFiles :: FilePath -> FilePath -> String -> PackageConfig -> IO ()
-copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ tcihs) = do 
+copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ tcihs acincs acsrcs) = do 
   let thfile = cprefix <> "Type.h"
       tlhfile = tihHeaderFileName tih <.> "h"
       tlcppfile = tihHeaderFileName tih <.> "cpp"
@@ -179,6 +187,12 @@ copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ tcihs) = do
   forM_ tcihs $ \header-> do 
     let hfile = unHdrName (tcihSelfHeader header)
     copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile) 
+
+  forM_ acincs $ \(AddCInc header _) -> 
+    copyFileWithMD5Check (wdir </> header) (ddir </> header)
+
+  forM_ acsrcs $ \(AddCSrc csrc _) -> 
+    copyFileWithMD5Check (wdir </> csrc) (ddir </> csrc)
 
 
 moduleFileCopy :: FilePath -> FilePath -> FilePath -> IO ()

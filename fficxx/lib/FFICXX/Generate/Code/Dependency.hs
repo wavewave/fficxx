@@ -204,9 +204,11 @@ mkTCM (t,hdr) = TCM  (getTClassModuleBase t) [t] [TCIH t hdr]
 
 mkPackageConfig
   :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
-  -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)],[(String,[String])]) 
+  -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)],[(String,[String])])
+  -> [AddCInc]
+  -> [AddCSrc]
   -> PackageConfig
-mkPackageConfig (pkgname,mkNS_IncHdrs) (cs,fs,ts,extra) = 
+mkPackageConfig (pkgname,mkNS_IncHdrs) (cs,fs,ts,extra) acincs acsrcs = 
   let ms = map (mkClassModule mkNS_IncHdrs extra) cs 
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
@@ -220,7 +222,7 @@ mkPackageConfig (pkgname,mkNS_IncHdrs) (cs,fs,ts,extra) =
       tih = TopLevelImportHeader (pkgname <> "TopLevel") tl_cihs fs
       tcms = map mkTCM ts
       tcihs = concatMap tcmTCIH tcms
-  in PkgConfig ms cihs tih tcms tcihs
+  in PkgConfig ms cihs tih tcms tcihs acincs acsrcs
 
 
 mkHSBOOTCandidateList :: [ClassModule] -> [String]
