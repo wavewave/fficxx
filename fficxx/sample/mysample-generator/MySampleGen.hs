@@ -5,10 +5,16 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 
+incs = [ AddCInclude "test.h" "test ok?" ]
+
+srcs = [ AddCSrc     "test.cpp" "test ok??" ]
+
 
 mycabal = Cabal { cabal_pkgname = "MySample"
                 , cabal_cheaderprefix = "MySample"
                 , cabal_moduleprefix = "MySample"
+                , cabal_additional_c_includes = incs
+                , cabal_additional_c_srcs     = srcs
                 }
 
 mycabalattr = 

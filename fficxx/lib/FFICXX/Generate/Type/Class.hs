@@ -481,9 +481,16 @@ tmplRetTypeToString b (TemplateParam _) = if b
 newtype ProtectedMethod = Protected { unProtected :: [String] }
     deriving (Monoid)
 
+data AddCInclude = AddCInclude FilePath String
+
+data AddCSrc = AddCSrc FilePath String
+
+
 data Cabal = Cabal  { cabal_pkgname       :: String
                     , cabal_cheaderprefix :: String
                     , cabal_moduleprefix  :: String
+                    , cabal_additional_c_includes :: [AddCInclude]
+                    , cabal_additional_c_srcs :: [AddCSrc]
                     }
 
 data CabalAttr = CabalAttr  { cabalattr_license          :: Maybe String

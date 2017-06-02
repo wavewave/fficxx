@@ -59,6 +59,8 @@ data PackageConfig = PkgConfig { pcfg_classModules :: [ClassModule]
                                , pcfg_topLevelImportHeader :: TopLevelImportHeader
                                , pcfg_templateClassModules :: [TemplateClassModule]
                                , pcfg_templateClassImportHeaders :: [TemplateClassImportHeader]
+                               , pcfg_additional_c_includes :: [AddCInclude]
+                               , pcfg_additional_c_srcs :: [AddCSrc]
                                }
 
 
