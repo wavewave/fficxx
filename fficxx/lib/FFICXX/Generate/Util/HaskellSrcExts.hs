@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Util.HaskellSrcExts
@@ -14,6 +15,7 @@
 module FFICXX.Generate.Util.HaskellSrcExts where
 
 import           Data.List (foldl')
+import           Data.Maybe
 import           Language.Haskell.Exts        hiding (unit_tycon)
 import qualified Language.Haskell.Exts               (unit_tycon)
 
@@ -106,11 +108,19 @@ mkInstance ctxt n typs idecls = InstDecl () Nothing instrule (Just idecls)
           where f acc x = IHApp () acc (tyParen x)
 
 mkData :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
+#if MIN_VERSION_haskell_src_exts(1,20,0)
+mkData n tbinds qdecls mderiv  = DataDecl () (DataType ()) Nothing declhead qdecls (maybeToList mderiv)
+#else
 mkData n tbinds qdecls mderiv  = DataDecl () (DataType ()) Nothing declhead qdecls mderiv
+#endif
   where declhead = mkDeclHead n tbinds 
 
 mkNewtype :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
+#if MIN_VERSION_haskell_src_exts(1,20,0)
+mkNewtype n tbinds qdecls mderiv  = DataDecl () (NewType ()) Nothing declhead qdecls (maybeToList mderiv)
+#else
 mkNewtype n tbinds qdecls mderiv  = DataDecl () (NewType ()) Nothing declhead qdecls mderiv
+#endif
   where declhead = mkDeclHead n tbinds
 
 mkForImpCcall :: String -> String -> Type () -> Decl ()
@@ -172,7 +182,11 @@ bracketExp = BracketExp ()
 typeBracket = TypeBracket ()
 
 
+#if MIN_VERSION_haskell_src_exts(1,20,0)
+mkDeriving = Deriving () Nothing
+#else
 mkDeriving = Deriving ()
+#endif
 
 irule = IRule ()
 
