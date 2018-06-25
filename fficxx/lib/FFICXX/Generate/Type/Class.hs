@@ -5,7 +5,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Type.Class
--- Copyright   : (c) 2011-2017 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -165,6 +165,8 @@ intref_ = CT (CRef CTInt) NoConst
 charpp_ :: Types
 charpp_ = CT CTCharStarStar NoConst
 
+ref_ :: CTypes -> Types
+ref_ t = CT (CRef t) NoConst
 
 star_ :: CTypes -> Types
 star_ t = CT (CPointer t) NoConst
@@ -234,6 +236,9 @@ intref var = (intref_, var)
 
 charpp :: String -> (Types, String)
 charpp var = (charpp_, var)
+
+ref :: CTypes -> String -> (Types,String)
+ref t var = (ref_ t, var)
 
 star :: CTypes -> String -> (Types, String)
 star t var = (star_ t, var)
