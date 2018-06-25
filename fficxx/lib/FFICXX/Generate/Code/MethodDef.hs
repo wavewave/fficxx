@@ -30,7 +30,7 @@ returnCpp b ret callstr =
     Void                    -> callstr <> ";"
     SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
                                 <> callstr <> ") ;"
-    CT (CRef _) _           -> "return ((*)"<>callstr<>");"
+    CT (CRef _) _           -> "return (&("<>callstr<>"));"
     CT _ _                  -> "return "<>callstr<>";" 
     CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
                                <>">(("<>str<>"*)"<>callstr<>");"
