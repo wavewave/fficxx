@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Builder
--- Copyright   : (c) 2011-2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -133,7 +133,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   mapM_ (\m -> gen (cmModule m <.> "hs") (prettyPrint (buildModuleHs m))) mods
   --
   putStrLn "summary module generation generation"
-  gen (summarymodule <.> "hs") (buildPkgHs summarymodule (mods,tcms) tih)
+  gen (summarymodule <.> "hs") (prettyPrint (buildPkgHs summarymodule (mods,tcms) tih))
   --
   putStrLn "copying"
   touch (workingDir </> "LICENSE")
@@ -212,7 +212,6 @@ moduleFileCopy wdir ddir fname = do
 copyModule :: FilePath -> FilePath -> ClassModule -> IO ()
 copyModule wdir ddir m = do 
   let modbase = cmModule m 
-
   moduleFileCopy wdir ddir $ modbase <> ".hs"
   moduleFileCopy wdir ddir $ modbase <> ".RawType.hs"
   moduleFileCopy wdir ddir $ modbase <> ".FFI.hsc"
@@ -220,12 +219,10 @@ copyModule wdir ddir m = do
   moduleFileCopy wdir ddir $ modbase <> ".Cast.hs"
   moduleFileCopy wdir ddir $ modbase <> ".Implementation.hs"
   moduleFileCopy wdir ddir $ modbase <> ".Interface.hs-boot"
-  return ()
+
 
 copyTemplateModule :: FilePath -> FilePath -> TemplateClassModule -> IO ()
 copyTemplateModule wdir ddir m = do 
   let modbase = tcmModule m 
   moduleFileCopy wdir ddir $ modbase <> ".Template.hs"
   moduleFileCopy wdir ddir $ modbase <> ".TH.hs"
-  return ()
-

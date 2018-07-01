@@ -5,7 +5,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.HsFrontEnd
--- Copyright   : (c) 2011-2017 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -32,7 +32,6 @@ import           Language.Haskell.Exts.Syntax            ( Asst(..), Binds(..), 
                                                          , QualConDecl(..), Stmt(..)
                                                          , Type(..), TyVarBind (..)
                                                          )
--- import           Language.Haskell.Exts.SrcLoc            ( noLoc )
 import           System.FilePath                         ((<.>))
 -- 
 import           FFICXX.Generate.Type.Class
