@@ -2,7 +2,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Util.HaskellSrcExts
--- Copyright   : (c) 2011-2017 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -57,13 +57,13 @@ lit :: Literal () -> Exp ()
 lit = Lit ()
 
 
-mkVar :: String -> Exp () 
+mkVar :: String -> Exp ()
 mkVar = Var () . unqual
 
 con :: String -> Exp ()
 con = Con () . unqual
 
-mkTVar :: String -> Type () 
+mkTVar :: String -> Type ()
 mkTVar = TyVar () . Ident ()
 
 mkPVar :: String -> Pat ()
@@ -113,7 +113,7 @@ mkData n tbinds qdecls mderiv  = DataDecl () (DataType ()) Nothing declhead qdec
 #else
 mkData n tbinds qdecls mderiv  = DataDecl () (DataType ()) Nothing declhead qdecls mderiv
 #endif
-  where declhead = mkDeclHead n tbinds 
+  where declhead = mkDeclHead n tbinds
 
 mkNewtype :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
 #if MIN_VERSION_haskell_src_exts(1,20,0)
@@ -143,8 +143,8 @@ mkImportExp m lst =
   ImportDecl () (ModuleName () m) False False False Nothing Nothing (Just islist)
   where islist = ImportSpecList () False (map mkIVar lst)
 
-    
-mkImportSrc :: String -> ImportDecl ()          
+
+mkImportSrc :: String -> ImportDecl ()
 mkImportSrc m = ImportDecl () (ModuleName () m) False True False Nothing Nothing Nothing
 
 lang :: [String] -> ModulePragma ()
@@ -197,6 +197,8 @@ eabs = EAbs ()
 ethingwith = EThingWith ()
 
 ethingall q = ethingwith (EWildcard () 0) q []
+
+emodule nm = EModuleContents () (ModuleName () nm)
 
 nonamespace = NoNamespace ()
 
