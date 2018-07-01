@@ -402,7 +402,7 @@ argToCallString (CPT (CPTClassRef c) _,varname) =
 argToCallString (TemplateApp _ _ cp,varname) =
     "to_nonconst<"<>str<>",void>("<>varname<>")" where str = cp
 argToCallString (TemplateAppRef _ _ cp,varname) =
-    "*( ("<> str   <> "*) " <>varname<>")" where str = cp  
+    "*( ("<> str   <> "*) " <>varname<>")" where str = cp
 argToCallString (_,varname) = varname
 
 argsToCallString :: Args -> String
@@ -484,18 +484,21 @@ tmplRetTypeToString b (TemplateParam _) = if b
 --------
 
 newtype ProtectedMethod = Protected { unProtected :: [String] }
-    deriving (Monoid)
+                        deriving (Monoid)
 
 data AddCInc = AddCInc FilePath String
 
 data AddCSrc = AddCSrc FilePath String
 
+newtype CabalName = CabalName String
+                  deriving (Show,Eq,Ord)
 
 data Cabal = Cabal  { cabal_pkgname       :: String
                     , cabal_cheaderprefix :: String
                     , cabal_moduleprefix  :: String
                     , cabal_additional_c_incs :: [AddCInc]
                     , cabal_additional_c_srcs :: [AddCSrc]
+                    , cabal_additional_pkgdeps :: [CabalName]
                     }
 
 data CabalAttr = CabalAttr  { cabalattr_license          :: Maybe String
@@ -571,7 +574,7 @@ data ClassGlobal = ClassGlobal
                    }
 
 data Selfness = Self | NoSelf
-              
+
 
 
 -- | Check abstract class
@@ -787,13 +790,13 @@ destructorName = "delete"
 
 
 classConstraints :: Class -> Context ()
-classConstraints = cxTuple . map ((\n->classA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents 
+classConstraints = cxTuple . map ((\n->classA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents
 
-extractArgRetTypes :: Maybe Class -> Bool -> (Args,Types) -> ([Type ()],[Asst ()]) 
-extractArgRetTypes mc isvirtual (args,ret) = 
+extractArgRetTypes :: Maybe Class -> Bool -> (Args,Types) -> ([Type ()],[Asst ()])
+extractArgRetTypes mc isvirtual (args,ret) =
   let  (typs,s) = flip runState ([],(0 :: Int)) $ do
                     as <- mapM (mktyp . fst) args
-                    r <- case ret of 
+                    r <- case ret of
                            SelfType -> case mc of
                                          Nothing -> error "extractArgRetTypes: SelfType return but no class"
                                          Just c -> if isvirtual then return (mkTVar "a") else return $ tycon ((fst.hsClassName) c)
@@ -801,23 +804,23 @@ extractArgRetTypes mc isvirtual (args,ret) =
                     return (as ++ [tyapp (tycon "IO") r])
   in   (typs,fst s)
  where addclass c = do
-         (ctxts,n) <- get 
-         let cname = (fst.hsClassName) c 
-             iname = typeclassNameFromStr cname 
+         (ctxts,n) <- get
+         let cname = (fst.hsClassName) c
+             iname = typeclassNameFromStr cname
              tvar = mkTVar ('c' : show n)
              ctxt1 = classA (unqual iname) [tvar]
              ctxt2 = classA (unqual "FPtr") [tvar]
          put (ctxt1:ctxt2:ctxts,n+1)
          return tvar
-       addstring = do 
-         (ctxts,n) <- get 
+       addstring = do
+         (ctxts,n) <- get
          let tvar = mkTVar ('c' : show n)
              ctxt = classA (unqual "Castable") [tvar,tycon "CString"]
          put (ctxt:ctxts,n+1)
          return tvar
 
-       mktyp typ = 
-         case typ of                  
+       mktyp typ =
+         case typ of
            SelfType -> return (mkTVar "a")
            CT CTString Const -> addstring
            CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
@@ -825,11 +828,11 @@ extractArgRetTypes mc isvirtual (args,ret) =
            CPT (CPTClassRef c') _ -> addclass c'
            -- it is not clear whether the following is okay or not.
            (TemplateApp t p _)    -> return (tyapp (tycon (tclass_name t)) (tycon p))
-           (TemplateAppRef t p _) -> return (tyapp (tycon (tclass_name t)) (tycon p)) 
+           (TemplateAppRef t p _) -> return (tyapp (tycon (tclass_name t)) (tycon p))
            (TemplateType t)       -> return (tyapp (tycon (tclass_name t)) (mkTVar (tclass_param t)))
            (TemplateParam p)      -> return (mkTVar p)
            Void -> return unit_tycon
-           _ -> error ("No such c type : " <> show typ)  
+           _ -> error ("No such c type : " <> show typ)
 
 functionSignature :: Class -> Function -> Type ()
 functionSignature c f =
@@ -901,7 +904,7 @@ hsFFIFuncTyp msc (args,ret) =
           where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon p))
           where rawname = snd (hsTemplateClassName t)
-                
+
         hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateParam p)          = mkTVar p
@@ -920,8 +923,7 @@ hsFFIFuncTyp msc (args,ret) =
         hsrettype (TemplateApp t p _)        = tyapp tyPtr (tyapp (tycon rawname) (tycon p))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon p))
-          where rawname = snd (hsTemplateClassName t)                
+          where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p)          = mkTVar p
-

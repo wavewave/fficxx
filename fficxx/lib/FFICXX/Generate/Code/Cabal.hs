@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Cabal
--- Copyright   : (c) 2011-2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -109,6 +109,10 @@ genExposedModules summarymod (cmods,tmods) =
 genOtherModules :: [ClassModule] -> String 
 genOtherModules _cmods = "" 
 
+-- | generate additional package dependencies.
+genPkgDeps :: [CabalName] -> String
+genPkgDeps cs = intercalate " " (map (\(CabalName c) -> ", " <> c) cs)
+
 
 -- |
 cabalTemplate :: Text
@@ -183,7 +187,7 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
                         , ("category","")
                         , ("sourcerepository","")
                         , ("ccOptions","-std=c++14")
-                        , ("deps", "")
+                        , ("deps", genPkgDeps (cabal_additional_pkgdeps cabal))
                         , ("extraFiles", concatMap (\x -> cabalIndentation <> x <> "\n") extrafiles)
                         , ("csrcFiles", genCsrcFiles (tih,classmodules) acincs acsrcs)
                         , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) (cih,tcih) acincs)
