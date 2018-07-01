@@ -41,27 +41,6 @@ import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 
 
-
-mkComment :: Int -> String -> String
-mkComment indent str 
-  | (not.null) str = 
-    let str_lines = lines str
-        indentspace = replicate indent ' ' 
-        commented_lines = 
-          (indentspace <> "-- | "<>head str_lines) : map (\x->indentspace <> "--   "<>x) (tail str_lines)
-     in unlines commented_lines 
-  | otherwise = str                
-
-mkPostComment :: String -> String
-mkPostComment str 
-  | (not.null) str = 
-    let str_lines = lines str 
-        commented_lines = 
-          ("-- ^ "<>head str_lines) : map (\x->"--   "<>x) (tail str_lines)
-     in unlines commented_lines 
-  | otherwise = str                
-
-
 genHsFrontDecl :: Class -> Reader AnnotateMap (Decl ())
 genHsFrontDecl c = do
   -- for the time being, let's ignore annotation.
@@ -262,6 +241,10 @@ genExportStatic c = map (evar . unqual) fns
   where fs = class_funcs c
         fns = map (aliasedFuncName c) (staticFuncs fs) 
 
+
+------------
+-- Import --
+------------
 
 genExtraImport :: ClassModule -> [ImportDecl ()]
 genExtraImport cm = map mkImport (cmExtraImport cm)
