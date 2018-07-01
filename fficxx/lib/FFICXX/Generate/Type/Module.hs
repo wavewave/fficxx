@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Type.Module
--- Copyright   : (c) 2011-2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -32,9 +32,9 @@ data ClassModule = ClassModule
                    { cmModule :: String
                    , cmClass :: [Class]
                    , cmCIH :: [ClassImportHeader]
-                   , cmImportedModulesHighNonSource :: [String]
-                   , cmImportedModulesRaw :: [String]
-                   , cmImportedModulesHighSource :: [String]
+                   , cmImportedModulesHighNonSource :: [String]  -- ^ imported modules that do not need source
+                   , cmImportedModulesRaw :: [String]            -- ^ imported modules for raw types.
+                   , cmImportedModulesHighSource :: [String]     -- ^ imported modules that need source
                    , cmImportedModulesForFFI :: [String]
                    , cmExtraImport :: [String]
                    } deriving (Show)
@@ -62,5 +62,3 @@ data PackageConfig = PkgConfig { pcfg_classModules :: [ClassModule]
                                , pcfg_additional_c_incs :: [AddCInc]
                                , pcfg_additional_c_srcs :: [AddCSrc]
                                }
-
-

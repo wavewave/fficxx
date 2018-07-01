@@ -42,6 +42,9 @@ import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 --
 
+import Debug.Trace
+
+
 srcDir :: FilePath -> FilePath
 srcDir installbasedir = installbasedir </> "src"
 
@@ -272,8 +275,7 @@ buildRawTypeHs m = mkModule (cmModule m <.> "RawType")
                         , "FlexibleInstances", "TypeSynonymInstances"
                         , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
                   rawtypeImports rawtypeBody
-  where rawtypeImports = [ {- mkImport "Foreign.ForeignPtr", -}
-                           mkImport "Foreign.Ptr"
+  where rawtypeImports = [ mkImport "Foreign.Ptr"
                          , mkImport "FFICXX.Runtime.Cast"
                          ]
         rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
@@ -389,12 +391,17 @@ buildPkgHs modname (mods,tmods) tih =
     pkgExtensions = [ lang [ "FlexibleContexts", "FlexibleInstances" ] ]
     pkgExports =     map (emodule . cmModule) mods
                  ++  map (evar . unqual . hsFrontNameForTopLevelFunction) tfns
-    pkgImports =     map (mkImport . cmModule) mods
+
+    pkgImports = trace (show tfns) $
+
+
+                    map (mkImport . cmModule) mods
                  ++ if null tfns
                     then []
-                    else    map mkImport ["Foreign.C","Foreign.Ptr","FFICXX.Runtime.Cast"]
+                    else    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
                          ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
                          ++ map (\m -> mkImport (tcmModule m)) tmods
+                         ++ concatMap genImportInTopLevel tfns
     pkgBody    =    map (genTopLevelFuncFFI tih) tfns
                  ++ concatMap genTopLevelFuncDef tfns
 

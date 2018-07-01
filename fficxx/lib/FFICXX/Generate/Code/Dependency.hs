@@ -193,7 +193,6 @@ mkClassModule mkincheaders extra c =
         extraimports = fromMaybe [] (lookup (class_name c) extra)
 
 
-
 mkClassNSHeaderFromMap :: HM.HashMap String ([Namespace],[HeaderName]) -> Class -> ([Namespace],[HeaderName])
 mkClassNSHeaderFromMap m c = fromMaybe ([],[]) (HM.lookup (class_name c) m)
 
