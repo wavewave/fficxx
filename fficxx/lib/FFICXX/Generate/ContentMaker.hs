@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.ContentMaker
--- Copyright   : (c) 2011-2017 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>

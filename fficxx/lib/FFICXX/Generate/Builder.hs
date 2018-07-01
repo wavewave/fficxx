@@ -41,7 +41,8 @@ import           FFICXX.Generate.Util
 macrofy :: String -> String
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
-simpleBuilder :: String -> [(String,([Namespace],[HeaderName]))]
+simpleBuilder :: String
+              -> [(String,([Namespace],[HeaderName]))]
               -> (Cabal, CabalAttr, [Class], [TopLevelFunction], [(TemplateClass,HeaderName)])
               -> [String] -- ^ extra libs
               -> [(String,[String])] -- ^ extra module
