@@ -394,7 +394,7 @@ buildPkgHs modname (mods,tmods) tih =
                     then []
                     else    map mkImport ["Foreign.C","Foreign.Ptr","FFICXX.Runtime.Cast"]
                          ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
-                         ++ map (\m -> mkImport (tcmModule m)) tmods
+                         ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
     pkgBody    =    map (genTopLevelFuncFFI tih) tfns
                  ++ concatMap genTopLevelFuncDef tfns
 
