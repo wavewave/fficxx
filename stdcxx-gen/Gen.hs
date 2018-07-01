@@ -43,10 +43,13 @@ string =
   , NonVirtual (cppclassref_ string) "erase" [] Nothing
   ]
 
+ostream :: Class
+ostream = Class cabal "ostream" [] mempty (Just "Ostream") []
 
 
 classes = [ deletable
           --
+          , ostream
           , string
           ]
 
