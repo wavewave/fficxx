@@ -56,7 +56,17 @@ classes = [ deletable
 
 toplevelfunctions = [ ]
 
-templates = [  ]
+t_vector = TmplCls cabal "Vector" "std::vector" "t"
+             [ TFunNew []
+             , TFun void_ "push_back" "push_back" [(TemplateParam "t","x")] Nothing
+             , TFun void_ "pop_back"  "pop_back"  []                        Nothing
+             , TFun (TemplateParam "t") "at" "at" [int "n"]                 Nothing
+             , TFun int_  "size"      "size"      []                        Nothing
+             , TFunDelete
+             ]
+
+templates = [ (t_vector, HdrName "Vector.h") ]
+
 
 headerMap = [ ("string"         , ([NS "std"          ], [HdrName "string"   ]))
             ]
