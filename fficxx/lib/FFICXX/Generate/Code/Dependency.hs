@@ -1,5 +1,4 @@
 {-# LANGUAGE RecordWildCards #-}
-
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Dependency
@@ -35,16 +34,17 @@ module FFICXX.Generate.Code.Dependency where
 import           Data.Either               ( rights )
 import           Data.Function             ( on )
 import qualified Data.HashMap.Strict as HM
-import           Data.List 
+import           Data.List
+import qualified Data.Map            as M
 import           Data.Maybe
 import           Data.Monoid               ( (<>) )
 import           System.FilePath 
 --
+import           FFICXX.Generate.Code.Primitive (hsClassName,hsTemplateClassName)
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 --
-import           Debug.Trace
 
 
 -- utility functions
@@ -69,6 +69,42 @@ extractClassFromType (TemplateApp t _ _)      = Just (Left t)
 extractClassFromType (TemplateAppRef t _ _)   = Just (Left t)
 extractClassFromType (TemplateType t)         = Just (Left t)
 extractClassFromType (TemplateParam _)        = Nothing
+
+
+class_allparents :: Class -> [Class]
+class_allparents c = let ps = class_parents c
+                     in  if null ps
+                           then []
+                           else nub (ps <> (concatMap class_allparents ps))
+
+
+getClassModuleBase :: Class -> String
+getClassModuleBase = (<.>) <$> (cabal_moduleprefix.class_cabal) <*> (fst.hsClassName)
+
+getTClassModuleBase :: TemplateClass -> String
+getTClassModuleBase = (<.>) <$> (cabal_moduleprefix.tclass_cabal) <*> (fst.hsTemplateClassName)
+
+
+-- | Daughter map not including itself
+mkDaughterMap :: [Class] -> DaughterMap
+mkDaughterMap = foldl mkDaughterMapWorker M.empty
+  where mkDaughterMapWorker m c = let ps = map getClassModuleBase (class_allparents c)
+                                  in  foldl (addmeToYourDaughterList c) m ps
+        addmeToYourDaughterList c m p = let f Nothing = Just [c]
+                                            f (Just cs)  = Just (c:cs)
+                                        in  M.alter f p m
+
+
+
+-- | Daughter Map including itself as a daughter
+mkDaughterSelfMap :: [Class] -> DaughterMap
+mkDaughterSelfMap = foldl worker M.empty
+  where worker m c = let ps = map getClassModuleBase (c:class_allparents c)
+                     in  foldl (addToList c) m ps
+        addToList c m p = let f Nothing = Just [c]
+                              f (Just cs)  = Just (c:cs)
+                          in  M.alter f p m
+
 
 
 -- | class dependency for a given function 
@@ -175,7 +211,7 @@ mkModuleDepFFI y@(Right c) =
   let ps = map Right (class_allparents c)
       alldeps' = (concatMap mkModuleDepFFI4One ps) <> mkModuleDepFFI4One y
   in nub (filter (/= y) alldeps')
-mkModuleDepFFI y@(Left t) = [] 
+mkModuleDepFFI (Left _) = [] 
 
      
 mkClassModule :: (Class->([Namespace],[HeaderName]))
