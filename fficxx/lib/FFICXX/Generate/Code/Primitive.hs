@@ -4,10 +4,8 @@ module FFICXX.Generate.Code.Primitive where
 
 import           Control.Monad.Trans.State         (runState,put,get)
 import           Data.Char                         (toLower)
-import qualified Data.Map                     as M
 import           Data.Monoid                       ((<>))
-import           Language.Haskell.Exts.Syntax      (Asst(..),Context,Splice(..),Type(..))
-import           System.FilePath                   ((<.>))
+import           Language.Haskell.Exts.Syntax      (Asst(..),Context,Type(..))
 --
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util

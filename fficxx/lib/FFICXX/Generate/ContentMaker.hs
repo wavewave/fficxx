@@ -25,7 +25,6 @@ import           Data.List.Split                        (splitOn)
 import           Data.Maybe
 import           Data.Text                              (Text)
 import           Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
-import           Language.Haskell.Exts.Pretty           (prettyPrint)
 import           System.FilePath
 --
 import           FFICXX.Generate.Code.Cpp

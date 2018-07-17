@@ -16,8 +16,6 @@ Source-repository head
 
 Library
   hs-source-dirs: lib
-  ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind
-  ghc-prof-options: -caf-all -auto-all
   Build-Depends: base == 4.*,
                  Cabal,
                  bytestring,
@@ -59,5 +57,12 @@ Library
                    FFICXX.Generate.Type.Class
                    FFICXX.Generate.Type.Module
                    FFICXX.Generate.Type.PackageInterface
+  ghc-options:     -Wall
+                   -Werror
+                   -funbox-strict-fields
+                   -fno-warn-unused-do-bind
+                   -fno-warn-missing-signatures                   
+                   -O2
+  ghc-prof-options: -caf-all -auto-all
 
 

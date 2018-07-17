@@ -16,18 +16,10 @@
 
 module FFICXX.Generate.Type.Class where
 
-import           Control.Applicative               ( (<$>),(<*>) )
-import           Control.Monad.State
-import           Data.Char
 import           Data.Default                      ( Default(def) )
-import           Data.List
 import qualified Data.Map                     as M
 import           Data.Monoid                       ( (<>) )
-import           Language.Haskell.Exts.Syntax      ( Asst(..), Context, Splice(..), Type(..) )
-import           System.FilePath
 --
-import           FFICXX.Generate.Util
-import           FFICXX.Generate.Util.HaskellSrcExts
 
 -- some type aliases
 

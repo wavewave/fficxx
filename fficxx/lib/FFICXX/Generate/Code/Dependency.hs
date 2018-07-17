@@ -1,5 +1,4 @@
 {-# LANGUAGE RecordWildCards #-}
-
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Dependency
@@ -46,7 +45,6 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 --
-import           Debug.Trace
 
 
 -- utility functions
@@ -213,7 +211,7 @@ mkModuleDepFFI y@(Right c) =
   let ps = map Right (class_allparents c)
       alldeps' = (concatMap mkModuleDepFFI4One ps) <> mkModuleDepFFI4One y
   in nub (filter (/= y) alldeps')
-mkModuleDepFFI y@(Left t) = [] 
+mkModuleDepFFI (Left _) = [] 
 
      
 mkClassModule :: (Class->([Namespace],[HeaderName]))
