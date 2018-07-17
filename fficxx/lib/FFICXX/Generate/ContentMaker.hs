@@ -15,22 +15,24 @@
 
 module FFICXX.Generate.ContentMaker where
 
-import           Control.Lens                           ( set,at )
+import           Control.Lens                           (set,at)
 import           Control.Monad.Trans.Reader
-import           Data.Function                          ( on )
+import           Data.Function                          (on)
 import qualified Data.Map                          as M
-import           Data.Monoid                            ( (<>) )
+import           Data.Monoid                            ((<>))
 import           Data.List
-import           Data.List.Split                        ( splitOn )
+import           Data.List.Split                        (splitOn)
 import           Data.Maybe
-import           Data.Text                              ( Text )
-import           Language.Haskell.Exts.Syntax           ( Module(..), Decl(..) )
-import           Language.Haskell.Exts.Pretty           ( prettyPrint )
+import           Data.Text                              (Text)
+import           Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
+import           Language.Haskell.Exts.Pretty           (prettyPrint)
 import           System.FilePath
 --
 import           FFICXX.Generate.Code.Cpp
+import           FFICXX.Generate.Code.Dependency
 import           FFICXX.Generate.Code.HsFFI
 import           FFICXX.Generate.Code.HsFrontEnd
+import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module

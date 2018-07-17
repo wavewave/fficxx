@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.HsFFI
--- Copyright   : (c) 2011-2017 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -15,16 +15,22 @@
 
 module FFICXX.Generate.Code.HsFFI where
 
-import           Data.Maybe                              ( fromMaybe, mapMaybe )
-import           Data.Monoid                             ( (<>) )
-import           Language.Haskell.Exts.Syntax            ( Decl(..) )
-import           System.FilePath ((<.>))
--- 
-import           FFICXX.Generate.Util
-import           FFICXX.Generate.Util.HaskellSrcExts
+import           Data.Maybe                              (fromMaybe,mapMaybe)
+import           Data.Monoid                             ((<>))
+import           Language.Haskell.Exts.Syntax            (Decl(..))
+import           System.FilePath                         ((<.>))
+--
+import           FFICXX.Generate.Code.Dependency         (class_allparents)
+import           FFICXX.Generate.Code.Primitive          (aliasedFuncName,hscFuncName
+                                                         ,genericFuncArgs,genericFuncRet
+                                                         ,hsFFIFuncTyp
+                                                         )
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
+import           FFICXX.Generate.Util
+import           FFICXX.Generate.Util.HaskellSrcExts
+
 
 genHsFFI :: ClassImportHeader -> [Decl ()]
 genHsFFI header =

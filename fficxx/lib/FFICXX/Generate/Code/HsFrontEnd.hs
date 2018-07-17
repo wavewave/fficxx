@@ -33,7 +33,9 @@ import           Language.Haskell.Exts.Syntax            ( Asst(..), Binds(..), 
                                                          , Type(..), TyVarBind (..)
                                                          )
 import           System.FilePath                         ((<.>))
--- 
+--
+import           FFICXX.Generate.Code.Dependency
+import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Module

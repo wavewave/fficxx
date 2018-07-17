@@ -17,6 +17,7 @@ module FFICXX.Generate.Code.MethodDef where
 
 import           Data.Monoid                ( (<>) )
 --
+import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util 
 

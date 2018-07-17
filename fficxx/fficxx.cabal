@@ -1,5 +1,5 @@
 Name:           fficxx
-Version:        0.4.1
+Version:        0.4.2
 Synopsis:       automatic C++ binding generation
 Description:    automatic C++ binding generation
 License:        BSD3
@@ -9,14 +9,6 @@ Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>
 Build-Type:     Simple
 Category:       FFI Tools
 Cabal-Version:  >= 1.8
-Data-files: 
-            sample/cxxlib/include/*.h
-            sample/cxxlib/src/*.cpp
-            sample/cxxlib/Makefile
-            sample/mysample-generator/MySampleGen.hs
-            sample/mysample-generator/use_mysample.hs
-            sample/snappy-generator/SnappyGen.hs
-            sample/snappy-generator/testSnappy.hs
 
 Source-repository head
   type: git
@@ -58,6 +50,7 @@ Library
                    FFICXX.Generate.Code.HsFFI
                    FFICXX.Generate.Code.Cabal
                    FFICXX.Generate.Code.Dependency
+                   FFICXX.Generate.Code.Primitive
                    FFICXX.Generate.ContentMaker
                    FFICXX.Generate.QQ.Verbatim
                    FFICXX.Generate.Util
