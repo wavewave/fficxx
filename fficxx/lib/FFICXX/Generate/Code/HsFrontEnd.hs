@@ -16,7 +16,6 @@
 
 module FFICXX.Generate.Code.HsFrontEnd where
 
-import           Control.Monad.State
 import           Control.Monad.Reader
 import           Data.List
 import           Data.Monoid                             ( (<>) )
@@ -24,16 +23,14 @@ import           Language.Haskell.Exts.Build             ( app, binds, doE, letE
                                                          , name, pApp
                                                          , qualStmt, strE, tuple
                                                          )
-import           Language.Haskell.Exts.Syntax            ( Asst(..), Binds(..), Boxed(..), Bracket(..)
-                                                         , ClassDecl(..), DataOrNew(..), Decl(..)
-                                                         , Exp(..), ExportSpec(..)
-                                                         , ImportDecl(..), InstDecl(..), Literal(..)
-                                                         , Name(..), Namespace(..), Pat(..)
-                                                         , QualConDecl(..), Stmt(..)
-                                                         , Type(..), TyVarBind (..)
+import           Language.Haskell.Exts.Syntax            ( Decl(..)
+                                                         , ExportSpec(..)
+                                                         , ImportDecl(..), InstDecl(..),
                                                          )
 import           System.FilePath                         ((<.>))
--- 
+--
+import           FFICXX.Generate.Code.Dependency
+import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Module
@@ -343,8 +340,8 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
             p = mkPVar
             tp = tclass_param t
             prefix = tclass_name t
-            lit = strE (prefix<>"_"<>nc<>"_")
-            lam = lambda [p "n"] ( lit `app` v "<>" `app` v "n") 
+            lit' = strE (prefix<>"_"<>nc<>"_")
+            lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n") 
             rhs = app (v "mkTFunc") (tuple [v "nty", v "ncty", lam, v "tyf"])
             sig' = functionSignatureTT t f
             bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]

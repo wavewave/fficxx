@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Cpp
--- Copyright   : (c) 2011-2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -18,11 +18,13 @@ module FFICXX.Generate.Code.Cpp where
 import           Data.Char 
 import           Data.Monoid                           ( (<>) )
 --
-import           FFICXX.Generate.Util
 import           FFICXX.Generate.Code.MethodDef
+import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
+import           FFICXX.Generate.Util
+
 --
 
 --
