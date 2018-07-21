@@ -43,8 +43,6 @@ import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 --
 
-import Debug.Trace
-
 
 srcDir :: FilePath -> FilePath
 srcDir installbasedir = installbasedir </> "src"
@@ -393,16 +391,8 @@ buildTopLevelHs modname (mods,tmods) tih =
     pkgExports =     map (emodule . cmModule) mods
                  ++  map (evar . unqual . hsFrontNameForTopLevelFunction) tfns
 
-    pkgImports = trace (show tfns) $
+    pkgImports = genImportInTopLevel modname (mods,tmods) tih
 
-
-                    map (mkImport . cmModule) mods
-                 ++ if null tfns
-                    then []
-                    else    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
-                         ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
-                         ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
-                         ++ concatMap genImportInTopLevel tfns
     pkgBody    =    map (genTopLevelFuncFFI tih) tfns
                  ++ concatMap genTopLevelFuncDef tfns
 

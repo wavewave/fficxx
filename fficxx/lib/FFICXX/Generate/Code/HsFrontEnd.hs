@@ -18,15 +18,13 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import           Control.Monad.Reader
 import           Data.List
-import           Data.Monoid                             ( (<>) )
-import           Language.Haskell.Exts.Build             ( app, binds, doE, letE, letStmt
-                                                         , name, pApp
-                                                         , qualStmt, strE, tuple
-                                                         )
-import           Language.Haskell.Exts.Syntax            ( Decl(..)
-                                                         , ExportSpec(..)
-                                                         , ImportDecl(..), InstDecl(..),
-                                                         )
+import           Data.Monoid                             ((<>))
+import           Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt
+                                                         ,name,pApp
+                                                         ,qualStmt,strE,tuple)
+import           Language.Haskell.Exts.Syntax            (Decl(..)
+                                                         ,ExportSpec(..)
+                                                         ,ImportDecl(..),InstDecl(..))
 import           System.FilePath                         ((<.>))
 --
 import           FFICXX.Generate.Code.Dependency
@@ -283,9 +281,26 @@ genImportInImplementation m =
       <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
 
-genImportInTopLevel :: TopLevelFunction -> [ImportDecl ()]
-genImportInTopLevel TopLevelFunction {..} = []
-genImportInTopLevel TopLevelVariable {..} = []
+-- | generate import list for a given top-level function
+genImportForTopLevelFunction :: TopLevelFunction -> [ImportDecl ()]
+genImportForTopLevelFunction TopLevelFunction {..} = []
+genImportForTopLevelFunction TopLevelVariable {..} = []
+
+-- | generate import list for top level module
+genImportInTopLevel ::
+     String
+  -> ([ClassModule],[TemplateClassModule])
+  -> TopLevelImportHeader
+  -> [ImportDecl ()]
+genImportInTopLevel modname (mods,tmods) tih =
+  let tfns = tihFuncs tih
+  in    map (mkImport . cmModule) mods
+     ++ if null tfns
+        then []
+        else    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
+             ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
+             ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
+             ++ concatMap genImportForTopLevelFunction tfns
 
 --------------
 -- Template --
