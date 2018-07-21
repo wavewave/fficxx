@@ -39,8 +39,6 @@ import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 
 
-import Debug.Trace
-
 genHsFrontDecl :: Class -> Reader AnnotateMap (Decl ())
 genHsFrontDecl c = do
   -- TODO: revive annotation
@@ -307,8 +305,7 @@ genImportInTopLevel ::
   -> [ImportDecl ()]
 genImportInTopLevel modname (mods,tmods) tih =
   let tfns = tihFuncs tih
-  in trace (show tfns) $
-        map (mkImport . cmModule) mods
+  in    map (mkImport . cmModule) mods
      ++ if null tfns
         then []
         else    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
