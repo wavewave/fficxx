@@ -47,7 +47,7 @@ simpleBuilder :: String
               -> [String] -- ^ extra libs
               -> [(String,[String])] -- ^ extra module
               ->  IO ()
-simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, templates) extralibs extramods = do
+simpleBuilder topLevelMod lst (cabal, cabalattr, classes, toplevelfunctions, templates) extralibs extramods = do
   let pkgname = cabal_pkgname cabal
   putStrLn ("generating " <> pkgname)
   cwd <- getCurrentDirectory
@@ -73,7 +73,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   notExistThenCreate (installDir </> "csrc")
   --
   putStrLn "cabal file generation"
-  buildCabalFile (cabal,cabalattr) summarymodule pkgconfig extralibs (workingDir</>cabalFileName)
+  buildCabalFile (cabal,cabalattr) topLevelMod pkgconfig extralibs (workingDir</>cabalFileName)
   --
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  <> macrofy (cabal_pkgname cabal) <> "__")
@@ -132,8 +132,8 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   putStrLn "module file generation"
   mapM_ (\m -> gen (cmModule m <.> "hs") (prettyPrint (buildModuleHs m))) mods
   --
-  putStrLn "summary module generation generation"
-  gen (summarymodule <.> "hs") (prettyPrint (buildPkgHs summarymodule (mods,tcms) tih))
+  putStrLn "top level module generation generation"
+  gen (topLevelMod <.> "hs") (prettyPrint (buildTopLevelHs topLevelMod (mods,tcms) tih))
   --
   putStrLn "copying"
   touch (workingDir </> "LICENSE")
@@ -143,7 +143,7 @@ simpleBuilder summarymodule lst (cabal, cabalattr, classes, toplevelfunctions, t
   copyCppFiles workingDir (csrcDir installDir) pkgname pkgconfig
   mapM_ (copyModule workingDir (srcDir installDir)) mods
   mapM_ (copyTemplateModule workingDir (srcDir installDir)) tcms  
-  moduleFileCopy workingDir (srcDir installDir) $ summarymodule <.> "hs"
+  moduleFileCopy workingDir (srcDir installDir) $ topLevelMod <.> "hs"
 
 
 -- | some dirty hack. later, we will do it with more proper approcah.

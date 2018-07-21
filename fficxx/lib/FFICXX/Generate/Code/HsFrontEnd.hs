@@ -17,16 +17,17 @@
 module FFICXX.Generate.Code.HsFrontEnd where
 
 import           Control.Monad.Reader
+import           Data.Either                             (lefts,rights)
 import           Data.List
-import           Data.Monoid                             ( (<>) )
-import           Language.Haskell.Exts.Build             ( app, binds, doE, letE, letStmt
-                                                         , name, pApp
-                                                         , qualStmt, strE, tuple
-                                                         )
-import           Language.Haskell.Exts.Syntax            ( Decl(..)
-                                                         , ExportSpec(..)
-                                                         , ImportDecl(..), InstDecl(..),
-                                                         )
+import           Data.Maybe                              (maybeToList)
+import           Data.Monoid                             ((<>))
+import           Data.Traversable                        (for)
+import           Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt
+                                                         ,name,pApp
+                                                         ,qualStmt,strE,tuple)
+import           Language.Haskell.Exts.Syntax            (Decl(..)
+                                                         ,ExportSpec(..)
+                                                         ,ImportDecl(..),InstDecl(..))
 import           System.FilePath                         ((<.>))
 --
 import           FFICXX.Generate.Code.Dependency
@@ -40,6 +41,7 @@ import           FFICXX.Generate.Util.HaskellSrcExts
 
 genHsFrontDecl :: Class -> Reader AnnotateMap (Decl ())
 genHsFrontDecl c = do
+  -- TODO: revive annotation
   -- for the time being, let's ignore annotation.
   -- amap <- ask
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap
@@ -283,9 +285,33 @@ genImportInImplementation m =
       <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
 
-genImportInTopLevel :: TopLevelFunction -> [ImportDecl ()]
-genImportInTopLevel TopLevelFunction {..} = []
-genImportInTopLevel TopLevelVariable {..} = []
+-- | generate import list for a given top-level function
+--   currently this may generate duplicate import list.
+-- TODO: eliminate duplicated imports.
+genImportForTopLevelFunction :: TopLevelFunction -> [ImportDecl ()]
+genImportForTopLevelFunction f =
+  let dep4func = extractClassDepForTopLevelFunction f
+      ecs = maybeToList (returnDependency dep4func) ++ argumentDependency dep4func
+      cmods = nub $ map getClassModuleBase $ rights ecs
+      tmods = nub $ map getTClassModuleBase $ lefts ecs
+  in    concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) cmods
+     <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["Template"]) tmods
+
+-- | generate import list for top level module
+genImportInTopLevel ::
+     String
+  -> ([ClassModule],[TemplateClassModule])
+  -> TopLevelImportHeader
+  -> [ImportDecl ()]
+genImportInTopLevel modname (mods,tmods) tih =
+  let tfns = tihFuncs tih
+  in    map (mkImport . cmModule) mods
+     ++ if null tfns
+        then []
+        else    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
+             ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
+             ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
+             ++ concatMap genImportForTopLevelFunction tfns
 
 --------------
 -- Template --
@@ -333,7 +359,7 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
             tp = tclass_param t
             prefix = tclass_name t
             lit' = strE (prefix<>"_"<>nc<>"_")
-            lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n") 
+            lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
             rhs = app (v "mkTFunc") (tuple [v "nty", v "ncty", lam, v "tyf"])
             sig' = functionSignatureTT t f
             bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]

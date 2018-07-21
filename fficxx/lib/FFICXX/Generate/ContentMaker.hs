@@ -43,8 +43,6 @@ import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 --
 
-import Debug.Trace
-
 
 srcDir :: FilePath -> FilePath
 srcDir installbasedir = installbasedir </> "src"
@@ -384,8 +382,8 @@ buildModuleHs :: ClassModule -> Module ()
 buildModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (genImportInModule (cmClass m)) []
 
 -- |
-buildPkgHs :: String -> ([ClassModule],[TemplateClassModule]) -> TopLevelImportHeader -> Module ()
-buildPkgHs modname (mods,tmods) tih =
+buildTopLevelHs :: String -> ([ClassModule],[TemplateClassModule]) -> TopLevelImportHeader -> Module ()
+buildTopLevelHs modname (mods,tmods) tih =
     mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = tihFuncs tih
@@ -393,16 +391,8 @@ buildPkgHs modname (mods,tmods) tih =
     pkgExports =     map (emodule . cmModule) mods
                  ++  map (evar . unqual . hsFrontNameForTopLevelFunction) tfns
 
-    pkgImports = trace (show tfns) $
+    pkgImports = genImportInTopLevel modname (mods,tmods) tih
 
-
-                    map (mkImport . cmModule) mods
-                 ++ if null tfns
-                    then []
-                    else    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
-                         ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
-                         ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
-                         ++ concatMap genImportInTopLevel tfns
     pkgBody    =    map (genTopLevelFuncFFI tih) tfns
                  ++ concatMap genTopLevelFuncDef tfns
 
