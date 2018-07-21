@@ -15,6 +15,7 @@
 module FFICXX.Generate.Util.HaskellSrcExts where
 
 import           Data.List                           (foldl')
+import           Data.Maybe                          (maybeToList)
 import           Language.Haskell.Exts        hiding (unit_tycon)
 import qualified Language.Haskell.Exts               (unit_tycon)
 
@@ -42,11 +43,8 @@ conDecl n ys = ConDecl () (Ident () n) ys
 
 qualConDecl = QualConDecl ()
 
-recDecl :: String -> [FieldDecl ()] -> ConDecl () -- [([Name ()],Type ())] -> ConDecl ()
+recDecl :: String -> [FieldDecl ()] -> ConDecl ()
 recDecl n rs = RecDecl () (Ident () n) rs
-
--- app :: Exp () -> Exp () -> Exp ()
--- app = App ()
 
 app' :: String -> String -> Exp ()
 app' x y = App () (mkVar x) (mkVar y)
