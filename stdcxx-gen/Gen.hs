@@ -20,6 +20,7 @@ cabal = Cabal { cabal_pkgname = "stdcxx"
               , cabal_extraincludedirs = [ ]
               , cabal_extralibdirs = []
               , cabal_extrafiles = []
+              , cabal_pkg_config_depends = []
               }
 
 extraDep = [ ]

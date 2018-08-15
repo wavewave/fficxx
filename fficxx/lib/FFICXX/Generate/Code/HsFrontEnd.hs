@@ -21,7 +21,6 @@ import           Data.Either                             (lefts,rights)
 import           Data.List
 import           Data.Maybe                              (maybeToList)
 import           Data.Monoid                             ((<>))
-import           Data.Traversable                        (for)
 import           Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt
                                                          ,name,pApp
                                                          ,qualStmt,strE,tuple)

@@ -16,13 +16,8 @@
 
 module FFICXX.Generate.Type.Class where
 
-import           Data.Default                      ( Default(def) )
 import qualified Data.Map                     as M
 import           Data.Monoid                       ( (<>) )
---
-
--- some type aliases
-
 
 -- | C types
 data CTypes = CTString
@@ -163,6 +158,7 @@ data Cabal = Cabal  { cabal_pkgname       :: String
                     , cabal_extraincludedirs :: [FilePath]
                     , cabal_extralibdirs     :: [FilePath]
                     , cabal_extrafiles       :: [FilePath]
+                    , cabal_pkg_config_depends :: [String]
                     }
 
 data Class = Class { class_cabal :: Cabal
