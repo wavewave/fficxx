@@ -15,19 +15,14 @@ cabal = Cabal { cabal_pkgname = "stdcxx"
               , cabal_additional_c_incs = []
               , cabal_additional_c_srcs = []
               , cabal_additional_pkgdeps = []
-              , cabal_pkg_config_deps = []
+              , cabal_license = Just "BSD3"
+              , cabal_licensefile = Just "LICENSE"
+              , cabal_extraincludedirs = [ ]
+              , cabal_extralibdirs = []
+              , cabal_extrafiles = []
               }
 
 extraDep = [ ]
-
-cabalattr =
-    CabalAttr
-    { cabalattr_license = Just "BSD3"
-    , cabalattr_licensefile = Just "LICENSE"
-    , cabalattr_extraincludedirs = [ ]
-    , cabalattr_extralibdirs = []
-    , cabalattr_extrafiles = []
-    }
 
 
 deletable :: Class
@@ -77,6 +72,6 @@ main = do
   simpleBuilder
     "STD"
     headerMap
-    (cabal,cabalattr,classes,toplevelfunctions,templates)
+    (cabal,classes,toplevelfunctions,templates)
     [ ]
     extraDep
