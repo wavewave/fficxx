@@ -156,13 +156,14 @@ cabalTemplate =
   \$cppFiles\n"
 
 -- |
-buildCabalFile :: (Cabal, CabalAttr)
-            -> String
-            -> PackageConfig
-            -> [String] -- ^ extra libs
-            -> FilePath
-            -> IO ()
-buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = do
+buildCabalFile
+  :: Cabal
+  -> String
+  -> PackageConfig
+  -> [String] -- ^ extra libs
+  -> FilePath
+  -> IO ()
+buildCabalFile cabal summarymodule pkgconfig extralibs cabalfile = do
   let tih = pcfg_topLevelImportHeader pkgconfig
       classmodules = pcfg_classModules pkgconfig
       cih = pcfg_classImportHeaders pkgconfig
@@ -170,12 +171,12 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
       tcih = pcfg_templateClassImportHeaders pkgconfig
       acincs = pcfg_additional_c_incs pkgconfig
       acsrcs = pcfg_additional_c_srcs pkgconfig 
-      extrafiles = cabalattr_extrafiles cabalattr
+      extrafiles = cabal_extrafiles cabal
       txt = subst cabalTemplate
               (context ([ ("licenseField", "license: " <> license)
-                          | Just license <- [cabalattr_license cabalattr] ] <>
+                          | Just license <- [cabal_license cabal] ] <>
                         [ ("licenseFileField", "license-file: " <> licensefile)
-                          | Just licensefile <- [cabalattr_licensefile cabalattr] ] <>
+                          | Just licensefile <- [cabal_licensefile cabal] ] <>
                         [ ("pkgname", cabal_pkgname cabal)
                         , ("version",  "0.0")
                         , ("buildtype", "Simple")
@@ -194,8 +195,8 @@ buildCabalFile (cabal, cabalattr) summarymodule pkgconfig extralibs cabalfile = 
                         , ("cppFiles", genCppFiles (tih,classmodules) acsrcs)
                         , ("exposedModules", genExposedModules summarymodule (classmodules,tmods))
                         , ("otherModules", genOtherModules classmodules)
-                        , ("extralibdirs", intercalate ", " $ cabalattr_extralibdirs cabalattr)
-                        , ("extraincludedirs", intercalate ", " $ cabalattr_extraincludedirs cabalattr)
+                        , ("extralibdirs", intercalate ", " $ cabal_extralibdirs cabal)
+                        , ("extraincludedirs", intercalate ", " $ cabal_extraincludedirs cabal)
                         , ("extraLibraries", concatMap (", " <>) extralibs)
                         , ("cabalIndentation", cabalIndentation)
                         ]))

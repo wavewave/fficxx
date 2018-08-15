@@ -15,6 +15,7 @@ cabal = Cabal { cabal_pkgname = "stdcxx"
               , cabal_additional_c_incs = []
               , cabal_additional_c_srcs = []
               , cabal_additional_pkgdeps = []
+              , cabal_pkg_config_deps = []
               }
 
 extraDep = [ ]

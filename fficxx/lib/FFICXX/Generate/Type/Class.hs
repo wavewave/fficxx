@@ -158,21 +158,11 @@ data Cabal = Cabal  { cabal_pkgname       :: String
                     , cabal_additional_c_incs :: [AddCInc]
                     , cabal_additional_c_srcs :: [AddCSrc]
                     , cabal_additional_pkgdeps :: [CabalName]
-                    }
-
-data CabalAttr = CabalAttr  { cabalattr_license          :: Maybe String
-                            , cabalattr_licensefile      :: Maybe String
-                            , cabalattr_extraincludedirs :: [FilePath]
-                            , cabalattr_extralibdirs     :: [FilePath]
-                            , cabalattr_extrafiles       :: [FilePath]
-                            }
-
-instance Default CabalAttr where
-    def = CabalAttr { cabalattr_license          = Nothing
-                    , cabalattr_licensefile      = Nothing
-                    , cabalattr_extraincludedirs = []
-                    , cabalattr_extralibdirs     = []
-                    , cabalattr_extrafiles       = []
+                    , cabal_license          :: Maybe String
+                    , cabal_licensefile      :: Maybe String
+                    , cabal_extraincludedirs :: [FilePath]
+                    , cabal_extralibdirs     :: [FilePath]
+                    , cabal_extrafiles       :: [FilePath]
                     }
 
 data Class = Class { class_cabal :: Cabal

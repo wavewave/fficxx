@@ -43,11 +43,11 @@ macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
 simpleBuilder :: String
               -> [(String,([Namespace],[HeaderName]))]
-              -> (Cabal, CabalAttr, [Class], [TopLevelFunction], [(TemplateClass,HeaderName)])
+              -> (Cabal, [Class], [TopLevelFunction], [(TemplateClass,HeaderName)])
               -> [String] -- ^ extra libs
               -> [(String,[String])] -- ^ extra module
               ->  IO ()
-simpleBuilder topLevelMod lst (cabal, cabalattr, classes, toplevelfunctions, templates) extralibs extramods = do
+simpleBuilder topLevelMod lst (cabal,classes,toplevelfunctions,templates) extralibs extramods = do
   let pkgname = cabal_pkgname cabal
   putStrLn ("generating " <> pkgname)
   cwd <- getCurrentDirectory
@@ -73,7 +73,7 @@ simpleBuilder topLevelMod lst (cabal, cabalattr, classes, toplevelfunctions, tem
   notExistThenCreate (installDir </> "csrc")
   --
   putStrLn "cabal file generation"
-  buildCabalFile (cabal,cabalattr) topLevelMod pkgconfig extralibs (workingDir</>cabalFileName)
+  buildCabalFile cabal topLevelMod pkgconfig extralibs (workingDir</>cabalFileName)
   --
   putStrLn "header file generation"
   let typmacro = TypMcro ("__"  <> macrofy (cabal_pkgname cabal) <> "__")
