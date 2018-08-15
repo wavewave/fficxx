@@ -149,3 +149,8 @@ For the time being, to see how to use generated haskell library, check examples 
 
 
 
+
+C Macro tricks
+==============
+We use C Macro tricks described in the following:
+* https://github.com/pfultz2/Cloak/wiki/C-Preprocessor-tricks,-tips,-and-idioms
