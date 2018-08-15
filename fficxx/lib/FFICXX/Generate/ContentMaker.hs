@@ -162,17 +162,10 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
 
 definitionTemplate :: Text
 definitionTemplate =
-  "#include <MacroPatternMatch.h>\n\
+  "#include<MacroPatternMatch.h>\n\
   \$header\n\
   \\n\
   \$namespace\n\
-  \\n\
-  \#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n\
-  \\n\
-  \#define TYPECASTMETHOD(cname,mname,oname) \\\n\
-  \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
-  \  (to_nonconst<oname,cname ## _t>), \\\n\
-  \  (to_nonconst<cname,cname ## _t>) )\n\
   \\n\
   \$cppbody\n"
 
