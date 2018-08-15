@@ -96,7 +96,7 @@ funcToDef c func
     in intercalateWith connBSlash id [declstr, "{", returnstr, "}"] 
   | otherwise = 
     let declstr = funcToDecl c func
-        callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
+        callstr = "to_nonconst<Type,Type ## _t>(p)->"
                   <> cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)   
                   <> ")"
