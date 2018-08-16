@@ -20,7 +20,6 @@ import Data.Text                   (Text)
 import System.FilePath             ((<.>),(</>))
 --
 import FFICXX.Generate.Type.Cabal  (AddCInc(..),AddCSrc(..),CabalName(..),Cabal(..))
-import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 import FFICXX.Generate.Util

@@ -4,12 +4,13 @@ import Data.Monoid (mempty)
 --
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Code.Primitive
+import FFICXX.Generate.Type.Cabal (Cabal(..),CabalName(..))
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 
 
-cabal = Cabal { cabal_pkgname = "stdcxx"
+cabal = Cabal { cabal_pkgname = CabalName "stdcxx"
               , cabal_cheaderprefix = "STD"
               , cabal_moduleprefix = "STD"
               , cabal_additional_c_incs = []
