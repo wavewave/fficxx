@@ -15,7 +15,7 @@
 
 module FFICXX.Generate.Code.Cpp where
 
-import           Data.Char 
+import           Data.Char
 import           Data.Monoid                           ( (<>) )
 --
 import           FFICXX.Generate.Code.MethodDef
@@ -37,56 +37,56 @@ import           FFICXX.Generate.Util
 
 ---- "Class Type Declaration" Instances
 
-genCppHeaderTmplType :: Class -> String 
+genCppHeaderTmplType :: Class -> String
 genCppHeaderTmplType c = let tmpl = "// Opaque type definition for $classname \n\
                                     \typedef struct ${classname}_tag ${classname}_t; \n\
                                     \typedef ${classname}_t * ${classname}_p; \n\
                                     \typedef ${classname}_t const* const_${classname}_p; \n"
-                      in subst tmpl (context [ ("classname", class_name c) ])
+                      in subst tmpl (context [ ("classname", ffiClassName c) ])
 
 genAllCppHeaderTmplType :: [Class] -> String
-genAllCppHeaderTmplType = intercalateWith connRet2 (genCppHeaderTmplType) 
+genAllCppHeaderTmplType = intercalateWith connRet2 (genCppHeaderTmplType)
 
----- "Class Declaration Virtual" Declaration 
+---- "Class Declaration Virtual" Declaration
 
-genCppHeaderTmplVirtual :: Class -> String 
-genCppHeaderTmplVirtual aclass =  
+genCppHeaderTmplVirtual :: Class -> String
+genCppHeaderTmplVirtual aclass =
   let tmpl = "#undef ${classname}_DECL_VIRT \n#define ${classname}_DECL_VIRT(Type) \\\n${funcdecl}"
       funcDeclStr = (funcsToDecls aclass) . virtualFuncs . class_funcs $ aclass
-  in subst tmpl (context [ ("classname", map toUpper (class_name aclass) ) 
-                         , ("funcdecl" , funcDeclStr                     ) ]) 
-      
-genAllCppHeaderTmplVirtual :: [Class] -> String 
+  in subst tmpl (context [ ("classname", map toUpper (ffiClassName aclass) )
+                         , ("funcdecl" , funcDeclStr                     ) ])
+
+genAllCppHeaderTmplVirtual :: [Class] -> String
 genAllCppHeaderTmplVirtual = intercalateWith connRet2 genCppHeaderTmplVirtual
 
 ---- "Class Declaration Non-Virtual" Declaration
 
 genCppHeaderTmplNonVirtual :: Class -> String
-genCppHeaderTmplNonVirtual c = 
-  let tmpl = "#undef ${classname}_DECL_NONVIRT \n#define ${classname}_DECL_NONVIRT(Type) \\\n$funcdecl" 
-      declBodyStr = subst tmpl (context [ ("classname", map toUpper (class_name c))
+genCppHeaderTmplNonVirtual c =
+  let tmpl = "#undef ${classname}_DECL_NONVIRT \n#define ${classname}_DECL_NONVIRT(Type) \\\n$funcdecl"
+      declBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
                                         , ("funcdecl" , funcDeclStr               ) ])
-      funcDeclStr = (funcsToDecls c) . filter (not.isVirtualFunc) 
+      funcDeclStr = (funcsToDecls c) . filter (not.isVirtualFunc)
                                      . class_funcs $ c
-  in  declBodyStr 
+  in  declBodyStr
 
-genAllCppHeaderTmplNonVirtual :: [Class] -> String 
+genAllCppHeaderTmplNonVirtual :: [Class] -> String
 genAllCppHeaderTmplNonVirtual = intercalateWith connRet genCppHeaderTmplNonVirtual
 
 ---- "Class Declaration Virtual/NonVirtual" Instances
 
-genCppHeaderInstVirtual :: (Class,Class) -> String 
-genCppHeaderInstVirtual (p,c) = 
-  let strc = map toUpper (class_name p) 
-  in  strc<>"_DECL_VIRT(" <> class_name c <> ");\n"
+genCppHeaderInstVirtual :: (Class,Class) -> String
+genCppHeaderInstVirtual (p,c) =
+  let strc = map toUpper (ffiClassName p)
+  in  strc<>"_DECL_VIRT(" <> ffiClassName c <> ");\n"
 
-genCppHeaderInstNonVirtual :: Class -> String 
-genCppHeaderInstNonVirtual c = 
-  let strx = map toUpper (class_name c) 
-  in  strx<>"_DECL_NONVIRT(" <> class_name c <> ");\n" 
+genCppHeaderInstNonVirtual :: Class -> String
+genCppHeaderInstNonVirtual c =
+  let strx = map toUpper (ffiClassName c)
+  in  strx<>"_DECL_NONVIRT(" <> ffiClassName c <> ");\n"
 
-genAllCppHeaderInstNonVirtual :: [Class] -> String 
-genAllCppHeaderInstNonVirtual = 
+genAllCppHeaderInstNonVirtual :: [Class] -> String
+genAllCppHeaderInstNonVirtual =
   intercalateWith connRet genCppHeaderInstNonVirtual
 
 
@@ -96,51 +96,51 @@ genAllCppHeaderInstNonVirtual =
 
 ---- "Class Definition Virtual" Declaration
 
-genCppDefTmplVirtual :: Class -> String 
-genCppDefTmplVirtual aclass =  
-  let tmpl = "#undef ${classname}_DEF_VIRT\n#define ${classname}_DEF_VIRT(Type)\\\n$funcdef" 
-      defBodyStr = subst tmpl (context [ ("classname", map toUpper (class_name aclass) ) 
-                                       , ("funcdef"  , funcDefStr                      ) ]) 
+genCppDefTmplVirtual :: Class -> String
+genCppDefTmplVirtual aclass =
+  let tmpl = "#undef ${classname}_DEF_VIRT\n#define ${classname}_DEF_VIRT(Type)\\\n$funcdef"
+      defBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName aclass) )
+                                       , ("funcdef"  , funcDefStr                      ) ])
       funcDefStr = (funcsToDefs aclass) . virtualFuncs . class_funcs $ aclass
-  in  defBodyStr 
-      
+  in  defBodyStr
+
 genAllCppDefTmplVirtual :: [Class] -> String
 genAllCppDefTmplVirtual = intercalateWith connRet2 genCppDefTmplVirtual
 
 ---- "Class Definition NonVirtual" Declaration
 
-genCppDefTmplNonVirtual :: Class -> String 
-genCppDefTmplNonVirtual aclass =  
-  let tmpl = "#undef ${classname}_DEF_NONVIRT\n#define ${classname}_DEF_NONVIRT(Type)\\\n$funcdef" 
-      defBodyStr = subst tmpl (context [ ("classname", map toUpper (class_name aclass) ) 
-                                       , ("funcdef"  , funcDefStr                      ) ]) 
-      funcDefStr = (funcsToDefs aclass) . filter (not.isVirtualFunc) 
+genCppDefTmplNonVirtual :: Class -> String
+genCppDefTmplNonVirtual aclass =
+  let tmpl = "#undef ${classname}_DEF_NONVIRT\n#define ${classname}_DEF_NONVIRT(Type)\\\n$funcdef"
+      defBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName aclass) )
+                                       , ("funcdef"  , funcDefStr                      ) ])
+      funcDefStr = (funcsToDefs aclass) . filter (not.isVirtualFunc)
                                         . class_funcs $ aclass
-  in  defBodyStr 
-      
+  in  defBodyStr
+
 genAllCppDefTmplNonVirtual :: [Class] -> String
 genAllCppDefTmplNonVirtual = intercalateWith connRet2 genCppDefTmplNonVirtual
 
 ---- "Class Definition Virtual/NonVirtual" Instances
 
-genCppDefInstVirtual :: (Class,Class) -> String 
-genCppDefInstVirtual (p,c) = 
-  let strc = map toUpper (class_name p) 
-  in  strc<>"_DEF_VIRT(" <> class_name c <> ")\n"
+genCppDefInstVirtual :: (Class,Class) -> String
+genCppDefInstVirtual (p,c) =
+  let strc = map toUpper (ffiClassName p)
+  in  strc<>"_DEF_VIRT(" <> ffiClassName c <> ")\n"
 
 genCppDefInstNonVirtual :: Class -> String
-genCppDefInstNonVirtual c = 
+genCppDefInstNonVirtual c =
   subst "${capitalclassname}_DEF_NONVIRT(${classname})"
-    (context [ ("capitalclassname", toUppers (class_name c))
-             , ("classname"       , class_name c           ) ]) 
+    (context [ ("capitalclassname", toUppers (ffiClassName c))
+             , ("classname"       , ffiClassName c           ) ])
 
-genAllCppDefInstNonVirtual :: [Class] -> String 
+genAllCppDefInstNonVirtual :: [Class] -> String
 genAllCppDefInstNonVirtual = intercalateWith connRet genCppDefInstNonVirtual
 
 -----------------
 
-genAllCppHeaderInclude :: ClassImportHeader -> String 
-genAllCppHeaderInclude header = 
+genAllCppHeaderInclude :: ClassImportHeader -> String
+genAllCppHeaderInclude header =
     intercalateWith connRet (\x->"#include \""<>x<>"\"") $
       map unHdrName (cihIncludedHPkgHeadersInCPP header
                      <> cihIncludedCPkgHeaders header)
@@ -153,37 +153,37 @@ genAllCppHeaderInclude header =
 -- TOP LEVEL FUNCTIONS --
 -------------------------
 
-genTopLevelFuncCppHeader :: TopLevelFunction -> String 
-genTopLevelFuncCppHeader TopLevelFunction {..} = 
-  subst "$returntype $funcname ( $args );" 
-    (context [ ("returntype", rettypeToString toplevelfunc_ret                )  
-             , ("funcname"  , "TopLevel_" 
+genTopLevelFuncCppHeader :: TopLevelFunction -> String
+genTopLevelFuncCppHeader TopLevelFunction {..} =
+  subst "$returntype $funcname ( $args );"
+    (context [ ("returntype", rettypeToString toplevelfunc_ret                )
+             , ("funcname"  , "TopLevel_"
                               <> maybe toplevelfunc_name id toplevelfunc_alias)
              , ("args"      , argsToStringNoSelf toplevelfunc_args            ) ])
-genTopLevelFuncCppHeader TopLevelVariable {..} = 
+genTopLevelFuncCppHeader TopLevelVariable {..} =
   subst "$returntype $funcname ( );"
-    (context [ ("returntype", rettypeToString toplevelvar_ret                )  
-             , ("funcname"  , "TopLevel_" 
-                               <> maybe toplevelvar_name id toplevelvar_alias) ]) 
+    (context [ ("returntype", rettypeToString toplevelvar_ret                )
+             , ("funcname"  , "TopLevel_"
+                               <> maybe toplevelvar_name id toplevelvar_alias) ])
 
-genTopLevelFuncCppDefinition :: TopLevelFunction -> String 
-genTopLevelFuncCppDefinition TopLevelFunction {..} =  
-  let tmpl = "$returntype $funcname ( $args ) { \n  $funcbody\n}" 
+genTopLevelFuncCppDefinition :: TopLevelFunction -> String
+genTopLevelFuncCppDefinition TopLevelFunction {..} =
+  let tmpl = "$returntype $funcname ( $args ) { \n  $funcbody\n}"
       callstr = toplevelfunc_name <> "("
-                <> argsToCallString toplevelfunc_args   
+                <> argsToCallString toplevelfunc_args
                 <> ")"
       funcDefStr = returnCpp False (toplevelfunc_ret) callstr
-  in subst tmpl (context [ ("returntype", rettypeToString toplevelfunc_ret                )  
-                         , ("funcname"  , "TopLevel_" 
+  in subst tmpl (context [ ("returntype", rettypeToString toplevelfunc_ret                )
+                         , ("funcname"  , "TopLevel_"
                                           <> maybe toplevelfunc_name id toplevelfunc_alias)
-                         , ("args"      , argsToStringNoSelf toplevelfunc_args            ) 
+                         , ("args"      , argsToStringNoSelf toplevelfunc_args            )
                          , ("funcbody"  , funcDefStr                                      ) ])
-genTopLevelFuncCppDefinition TopLevelVariable {..} =  
-  let tmpl = "$returntype $funcname ( ) { \n  $funcbody\n}" 
+genTopLevelFuncCppDefinition TopLevelVariable {..} =
+  let tmpl = "$returntype $funcname ( ) { \n  $funcbody\n}"
       callstr = toplevelvar_name
       funcDefStr = returnCpp False (toplevelvar_ret) callstr
-  in subst tmpl (context [ ("returntype", rettypeToString toplevelvar_ret               )  
-                         , ("funcname"  , "TopLevel_" 
+  in subst tmpl (context [ ("returntype", rettypeToString toplevelvar_ret               )
+                         , ("funcname"  , "TopLevel_"
                                           <> maybe toplevelvar_name id toplevelvar_alias)
                          , ("funcbody"  , funcDefStr                                    ) ])
 
@@ -191,7 +191,7 @@ genTopLevelFuncCppDefinition TopLevelVariable {..} =
 genTmplFunCpp :: Bool -- ^ is for simple type?
               -> TemplateClass
               -> TemplateFunction
-              -> String 
+              -> String
 genTmplFunCpp b t@TmplCls {..} f = subst tmpl ctxt
  where
   tmpl = "#define ${tname}_${fname}${suffix}(Type) \\\n\
@@ -218,20 +218,19 @@ genTmplFunCpp b t@TmplCls {..} f = subst tmpl ctxt
 genTmplClassCpp :: Bool -- ^ is for simple type
                 -> TemplateClass
                 -> [TemplateFunction]
-                -> String 
+                -> String
 genTmplClassCpp b TmplCls {..} fs = subst tmpl ctxt
  where
   tmpl = "#define ${tname}_instance${suffix}(Type) \\\n\
          \$macro\n"
   suffix = if b then "_s" else ""
   ctxt = context [ ("tname"  , tclass_name )
-                 , ("suffix" , suffix      ) 
+                 , ("suffix" , suffix      )
                  , ("macro"  , macro       ) ]
   tname = tclass_name
-  
+
   macro1 TFun {..}    = "  " <> tname<> "_" <> tfun_name <> suffix <> "(Type) \\"
-                 
+
   macro1 TFunNew {..} = "  " <> tname<> "_new(Type) \\"
-  macro1 TFunDelete   = "  " <> tname<> "_delete(Type) \\"                 
+  macro1 TFunDelete   = "  " <> tname<> "_delete(Type) \\"
   macro = intercalateWith connRet macro1 fs
-                 

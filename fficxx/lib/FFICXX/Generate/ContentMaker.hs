@@ -15,7 +15,7 @@
 
 module FFICXX.Generate.ContentMaker where
 
-import           Control.Lens                           (set,at)
+import           Control.Lens                           ((&),(.~),at)
 import           Control.Monad.Trans.Reader
 import           Data.Function                          (on)
 import qualified Data.Map                          as M
@@ -133,7 +133,7 @@ buildDeclHeader :: TypeMacro  -- ^ typemacro prefix
 buildDeclHeader (TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
-      typemacrostr = typemacroprefix <> class_name aclass <> "__"
+      typemacrostr = typemacroprefix <> ffiClassName aclass <> "__"
       declHeaderStr = intercalateWith connRet (\x->"#include \""<>x<>"\"") $
                         map unHdrName (cihIncludedHPkgHeadersInH header)
       declDefStr    = genAllCppHeaderTmplVirtual classes
@@ -398,4 +398,4 @@ buildPackageInterface pinfc pkgname = foldr f pinfc
   where f cih repo =
           let name = (class_name . cihClass) cih
               header = cihSelfHeader cih
-          in set (at (pkgname,ClsName name)) (Just header) repo
+          in repo & at (pkgname,ClsName name) .~ (Just header)

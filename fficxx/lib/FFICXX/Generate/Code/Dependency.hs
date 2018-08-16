@@ -40,7 +40,7 @@ import           Data.Maybe
 import           Data.Monoid               ( (<>) )
 import           System.FilePath
 --
-import           FFICXX.Generate.Code.Primitive (hsClassName,hsTemplateClassName)
+import           FFICXX.Generate.Code.Primitive (ffiClassName,hsClassName,hsTemplateClassName)
 import           FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc
                                             ,cabal_moduleprefix,cabal_pkgname
                                             ,cabal_cheaderprefix,unCabalName)
@@ -277,7 +277,7 @@ mkHSBOOTCandidateList ms = nub (concatMap cmImportedModulesHighSource ms)
 mkPkgHeaderFileName ::Class -> HeaderName
 mkPkgHeaderFileName c =
     HdrName (   (cabal_cheaderprefix.class_cabal) c
-            <>  maybe (class_name c) caCHeaderName (class_alias c)
+            <>  ffiClassName c
             <.> "h"
             )
 
@@ -285,7 +285,7 @@ mkPkgHeaderFileName c =
 mkPkgCppFileName ::Class -> String
 mkPkgCppFileName c =
         (cabal_cheaderprefix.class_cabal) c
-    <>  maybe (class_name c) caCHeaderName (class_alias c)
+    <>  ffiClassName c
     <.> "cpp"
 
 -- |
