@@ -1,8 +1,8 @@
 # Test shell environment for fficxx
 
-`testshell.nix` provides a testing environment for fficxx. To use it, run
+`shell.nix` provides a testing environment for fficxx. To use it, run
 ```
-$ nix-shell testshell.nix
+$ nix-shell shell.nix
 ```
 
 Tested with NixOS 18.03.
