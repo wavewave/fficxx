@@ -21,10 +21,9 @@ import           Language.Haskell.Exts.Syntax            (Decl(..))
 import           System.FilePath                         ((<.>))
 --
 import           FFICXX.Generate.Code.Dependency         (class_allparents)
-import           FFICXX.Generate.Code.Primitive          (aliasedFuncName,hscFuncName
-                                                         ,genericFuncArgs,genericFuncRet
-                                                         ,hsFFIFuncTyp
-                                                         )
+import           FFICXX.Generate.Code.Primitive          (hscFuncName,genericFuncArgs
+                                                         ,genericFuncRet
+                                                         ,hsFFIFuncTyp)
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
@@ -48,7 +47,7 @@ hsFFIClassFunc headerfilename c f =
   if isAbstractClass c 
   then Nothing
   else let hfile = unHdrName headerfilename
-           cname = class_name c <> "_" <> aliasedFuncName c f
+           cname = hscFuncName c f -- class_name c <> "_" <> aliasedFuncName c f
            typ = if (isNewFunc f || isStaticFunc f)
                  then hsFFIFuncTyp (Just (NoSelf,c)) (genericFuncArgs f, genericFuncRet f)
                  else hsFFIFuncTyp (Just (Self,c)  ) (genericFuncArgs f, genericFuncRet f)

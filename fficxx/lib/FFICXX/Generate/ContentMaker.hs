@@ -15,7 +15,7 @@
 
 module FFICXX.Generate.ContentMaker where
 
-import           Control.Lens                           (set,at)
+import           Control.Lens                           ((&),(.~),at)
 import           Control.Monad.Trans.Reader
 import           Data.Function                          (on)
 import qualified Data.Map                          as M
@@ -113,10 +113,10 @@ declarationTemplate =
   \#ifndef $typemacro\n\
   \#define $typemacro\n\
   \\n\
-  \#include \"${cprefix}Type.h\"\
-  \\n\
+  \#include \"${cprefix}Type.h\"\n\
+  \ // \n\
   \$declarationheader\n\
-  \\n\
+  \ // \n\
   \$declarationbody\n\
   \\n\
   \#endif // $typemacro\n\
@@ -133,9 +133,11 @@ buildDeclHeader :: TypeMacro  -- ^ typemacro prefix
 buildDeclHeader (TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
-      typemacrostr = typemacroprefix <> class_name aclass <> "__"
-      declHeaderStr = intercalateWith connRet (\x->"#include \""<>x<>"\"") $
-                        map unHdrName (cihIncludedHPkgHeadersInH header)
+      typemacrostr = typemacroprefix <> ffiClassName aclass <> "__"
+      declHeaderStr = intercalateWith
+                        connRet
+                        (\x->"#include \""<>x<>"\"")
+                        (map unHdrName (cihIncludedHPkgHeadersInH header))
       declDefStr    = genAllCppHeaderTmplVirtual classes
                       `connRet2`
                       genAllCppHeaderTmplNonVirtual classes
@@ -167,6 +169,8 @@ definitionTemplate =
   \\n\
   \$namespace\n\
   \\n\
+  \$alias\n\
+  \\n\
   \$cppbody\n"
 
 
@@ -178,6 +182,10 @@ buildDefMain header =
       headerStr = genAllCppHeaderInclude header <> "\n#include \"" <> (unHdrName (cihSelfHeader header)) <> "\""
       namespaceStr = (concatMap (\x->"using namespace " <> unNamespace x <> ";\n") . cihNamespace) header
       aclass = cihClass header
+      aliasStr = let n1 = class_name aclass
+                     n2 = ffiClassName aclass
+                 in if n1 == n2 then "" else "typedef " <> n1 <> " " <> n2 <> ";"
+
       cppBody = mkProtectedFunctionList (cihClass header)
                 `connRet`
                 buildParentDef genCppDefInstVirtual (cihClass header)
@@ -188,6 +196,7 @@ buildDefMain header =
                 `connRet`
                 genAllCppDefInstNonVirtual classes
   in subst definitionTemplate (context ([ ("header"   , headerStr    )
+                                        , ("alias"    , aliasStr     )
                                         , ("namespace", namespaceStr )
                                         , ("cppbody"  , cppBody      ) ]))
 
@@ -218,10 +227,12 @@ buildTopLevelFunctionCppDef tih =
       allns = nubBy ((==) `on` unNamespace) (tihClassDep tih >>= cihNamespace)
       namespaceStr = do ns <- allns
                         ("using namespace " <> unNamespace ns <> ";\n")
+      aliasStr = ""
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
   in subst definitionTemplate (context [ ("header"   , declHeaderStr)
                                        , ("namespace", namespaceStr )
+                                       , ("alias"    , aliasStr     )
                                        , ("cppbody"  , declBodyStr  ) ])
 
 -- |
@@ -398,4 +409,4 @@ buildPackageInterface pinfc pkgname = foldr f pinfc
   where f cih repo =
           let name = (class_name . cihClass) cih
               header = cihSelfHeader cih
-          in set (at (pkgname,ClsName name)) (Just header) repo
+          in repo & at (pkgname,ClsName name) .~ (Just header)

@@ -143,7 +143,9 @@ newtype ProtectedMethod = Protected { unProtected :: [String] }
                         deriving (Monoid)
 
 
-type ClassAlias = String
+data ClassAlias = ClassAlias { caHaskellName :: String
+                             , caFFIName :: String
+                             }
 
 data Class = Class { class_cabal :: Cabal
                    , class_name :: String
@@ -156,7 +158,7 @@ data Class = Class { class_cabal :: Cabal
                            , class_name :: String
                            , class_parents :: [Class]
                            , class_protected :: ProtectedMethod
-                           , class_alias :: Maybe String
+                           , class_alias :: Maybe ClassAlias
                            , class_funcs :: [Function]
                            }
 
@@ -215,6 +217,3 @@ isAbstractClass AbstractClass{} = True
 
 
 type DaughterMap = M.Map String [Class]
-
-
-

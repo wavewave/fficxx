@@ -432,7 +432,7 @@ typeclassNameFromStr = ('I':)
 
 hsClassName :: Class -> (String, String)  -- ^ High-level, 'Raw'-level
 hsClassName c =
-  let cname = maybe (class_name c) id (class_alias c)
+  let cname = maybe (class_name c) caHaskellName (class_alias c)
   in (cname, "Raw" <> cname)
 
 hsTemplateClassName :: TemplateClass -> (String, String)  -- ^ High-level, 'Raw'-level
@@ -444,8 +444,14 @@ existConstructorName :: Class -> String
 existConstructorName c = 'E' : (fst.hsClassName) c
 
 
+ffiClassName :: Class -> String
+ffiClassName c = maybe (class_name c) caFFIName (class_alias c)
+
 hscFuncName :: Class -> Function -> String
-hscFuncName c f = "c_" <> toLowers (class_name c) <> "_" <> toLowers (aliasedFuncName c f)
+hscFuncName c f =    "c_"
+                  <> toLowers (ffiClassName c)
+                  <> "_"
+                  <> toLowers (aliasedFuncName c f)
 
 hsFuncName :: Class -> Function -> String
 hsFuncName c f = let (x:xs) = aliasedFuncName c f
