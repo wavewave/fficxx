@@ -66,7 +66,20 @@ t_vector = TmplCls cabal "Vector" "std::vector" "t"
              , TFunDelete
              ]
 
-templates = [ (t_vector, HdrName "Vector.h") ]
+t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
+             [ TFunNew [(TemplateParam "t", "p")]
+             , TFun (TemplateParam "t") "get" "get" [] Nothing
+             , TFun (TemplateParam "t") "release" "release" [] Nothing
+             , TFun void_ "reset" "reset" [] Nothing
+             , TFunDelete
+             ]
+
+
+
+templates = [ (t_vector, HdrName "Vector.h")
+            , (t_unique_ptr, HdrName "UniquePtr.h")
+            ]
+
 
 
 headerMap = [ ("string"         , ([NS "std"          ], [HdrName "string"   ]))
