@@ -41,6 +41,9 @@ import           Data.Monoid               ( (<>) )
 import           System.FilePath
 --
 import           FFICXX.Generate.Code.Primitive (hsClassName,hsTemplateClassName)
+import           FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc
+                                            ,cabal_moduleprefix,cabal_pkgname
+                                            ,cabal_cheaderprefix,unCabalName)
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface

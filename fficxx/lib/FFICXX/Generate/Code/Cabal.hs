@@ -14,15 +14,16 @@
 
 module FFICXX.Generate.Code.Cabal where
 
-import           Data.List                   ( intercalate, nub )
-import           Data.Monoid                 ( (<>) )
-import           Data.Text                   ( Text )
-import           System.FilePath             ( (<.>), (</>) )
+import Data.List                   (intercalate,nub)
+import Data.Monoid                 ((<>))
+import Data.Text                   (Text)
+import System.FilePath             ((<.>),(</>))
 --
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface
-import           FFICXX.Generate.Util
+import FFICXX.Generate.Type.Cabal  (AddCInc(..),AddCSrc(..),CabalName(..),Cabal(..))
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Module
+import FFICXX.Generate.Type.PackageInterface
+import FFICXX.Generate.Util
 
 
 cabalIndentation :: String
