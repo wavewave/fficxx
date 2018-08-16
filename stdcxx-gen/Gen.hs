@@ -35,15 +35,18 @@ deletable =
 
 string :: Class
 string =
-  Class cabal "string" [ deletable ] mempty  (Just (ClassAlias { caHaskellName = "CppString"}))
-  [ Constructor [ cstring "p" ] Nothing
-  , NonVirtual cstring_ "c_str" [] Nothing
-  , NonVirtual (cppclassref_ string) "append" [cppclassref string "str"] Nothing
-  , NonVirtual (cppclassref_ string) "erase" [] Nothing
-  ]
+  Class cabal "string" [ deletable ] mempty
+    (Just (ClassAlias { caHaskellName = "CppString", caCHeaderName = "string"}))
+    [ Constructor [ cstring "p" ] Nothing
+    , NonVirtual cstring_ "c_str" [] Nothing
+    , NonVirtual (cppclassref_ string) "append" [cppclassref string "str"] Nothing
+    , NonVirtual (cppclassref_ string) "erase" [] Nothing
+    ]
 
 ostream :: Class
-ostream = Class cabal "ostream" [] mempty (Just (ClassAlias { caHaskellName = "Ostream" })) []
+ostream = Class cabal "ostream" [] mempty
+                (Just (ClassAlias { caHaskellName = "Ostream", caCHeaderName = "ostream" }))
+                []
 
 
 classes = [ deletable

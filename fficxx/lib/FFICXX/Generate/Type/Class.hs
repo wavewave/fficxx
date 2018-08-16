@@ -144,7 +144,7 @@ newtype ProtectedMethod = Protected { unProtected :: [String] }
 
 
 data ClassAlias = ClassAlias { caHaskellName :: String
-                             -- , caNewHeaderName :: String
+                             , caCHeaderName :: String
                              }
 
 data Class = Class { class_cabal :: Cabal

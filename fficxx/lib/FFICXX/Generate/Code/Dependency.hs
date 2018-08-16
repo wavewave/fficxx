@@ -222,9 +222,16 @@ mkClassModule :: (Class->([Namespace],[HeaderName]))
               -> Class
               -> ClassModule
 mkClassModule mkincheaders extra c =
-  ClassModule (getClassModuleBase c) [c] (map (mkCIH mkincheaders) [c]) highs_nonsource
-              raws highs_source ffis extraimports
-
+    ClassModule {
+      cmModule = getClassModuleBase c
+    , cmClass = [c]
+    , cmCIH = map (mkCIH mkincheaders) [c]
+    , cmImportedModulesHighNonSource = highs_nonsource
+    , cmImportedModulesRaw =raws
+    , cmImportedModulesHighSource = highs_source
+    , cmImportedModulesForFFI = ffis
+    , cmExtraImport = extraimports
+    }
   where highs_nonsource = (map getmodulebase . mkModuleDepHighNonSource) (Right c)
         raws = (map getmodulebase . mkModuleDepRaw) (Right c)
         highs_source = (map getmodulebase . mkModuleDepHighSource) (Right c)
@@ -269,12 +276,17 @@ mkHSBOOTCandidateList ms = nub (concatMap cmImportedModulesHighSource ms)
 -- |
 mkPkgHeaderFileName ::Class -> HeaderName
 mkPkgHeaderFileName c =
-    HdrName ((cabal_cheaderprefix.class_cabal) c <> class_name c <.> "h")
+    HdrName (   (cabal_cheaderprefix.class_cabal) c
+            <>  maybe (class_name c) caCHeaderName (class_alias c)
+            <.> "h"
+            )
 
 -- |
 mkPkgCppFileName ::Class -> String
 mkPkgCppFileName c =
-    (cabal_cheaderprefix.class_cabal) c <> class_name c <.> "cpp"
+        (cabal_cheaderprefix.class_cabal) c
+    <>  maybe (class_name c) caCHeaderName (class_alias c)
+    <.> "cpp"
 
 -- |
 mkPkgIncludeHeadersInH :: Class -> [HeaderName]
@@ -295,10 +307,13 @@ mkPkgIncludeHeadersInCPP = map mkPkgHeaderFileName . rights . mkModuleDepCpp . R
 mkCIH :: (Class->([Namespace],[HeaderName]))  -- ^ (mk namespace and include headers)
       -> Class
       -> ClassImportHeader
-mkCIH mkNSandIncHdrs c = ClassImportHeader c
-                           (mkPkgHeaderFileName c)
-                           ((fst . mkNSandIncHdrs) c)
-                           (mkPkgCppFileName c)
-                           (mkPkgIncludeHeadersInH c)
-                           (mkPkgIncludeHeadersInCPP c)
-                           ((snd . mkNSandIncHdrs) c)
+mkCIH mkNSandIncHdrs c =
+  ClassImportHeader {
+    cihClass                    = c
+  , cihSelfHeader               = mkPkgHeaderFileName c
+  , cihNamespace                = (fst . mkNSandIncHdrs) c
+  , cihSelfCpp                  = mkPkgCppFileName c
+  , cihIncludedHPkgHeadersInH   = mkPkgIncludeHeadersInH c
+  , cihIncludedHPkgHeadersInCPP = mkPkgIncludeHeadersInCPP c
+  , cihIncludedCPkgHeaders      = (snd . mkNSandIncHdrs) c
+  }
