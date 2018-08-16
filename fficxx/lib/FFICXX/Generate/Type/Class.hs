@@ -144,10 +144,10 @@ data AddCInc = AddCInc FilePath String
 
 data AddCSrc = AddCSrc FilePath String
 
-newtype CabalName = CabalName String
+newtype CabalName = CabalName { unCabalName :: String }
                   deriving (Show,Eq,Ord)
 
-data Cabal = Cabal  { cabal_pkgname       :: String
+data Cabal = Cabal  { cabal_pkgname       :: CabalName
                     , cabal_cheaderprefix :: String
                     , cabal_moduleprefix  :: String
                     , cabal_additional_c_incs :: [AddCInc]
@@ -161,11 +161,13 @@ data Cabal = Cabal  { cabal_pkgname       :: String
                     , cabal_pkg_config_depends :: [String]
                     }
 
+type ClassAlias = String
+
 data Class = Class { class_cabal :: Cabal
                    , class_name :: String
                    , class_parents :: [Class]
                    , class_protected :: ProtectedMethod
-                   , class_alias :: Maybe String
+                   , class_alias :: Maybe ClassAlias
                    , class_funcs :: [Function]
                    }
            | AbstractClass { class_cabal :: Cabal
