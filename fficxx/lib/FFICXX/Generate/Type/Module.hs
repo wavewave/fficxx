@@ -12,8 +12,9 @@
 
 module FFICXX.Generate.Type.Module where
 
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Type.PackageInterface
+import FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc)
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.PackageInterface
 
 
 newtype Namespace = NS { unNamespace :: String } deriving (Show)

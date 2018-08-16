@@ -37,7 +37,7 @@ Library
                  template-haskell,
                  text,
                  unordered-containers
-                 
+
 
   Exposed-Modules:
                    FFICXX.Generate.Builder
@@ -54,14 +54,13 @@ Library
                    FFICXX.Generate.Util
                    FFICXX.Generate.Util.HaskellSrcExts
                    FFICXX.Generate.Type.Annotate
+                   FFICXX.Generate.Type.Cabal
                    FFICXX.Generate.Type.Class
                    FFICXX.Generate.Type.Module
                    FFICXX.Generate.Type.PackageInterface
   ghc-options:     -Wall
                    -funbox-strict-fields
                    -fno-warn-unused-do-bind
-                   -fno-warn-missing-signatures                   
+                   -fno-warn-missing-signatures
                    -O2
   ghc-prof-options: -caf-all -auto-all
-
-

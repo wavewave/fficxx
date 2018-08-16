@@ -14,15 +14,15 @@
 
 module FFICXX.Generate.Code.Cabal where
 
-import           Data.List                   ( intercalate, nub )
-import           Data.Monoid                 ( (<>) )
-import           Data.Text                   ( Text )
-import           System.FilePath             ( (<.>), (</>) )
+import Data.List                   (intercalate,nub)
+import Data.Monoid                 ((<>))
+import Data.Text                   (Text)
+import System.FilePath             ((<.>),(</>))
 --
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface
-import           FFICXX.Generate.Util
+import FFICXX.Generate.Type.Cabal  (AddCInc(..),AddCSrc(..),CabalName(..),Cabal(..))
+import FFICXX.Generate.Type.Module
+import FFICXX.Generate.Type.PackageInterface
+import FFICXX.Generate.Util
 
 
 cabalIndentation :: String
@@ -178,7 +178,7 @@ buildCabalFile cabal summarymodule pkgconfig extralibs cabalfile = do
                           | Just license <- [cabal_license cabal] ] <>
                         [ ("licenseFileField", "license-file: " <> licensefile)
                           | Just licensefile <- [cabal_licensefile cabal] ] <>
-                        [ ("pkgname", cabal_pkgname cabal)
+                        [ ("pkgname", unCabalName (cabal_pkgname cabal))
                         , ("version",  "0.0")
                         , ("buildtype", "Simple")
                         , ("synopsis", "")
@@ -192,7 +192,7 @@ buildCabalFile cabal summarymodule pkgconfig extralibs cabalfile = do
                         , ("deps", genPkgDeps (cabal_additional_pkgdeps cabal))
                         , ("extraFiles", concatMap (\x -> cabalIndentation <> x <> "\n") extrafiles)
                         , ("csrcFiles", genCsrcFiles (tih,classmodules) acincs acsrcs)
-                        , ("includeFiles", genIncludeFiles (cabal_pkgname cabal) (cih,tcih) acincs)
+                        , ("includeFiles", genIncludeFiles (unCabalName (cabal_pkgname cabal)) (cih,tcih) acincs)
                         , ("cppFiles", genCppFiles (tih,classmodules) acsrcs)
                         , ("exposedModules", genExposedModules summarymodule (classmodules,tmods))
                         , ("otherModules", genOtherModules classmodules)
