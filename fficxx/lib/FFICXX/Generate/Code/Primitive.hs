@@ -432,7 +432,7 @@ typeclassNameFromStr = ('I':)
 
 hsClassName :: Class -> (String, String)  -- ^ High-level, 'Raw'-level
 hsClassName c =
-  let cname = maybe (class_name c) id (class_alias c)
+  let cname = maybe (class_name c) caHaskellName (class_alias c)
   in (cname, "Raw" <> cname)
 
 hsTemplateClassName :: TemplateClass -> (String, String)  -- ^ High-level, 'Raw'-level

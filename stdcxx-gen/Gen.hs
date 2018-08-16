@@ -35,7 +35,7 @@ deletable =
 
 string :: Class
 string =
-  Class cabal "string" [ deletable ] mempty  (Just "CppString")
+  Class cabal "string" [ deletable ] mempty  (Just (ClassAlias { caHaskellName = "CppString"}))
   [ Constructor [ cstring "p" ] Nothing
   , NonVirtual cstring_ "c_str" [] Nothing
   , NonVirtual (cppclassref_ string) "append" [cppclassref string "str"] Nothing
@@ -43,7 +43,7 @@ string =
   ]
 
 ostream :: Class
-ostream = Class cabal "ostream" [] mempty (Just "Ostream") []
+ostream = Class cabal "ostream" [] mempty (Just (ClassAlias { caHaskellName = "Ostream" })) []
 
 
 classes = [ deletable
