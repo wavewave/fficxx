@@ -17,3 +17,11 @@ $(TH.genUniquePtrInstanceFor ''CppString "string")
 
 main = do
   putStrLn "test"
+  withCString "hello" $ \cstr -> do
+    cppstr <- newCppString cstr
+    ptr <- newUniquePtr cppstr
+    cppstr' <- get ptr
+    cstr' <- cppStringc_str cppstr'
+    bstr <- B.packCString cstr'
+    print bstr
+    deleteUniquePtr ptr

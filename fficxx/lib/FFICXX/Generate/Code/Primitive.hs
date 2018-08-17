@@ -336,7 +336,7 @@ tmplArgToCallString b (TemplateParam _,varname) =
 tmplArgToCallString b (TemplateParamPointer _,varname) =
   case b of
     True  -> varname
-    False -> "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
+    False -> "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
 tmplArgToCallString _ (_,varname) = varname
 
 tmplAllArgsToCallString
