@@ -54,6 +54,7 @@ Library
                    FFICXX.Generate.Util.HaskellSrcExts
                    FFICXX.Generate.Type.Annotate
                    FFICXX.Generate.Type.Cabal
+                   FFICXX.Generate.Type.Config
                    FFICXX.Generate.Type.Class
                    FFICXX.Generate.Type.Module
                    FFICXX.Generate.Type.PackageInterface
