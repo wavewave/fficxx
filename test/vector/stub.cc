@@ -9,6 +9,3 @@ using namespace std;
 
 Vector_instance_s(int)
 Vector_instance(string)
-
-// struct A { int a; };
-// typedef std::string cppstring;

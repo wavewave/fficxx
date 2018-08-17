@@ -31,5 +31,16 @@ main1 = do
   deleteVector v
 
 main = do
-  v :: Vector CppString <- newVector
-  deleteVector v
+  withCString "hello" $ \cstr -> do
+    v :: Vector CppString <- newVector
+    cppstr <- newCppString cstr
+    push_back v cppstr
+    print =<< size v
+    cppstr' <- at v 0
+    cstr' <- cppStringc_str cppstr'
+    bstr <- B.packCString cstr'
+    print bstr
+    print =<< size v
+    pop_back v
+    print =<< size v
+    deleteVector v
