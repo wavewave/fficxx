@@ -15,7 +15,8 @@ import qualified STD.Vector.TH as TH
 $(TH.genVectorInstanceFor ''CInt "int")
 $(TH.genVectorInstanceFor ''CppString "string")
 
-main1 = do
+
+test1 = do
   v :: Vector CInt <- newVector
   n <- size v
   print =<< size v
@@ -30,7 +31,8 @@ main1 = do
   print =<< at v 5
   deleteVector v
 
-main = do
+
+test2 = do
   withCString "hello" $ \cstr -> do
     v :: Vector CppString <- newVector
     cppstr <- newCppString cstr
@@ -44,3 +46,8 @@ main = do
     pop_back v
     print =<< size v
     deleteVector v
+
+main :: IO ()
+main = do
+  test1
+  test2

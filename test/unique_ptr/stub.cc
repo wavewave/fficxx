@@ -1,10 +1,9 @@
-// #include <MacroPatternMatch.h>
-#include <vector>
-#include "Vector.h"
+#include <MacroPatternMatch.h>
+#include <memory>
+#include <string>
+#include "UniquePtr.h"
 #include "stdcxxType.h"
 
-Vector_instance_s(int)
+using namespace std;
 
-
-
-
+UniquePtr_instance(string)
