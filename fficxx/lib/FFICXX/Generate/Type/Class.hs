@@ -60,6 +60,7 @@ data Types = Void
                             , tappref_CppTypeForParam :: String }
            | TemplateType TemplateClass
            | TemplateParam String
+           | TemplateParamPointer String -- ^ this is A* with template<A>
            deriving Show
 
 -------------

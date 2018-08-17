@@ -284,6 +284,8 @@ rettypeToString (TemplateApp _ _ _) = "void*"
 rettypeToString (TemplateAppRef _ _ _) = "void*"
 rettypeToString (TemplateType _) = "void*"
 rettypeToString (TemplateParam _) = "Type ## _p"
+rettypeToString (TemplateParamPointer _) = "Type ## _p"
+
 
 tmplArgToString :: Bool -> TemplateClass -> (Types,String) -> String
 tmplArgToString _ _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
@@ -299,10 +301,10 @@ tmplArgToString _ _ (CPT (CPTClassRef c) isconst, varname) =
 tmplArgToString _ _ (TemplateApp _ _ _,_v) = error "tmpArgToString: TemplateApp"
 tmplArgToString _ _ (TemplateAppRef _ _ _,_v) = error "tmpArgToString: TemplateAppRef"
 tmplArgToString _ _ (TemplateType _,v) = "void* " <> v
-tmplArgToString b _ (TemplateParam _,v) =
-  case b of
-    True  -> "Type " <> v
-    False -> "Type ## _p " <> v
+tmplArgToString True  _ (TemplateParam _,v) = "Type " <> v
+tmplArgToString False _ (TemplateParam _,v) = "Type ## _p " <> v
+tmplArgToString True  _ (TemplateParamPointer _,v) = "Type " <> v
+tmplArgToString False _ (TemplateParamPointer _,v) = "Type ## _p " <> v
 tmplArgToString _ _ _ = error "tmplArgToString: undefined"
 
 tmplAllArgsToString :: Bool
@@ -331,6 +333,10 @@ tmplArgToCallString b (TemplateParam _,varname) =
   case b of
     True  -> varname
     False -> "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
+tmplArgToCallString b (TemplateParamPointer _,varname) =
+  case b of
+    True  -> varname
+    False -> "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
 tmplArgToCallString _ (_,varname) = varname
 
 tmplAllArgsToCallString
@@ -353,9 +359,10 @@ tmplRetTypeToString _ (CPT (CPTClassCopy c) _) = class_name c <> "_p"
 tmplRetTypeToString _ (TemplateApp _ _ _) = "void*"
 tmplRetTypeToString _ (TemplateAppRef _ _ _) = "void*"
 tmplRetTypeToString _ (TemplateType _) = "void*"
-tmplRetTypeToString b (TemplateParam _) = if b
-                                          then "Type"
-                                          else "Type ## _p"
+tmplRetTypeToString b (TemplateParam _) =
+  if b then "Type" else "Type ## _p"
+tmplRetTypeToString b (TemplateParamPointer _) =
+  if b then "Type" else "Type ## _p"
 
 -- |
 ctypToHsTyp :: Maybe Class -> Types -> String
@@ -383,6 +390,7 @@ ctypToHsTyp _c (TemplateApp t p _) = "("<> tclass_name t <> " " <> p <> ")"
 ctypToHsTyp _c (TemplateAppRef t p _) = "("<> tclass_name t <> " " <> p <> ")"
 ctypToHsTyp _c (TemplateType t) = "("<> tclass_name t <> " " <> tclass_param t <> ")"
 ctypToHsTyp _c (TemplateParam p) = "("<> p <> ")"
+ctypToHsTyp _c (TemplateParamPointer p) = "("<> p <> ")"
 
 
 -- |
@@ -415,6 +423,7 @@ convertCpp2HS _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tyco
 convertCpp2HS _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon p)
 convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (tclass_param t))
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
+convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
 
 -- |
 convertCpp2HS4Tmpl :: Type () -> Maybe Class -> Type () -> Types -> Type ()
@@ -429,8 +438,7 @@ convertCpp2HS4Tmpl e _c _ (TemplateApp _ _ _ )     = e
 convertCpp2HS4Tmpl e _c _ (TemplateAppRef _ _ _ )  = e
 convertCpp2HS4Tmpl e _c _ (TemplateType _)         = e
 convertCpp2HS4Tmpl _ _c t (TemplateParam _)        = t
-
-
+convertCpp2HS4Tmpl _ _c t (TemplateParamPointer _) = t
 
 
 typeclassName :: Class -> String
@@ -653,6 +661,7 @@ hsFFIFuncTyp msc (args,ret) =
         hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p)          = mkTVar p
+        hsrettype (TemplateParamPointer p)   = mkTVar p
 
 
 
