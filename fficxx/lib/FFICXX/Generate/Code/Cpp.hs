@@ -325,17 +325,17 @@ tmplFunToDecl b t@TmplCls {..} TFun {..} =
   subst "$ret ${tname}_${fname}_ ## Type ( $args )"
     (context [ ("tname", tclass_name                     )
              , ("fname", tfun_name                       )
-             , ("args" , tmplAllArgsToString Self t tfun_args )
+             , ("args" , tmplAllArgsToString b Self t tfun_args )
              , ("ret"  , tmplRetTypeToString b tfun_ret    ) ])
 tmplFunToDecl b t@TmplCls {..} TFunNew {..} =
   subst "$ret ${tname}_new_ ## Type ( $args )"
     (context [ ("tname", tclass_name                     )
-             , ("args" , tmplAllArgsToString NoSelf t tfun_new_args )
+             , ("args" , tmplAllArgsToString b NoSelf t tfun_new_args )
              , ("ret"  , tmplRetTypeToString b (TemplateType t)) ])
-tmplFunToDecl _ t@TmplCls {..} TFunDelete =
+tmplFunToDecl b t@TmplCls {..} TFunDelete =
   subst "$ret ${tname}_delete_ ## Type ( $args )"
     (context [ ("tname", tclass_name                     )
-             , ("args" , tmplAllArgsToString Self t [] )
+             , ("args" , tmplAllArgsToString b Self t [] )
              , ("ret"  , "void" ) ])
 
 
@@ -351,13 +351,12 @@ tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {",
     case f of
       TFun {..}    -> "(static_cast<" <> tclass_oname <> "<Type>*>(p))->"
                       <> tfun_oname <> "("
-                      <> tmplAllArgsToCallString tfun_args
+                      <> tmplAllArgsToCallString b tfun_args
                       <> ")"
       TFunNew {..} -> "new " <> tclass_oname <> "<Type>("
-                      <> tmplAllArgsToCallString tfun_new_args
+                      <> tmplAllArgsToCallString b tfun_new_args
                       <> ")"
       TFunDelete   -> "delete (static_cast<" <> tclass_oname <> "<Type>*>(p))"
-
   returnstr =
     case f of
       TFunNew {..} -> "return static_cast<void*>("<>callstr<>");"

@@ -9,22 +9,11 @@ import Foreign.Ptr
 import Foreign.C.String
 
 
-import           STD.Vector.Template
-import qualified STD.Vector.TH as TH
+import           STD.CppString
+import           STD.UniquePtr.Template
+import qualified STD.UniquePtr.TH as TH
 
-$(TH.genVectorInstanceFor ''CInt "int")
+$(TH.genUniquePtrInstanceFor ''CppString "string")
 
 main = do
-  v :: Vector CInt <- newVector
-  n <- size v
-  print =<< size v
-
-  push_back v 1
-  print =<< size v
-  mapM_ (push_back v) [1..100]
-  print =<< size v
-  pop_back v
-  print =<< size v
-
-  print =<< at v 5
-  deleteVector v
+  putStrLn "test"

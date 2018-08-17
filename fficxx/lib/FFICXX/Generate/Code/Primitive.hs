@@ -285,49 +285,63 @@ rettypeToString (TemplateAppRef _ _ _) = "void*"
 rettypeToString (TemplateType _) = "void*"
 rettypeToString (TemplateParam _) = "Type ## _p"
 
-tmplArgToString :: TemplateClass -> (Types,String) -> String
-tmplArgToString _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
-tmplArgToString t (SelfType, varname) = tclass_oname t <> "* " <> varname
-tmplArgToString _ (CPT (CPTClass c) isconst, varname) =
+tmplArgToString :: Bool -> TemplateClass -> (Types,String) -> String
+tmplArgToString _ _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
+tmplArgToString _ t (SelfType, varname) = tclass_oname t <> "* " <> varname
+tmplArgToString _ _ (CPT (CPTClass c) isconst, varname) =
   case isconst of
     Const   -> "const_" <> class_name c <> "_p " <> varname
     NoConst -> class_name c <> "_p " <> varname
-tmplArgToString _ (CPT (CPTClassRef c) isconst, varname) =
+tmplArgToString _ _ (CPT (CPTClassRef c) isconst, varname) =
   case isconst of
     Const   -> "const_" <> class_name c <> "_p " <> varname
     NoConst -> class_name c <> "_p " <> varname
-tmplArgToString _ (TemplateApp _ _ _,_v) = error "tmpArgToString: TemplateApp"
-tmplArgToString _ (TemplateAppRef _ _ _,_v) = error "tmpArgToString: TemplateAppRef"
-tmplArgToString _ (TemplateType _,v) = "void* " <> v
-tmplArgToString _ (TemplateParam _,v) = "Type " <> v
-tmplArgToString _ _ = error "tmplArgToString: undefined"
+tmplArgToString _ _ (TemplateApp _ _ _,_v) = error "tmpArgToString: TemplateApp"
+tmplArgToString _ _ (TemplateAppRef _ _ _,_v) = error "tmpArgToString: TemplateAppRef"
+tmplArgToString _ _ (TemplateType _,v) = "void* " <> v
+tmplArgToString b _ (TemplateParam _,v) =
+  case b of
+    True  -> "Type " <> v
+    False -> "Type ## _p " <> v
+tmplArgToString _ _ _ = error "tmplArgToString: undefined"
 
-tmplAllArgsToString :: Selfness
+tmplAllArgsToString :: Bool
+                    -> Selfness
                     -> TemplateClass
                     -> Args
                     -> String
-tmplAllArgsToString s t args =
+tmplAllArgsToString b s t args =
   let args' = case s of
                 Self -> (TemplateType t, "p") : args
                 NoSelf -> args
-  in  intercalateWith conncomma (tmplArgToString t) args'
+  in  intercalateWith conncomma (tmplArgToString b t) args'
 
 
 
-tmplArgToCallString :: (Types,String) -> String
-tmplArgToCallString (CPT (CPTClass c) _,varname) =
+tmplArgToCallString
+  :: Bool  -- ^ is primitive type?
+  -> (Types,String)
+  -> String
+tmplArgToCallString _ (CPT (CPTClass c) _,varname) =
     "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")" where str = class_name c
-tmplArgToCallString (CPT (CPTClassRef c) _,varname) =
+tmplArgToCallString _ (CPT (CPTClassRef c) _,varname) =
     "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")" where str = class_name c
-tmplArgToCallString (CT (CRef _) _,varname) = "(*"<> varname<> ")"
-tmplArgToCallString (_,varname) = varname
+tmplArgToCallString _ (CT (CRef _) _,varname) = "(*"<> varname<> ")"
+tmplArgToCallString b (TemplateParam _,varname) =
+  case b of
+    True  -> varname
+    False -> "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
+tmplArgToCallString _ (_,varname) = varname
 
-tmplAllArgsToCallString :: Args -> String
-tmplAllArgsToCallString = intercalateWith conncomma tmplArgToCallString
+tmplAllArgsToCallString
+  :: Bool  -- ^ is primitive type?
+  -> Args
+  -> String
+tmplAllArgsToCallString b = intercalateWith conncomma (tmplArgToCallString b)
 
 
 
-tmplRetTypeToString :: Bool   -- ^ is Simple type?
+tmplRetTypeToString :: Bool   -- ^ is primitive type?
                     -> Types
                     -> String
 tmplRetTypeToString _ (CT ctyp isconst) = ctypToStr ctyp isconst

@@ -1,5 +1,4 @@
 #include <MacroPatternMatch.h>
-#include <iostream>
 #include <vector>
 #include <string>
 #include "Vector.h"
