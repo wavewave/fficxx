@@ -42,7 +42,6 @@ Library
   Exposed-Modules:
                    FFICXX.Generate.Builder
                    FFICXX.Generate.Config
-                   FFICXX.Generate.Code.MethodDef
                    FFICXX.Generate.Code.Cpp
                    FFICXX.Generate.Code.HsFrontEnd
                    FFICXX.Generate.Code.HsFFI
