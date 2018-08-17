@@ -138,18 +138,18 @@ tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {",
   declstr = tmplFunToDecl b t f
   callstr =
     case f of
-      TFun {..}    -> "(reinterpret_cast<" <> tclass_oname <> "<Type>*>(p))->"
+      TFun {..}    -> "(static_cast<" <> tclass_oname <> "<Type>*>(p))->"
                       <> tfun_oname <> "("
                       <> tmplAllArgsToCallString tfun_args   
                       <> ")"
       TFunNew {..} -> "new " <> tclass_oname <> "<Type>("
                       <> tmplAllArgsToCallString tfun_new_args
                       <> ")"
-      TFunDelete   -> "delete (reinterpret_cast<" <> tclass_oname <> "<Type>*>(p))"
+      TFunDelete   -> "delete (static_cast<" <> tclass_oname <> "<Type>*>(p))"
                       
   returnstr =
     case f of
-      TFunNew {..} -> "return reinterpret_cast<void*>("<>callstr<>");"
+      TFunNew {..} -> "return static_cast<void*>("<>callstr<>");"
       TFunDelete   -> callstr <> ";"
       TFun {..} -> returnCpp b (tfun_ret) callstr
 
