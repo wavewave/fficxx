@@ -8,13 +8,14 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.C.String
 
-
+import           STD.CppString
 import           STD.Vector.Template
 import qualified STD.Vector.TH as TH
 
 $(TH.genVectorInstanceFor ''CInt "int")
+$(TH.genVectorInstanceFor ''CppString "string")
 
-main = do
+main1 = do
   v :: Vector CInt <- newVector
   n <- size v
   print =<< size v
@@ -27,4 +28,8 @@ main = do
   print =<< size v
 
   print =<< at v 5
+  deleteVector v
+
+main = do
+  v :: Vector CppString <- newVector
   deleteVector v
