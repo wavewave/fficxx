@@ -31,13 +31,13 @@ module FFICXX.Generate.Code.Dependency where
 -- a given class.
 --
 
-import           Data.Either               ( rights )
-import           Data.Function             ( on )
+import           Data.Either                (rights)
+import           Data.Function              (on)
 import qualified Data.HashMap.Strict as HM
 import           Data.List
 import qualified Data.Map            as M
 import           Data.Maybe
-import           Data.Monoid               ( (<>) )
+import           Data.Monoid                ((<>))
 import           System.FilePath
 --
 import           FFICXX.Generate.Code.Primitive (ffiClassName,hsClassName,hsTemplateClassName)
@@ -105,7 +105,7 @@ mkDaughterMap = foldl mkDaughterMapWorker M.empty
 
 -- | Daughter Map including itself as a daughter
 mkDaughterSelfMap :: [Class] -> DaughterMap
-mkDaughterSelfMap = foldl worker M.empty
+mkDaughterSelfMap = foldl' worker M.empty
   where worker m c = let ps = map getClassModuleBase (c:class_allparents c)
                      in  foldl (addToList c) m ps
         addToList c m p = let f Nothing = Just [c]
@@ -221,15 +221,15 @@ mkModuleDepFFI y@(Right c) =
 mkModuleDepFFI (Left _) = []
 
 
-mkClassModule :: (Class->ModuleUnitImports)
+mkClassModule :: (ModuleUnit -> ModuleUnitImports)
               -> [(String,[String])]
               -> Class
               -> ClassModule
-mkClassModule mkincheaders extra c =
+mkClassModule getImports extra c =
     ClassModule {
       cmModule = getClassModuleBase c
     , cmClass = [c]
-    , cmCIH = map (mkCIH mkincheaders) [c]
+    , cmCIH = map (mkCIH getImports) [c]
     , cmImportedModulesHighNonSource = highs_nonsource
     , cmImportedModulesRaw =raws
     , cmImportedModulesHighSource = highs_source
@@ -243,9 +243,9 @@ mkClassModule mkincheaders extra c =
         extraimports = fromMaybe [] (lookup (class_name c) extra)
 
 
-findModuleUnitImports :: ModuleUnitMap -> Class -> ModuleUnitImports
-findModuleUnitImports m c =
-  fromMaybe emptyModuleUnitImports (HM.lookup (MU_Class (class_name c)) (unModuleUnitMap m))
+findModuleUnitImports :: ModuleUnitMap -> ModuleUnit -> ModuleUnitImports
+findModuleUnitImports m u =
+  fromMaybe emptyModuleUnitImports (HM.lookup u (unModuleUnitMap m))
 
 
 mkTCM :: (TemplateClass,HeaderName) -> TemplateClassModule
@@ -253,13 +253,13 @@ mkTCM (t,hdr) = TCM  (getTClassModuleBase t) [t] [TCIH t hdr]
 
 
 mkPackageConfig
-  :: (String,Class->ModuleUnitImports) -- ^ (package name,mkIncludeHeaders)
+  :: (String, ModuleUnit -> ModuleUnitImports) -- ^ (package name,getImports)
   -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)],[(String,[String])])
   -> [AddCInc]
   -> [AddCSrc]
   -> PackageConfig
-mkPackageConfig (pkgname,mkNS_IncHdrs) (cs,fs,ts,extra) acincs acsrcs =
-  let ms = map (mkClassModule mkNS_IncHdrs extra) cs
+mkPackageConfig (pkgname,getImports) (cs,fs,ts,extra) acincs acsrcs =
+  let ms = map (mkClassModule getImports extra) cs
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
       -- for toplevel
@@ -269,7 +269,13 @@ mkPackageConfig (pkgname,mkNS_IncHdrs) (cs,fs,ts,extra) acincs acsrcs =
       tl_cihs = catMaybes $
         foldr (\c acc-> (find (\x -> (class_name . cihClass) x == getclassname c) cihs):acc) [] tl_cs
       --
-      tih = TopLevelImportHeader (pkgname <> "TopLevel") tl_cihs fs
+      tih = TopLevelImportHeader {
+              tihHeaderFileName = pkgname <> "TopLevel"
+            , tihClassDep = tl_cihs
+            , tihFuncs = fs
+            , tihNamespaces = muimports_namespaces (getImports MU_TopLevel)
+            , tihExtraHeaders = muimports_headers (getImports MU_TopLevel)
+            }
       tcms = map mkTCM ts
       tcihs = concatMap tcmTCIH tcms
   in PkgConfig ms cihs tih tcms tcihs acincs acsrcs
@@ -309,16 +315,16 @@ mkPkgIncludeHeadersInCPP = map mkPkgHeaderFileName . rights . mkModuleDepCpp . R
 
 
 -- |
-mkCIH :: (Class -> ModuleUnitImports)  -- ^ (mk namespace and include headers)
+mkCIH :: (ModuleUnit -> ModuleUnitImports)  -- ^ (mk namespace and include headers)
       -> Class
       -> ClassImportHeader
-mkCIH mkNSandIncHdrs c =
+mkCIH getImports c =
   ClassImportHeader {
     cihClass                    = c
   , cihSelfHeader               = mkPkgHeaderFileName c
-  , cihNamespace                = (muimports_namespaces . mkNSandIncHdrs) c
+  , cihNamespace                = (muimports_namespaces . getImports . MU_Class . class_name) c
   , cihSelfCpp                  = mkPkgCppFileName c
   , cihIncludedHPkgHeadersInH   = mkPkgIncludeHeadersInH c
   , cihIncludedHPkgHeadersInCPP = mkPkgIncludeHeadersInCPP c
-  , cihIncludedCPkgHeaders      = (muimports_headers . mkNSandIncHdrs) c
+  , cihIncludedCPkgHeaders      = (muimports_headers . getImports . MU_Class . class_name) c
   }

@@ -85,7 +85,7 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
 
   gen (unCabalName pkgname <> "Type.h") (buildTypeDeclHeader typmacro (map cihClass cihs))
   mapM_ (\hdr -> gen (unHdrName (cihSelfHeader hdr)) (buildDeclHeader typmacro (unCabalName pkgname) hdr)) cihs
-  gen (tihHeaderFileName tih <.> "h") (buildTopLevelFunctionHeader typmacro (unCabalName pkgname) tih)
+  gen (tihHeaderFileName tih <.> "h") (buildTopLevelHeader typmacro (unCabalName pkgname) tih)
   forM_ tcms $ \m ->
     let tcihs = tcmTCIH m
     in forM_ tcihs $ \tcih ->
@@ -95,7 +95,7 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
   --
   putStrLn "cpp file generation"
   mapM_ (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr)) cihs
-  gen (tihHeaderFileName tih <.> "cpp") (buildTopLevelFunctionCppDef tih)
+  gen (tihHeaderFileName tih <.> "cpp") (buildTopLevelCppDef tih)
   --
   putStrLn "additional header/source generation"
   mapM_ (\(AddCInc hdr txt) -> gen hdr txt) (cabal_additional_c_incs cabal)

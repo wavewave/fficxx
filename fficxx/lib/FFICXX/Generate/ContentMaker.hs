@@ -203,14 +203,15 @@ buildDefMain header =
                                         , ("cppbody"  , cppBody      ) ]))
 
 -- |
-buildTopLevelFunctionHeader :: TypeMacro  -- ^ typemacro prefix
-                         -> String     -- ^ C prefix
-                         -> TopLevelImportHeader
-                         -> String
-buildTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
+buildTopLevelHeader :: TypeMacro  -- ^ typemacro prefix
+                    -> String     -- ^ C prefix
+                    -> TopLevelImportHeader
+                    -> String
+buildTopLevelHeader (TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix <> "TOPLEVEL" <> "__"
-      declHeaderStr = intercalateWith connRet (\x->"#include \""<>x<>"\"")
-                      . map (unHdrName . cihSelfHeader) . tihClassDep $ tih
+      declHeaderStr = intercalateWith connRet (\x->"#include \""<>x<>"\"") $
+                        map unHdrName $
+                             map cihSelfHeader (tihClassDep tih)
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
   in subst declarationTemplate (context [ ("typemacro"        , typemacrostr  )
                                         , ("cprefix"          , cprefix       )
@@ -218,15 +219,21 @@ buildTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
                                         , ("declarationbody"  , declBodyStr   ) ])
 
 -- |
-buildTopLevelFunctionCppDef :: TopLevelImportHeader -> String
-buildTopLevelFunctionCppDef tih =
+buildTopLevelCppDef :: TopLevelImportHeader -> String
+buildTopLevelCppDef tih =
   let cihs = tihClassDep tih
       declHeaderStr = "#include \"" <> tihHeaderFileName tih <.> "h" <> "\""
                       `connRet2`
                       (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
                       `connRet2`
-                      ((intercalateWith connRet (\x->"#include \""<>x<>"\"") . map (unHdrName . cihSelfHeader)) cihs)
-      allns = nubBy ((==) `on` unNamespace) (tihClassDep tih >>= cihNamespace)
+                      otherHeaders
+      otherHeaders =
+        intercalateWith connRet (\x->"#include \""<>x<>"\"") $
+          map unHdrName $
+            map cihSelfHeader cihs ++ tihExtraHeaders tih
+                      
+      allns = nubBy ((==) `on` unNamespace) ((tihClassDep tih >>= cihNamespace) ++ tihNamespaces tih)
+             
       namespaceStr = do ns <- allns
                         ("using namespace " <> unNamespace ns <> ";\n")
       aliasStr = ""
