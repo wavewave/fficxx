@@ -243,8 +243,8 @@ mkClassModule mkincheaders extra c =
         extraimports = fromMaybe [] (lookup (class_name c) extra)
 
 
-mkClassNSHeaderFromMap :: ModuleUnitMap -> Class -> ModuleUnitImports -- ([Namespace],[HeaderName])
-mkClassNSHeaderFromMap m c =
+findModuleUnitImports :: ModuleUnitMap -> Class -> ModuleUnitImports
+findModuleUnitImports m c =
   fromMaybe emptyModuleUnitImports (HM.lookup (MU_Class (class_name c)) (unModuleUnitMap m))
 
 
