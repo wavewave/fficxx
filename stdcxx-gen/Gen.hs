@@ -1,10 +1,12 @@
 module Main where
 
+import qualified Data.HashMap.Strict as HM
 import Data.Monoid (mempty)
 --
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Code.Primitive
 import FFICXX.Generate.Type.Cabal (Cabal(..),CabalName(..))
+import FFICXX.Generate.Type.Config (ModuleUnitImports(..),ModuleUnitMap(..),ModuleUnit(..))
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
@@ -82,8 +84,14 @@ templates = [ (t_vector, HdrName "Vector.h")
 
 
 
-headerMap = [ ("string"         , ([NS "std"          ], [HdrName "string"   ]))
-            ]
+headerMap =
+  ModuleUnitMap $
+    HM.fromList [
+      (MU_Class "string", ModuleUnitImports {
+                            muimports_namespaces = [NS "std"]
+                          , muimports_headers = [ HdrName "string" ]
+                          })
+    ]
 
 main :: IO ()
 main = do
