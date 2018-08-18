@@ -1,10 +1,13 @@
 module Main where
 
+import qualified Data.HashMap.Strict as HM (fromList)
 import Data.Monoid (mempty)
 --
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Code.Primitive
-import FFICXX.Generate.Type.Cabal (Cabal(..),CabalName(..))
+import FFICXX.Generate.Type.Cabal (AddCInc(..),AddCSrc(..),Cabal(..),CabalName(..))
+import FFICXX.Generate.Type.Config (ModuleUnit(..),ModuleUnitMap(..)
+                                   ,ModuleUnitImports(..))
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
@@ -47,8 +50,12 @@ t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t" [ ]
 cabal = Cabal { cabal_pkgname = CabalName "testpkg"
               , cabal_cheaderprefix = "TestPkg"
               , cabal_moduleprefix = "TestPkg"
-              , cabal_additional_c_incs = []
-              , cabal_additional_c_srcs = []
+              , cabal_additional_c_incs = [
+                  AddCInc "test.h" "#include <vector>\nvoid test( std::vector<float>&  vect);\n" 
+                ]
+              , cabal_additional_c_srcs = [
+                  AddCSrc "test.cpp" "#include <iostream>\n#include <vector>\nusing namespace std;\nvoid test( vector<float>& vec ) {\ncout << vec.size() << endl;\n}\n"
+                ]
               , cabal_additional_pkgdeps = [ CabalName "stdcxx" ]
               , cabal_license = Just "BSD3"
               , cabal_licensefile = Just "LICENSE"
@@ -71,9 +78,18 @@ toplevelfunctions =
 templates = [  ]
 
 headerMap =
-  [
-  ]
+  ModuleUnitMap $ 
+    HM.fromList $
+      [ ( MU_TopLevel
+        , ModuleUnitImports {
+            muimports_namespaces = [NS "std"]
+          , muimports_headers = [HdrName "vector", HdrName "test.h"] 
+          }
+        )
+      ]
 
+
+  
 main :: IO ()
 main = do
   simpleBuilder
