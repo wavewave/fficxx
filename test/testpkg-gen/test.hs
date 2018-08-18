@@ -9,12 +9,17 @@ import           Foreign.Ptr
 import           Foreign.C.String
 
 import           STD.CppString
+import           STD.Deletable
+import           STD.UniquePtr.Template
+import           STD.UniquePtr.TH
 import           STD.Vector.Template
-import qualified STD.Vector.TH as TH
+import           STD.Vector.TH
 
 import           TestPkg (test)
+import           TestPkg.A
 
-$(TH.genVectorInstanceFor ''CFloat "float")
+$(genVectorInstanceFor ''CFloat "float")
+$(genUniquePtrInstanceFor ''A "A")
 
 main = do
   v :: Vector CFloat <- newVector
@@ -22,5 +27,7 @@ main = do
   test v
   deleteVector v
 
-
-
+  a <- newA
+  ptr <- newUniquePtr a
+  deleteUniquePtr ptr
+  -- delete a

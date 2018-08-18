@@ -41,20 +41,37 @@ string =
   (Just (ClassAlias { caHaskellName = "CppString", caFFIName = "CppString"}))
   [ ]
 
-t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t" [ ] 
+t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t" [ ]
 
---
--- Tensorflow Serving 
--- 
+testH =
+  "#include <iostream>\n\
+  \#include <vector>\n\
+  \void test( std::vector<float>&  vect);\n\
+  \class A {\n\
+  \public:\n\
+  \  A() {}\n\
+  \  ~A() {\n\
+  \     std::cout << \"A deleted\" << std::endl;\n\
+  \  }\n\
+  \};\n"
+
+testCpp  =
+  "#include <iostream>\n\
+  \#include <vector>\n\
+  \using namespace std;\n\
+  \void test( vector<float>& vec ) {\n\
+  \  cout << vec.size() << endl;\n\
+  \}\n"
+
 
 cabal = Cabal { cabal_pkgname = CabalName "testpkg"
               , cabal_cheaderprefix = "TestPkg"
               , cabal_moduleprefix = "TestPkg"
               , cabal_additional_c_incs = [
-                  AddCInc "test.h" "#include <vector>\nvoid test( std::vector<float>&  vect);\n" 
+                  AddCInc "test.h" testH
                 ]
               , cabal_additional_c_srcs = [
-                  AddCSrc "test.cpp" "#include <iostream>\n#include <vector>\nusing namespace std;\nvoid test( vector<float>& vec ) {\ncout << vec.size() << endl;\n}\n"
+                  AddCSrc "test.cpp" testCpp
                 ]
               , cabal_additional_pkgdeps = [ CabalName "stdcxx" ]
               , cabal_license = Just "BSD3"
@@ -69,7 +86,13 @@ extraDep = [ ]
 
 vectorfloatref_ = TemplateAppRef t_vector "CFloat" "std::vector<float>"
 
-classes = [ ] 
+classA =
+  Class cabal "A" [ deletable ] mempty Nothing
+    [ Constructor [ ] Nothing
+    ]
+
+
+classes = [ classA ]
 
 toplevelfunctions =
   [ TopLevelFunction void_ "test" [ (vectorfloatref_, "vec") ] Nothing
@@ -78,18 +101,24 @@ toplevelfunctions =
 templates = [  ]
 
 headerMap =
-  ModuleUnitMap $ 
+  ModuleUnitMap $
     HM.fromList $
       [ ( MU_TopLevel
         , ModuleUnitImports {
             muimports_namespaces = [NS "std"]
-          , muimports_headers = [HdrName "vector", HdrName "test.h"] 
+          , muimports_headers = [HdrName "vector", HdrName "test.h"]
+          }
+        )
+      , ( MU_Class "A"
+        , ModuleUnitImports {
+            muimports_namespaces = []
+          , muimports_headers = [HdrName "test.h"]
           }
         )
       ]
 
 
-  
+
 main :: IO ()
 main = do
   simpleBuilder
