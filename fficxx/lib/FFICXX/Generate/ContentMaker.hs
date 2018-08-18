@@ -17,6 +17,7 @@ module FFICXX.Generate.ContentMaker where
 
 import           Control.Lens                           ((&),(.~),at)
 import           Control.Monad.Trans.Reader
+import           Data.Char                              (toUpper)
 import           Data.Function                          (on)
 import qualified Data.Map                          as M
 import           Data.Monoid                            ((<>))
@@ -246,11 +247,10 @@ buildTopLevelCppDef tih =
 
 -- |
 buildTemplateHeader :: TypeMacro  -- ^ typemacro prefix
-                 -- -> String     -- ^ C prefix
-                 -> TemplateClass
-                 -> String
+                    -> TemplateClass
+                    -> String
 buildTemplateHeader (TypMcro typemacroprefix) t =
-  let typemacrostr = typemacroprefix <> "TEMPLATE" <> "__"
+  let typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
       fs = tclass_funcs t
       deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
                 ++ "\n\n"
