@@ -14,18 +14,15 @@ module FFICXX.Generate.Type.Module where
 
 import FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc)
 import FFICXX.Generate.Type.Class
-import FFICXX.Generate.Type.PackageInterface
-
-
-newtype Namespace = NS { unNamespace :: String } deriving (Show)
+import FFICXX.Generate.Type.PackageInterface (HeaderName(..),Namespace(..))
 
 data ClassImportHeader = ClassImportHeader
                        { cihClass :: Class
                        , cihSelfHeader :: HeaderName
                        , cihNamespace :: [Namespace]
                        , cihSelfCpp :: String
-                       , cihIncludedHPkgHeadersInH :: [HeaderName]
-                       , cihIncludedHPkgHeadersInCPP :: [HeaderName]
+                       , cihIncludedHPkgHeadersInH :: [HeaderName]    -- TODO: Explain why we need to have these two
+                       , cihIncludedHPkgHeadersInCPP :: [HeaderName]  --       separately.
                        , cihIncludedCPkgHeaders :: [HeaderName]
                        } deriving (Show)
 

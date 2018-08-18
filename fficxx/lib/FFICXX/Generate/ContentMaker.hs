@@ -35,9 +35,11 @@ import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface  ( TypeMacro(..), HeaderName(..)
+import           FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
+                                                        , HeaderName(..)
+                                                        , Namespace(..)
                                                         , PackageInterface, PackageName(..)
-                                                        , ClassName(..)
+                                                        , TypeMacro(..)
                                                         )
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts

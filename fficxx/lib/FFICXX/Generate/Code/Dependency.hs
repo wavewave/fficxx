@@ -2,7 +2,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Dependency
--- Copyright   : (c) 2011-2017 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -45,6 +45,9 @@ import           FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc
                                             ,cabal_moduleprefix,cabal_pkgname
                                             ,cabal_cheaderprefix,unCabalName)
 import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.Config (ModuleUnit(..)
+                                             ,ModuleUnitImports(..),emptyModuleUnitImports
+                                             ,ModuleUnitMap(..))
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 --
@@ -72,6 +75,7 @@ extractClassFromType (TemplateApp t _ _)      = Just (Left t)
 extractClassFromType (TemplateAppRef t _ _)   = Just (Left t)
 extractClassFromType (TemplateType t)         = Just (Left t)
 extractClassFromType (TemplateParam _)        = Nothing
+extractClassFromType (TemplateParamPointer _) = Nothing
 
 
 class_allparents :: Class -> [Class]
@@ -217,7 +221,7 @@ mkModuleDepFFI y@(Right c) =
 mkModuleDepFFI (Left _) = []
 
 
-mkClassModule :: (Class->([Namespace],[HeaderName]))
+mkClassModule :: (Class->ModuleUnitImports)
               -> [(String,[String])]
               -> Class
               -> ClassModule
@@ -239,8 +243,9 @@ mkClassModule mkincheaders extra c =
         extraimports = fromMaybe [] (lookup (class_name c) extra)
 
 
-mkClassNSHeaderFromMap :: HM.HashMap String ([Namespace],[HeaderName]) -> Class -> ([Namespace],[HeaderName])
-mkClassNSHeaderFromMap m c = fromMaybe ([],[]) (HM.lookup (class_name c) m)
+findModuleUnitImports :: ModuleUnitMap -> Class -> ModuleUnitImports
+findModuleUnitImports m c =
+  fromMaybe emptyModuleUnitImports (HM.lookup (MU_Class (class_name c)) (unModuleUnitMap m))
 
 
 mkTCM :: (TemplateClass,HeaderName) -> TemplateClassModule
@@ -248,7 +253,7 @@ mkTCM (t,hdr) = TCM  (getTClassModuleBase t) [t] [TCIH t hdr]
 
 
 mkPackageConfig
-  :: (String,Class->([Namespace],[HeaderName])) -- ^ (package name,mkIncludeHeaders)
+  :: (String,Class->ModuleUnitImports) -- ^ (package name,mkIncludeHeaders)
   -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)],[(String,[String])])
   -> [AddCInc]
   -> [AddCSrc]
@@ -304,16 +309,16 @@ mkPkgIncludeHeadersInCPP = map mkPkgHeaderFileName . rights . mkModuleDepCpp . R
 
 
 -- |
-mkCIH :: (Class->([Namespace],[HeaderName]))  -- ^ (mk namespace and include headers)
+mkCIH :: (Class -> ModuleUnitImports)  -- ^ (mk namespace and include headers)
       -> Class
       -> ClassImportHeader
 mkCIH mkNSandIncHdrs c =
   ClassImportHeader {
     cihClass                    = c
   , cihSelfHeader               = mkPkgHeaderFileName c
-  , cihNamespace                = (fst . mkNSandIncHdrs) c
+  , cihNamespace                = (muimports_namespaces . mkNSandIncHdrs) c
   , cihSelfCpp                  = mkPkgCppFileName c
   , cihIncludedHPkgHeadersInH   = mkPkgIncludeHeadersInH c
   , cihIncludedHPkgHeadersInCPP = mkPkgIncludeHeadersInCPP c
-  , cihIncludedCPkgHeaders      = (snd . mkNSandIncHdrs) c
+  , cihIncludedCPkgHeaders      = (muimports_headers . mkNSandIncHdrs) c
   }

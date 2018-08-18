@@ -19,7 +19,6 @@ import           Control.Monad                           ( forM_, void, when )
 import qualified Data.ByteString.Lazy.Char8        as L
 import           Data.Char                               ( toUpper )
 import           Data.Digest.Pure.MD5                    ( md5 )
-import qualified Data.HashMap.Strict               as HM
 import           Data.Monoid                             ( (<>), mempty )
 import           Language.Haskell.Exts.Pretty            ( prettyPrint )
 import           System.FilePath                         ( (</>), (<.>), splitExtension )
@@ -33,6 +32,7 @@ import           FFICXX.Generate.Code.Dependency
 import           FFICXX.Generate.Config
 import           FFICXX.Generate.ContentMaker
 import           FFICXX.Generate.Type.Cabal (Cabal(..),AddCInc(..),AddCSrc(..),CabalName(..))
+import           FFICXX.Generate.Type.Config (ModuleUnitMap(..))
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
@@ -43,12 +43,12 @@ macrofy :: String -> String
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
 simpleBuilder :: String
-              -> [(String,([Namespace],[HeaderName]))]
+              -> ModuleUnitMap
               -> (Cabal, [Class], [TopLevelFunction], [(TemplateClass,HeaderName)])
               -> [String] -- ^ extra libs
               -> [(String,[String])] -- ^ extra module
               ->  IO ()
-simpleBuilder topLevelMod lst (cabal,classes,toplevelfunctions,templates) extralibs extramods = do
+simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extralibs extramods = do
   let pkgname = cabal_pkgname cabal
   putStrLn ("generating " <> unCabalName pkgname)
   cwd <- getCurrentDirectory
@@ -61,7 +61,7 @@ simpleBuilder topLevelMod lst (cabal,classes,toplevelfunctions,templates) extral
 
       pkgconfig@(PkgConfig mods cihs tih tcms _tcihs _ _) =
         mkPackageConfig
-          (unCabalName pkgname, mkClassNSHeaderFromMap (HM.fromList lst))
+          (unCabalName pkgname, findModuleUnitImports mumap)
           (classes, toplevelfunctions,templates,extramods)
           (cabal_additional_c_incs cabal)
           (cabal_additional_c_srcs cabal)
