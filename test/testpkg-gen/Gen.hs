@@ -46,22 +46,42 @@ t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t" [ ]
 testH =
   "#include <iostream>\n\
   \#include <vector>\n\
-  \void test( std::vector<float>&  vect);\n\
+  \using namespace std;\n\
+  \void test( vector<float>&  vect);\n\
   \class A {\n\
   \public:\n\
-  \  A() {}\n\
-  \  ~A() {\n\
-  \     std::cout << \"A deleted\" << std::endl;\n\
+  \  A() {\n\
+  \    cout << \"A created\" << endl;\n\
   \  }\n\
+  \  virtual ~A() {\n\
+  \    cout << \"A deleted\" << endl;\n\
+  \  }\n\
+  \};\n\
+  \class B {\n\
+  \public:\n\
+  \  B() {\n\
+  \    cout << \"B created\" << endl;\n\
+  \  }\n\
+  \  virtual ~B() {\n\
+  \    cout << \"B deleted\" << endl;\n\
+  \  }\n\
+  \  virtual void call( vector<float>& vect );\n\
   \};\n"
 
 testCpp  =
   "#include <iostream>\n\
   \#include <vector>\n\
+  \#include \"test.h\"\n\
   \using namespace std;\n\
   \void test( vector<float>& vec ) {\n\
   \  cout << vec.size() << endl;\n\
+  \}\n\
+  \\n\
+  \void B::call( vector<float>& vec ) {\n\
+  \  cout << \"in B::call\" << endl;\n\
+  \  cout << vec.size() << endl;\n\
   \}\n"
+
 
 
 cabal = Cabal { cabal_pkgname = CabalName "testpkg"
@@ -91,8 +111,14 @@ classA =
     [ Constructor [ ] Nothing
     ]
 
+classB =
+  Class cabal "B" [ deletable ] mempty Nothing
+    [ Constructor [ ] Nothing
+    , Virtual void_ "call" [ (vectorfloatref_, "vec") ] Nothing
+    ]
 
-classes = [ classA ]
+
+classes = [ classA, classB ]
 
 toplevelfunctions =
   [ TopLevelFunction void_ "test" [ (vectorfloatref_, "vec") ] Nothing
@@ -110,6 +136,12 @@ headerMap =
           }
         )
       , ( MU_Class "A"
+        , ModuleUnitImports {
+            muimports_namespaces = []
+          , muimports_headers = [HdrName "test.h"]
+          }
+        )
+      , ( MU_Class "B"
         , ModuleUnitImports {
             muimports_namespaces = []
           , muimports_headers = [HdrName "test.h"]

@@ -17,6 +17,7 @@ import           STD.Vector.TH
 
 import           TestPkg (test)
 import           TestPkg.A
+import           TestPkg.B
 
 $(genVectorInstanceFor ''CFloat "float")
 $(genUniquePtrInstanceFor ''A "A")
@@ -31,3 +32,6 @@ main = do
   ptr <- newUniquePtr a
   deleteUniquePtr ptr
   -- delete a
+
+  b <- newB
+  delete b
