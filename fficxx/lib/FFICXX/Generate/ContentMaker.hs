@@ -203,11 +203,11 @@ buildDefMain header =
                                         , ("cppbody"  , cppBody      ) ]))
 
 -- |
-buildTopLevelFunctionHeader :: TypeMacro  -- ^ typemacro prefix
-                         -> String     -- ^ C prefix
-                         -> TopLevelImportHeader
-                         -> String
-buildTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
+buildTopLevelHeader :: TypeMacro  -- ^ typemacro prefix
+                    -> String     -- ^ C prefix
+                    -> TopLevelImportHeader
+                    -> String
+buildTopLevelHeader (TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix <> "TOPLEVEL" <> "__"
       declHeaderStr = intercalateWith connRet (\x->"#include \""<>x<>"\"") $
                         map unHdrName $
@@ -219,8 +219,8 @@ buildTopLevelFunctionHeader (TypMcro typemacroprefix) cprefix tih =
                                         , ("declarationbody"  , declBodyStr   ) ])
 
 -- |
-buildTopLevelFunctionCppDef :: TopLevelImportHeader -> String
-buildTopLevelFunctionCppDef tih =
+buildTopLevelCppDef :: TopLevelImportHeader -> String
+buildTopLevelCppDef tih =
   let cihs = tihClassDep tih
       declHeaderStr = "#include \"" <> tihHeaderFileName tih <.> "h" <> "\""
                       `connRet2`
