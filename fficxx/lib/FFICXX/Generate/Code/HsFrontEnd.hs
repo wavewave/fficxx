@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -252,8 +253,11 @@ genExtraImport cm = map mkImport (cmExtraImport cm)
 genImportInModule :: [Class] -> [ImportDecl ()]
 genImportInModule = concatMap (\x -> map (\y -> mkImport (getClassModuleBase x<.>y)) ["RawType","Interface","Implementation"])
 
+
 genImportInFFI :: ClassModule -> [ImportDecl ()]
-genImportInFFI = map (\x->mkImport (x <.> "RawType")) . cmImportedModulesForFFI
+genImportInFFI = map mkMod . cmImportedModulesForFFI
+  where mkMod (Left t)  = mkImport (getTClassModuleBase t <.> "Template")
+        mkMod (Right c) = mkImport (getClassModuleBase c <.> "RawType")
 
 genImportInInterface :: ClassModule -> [ImportDecl ()]
 genImportInInterface m =
@@ -261,9 +265,9 @@ genImportInInterface m =
       modlstparent = cmImportedModulesHighNonSource m
       modlsthigh = cmImportedModulesHighSource m
   in  [mkImport (cmModule m <.> "RawType")]
-      <> map (\x -> mkImport (x<.>"RawType")) modlstraw
-      <> map (\x -> mkImport (x<.>"Interface")) modlstparent
-      <> map (\x -> mkImportSrc (x<.>"Interface")) modlsthigh
+      <> map (\case Left t -> mkImport (getTClassModuleBase t <.> "Template"); Right c -> mkImport (getClassModuleBase c <.>"RawType")) modlstraw
+      <> map (\case Left t -> mkImport (getTClassModuleBase t <.> "Template"); Right c -> mkImport (getClassModuleBase c <.>"Interface")) modlstparent
+      <> map (\case Left t -> mkImportSrc (getTClassModuleBase t <.> "Template"); Right c -> mkImportSrc (getClassModuleBase c<.>"Interface")) modlsthigh
 
 -- |
 genImportInCast :: ClassModule -> [ImportDecl ()]
@@ -274,14 +278,14 @@ genImportInCast m = [ mkImport (cmModule m <.> "RawType")
 genImportInImplementation :: ClassModule -> [ImportDecl ()]
 genImportInImplementation m =
   let modlstraw' = cmImportedModulesForFFI m
-      modlsthigh = nub $ map getClassModuleBase $ concatMap class_allparents (cmClass m)
+      modlsthigh = nub $ map Right $ concatMap class_allparents (cmClass m)
       modlstraw = filter (not.(flip elem modlsthigh)) modlstraw'
   in  [ mkImport (cmModule m <.> "RawType")
       , mkImport (cmModule m <.> "FFI")
       , mkImport (cmModule m <.> "Interface")
       , mkImport (cmModule m <.> "Cast") ]
-      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlstraw
-      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) modlsthigh
+      <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c<.>y)) ["RawType","Cast","Interface"]) modlstraw
+      <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
 
 -- | generate import list for a given top-level function

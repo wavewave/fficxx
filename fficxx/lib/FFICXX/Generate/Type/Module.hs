@@ -30,10 +30,12 @@ data ClassModule = ClassModule
                    { cmModule :: String
                    , cmClass :: [Class]
                    , cmCIH :: [ClassImportHeader]
-                   , cmImportedModulesHighNonSource :: [String]  -- ^ imported modules that do not need source
-                   , cmImportedModulesRaw :: [String]            -- ^ imported modules for raw types.
-                   , cmImportedModulesHighSource :: [String]     -- ^ imported modules that need source
-                   , cmImportedModulesForFFI :: [String]
+                   , cmImportedModulesHighNonSource :: [Either TemplateClass Class]  -- ^ imported modules that do not need source
+                                                                         -- NOTE: source means the same cabal package.
+                                                                         -- TODO: rename Source to something more clear.
+                   , cmImportedModulesRaw           :: [Either TemplateClass Class]  -- ^ imported modules for raw types.
+                   , cmImportedModulesHighSource    :: [Either TemplateClass Class]  -- ^ imported modules that need source
+                   , cmImportedModulesForFFI        :: [Either TemplateClass Class]
                    , cmExtraImport :: [String]
                    } deriving (Show)
 
