@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 import qualified Data.ByteString.Char8 as B
-
+import           Data.Foldable (for_)
 import           Foreign.C.Types
 import           Foreign.Ptr
 import           Foreign.C.String
@@ -34,6 +34,15 @@ main = do
 
   b <- newB
   call b v
+
+  v' <- call2 b
+  for_ [0,1,2] $ \i -> do
+    x <- at v' i
+    print x
+
+  deleteVector v'
+
+
   delete b
 
   deleteVector v

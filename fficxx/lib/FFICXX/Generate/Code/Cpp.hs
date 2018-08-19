@@ -253,9 +253,10 @@ returnCpp b ret callstr =
     CPT (CPTClassCopy c') _ -> "return to_nonconst<"<>str<>"_t,"<>str
                                <>">(new "<>str<>"("<>callstr<>"));"
                                where str = class_name c'
-
-    TemplateApp _ _ _       -> "return (" <> callstr <> ");"
-    TemplateAppRef _ _ _    -> "return (&(" <> callstr <> "));"
+    TemplateApp _ _ cpptype -> cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
+                               <> "return (static_cast<void*>(r));"
+    TemplateAppRef _ _ cpptype -> cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
+                                  <> "return (static_cast<void*>(r));"
     TemplateType _          -> error "returnCpp: TemplateType"
     TemplateParam _         ->
       if b then "return (" <> callstr <> ");"

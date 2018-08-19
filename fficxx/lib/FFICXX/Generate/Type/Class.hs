@@ -55,10 +55,12 @@ data Types = Void
            | TemplateApp { tapp_hstemplate :: TemplateClass
                          , tapp_HaskellTypeForParam :: String
                          , tapp_CppTypeForParam :: String }
+             -- ^ like vector<float>
            | TemplateAppRef { tappref_hstemplate :: TemplateClass
                             , tappref_HaskellTypeForParam :: String
                             , tappref_CppTypeForParam :: String }
-           | TemplateType TemplateClass
+             -- ^ like vector<float>&
+           | TemplateType TemplateClass  -- ^ template self? TODO: clarify this.
            | TemplateParam String
            | TemplateParamPointer String -- ^ this is A* with template<A>
            deriving Show
