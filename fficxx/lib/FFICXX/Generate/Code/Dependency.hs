@@ -61,7 +61,7 @@ getcabal = either tclass_cabal class_cabal
 
 getparents = either (const []) (map Right . class_parents)
 
-getmodulebase = either getTClassModuleBase getClassModuleBase
+-- getmodulebase = either getTClassModuleBase getClassModuleBase
 
 -- |
 extractClassFromType :: Types -> Maybe (Either TemplateClass Class)
@@ -171,7 +171,6 @@ mkModuleDepHighNonSource y@(Left t) =
   let fs = tclass_funcs t
       pkgname = (cabal_pkgname . tclass_cabal) t
       extclasses = (filter (\x-> x /= y && ((/= pkgname) . cabal_pkgname . getcabal) x) . concatMap (argumentDependency.extractClassDepForTmplFun)) fs
-      -- parents = class_parents c
   in  nub extclasses
 
 
@@ -236,10 +235,10 @@ mkClassModule getImports extra c =
     , cmImportedModulesForFFI = ffis
     , cmExtraImport = extraimports
     }
-  where highs_nonsource = (map getmodulebase . mkModuleDepHighNonSource) (Right c)
-        raws = (map getmodulebase . mkModuleDepRaw) (Right c)
-        highs_source = (map getmodulebase . mkModuleDepHighSource) (Right c)
-        ffis = (map getmodulebase . mkModuleDepFFI) (Right c)
+  where highs_nonsource = mkModuleDepHighNonSource (Right c)
+        raws            = mkModuleDepRaw (Right c)
+        highs_source    = mkModuleDepHighSource (Right c)
+        ffis            = mkModuleDepFFI (Right c)
         extraimports = fromMaybe [] (lookup (class_name c) extra)
 
 
@@ -280,9 +279,16 @@ mkPackageConfig (pkgname,getImports) (cs,fs,ts,extra) acincs acsrcs =
       tcihs = concatMap tcmTCIH tcms
   in PkgConfig ms cihs tih tcms tcihs acincs acsrcs
 
-
+-- TODO: change [String] to Set String
 mkHSBOOTCandidateList :: [ClassModule] -> [String]
-mkHSBOOTCandidateList ms = nub (concatMap cmImportedModulesHighSource ms)
+mkHSBOOTCandidateList ms =
+  let
+    -- get only class dependencies, not template classes.
+    cs = rights (concatMap cmImportedModulesHighSource ms)
+  in
+    nub (map getClassModuleBase cs)
+
+
 
 -- |
 mkPkgHeaderFileName ::Class -> HeaderName

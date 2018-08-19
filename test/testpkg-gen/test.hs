@@ -26,7 +26,6 @@ main = do
   v :: Vector CFloat <- newVector
   mapM_ (push_back v) [1.0,1.1,1.2,1.3]
   test v
-  deleteVector v
 
   a <- newA
   ptr <- newUniquePtr a
@@ -34,4 +33,7 @@ main = do
   -- delete a
 
   b <- newB
+  call b v
   delete b
+
+  deleteVector v
