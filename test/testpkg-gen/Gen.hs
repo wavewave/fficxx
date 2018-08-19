@@ -66,6 +66,7 @@ testH =
   \    cout << \"B deleted\" << endl;\n\
   \  }\n\
   \  virtual void call( vector<float>& vect );\n\
+  \  virtual vector<float> call2(); \n\
   \};\n"
 
 testCpp  =
@@ -80,6 +81,13 @@ testCpp  =
   \void B::call( vector<float>& vec ) {\n\
   \  cout << \"in B::call\" << endl;\n\
   \  cout << vec.size() << endl;\n\
+  \}\n\
+  \\n\
+  \vector<float> B::call2() {\n\
+  \  vector<float> v;\n\
+  \  v.push_back(1.0);\n\
+  \  v.push_back(2.0);\n\
+  \  v.push_back(3.0);\n\
   \}\n"
 
 
@@ -104,6 +112,8 @@ cabal = Cabal { cabal_pkgname = CabalName "testpkg"
 
 extraDep = [ ]
 
+vectorfloat_ = TemplateApp t_vector "CFloat" "std::vector<float>"
+
 vectorfloatref_ = TemplateAppRef t_vector "CFloat" "std::vector<float>"
 
 classA =
@@ -115,6 +125,7 @@ classB =
   Class cabal "B" [ deletable ] mempty Nothing
     [ Constructor [ ] Nothing
     , Virtual void_ "call" [ (vectorfloatref_, "vec") ] Nothing
+    , Virtual vectorfloat_ "call2" [] Nothing
     ]
 
 
