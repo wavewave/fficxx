@@ -16,16 +16,20 @@ import FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc)
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.PackageInterface (HeaderName(..),Namespace(..))
 
+-- | C++ side
 data ClassImportHeader = ClassImportHeader
                        { cihClass :: Class
                        , cihSelfHeader :: HeaderName
                        , cihNamespace :: [Namespace]
                        , cihSelfCpp :: String
+                       , cihImportedClasses :: [Either TemplateClass Class]
                        , cihIncludedHPkgHeadersInH :: [HeaderName]    -- TODO: Explain why we need to have these two
                        , cihIncludedHPkgHeadersInCPP :: [HeaderName]  --       separately.
                        , cihIncludedCPkgHeaders :: [HeaderName]
                        } deriving (Show)
 
+
+-- | Haskell side
 data ClassModule = ClassModule
                    { cmModule :: String
                    , cmClass :: [Class]

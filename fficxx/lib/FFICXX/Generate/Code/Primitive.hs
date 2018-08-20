@@ -239,11 +239,11 @@ argToString (SelfType, varname) = "Type ## _p " <> varname
 argToString (CPT (CPTClass c) isconst, varname) = case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
-  where cname = class_name c
+  where cname = ffiClassName c
 argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
-  where cname = class_name c
+  where cname = ffiClassName c
 argToString (TemplateApp _ _ _,varname) = "void* " <> varname
 argToString (TemplateAppRef _ _ _,varname) = "void* " <> varname
 argToString _ = error "undefined argToString"
@@ -260,9 +260,9 @@ argsToStringNoSelf = intercalateWith conncomma argToString
 argToCallString :: (Types,String) -> String
 argToCallString (CT (CRef _) _,varname) = "(*"<> varname<> ")"
 argToCallString (CPT (CPTClass c) _,varname) =
-    "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")" where str = class_name c
+    "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")" where str = ffiClassName c
 argToCallString (CPT (CPTClassRef c) _,varname) =
-    "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")" where str = class_name c
+    "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")" where str = ffiClassName c
 argToCallString (TemplateApp _ _ cp,varname) =
     "to_nonconst<"<>str<>",void>("<>varname<>")" where str = cp
 argToCallString (TemplateAppRef _ _ cp,varname) =
@@ -274,16 +274,16 @@ argsToCallString = intercalateWith conncomma argToCallString
 
 
 rettypeToString :: Types -> String
-rettypeToString (CT ctyp isconst) = ctypToStr ctyp isconst
-rettypeToString Void = "void"
-rettypeToString SelfType = "Type ## _p"
-rettypeToString (CPT (CPTClass c) _) = class_name c <> "_p"
-rettypeToString (CPT (CPTClassRef c) _) = class_name c <> "_p"
-rettypeToString (CPT (CPTClassCopy c) _) = class_name c <> "_p"
-rettypeToString (TemplateApp _ _ _) = "void*"
-rettypeToString (TemplateAppRef _ _ _) = "void*"
-rettypeToString (TemplateType _) = "void*"
-rettypeToString (TemplateParam _) = "Type ## _p"
+rettypeToString (CT ctyp isconst)        = ctypToStr ctyp isconst
+rettypeToString Void                     = "void"
+rettypeToString SelfType                 = "Type ## _p"
+rettypeToString (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
+rettypeToString (CPT (CPTClassRef c) _)  = ffiClassName c <> "_p"
+rettypeToString (CPT (CPTClassCopy c) _) = ffiClassName c <> "_p"
+rettypeToString (TemplateApp _ _ _)      = "void*"
+rettypeToString (TemplateAppRef _ _ _)   = "void*"
+rettypeToString (TemplateType _)         = "void*"
+rettypeToString (TemplateParam _)        = "Type ## _p"
 rettypeToString (TemplateParamPointer _) = "Type ## _p"
 
 
@@ -292,12 +292,12 @@ tmplArgToString _ _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
 tmplArgToString _ t (SelfType, varname) = tclass_oname t <> "* " <> varname
 tmplArgToString _ _ (CPT (CPTClass c) isconst, varname) =
   case isconst of
-    Const   -> "const_" <> class_name c <> "_p " <> varname
-    NoConst -> class_name c <> "_p " <> varname
+    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
+    NoConst -> ffiClassName c <> "_p " <> varname
 tmplArgToString _ _ (CPT (CPTClassRef c) isconst, varname) =
   case isconst of
-    Const   -> "const_" <> class_name c <> "_p " <> varname
-    NoConst -> class_name c <> "_p " <> varname
+    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
+    NoConst -> ffiClassName c <> "_p " <> varname
 tmplArgToString _ _ (TemplateApp _ _ _,_v) = error "tmpArgToString: TemplateApp"
 tmplArgToString _ _ (TemplateAppRef _ _ _,_v) = error "tmpArgToString: TemplateAppRef"
 tmplArgToString _ _ (TemplateType _,v) = "void* " <> v
@@ -325,9 +325,9 @@ tmplArgToCallString
   -> (Types,String)
   -> String
 tmplArgToCallString _ (CPT (CPTClass c) _,varname) =
-    "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")" where str = class_name c
+    "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")" where str = ffiClassName c
 tmplArgToCallString _ (CPT (CPTClassRef c) _,varname) =
-    "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")" where str = class_name c
+    "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")" where str = ffiClassName c
 tmplArgToCallString _ (CT (CRef _) _,varname) = "(*"<> varname<> ")"
 tmplArgToCallString b (TemplateParam _,varname) =
   case b of
@@ -350,19 +350,17 @@ tmplAllArgsToCallString b = intercalateWith conncomma (tmplArgToCallString b)
 tmplRetTypeToString :: Bool   -- ^ is primitive type?
                     -> Types
                     -> String
-tmplRetTypeToString _ (CT ctyp isconst) = ctypToStr ctyp isconst
-tmplRetTypeToString _ Void = "void"
-tmplRetTypeToString _ SelfType = "void*"
-tmplRetTypeToString _ (CPT (CPTClass c) _) = class_name c <> "_p"
-tmplRetTypeToString _ (CPT (CPTClassRef c) _) = class_name c <> "_p"
-tmplRetTypeToString _ (CPT (CPTClassCopy c) _) = class_name c <> "_p"
-tmplRetTypeToString _ (TemplateApp _ _ _) = "void*"
-tmplRetTypeToString _ (TemplateAppRef _ _ _) = "void*"
-tmplRetTypeToString _ (TemplateType _) = "void*"
-tmplRetTypeToString b (TemplateParam _) =
-  if b then "Type" else "Type ## _p"
-tmplRetTypeToString b (TemplateParamPointer _) =
-  if b then "Type" else "Type ## _p"
+tmplRetTypeToString _ (CT ctyp isconst)        = ctypToStr ctyp isconst
+tmplRetTypeToString _ Void                     = "void"
+tmplRetTypeToString _ SelfType                 = "void*"
+tmplRetTypeToString _ (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
+tmplRetTypeToString _ (CPT (CPTClassRef c) _)  = ffiClassName c <> "_p"
+tmplRetTypeToString _ (CPT (CPTClassCopy c) _) = ffiClassName c <> "_p"
+tmplRetTypeToString _ (TemplateApp _ _ _)      = "void*"
+tmplRetTypeToString _ (TemplateAppRef _ _ _)   = "void*"
+tmplRetTypeToString _ (TemplateType _)         = "void*"
+tmplRetTypeToString b (TemplateParam _)        = if b then "Type" else "Type ## _p"
+tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## _p"
 
 -- |
 ctypToHsTyp :: Maybe Class -> Types -> String

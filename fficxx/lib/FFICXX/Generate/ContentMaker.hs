@@ -18,10 +18,11 @@ module FFICXX.Generate.ContentMaker where
 import           Control.Lens                           ((&),(.~),at)
 import           Control.Monad.Trans.Reader
 import           Data.Char                              (toUpper)
+import           Data.Either                            (rights)
 import           Data.Function                          (on)
 import qualified Data.Map                          as M
 import           Data.Monoid                            ((<>))
-import           Data.List
+import           Data.List                              (intercalate,nub,nubBy)
 import           Data.List.Split                        (splitOn)
 import           Data.Maybe
 import           Data.Text                              (Text)
@@ -180,18 +181,23 @@ definitionTemplate =
 -- |
 buildDefMain :: ClassImportHeader
           -> String
-buildDefMain header =
-  let classes = [cihClass header]
-      headerStr = genAllCppHeaderInclude header <> "\n#include \"" <> (unHdrName (cihSelfHeader header)) <> "\""
-      namespaceStr = (concatMap (\x->"using namespace " <> unNamespace x <> ";\n") . cihNamespace) header
-      aclass = cihClass header
-      aliasStr = let n1 = class_name aclass
-                     n2 = ffiClassName aclass
-                 in if n1 == n2 then "" else "typedef " <> n1 <> " " <> n2 <> ";"
+buildDefMain cih =
+  let classes = [cihClass cih]
+      headerStr = genAllCppHeaderInclude cih <> "\n#include \"" <> (unHdrName (cihSelfHeader cih)) <> "\""
+      namespaceStr = (concatMap (\x->"using namespace " <> unNamespace x <> ";\n") . cihNamespace) cih
+      aclass = cihClass cih
+      aliasStr = intercalate "\n" $
+                   mapMaybe typedefstmt $
+                     aclass : rights (cihImportedClasses cih)
+        where typedefstmt c = let n1 = class_name c
+                                  n2 = ffiClassName c
+                              in if n1 == n2
+                                 then Nothing
+                                 else Just ("typedef " <> n1 <> " " <> n2 <> ";")
 
-      cppBody = mkProtectedFunctionList (cihClass header)
+      cppBody = mkProtectedFunctionList (cihClass cih)
                 `connRet`
-                buildParentDef genCppDefInstVirtual (cihClass header)
+                buildParentDef genCppDefInstVirtual (cihClass cih)
                 `connRet`
                 if isAbstractClass aclass
                   then ""

@@ -330,6 +330,7 @@ mkCIH getImports c =
   , cihSelfHeader               = mkPkgHeaderFileName c
   , cihNamespace                = (muimports_namespaces . getImports . MU_Class . class_name) c
   , cihSelfCpp                  = mkPkgCppFileName c
+  , cihImportedClasses          = mkModuleDepCpp (Right c)
   , cihIncludedHPkgHeadersInH   = mkPkgIncludeHeadersInH c
   , cihIncludedHPkgHeadersInCPP = mkPkgIncludeHeadersInCPP c
   , cihIncludedCPkgHeaders      = (muimports_headers . getImports . MU_Class . class_name) c
