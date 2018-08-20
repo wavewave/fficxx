@@ -246,13 +246,17 @@ returnCpp b ret callstr =
     CT _ _                  -> "return "<>callstr<>";"
     CPT (CPTClass c') _     -> "return to_nonconst<"<>str<>"_t,"<>str
                                <>">(("<>str<>"*)"<>callstr<>");"
-                               where str = class_name c'
+                               where str = ffiClassName c'
     CPT (CPTClassRef c') _  -> "return to_nonconst<"<>str<>"_t,"<>str
                                <>">(&("<>callstr<>"));"
-                               where str = class_name c'
+                               where str = ffiClassName c'
     CPT (CPTClassCopy c') _ -> "return to_nonconst<"<>str<>"_t,"<>str
                                <>">(new "<>str<>"("<>callstr<>"));"
-                               where str = class_name c'
+                               where str = ffiClassName c'
+    CPT (CPTClassMove c') _ -> -- TODO: check whether this is working or not.
+                               "return std::move(to_nonconst<"<>str<>"_t,"<>str
+                               <>">(&("<>callstr<>")));"
+                               where str = ffiClassName c'
     TemplateApp _ _ cpptype -> cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
                                <> "return (static_cast<void*>(r));"
     TemplateAppRef _ _ cpptype -> cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
