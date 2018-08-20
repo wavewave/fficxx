@@ -42,6 +42,7 @@ data CTypes = CTString
 data CPPTypes = CPTClass Class
               | CPTClassRef Class
               | CPTClassCopy Class
+              | CPTClassMove Class
               deriving Show
 
 -- | const flag

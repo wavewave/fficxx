@@ -71,6 +71,7 @@ extractClassFromType (CT _ _)                 = Nothing
 extractClassFromType (CPT (CPTClass c) _)     = Just (Right c)
 extractClassFromType (CPT (CPTClassRef c) _)  = Just (Right c)
 extractClassFromType (CPT (CPTClassCopy c) _) = Just (Right c)
+extractClassFromType (CPT (CPTClassMove c) _) = Just (Right c)
 extractClassFromType (TemplateApp t _ _)      = Just (Left t)
 extractClassFromType (TemplateAppRef t _ _)   = Just (Left t)
 extractClassFromType (TemplateType t)         = Just (Left t)
