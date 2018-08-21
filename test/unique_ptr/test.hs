@@ -21,7 +21,7 @@ main = do
     cppstr <- newCppString cstr
     ptr <- newUniquePtr cppstr
     cppstr' <- get ptr
-    cstr' <- cppStringc_str cppstr'
+    cstr' <- cppString_c_str cppstr'
     bstr <- B.packCString cstr'
     print bstr
     deleteUniquePtr ptr
