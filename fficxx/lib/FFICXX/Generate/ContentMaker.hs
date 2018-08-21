@@ -151,6 +151,8 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
                       genAllCppDefMacroVirtual classes
                       `connRet2`
                       genAllCppDefMacroNonVirtual classes
+                      `connRet2`
+                      genAllCppDefMacroAccessor classes
       classDeclsStr = -- NOTE: Deletable is treated specially.
                       -- TODO: We had better make it as a separate constructor in Class.
                       if (fst.hsClassName) aclass /= "Deletable"
@@ -158,7 +160,9 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
                              `connRet2`
                              genCppHeaderInstVirtual (aclass, aclass)
                              `connRet2`
-                             genAllCppHeaderInstNonVirtual classes
+                             intercalateWith connRet genCppHeaderInstNonVirtual classes
+                             `connRet2`
+                             intercalateWith connRet genCppHeaderInstAccessor classes
                         else ""
       declBodyStr   = declDefStr
                       `connRet2`
@@ -207,7 +211,9 @@ buildDefMain cih =
                   then ""
                   else genCppDefInstVirtual (aclass, aclass)
                 `connRet`
-                genAllCppDefInstNonVirtual classes
+                intercalateWith connRet genCppDefInstNonVirtual classes
+                `connRet`
+                intercalateWith connRet genCppDefInstAccessor classes
   in subst definitionTemplate (context ([ ("header"   , headerStr    )
                                         , ("alias"    , aliasStr     )
                                         , ("namespace", namespaceStr )

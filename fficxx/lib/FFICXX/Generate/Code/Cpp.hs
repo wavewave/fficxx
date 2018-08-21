@@ -16,7 +16,7 @@
 module FFICXX.Generate.Code.Cpp where
 
 import Data.Char
-import Data.List                             (foldl',intercalate)
+import Data.List                             (intercalate)
 import Data.Monoid                           ((<>))
 --
 import FFICXX.Generate.Code.Primitive
@@ -88,7 +88,7 @@ genAllCppHeaderMacroAccessor = intercalateWith connRet genCppHeaderMacroAccessor
 
 
 
----- "Class Declaration Virtual/NonVirtual" Instances
+---- "Class Declaration Virtual/NonVirtual/Accessor" Instances
 
 genCppHeaderInstVirtual :: (Class,Class) -> String
 genCppHeaderInstVirtual (p,c) =
@@ -100,9 +100,11 @@ genCppHeaderInstNonVirtual c =
   let strx = map toUpper (ffiClassName c)
   in  strx<>"_DECL_NONVIRT(" <> ffiClassName c <> ");\n"
 
-genAllCppHeaderInstNonVirtual :: [Class] -> String
-genAllCppHeaderInstNonVirtual =
-  intercalateWith connRet genCppHeaderInstNonVirtual
+
+genCppHeaderInstAccessor :: Class -> String
+genCppHeaderInstAccessor c =
+  let strx = map toUpper (ffiClassName c)
+  in  strx<>"_DECL_ACCESSOR(" <> ffiClassName c <> ");\n"
 
 
 ----
@@ -136,6 +138,21 @@ genCppDefMacroNonVirtual aclass =
 genAllCppDefMacroNonVirtual :: [Class] -> String
 genAllCppDefMacroNonVirtual = intercalateWith connRet2 genCppDefMacroNonVirtual
 
+
+---- "Class Definition Accessor" Declaration
+
+genCppDefMacroAccessor :: Class -> String
+genCppDefMacroAccessor c =
+  let tmpl = "#undef ${classname}_DEF_ACCESSOR\n#define ${classname}_DEF_ACCESSOR(Type)\\\n$funcdef"
+      defBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
+                                       , ("funcdef"  , funcDefStr                  ) ])
+      funcDefStr = accessorsToDefs c (class_vars c)
+  in  defBodyStr
+
+genAllCppDefMacroAccessor :: [Class] -> String
+genAllCppDefMacroAccessor = intercalateWith connRet2 genCppDefMacroAccessor
+
+
 ---- "Class Definition Virtual/NonVirtual" Instances
 
 genCppDefInstVirtual :: (Class,Class) -> String
@@ -149,8 +166,11 @@ genCppDefInstNonVirtual c =
     (context [ ("capitalclassname", toUppers (ffiClassName c))
              , ("classname"       , ffiClassName c           ) ])
 
-genAllCppDefInstNonVirtual :: [Class] -> String
-genAllCppDefInstNonVirtual = intercalateWith connRet genCppDefInstNonVirtual
+genCppDefInstAccessor :: Class -> String
+genCppDefInstAccessor c =
+  subst "${capitalclassname}_DEF_ACCESSOR(${classname})"
+    (context [ ("capitalclassname", toUppers (ffiClassName c))
+             , ("classname"       , ffiClassName c           ) ])
 
 -----------------
 
@@ -397,13 +417,27 @@ accessorToDecl c v a =
   let tmpl = "$returntype Type ## _$funcname ( $args )"
       csig = accessorCFunSig (var_type v) a
   in subst tmpl (context [ ("returntype", rettypeToString (cRetType csig))
-                         , ("funcname"  , accessorName c v a)
+                         , ("funcname"  , var_name v <> "_" <> case a of Getter -> "get"; Setter -> "set")
                          , ("args"      , argsToString (cArgTypes csig))
                          ])
-
-
 
 accessorsToDecls :: Class -> [Variable] -> String
 accessorsToDecls c vs =
   let dcls = concatMap (\v -> [accessorToDecl c v Getter,accessorToDecl c v Setter]) vs
   in intercalate "; \\\n" dcls
+
+
+accessorToDef :: Class -> Variable -> Accessor -> String
+accessorToDef c v a =
+  let csig = accessorCFunSig (var_type v) a
+      declstr = accessorToDecl c v a
+      varstr = "to_nonconst<Type,Type ## _t>(p)->" <> var_name v
+      body Getter = returnCpp False (cRetType csig) varstr
+      body Setter = varstr <> " = *x;"
+  in  intercalate "\\\n" [declstr, "{", body a, "}"]
+
+
+accessorsToDefs :: Class -> [Variable] -> String
+accessorsToDefs c vs =
+  let defs = concatMap (\v -> [accessorToDef c v Getter,accessorToDef c v Setter]) vs
+  in intercalate "; \\\n" defs
