@@ -61,11 +61,11 @@ data Types = Void
            | CT  CTypes IsConst
            | CPT CPPTypes IsConst
            | TemplateApp { tapp_hstemplate :: TemplateClass
-                         , tapp_HaskellTypeForParam :: TemplateArgType -- String
+                         , tapp_HaskellTypeForParam :: TemplateArgType
                          , tapp_CppTypeForParam :: String }
              -- ^ like vector<float>
            | TemplateAppRef { tappref_hstemplate :: TemplateClass
-                            , tappref_HaskellTypeForParam :: TemplateArgType -- String
+                            , tappref_HaskellTypeForParam :: TemplateArgType
                             , tappref_CppTypeForParam :: String }
              -- ^ like vector<float>&
            | TemplateType TemplateClass  -- ^ template self? TODO: clarify this.
