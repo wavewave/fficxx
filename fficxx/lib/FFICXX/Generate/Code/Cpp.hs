@@ -433,7 +433,10 @@ accessorToDef c v a =
       declstr = accessorToDecl c v a
       varstr = "to_nonconst<Type,Type ## _t>(p)->" <> var_name v
       body Getter = returnCpp False (cRetType csig) varstr
-      body Setter = varstr <> " = *x;"
+      body Setter =    varstr
+                    <> " = "
+                    <> argToCallString (var_type v,"x")
+                    <> ";"
   in  intercalate "\\\n" [declstr, "{", body a, "}"]
 
 
