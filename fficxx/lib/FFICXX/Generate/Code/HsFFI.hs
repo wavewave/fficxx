@@ -22,11 +22,14 @@ import           System.FilePath                         ((<.>))
 --
 import           FFICXX.Generate.Code.Dependency         (class_allparents)
 import           FFICXX.Generate.Code.Primitive          (CFunSig(..)
+                                                         ,accessorCFunSig
+                                                         ,accessorName
                                                          ,aliasedFuncName
-                                                         ,hscFuncName
+                                                         ,ffiClassName
                                                          ,genericFuncArgs
                                                          ,genericFuncRet
-                                                         ,ffiClassName
+                                                         ,hscAccessorName
+                                                         ,hscFuncName
                                                          ,hsFFIFuncTyp)
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
@@ -50,7 +53,9 @@ genHsFFI header =
                <> (class_funcs c)
 
   in    mapMaybe (hsFFIClassFunc h c) allfns
---     <> concatMap (hsFFIClassAccessors c) (class_vars c)
+     <> concatMap
+          (\v -> [hsFFIAccessor c v Getter, hsFFIAccessor c v Setter])
+          (class_vars c)
 
 hsFFIClassFunc :: HeaderName -> Class -> Function -> Maybe (Decl ())
 hsFFIClassFunc headerfilename c f =
@@ -65,17 +70,14 @@ hsFFIClassFunc headerfilename c f =
                  else hsFFIFuncTyp (Just (Self,c)  ) csig
        in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
 
-{-
+
 hsFFIAccessor ::Class -> Variable -> Accessor -> Decl ()
 hsFFIAccessor c v a =
-  let -- hfile = unHdrName headerfilename
-      -- TODO: make this a separate function
+  let -- TODO: make this a separate function
       cname = ffiClassName c <> "_" <> accessorName c v a
-      typ = -- if (isNewFunc f || isStaticFunc f)
-            hsFFIFuncTyp (Just (NoSelf,c)) (genericFuncArgs f, genericFuncRet f)
-            -- else hsFFIFuncTyp (Just (Self,c)  ) (genericFuncArgs f, genericFuncRet f)
-  in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
--}
+      typ = hsFFIFuncTyp (Just (Self,c)) (accessorCFunSig (var_type v) a)
+  in mkForImpCcall cname (hscAccessorName c v a) typ
+
 
 
 
