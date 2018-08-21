@@ -12,6 +12,10 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 
+data HaskellTypeSig = HaskellTypeSig { sigTypes :: [Type ()]
+                                     , sigConstraints :: [Asst ()]
+                                     }
+
 cvarToStr :: CTypes -> IsConst -> String -> String
 cvarToStr ctyp isconst varname = ctypToStr ctyp isconst <> " " <> varname
 
@@ -537,6 +541,14 @@ aliasedFuncName c f =
     Static _ str _ a     -> fromMaybe (nonvirtualName c str) a
     Destructor a         -> fromMaybe destructorName a
 
+accessorName :: Class -> Variable -> Accessor -> String
+accessorName c v a =    nonvirtualName c (var_name v)
+                     <> "_"
+                     <> case a of
+                          Getter -> "get"
+                          Setter -> "set"
+
+
 cppStaticName :: Class -> Function -> String
 cppStaticName c f = class_name c <> "::" <> func_name f
 
@@ -561,7 +573,11 @@ destructorName = "delete"
 classConstraints :: Class -> Context ()
 classConstraints = cxTuple . map ((\n->classA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents
 
-extractArgRetTypes :: Maybe Class -> Bool -> (Args,Types) -> ([Type ()],[Asst ()])
+extractArgRetTypes
+  :: Maybe Class            -- ^ class (Nothing for top-level function)
+  -> Bool                   -- ^ is virtual function?
+  -> (Args,Types)           -- ^ (argument types, return type) of a given function
+  -> HaskellTypeSig         -- ^ Haskell type signature information for the function    --   ([Type ()],[Asst ()])  -- ^ (types, class constraints)
 extractArgRetTypes mc isvirtual (args,ret) =
   let  (typs,s) = flip runState ([],(0 :: Int)) $ do
                     as <- mapM (mktyp . fst) args
@@ -571,7 +587,9 @@ extractArgRetTypes mc isvirtual (args,ret) =
                                          Just c -> if isvirtual then return (mkTVar "a") else return $ tycon ((fst.hsClassName) c)
                            x -> (return . tycon . ctypToHsTyp Nothing) x
                     return (as ++ [tyapp (tycon "IO") r])
-  in   (typs,fst s)
+  in   HaskellTypeSig { sigTypes = typs
+                      , sigConstraints = fst s
+                      }
  where addclass c = do
          (ctxts,n) <- get
          let cname = (fst.hsClassName) c
@@ -607,7 +625,11 @@ extractArgRetTypes mc isvirtual (args,ret) =
 
 functionSignature :: Class -> Function -> Type ()
 functionSignature c f =
-  let (typs,assts) = extractArgRetTypes (Just c) (isVirtualFunc f) (genericFuncArgs f,genericFuncRet f)
+  let HaskellTypeSig typs assts =
+        extractArgRetTypes
+          (Just c)
+          (isVirtualFunc f)
+          (genericFuncArgs f,genericFuncRet f)
       ctxt = cxTuple assts
       arg0
         | isVirtualFunc f    = (mkTVar "a" :)
@@ -650,6 +672,17 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
       TFunDelete -> [e]
 
 
+{-
+accessorSignature :: Class -> Variable -> Type ()
+accessorSignature c f =
+  let (typs,assts) = extractArgRetTypes (Just c) (isVirtualFunc f) (genericFuncArgs f,genericFuncRet f)
+      ctxt = cxTuple assts
+      arg0
+        | isVirtualFunc f    = (mkTVar "a" :)
+        | isNonVirtualFunc f = (mkTVar (fst (hsClassName c)) :)
+        | otherwise          = id
+  in TyForall () Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
+-}
 
 -- | this is for FFI type.
 hsFFIFuncTyp :: Maybe (Selfness, Class) -> (Args,Types) -> Type ()

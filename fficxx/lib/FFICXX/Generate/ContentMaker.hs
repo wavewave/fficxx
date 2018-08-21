@@ -327,11 +327,11 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                       , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
                castImports body
   where classes = cmClass m
-        castImports = [ mkImport "Foreign.Ptr"
-                      , mkImport "FFICXX.Runtime.Cast"
-                      , mkImport "System.IO.Unsafe" ]
+        castImports =    [ mkImport "Foreign.Ptr"
+                         , mkImport "FFICXX.Runtime.Cast"
+                         , mkImport "System.IO.Unsafe" ]
                       <> genImportInCast m
-        body = mapMaybe genHsFrontInstCastable classes
+        body =    mapMaybe genHsFrontInstCastable classes
                <> mapMaybe genHsFrontInstCastableSelf classes
 
 -- |
@@ -356,10 +356,11 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
         f :: Class -> [Decl ()]
         f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
 
-        implBody = concatMap f classes
+        implBody =    concatMap f classes
                    <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
+                   --  <> concatMap genHsFrontInstVariables classes
 
 buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m = mkModule (tcmModule m <.> "Template")

@@ -241,3 +241,6 @@ isAbstractClass AbstractClass{} = True
 
 
 type DaughterMap = M.Map String [Class]
+
+data Accessor = Getter | Setter
+              deriving (Show, Eq)

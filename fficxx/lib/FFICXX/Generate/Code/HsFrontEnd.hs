@@ -95,6 +95,15 @@ genHsFrontInstStatic c =
     in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
 
 -----
+{-
+genHsFrontInstVariables :: Class -> [Decl ()]
+genHsFrontInstVariables c =
+  flip concatMap (class_vars c) $ \v ->
+    let rhs = mkVar "undefined" -- app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+    in mkFun (accessorName c v Getter) (accessorSignature c v Getter) [] rhs Nothing
+-}
+
+-----
 
 castBody :: [InstDecl ()]
 castBody =
@@ -192,7 +201,11 @@ genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs No
 genTopLevelFuncDef :: TopLevelFunction -> [Decl ()]
 genTopLevelFuncDef f@TopLevelFunction {..} =
     let fname = hsFrontNameForTopLevelFunction f
-        (typs,assts) = extractArgRetTypes Nothing False (toplevelfunc_args,toplevelfunc_ret)
+        HaskellTypeSig typs assts =
+          extractArgRetTypes
+            Nothing
+            False
+            (toplevelfunc_args,toplevelfunc_ret)
         sig = tyForall Nothing (Just (cxTuple assts)) (foldr1 tyfun typs)
         xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len-1) else "xformnull"
         cfname = "c_" <> toLowers fname
