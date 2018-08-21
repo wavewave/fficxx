@@ -13,7 +13,7 @@ import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 
 data CFunSig = CFunSig { cArgTypes :: Args
-                       , cRetTypes :: Types
+                       , cRetType :: Types
                        }
 
 data HsFunSig = HsFunSig { hsSigTypes :: [Type ()]

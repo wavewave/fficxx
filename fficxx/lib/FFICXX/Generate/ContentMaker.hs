@@ -146,8 +146,8 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
                       `connRet2`
                       genAllCppHeaderMacroNonVirtual classes
                       `connRet2`
-                      -- genAllCppHeaderMacroAccessor classes
-                      -- `connRet2`
+                      genAllCppHeaderMacroAccessor classes
+                      `connRet2`
                       genAllCppDefMacroVirtual classes
                       `connRet2`
                       genAllCppDefMacroNonVirtual classes

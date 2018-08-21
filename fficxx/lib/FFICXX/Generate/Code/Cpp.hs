@@ -15,14 +15,15 @@
 
 module FFICXX.Generate.Code.Cpp where
 
-import           Data.Char
-import           Data.Monoid                           ( (<>) )
+import Data.Char
+import Data.List                             (foldl',intercalate)
+import Data.Monoid                           ((<>))
 --
-import           FFICXX.Generate.Code.Primitive
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface
-import           FFICXX.Generate.Util
+import FFICXX.Generate.Code.Primitive
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Module
+import FFICXX.Generate.Type.PackageInterface
+import FFICXX.Generate.Util
 
 --
 --
@@ -70,6 +71,22 @@ genCppHeaderMacroNonVirtual c =
 
 genAllCppHeaderMacroNonVirtual :: [Class] -> String
 genAllCppHeaderMacroNonVirtual = intercalateWith connRet genCppHeaderMacroNonVirtual
+
+
+---- "Class Declaration Accessor" Declaration
+
+genCppHeaderMacroAccessor :: Class -> String
+genCppHeaderMacroAccessor c =
+  let tmpl = "#undef ${classname}_DECL_ACCESSOR\n#define ${classname}_DECL_ACCESSOR(Type)\\\n$funcdecl"
+      declBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
+                                        , ("funcdecl" , funcDeclStr               ) ])
+      funcDeclStr = accessorsToDecls c (class_vars c)
+  in  declBodyStr
+
+genAllCppHeaderMacroAccessor :: [Class] -> String
+genAllCppHeaderMacroAccessor = intercalateWith connRet genCppHeaderMacroAccessor
+
+
 
 ---- "Class Declaration Virtual/NonVirtual" Instances
 
@@ -371,3 +388,22 @@ tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {",
       TFunNew {..} -> "return static_cast<void*>("<>callstr<>");"
       TFunDelete   -> callstr <> ";"
       TFun {..} -> returnCpp b (tfun_ret) callstr
+
+
+-- Accessor Declaration and Definition
+
+accessorToDecl :: Class -> Variable -> Accessor -> String
+accessorToDecl c v a =
+  let tmpl = "$returntype Type ## _$funcname ( $args )"
+      csig = accessorCFunSig (var_type v) a
+  in subst tmpl (context [ ("returntype", rettypeToString (cRetType csig))
+                         , ("funcname"  , accessorName c v a)
+                         , ("args"      , argsToString (cArgTypes csig))
+                         ])
+
+
+
+accessorsToDecls :: Class -> [Variable] -> String
+accessorsToDecls c vs =
+  let dcls = concatMap (\v -> [accessorToDecl c v Getter,accessorToDecl c v Setter]) vs
+  in intercalate "; \\\n" dcls
