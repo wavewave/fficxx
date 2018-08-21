@@ -39,7 +39,7 @@ test2 = do
     push_back v cppstr
     print =<< size v
     cppstr' <- at v 0
-    cstr' <- cppStringc_str cppstr'
+    cstr' <- cppString_c_str cppstr'
     bstr <- B.packCString cstr'
     print bstr
     print =<< size v
