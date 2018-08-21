@@ -149,7 +149,9 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
                       genAllCppDefTmplVirtual classes
                       `connRet2`
                       genAllCppDefTmplNonVirtual classes
-      classDeclsStr = if (fst.hsClassName) aclass /= "Deletable"
+      classDeclsStr = -- NOTE: Deletable is treated specially.
+                      -- TODO: We had better make it as a separate constructor in Class.
+                      if (fst.hsClassName) aclass /= "Deletable"
                         then buildParentDef genCppHeaderInstVirtual aclass
                              `connRet2`
                              genCppHeaderInstVirtual (aclass, aclass)
