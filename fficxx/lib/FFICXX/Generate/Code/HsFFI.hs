@@ -21,7 +21,8 @@ import           Language.Haskell.Exts.Syntax            (Decl(..))
 import           System.FilePath                         ((<.>))
 --
 import           FFICXX.Generate.Code.Dependency         (class_allparents)
-import           FFICXX.Generate.Code.Primitive          (aliasedFuncName
+import           FFICXX.Generate.Code.Primitive          (CFunSig(..)
+                                                         ,aliasedFuncName
                                                          ,hscFuncName
                                                          ,genericFuncArgs
                                                          ,genericFuncRet
@@ -37,27 +38,49 @@ import           FFICXX.Generate.Util.HaskellSrcExts
 genHsFFI :: ClassImportHeader -> [Decl ()]
 genHsFFI header =
   let c = cihClass header
+      -- TODO: This C header information should not be necessary according to up-to-date
+      --       version of Haskell FFI.
       h = cihSelfHeader header
-      allfns = concatMap (virtualFuncs . class_funcs) 
-                         (class_allparents c)
-               <> (class_funcs c) 
-  in mapMaybe (hsFFIClassFunc h c) allfns
+      -- NOTE: We need to generate FFI both for member functions at the current class level
+      --       and parent level. For example, consider a class A with method foo, which a
+      --       subclass of B with method bar. Then, A::foo (c_a_foo) and A::bar (c_a_bar)
+      --       are made into a FFI function.
+      allfns =    concatMap (virtualFuncs . class_funcs)
+                            (class_allparents c)
+               <> (class_funcs c)
 
---------
+  in    mapMaybe (hsFFIClassFunc h c) allfns
+--     <> concatMap (hsFFIClassAccessors c) (class_vars c)
 
 hsFFIClassFunc :: HeaderName -> Class -> Function -> Maybe (Decl ())
 hsFFIClassFunc headerfilename c f =
-  if isAbstractClass c 
+  if isAbstractClass c
   then Nothing
   else let hfile = unHdrName headerfilename
+           -- TODO: Make this a separate function
            cname = ffiClassName c <> "_" <> aliasedFuncName c f
+           csig = CFunSig (genericFuncArgs f) (genericFuncRet f)
            typ = if (isNewFunc f || isStaticFunc f)
-                 then hsFFIFuncTyp (Just (NoSelf,c)) (genericFuncArgs f, genericFuncRet f)
-                 else hsFFIFuncTyp (Just (Self,c)  ) (genericFuncArgs f, genericFuncRet f)
+                 then hsFFIFuncTyp (Just (NoSelf,c)) csig
+                 else hsFFIFuncTyp (Just (Self,c)  ) csig
        in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
-         
+
+{-
+hsFFIAccessor ::Class -> Variable -> Accessor -> Decl ()
+hsFFIAccessor c v a =
+  let -- hfile = unHdrName headerfilename
+      -- TODO: make this a separate function
+      cname = ffiClassName c <> "_" <> accessorName c v a
+      typ = -- if (isNewFunc f || isStaticFunc f)
+            hsFFIFuncTyp (Just (NoSelf,c)) (genericFuncArgs f, genericFuncRet f)
+            -- else hsFFIFuncTyp (Just (Self,c)  ) (genericFuncArgs f, genericFuncRet f)
+  in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
+-}
+
+
+
 ----------------------------
--- for top level function -- 
+-- for top level function --
 ----------------------------
 
 genTopLevelFuncFFI :: TopLevelImportHeader -> TopLevelFunction -> Decl ()
@@ -67,6 +90,6 @@ genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fnam
             TopLevelFunction {..} -> (fromMaybe toplevelfunc_name toplevelfunc_alias, toplevelfunc_args, toplevelfunc_ret)
             TopLevelVariable {..} -> (fromMaybe toplevelvar_name toplevelvar_alias, [], toplevelvar_ret)
         hfilename = tihHeaderFileName header <.> "h"
+        -- TODO: This must be exposed as a top-level function
         cfname = "c_" <> toLowers fname
-        typ =hsFFIFuncTyp Nothing (args,ret)
-
+        typ =hsFFIFuncTyp Nothing (CFunSig args ret)

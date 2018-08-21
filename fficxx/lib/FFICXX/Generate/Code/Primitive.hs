@@ -678,12 +678,14 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
       TFunDelete -> [e]
 
 
+accessorCFunSig :: Types -> Accessor -> CFunSig
+accessorCFunSig typ Getter = CFunSig [] typ
+accessorCFunSig typ Setter = CFunSig [(typ,"x")] Void
+
 
 accessorSignature :: Class -> Variable -> Accessor -> Type ()
 accessorSignature c v accessor =
-  let csig = case accessor of
-               Getter -> CFunSig [] (var_type v)
-               Setter -> CFunSig [(var_type v,"x")] Void
+  let csig = accessorCFunSig (var_type v) accessor
       HsFunSig typs assts = extractArgRetTypes (Just c) False csig
       ctxt = cxTuple assts
       arg0 = (mkTVar (fst (hsClassName c)) :)
@@ -691,8 +693,8 @@ accessorSignature c v accessor =
 
 
 -- | this is for FFI type.
-hsFFIFuncTyp :: Maybe (Selfness, Class) -> (Args,Types) -> Type ()
-hsFFIFuncTyp msc (args,ret) =
+hsFFIFuncTyp :: Maybe (Selfness, Class) -> CFunSig -> Type ()
+hsFFIFuncTyp msc (CFunSig args ret) =
   foldr1 tyfun $ case msc of
                    Nothing         -> argtyps <> [tyapp (tycon "IO") rettyp]
                    Just (Self,_)   -> selftyp: argtyps <> [tyapp (tycon "IO") rettyp]
