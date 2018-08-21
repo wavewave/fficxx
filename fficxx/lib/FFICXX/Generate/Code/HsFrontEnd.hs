@@ -20,7 +20,6 @@ module FFICXX.Generate.Code.HsFrontEnd where
 import           Control.Monad.Reader
 import           Data.Either                             (lefts,rights)
 import           Data.List
-import           Data.Maybe                              (maybeToList)
 import           Data.Monoid                             ((<>))
 import           Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt
                                                          ,name,pApp
@@ -294,7 +293,7 @@ genImportInImplementation m =
 genImportForTopLevelFunction :: TopLevelFunction -> [ImportDecl ()]
 genImportForTopLevelFunction f =
   let dep4func = extractClassDepForTopLevelFunction f
-      ecs = maybeToList (returnDependency dep4func) ++ argumentDependency dep4func
+      ecs = returnDependency dep4func ++ argumentDependency dep4func
       cmods = nub $ map getClassModuleBase $ rights ecs
       tmods = nub $ map getTClassModuleBase $ lefts ecs
   in    concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) cmods

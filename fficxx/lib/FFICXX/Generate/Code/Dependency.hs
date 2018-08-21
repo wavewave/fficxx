@@ -64,19 +64,23 @@ getparents = either (const []) (map Right . class_parents)
 -- getmodulebase = either getTClassModuleBase getClassModuleBase
 
 -- |
-extractClassFromType :: Types -> Maybe (Either TemplateClass Class)
-extractClassFromType Void                     = Nothing
-extractClassFromType SelfType                 = Nothing
-extractClassFromType (CT _ _)                 = Nothing
-extractClassFromType (CPT (CPTClass c) _)     = Just (Right c)
-extractClassFromType (CPT (CPTClassRef c) _)  = Just (Right c)
-extractClassFromType (CPT (CPTClassCopy c) _) = Just (Right c)
-extractClassFromType (CPT (CPTClassMove c) _) = Just (Right c)
-extractClassFromType (TemplateApp t _ _)      = Just (Left t)
-extractClassFromType (TemplateAppRef t _ _)   = Just (Left t)
-extractClassFromType (TemplateType t)         = Just (Left t)
-extractClassFromType (TemplateParam _)        = Nothing
-extractClassFromType (TemplateParamPointer _) = Nothing
+extractClassFromType :: Types -> [Either TemplateClass Class]
+extractClassFromType Void                     = []
+extractClassFromType SelfType                 = []
+extractClassFromType (CT _ _)                 = []
+extractClassFromType (CPT (CPTClass c) _)     = [Right c]
+extractClassFromType (CPT (CPTClassRef c) _)  = [Right c]
+extractClassFromType (CPT (CPTClassCopy c) _) = [Right c]
+extractClassFromType (CPT (CPTClassMove c) _) = [Right c]
+extractClassFromType (TemplateApp t p _)      = (Left t): case p of
+                                                            TArg_Class c -> [Right c]
+                                                            _            -> []
+extractClassFromType (TemplateAppRef t p _)   = (Left t): case p of
+                                                            TArg_Class c -> [Right c]
+                                                            _            -> []
+extractClassFromType (TemplateType t)         = [Left t]
+extractClassFromType (TemplateParam _)        = []
+extractClassFromType (TemplateParamPointer _) = []
 
 
 class_allparents :: Class -> [Class]
@@ -116,34 +120,36 @@ mkDaughterSelfMap = foldl' worker M.empty
 
 
 -- | class dependency for a given function
-data Dep4Func = Dep4Func { returnDependency :: Maybe (Either TemplateClass Class)
-                         , argumentDependency :: [(Either TemplateClass Class)] }
+data Dep4Func = Dep4Func { returnDependency :: [Either TemplateClass Class]
+                         , argumentDependency :: [Either TemplateClass Class] }
 
 
 -- |
 extractClassDep :: Function -> Dep4Func
-extractClassDep (Constructor args _)  = Dep4Func Nothing (catMaybes (map (extractClassFromType.fst) args))
+extractClassDep (Constructor args _)  =
+    Dep4Func [] (concatMap (extractClassFromType.fst) args)
 extractClassDep (Virtual ret _ args _) =
-    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
 extractClassDep (NonVirtual ret _ args _) =
-    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
 extractClassDep (Static ret _ args _) =
-    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
 extractClassDep (Destructor _) =
-    Dep4Func Nothing []
+    Dep4Func [] []
 
 
 extractClassDepForTmplFun :: TemplateFunction -> Dep4Func
 extractClassDepForTmplFun (TFun ret  _ _ args _) =
-    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
 extractClassDepForTmplFun (TFunNew args) =
-    Dep4Func Nothing (mapMaybe (extractClassFromType.fst) args)
-extractClassDepForTmplFun TFunDelete = Dep4Func Nothing []
+    Dep4Func [] (concatMap (extractClassFromType.fst) args)
+extractClassDepForTmplFun TFunDelete =
+    Dep4Func [] []
 
 
 extractClassDepForTopLevelFunction :: TopLevelFunction -> Dep4Func
 extractClassDepForTopLevelFunction f =
-    Dep4Func (extractClassFromType ret) (mapMaybe (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
   where ret = case f of
                 TopLevelFunction {..} -> toplevelfunc_ret
                 TopLevelVariable {..} -> toplevelvar_ret
@@ -155,9 +161,9 @@ extractClassDepForTopLevelFunction f =
 -- |
 mkModuleDepRaw :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepRaw x@(Right c)
-  = (nub . filter (/= x) . mapMaybe (returnDependency.extractClassDep) . class_funcs) c
+  = (nub . filter (/= x) . concatMap (returnDependency.extractClassDep) . class_funcs) c
 mkModuleDepRaw x@(Left t)
-  = (nub . filter (/= x) . mapMaybe (returnDependency.extractClassDepForTmplFun) . tclass_funcs) t
+  = (nub . filter (/= x) . concatMap (returnDependency.extractClassDepForTmplFun) . tclass_funcs) t
 
 
 -- |
@@ -191,13 +197,13 @@ mkModuleDepCpp :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepCpp y@(Right c) =
   let fs = class_funcs c
   in  nub . filter (/= y)  $
-        mapMaybe (returnDependency.extractClassDep) fs
+           concatMap (returnDependency.extractClassDep) fs
         <> concatMap (argumentDependency.extractClassDep) fs
         <> getparents y
 mkModuleDepCpp y@(Left t) =
   let fs = tclass_funcs t
   in  nub . filter (/= y)  $
-        mapMaybe (returnDependency.extractClassDepForTmplFun) fs
+           concatMap (returnDependency.extractClassDepForTmplFun) fs
         <> concatMap (argumentDependency.extractClassDepForTmplFun) fs
         <> getparents y
 
@@ -205,10 +211,10 @@ mkModuleDepCpp y@(Left t) =
 mkModuleDepFFI4One :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepFFI4One (Right c) =
   let fs = class_funcs c
-  in mapMaybe (returnDependency.extractClassDep) fs <> concatMap (argumentDependency.extractClassDep) fs
+  in concatMap (returnDependency.extractClassDep) fs <> concatMap (argumentDependency.extractClassDep) fs
 mkModuleDepFFI4One (Left t) =
   let fs = tclass_funcs t
-  in mapMaybe (returnDependency.extractClassDepForTmplFun) fs <>
+  in concatMap (returnDependency.extractClassDepForTmplFun) fs <>
      concatMap (argumentDependency.extractClassDepForTmplFun) fs
 
 
@@ -264,7 +270,7 @@ mkPackageConfig (pkgname,getImports) (cs,fs,ts,extra) acincs acsrcs =
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
       -- for toplevel
       tl_cs1 = concatMap (argumentDependency . extractClassDepForTopLevelFunction) fs
-      tl_cs2 = mapMaybe (returnDependency . extractClassDepForTopLevelFunction) fs
+      tl_cs2 = concatMap (returnDependency . extractClassDepForTopLevelFunction) fs
       tl_cs = nubBy ((==) `on` getclassname) (tl_cs1 <> tl_cs2)
       tl_cihs = catMaybes $
         foldr (\c acc-> (find (\x -> (class_name . cihClass) x == getclassname c) cihs):acc) [] tl_cs
