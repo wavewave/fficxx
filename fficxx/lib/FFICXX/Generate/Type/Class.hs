@@ -49,16 +49,23 @@ data CPPTypes = CPTClass Class
 data IsConst = Const | NoConst
              deriving Show
 
+-- | Argument type which can be used as an template argument like float
+--   in vector<float>.
+--   For now, this distinguishes Class and non-Class.
+data TemplateArgType = TArg_Class Class
+                     | TArg_Other String
+                     deriving Show
+
 data Types = Void
            | SelfType
            | CT  CTypes IsConst
            | CPT CPPTypes IsConst
            | TemplateApp { tapp_hstemplate :: TemplateClass
-                         , tapp_HaskellTypeForParam :: String
+                         , tapp_HaskellTypeForParam :: TemplateArgType -- String
                          , tapp_CppTypeForParam :: String }
              -- ^ like vector<float>
            | TemplateAppRef { tappref_hstemplate :: TemplateClass
-                            , tappref_HaskellTypeForParam :: String
+                            , tappref_HaskellTypeForParam :: TemplateArgType -- String
                             , tappref_CppTypeForParam :: String }
              -- ^ like vector<float>&
            | TemplateType TemplateClass  -- ^ template self? TODO: clarify this.

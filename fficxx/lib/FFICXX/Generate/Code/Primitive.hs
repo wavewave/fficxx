@@ -414,8 +414,8 @@ ctypToHsTyp _c (CPT (CPTClass c') _) = (fst . hsClassName) c'
 ctypToHsTyp _c (CPT (CPTClassRef c') _) = (fst . hsClassName) c'
 ctypToHsTyp _c (CPT (CPTClassCopy c') _) = (fst . hsClassName) c'
 ctypToHsTyp _c (CPT (CPTClassMove c') _) = (fst . hsClassName) c'
-ctypToHsTyp _c (TemplateApp t p _) = "("<> tclass_name t <> " " <> p <> ")"
-ctypToHsTyp _c (TemplateAppRef t p _) = "("<> tclass_name t <> " " <> p <> ")"
+ctypToHsTyp _c (TemplateApp t p _) = "("<> tclass_name t <> " " <> hsClassNameForTArg p <> ")"
+ctypToHsTyp _c (TemplateAppRef t p _) = "("<> tclass_name t <> " " <> hsClassNameForTArg p <> ")"
 ctypToHsTyp _c (TemplateType t) = "("<> tclass_name t <> " " <> tclass_param t <> ")"
 ctypToHsTyp _c (TemplateParam p) = "("<> p <> ")"
 ctypToHsTyp _c (TemplateParamPointer p) = "("<> p <> ")"
@@ -448,8 +448,8 @@ convertCpp2HS _c (CPT (CPTClass c') _)     = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassRef c') _)  = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tycon p)
-convertCpp2HS _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon p)
+convertCpp2HS _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
+convertCpp2HS _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
 convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (tclass_param t))
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
@@ -486,6 +486,10 @@ hsClassName :: Class -> (String, String)  -- ^ High-level, 'Raw'-level
 hsClassName c =
   let cname = maybe (class_name c) caHaskellName (class_alias c)
   in (cname, "Raw" <> cname)
+
+hsClassNameForTArg :: TemplateArgType -> String
+hsClassNameForTArg (TArg_Class c) = fst (hsClassName c)
+hsClassNameForTArg (TArg_Other s) = s
 
 hsTemplateClassName :: TemplateClass -> (String, String)  -- ^ High-level, 'Raw'-level
 hsTemplateClassName t =
@@ -593,8 +597,8 @@ extractArgRetTypes mc isvirtual (args,ret) =
            CPT (CPTClassCopy c') _ -> addclass c'
            CPT (CPTClassMove c') _ -> addclass c'
            -- it is not clear whether the following is okay or not.
-           (TemplateApp t p _)    -> return (tyapp (tycon (tclass_name t)) (tycon p))
-           (TemplateAppRef t p _) -> return (tyapp (tycon (tclass_name t)) (tycon p))
+           (TemplateApp t p _)    -> return (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
+           (TemplateAppRef t p _) -> return (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
            (TemplateType t)       -> return (tyapp (tycon (tclass_name t)) (mkTVar (tclass_param t)))
            (TemplateParam p)      -> return (mkTVar p)
            Void -> return unit_tycon
@@ -670,9 +674,9 @@ hsFFIFuncTyp msc (args,ret) =
           where rawname = snd (hsClassName d)
         hsargtype (CPT (CPTClassCopy d) _)    = tyapp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
-        hsargtype (TemplateApp t p _)        = tyapp tyPtr (tyapp (tycon rawname) (tycon p))
+        hsargtype (TemplateApp t p _)        = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
           where rawname = snd (hsTemplateClassName t)
-        hsargtype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon p))
+        hsargtype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
           where rawname = snd (hsTemplateClassName t)
 
         hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
@@ -692,9 +696,9 @@ hsFFIFuncTyp msc (args,ret) =
           where rawname = snd (hsClassName d)
         hsrettype (CPT (CPTClassMove d) _)   = tyapp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
-        hsrettype (TemplateApp t p _)        = tyapp tyPtr (tyapp (tycon rawname) (tycon p))
+        hsrettype (TemplateApp t p _)        = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
           where rawname = snd (hsTemplateClassName t)
-        hsrettype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon p))
+        hsrettype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
