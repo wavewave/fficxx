@@ -30,8 +30,8 @@ stdcxx_cabal = Cabal { cabal_pkgname = CabalName "stdcxx"
 deletable :: Class
 deletable =
   AbstractClass stdcxx_cabal "Deletable" [] mempty Nothing
-  [ Destructor Nothing
-  ]
+  [ Destructor Nothing ]
+  []
 
 
 -- import from stdcxx
@@ -39,7 +39,8 @@ string :: Class
 string =
   Class stdcxx_cabal "string" [ ] mempty
   (Just (ClassAlias { caHaskellName = "CppString", caFFIName = "CppString"}))
-  [ ]
+  []
+  []
 
 t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t" [ ]
 
@@ -56,6 +57,7 @@ testH =
   \  virtual ~A() {\n\
   \    cout << \"A deleted\" << endl;\n\
   \  }\n\
+  \  int member;\n\
   \};\n\
   \class B {\n\
   \public:\n\
@@ -119,8 +121,8 @@ vectorfloatref_ = TemplateAppRef t_vector (TArg_Other "CFloat") "std::vector<flo
 
 classA =
   Class cabal "A" [ deletable ] mempty Nothing
-    [ Constructor [ ] Nothing
-    ]
+    [ Constructor [ ] Nothing ]
+    [ Variable cint_ "member" ]
 
 classB =
   Class cabal "B" [ deletable ] mempty Nothing
@@ -128,7 +130,7 @@ classB =
     , Virtual void_ "call" [ (vectorfloatref_, "vec") ] Nothing
     , Virtual vectorfloat_ "call2" [] Nothing
     ]
-
+    [ ]
 
 classes = [ classA, classB ]
 
