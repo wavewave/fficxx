@@ -113,9 +113,9 @@ cabal = Cabal { cabal_pkgname = CabalName "testpkg"
 
 extraDep = [ ]
 
-vectorfloat_ = TemplateApp t_vector "CFloat" "std::vector<float>"
+vectorfloat_ = TemplateApp t_vector (TArg_Other "CFloat") "std::vector<float>"
 
-vectorfloatref_ = TemplateAppRef t_vector "CFloat" "std::vector<float>"
+vectorfloatref_ = TemplateAppRef t_vector (TArg_Other "CFloat") "std::vector<float>"
 
 classA =
   Class cabal "A" [ deletable ] mempty Nothing
