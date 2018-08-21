@@ -12,9 +12,13 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 
-data HaskellTypeSig = HaskellTypeSig { sigTypes :: [Type ()]
-                                     , sigConstraints :: [Asst ()]
-                                     }
+data CFunSig = CFunSig { cArgTypes :: Args
+                       , cRetTypes :: Types
+                       }
+
+data HsFunSig = HsFunSig { hsSigTypes :: [Type ()]
+                         , hsSigConstraints :: [Asst ()]
+                         }
 
 cvarToStr :: CTypes -> IsConst -> String -> String
 cvarToStr ctyp isconst varname = ctypToStr ctyp isconst <> " " <> varname
@@ -574,11 +578,11 @@ classConstraints :: Class -> Context ()
 classConstraints = cxTuple . map ((\n->classA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents
 
 extractArgRetTypes
-  :: Maybe Class            -- ^ class (Nothing for top-level function)
-  -> Bool                   -- ^ is virtual function?
-  -> (Args,Types)           -- ^ (argument types, return type) of a given function
-  -> HaskellTypeSig         -- ^ Haskell type signature information for the function    --   ([Type ()],[Asst ()])  -- ^ (types, class constraints)
-extractArgRetTypes mc isvirtual (args,ret) =
+  :: Maybe Class  -- ^ class (Nothing for top-level function)
+  -> Bool         -- ^ is virtual function?
+  -> CFunSig      -- ^ C type signature information for a given function      -- (Args,Types)           -- ^ (argument types, return type) of a given function
+  -> HsFunSig     -- ^ Haskell type signature information for the function    --   ([Type ()],[Asst ()])  -- ^ (types, class constraints)
+extractArgRetTypes mc isvirtual (CFunSig args ret) =
   let  (typs,s) = flip runState ([],(0 :: Int)) $ do
                     as <- mapM (mktyp . fst) args
                     r <- case ret of
@@ -587,9 +591,9 @@ extractArgRetTypes mc isvirtual (args,ret) =
                                          Just c -> if isvirtual then return (mkTVar "a") else return $ tycon ((fst.hsClassName) c)
                            x -> (return . tycon . ctypToHsTyp Nothing) x
                     return (as ++ [tyapp (tycon "IO") r])
-  in   HaskellTypeSig { sigTypes = typs
-                      , sigConstraints = fst s
-                      }
+  in   HsFunSig { hsSigTypes = typs
+                , hsSigConstraints = fst s
+                }
  where addclass c = do
          (ctxts,n) <- get
          let cname = (fst.hsClassName) c
@@ -625,11 +629,10 @@ extractArgRetTypes mc isvirtual (args,ret) =
 
 functionSignature :: Class -> Function -> Type ()
 functionSignature c f =
-  let HaskellTypeSig typs assts =
-        extractArgRetTypes
-          (Just c)
-          (isVirtualFunc f)
-          (genericFuncArgs f,genericFuncRet f)
+  let HsFunSig typs assts = extractArgRetTypes
+                              (Just c)
+                              (isVirtualFunc f)
+                              (CFunSig (genericFuncArgs f) (genericFuncRet f))
       ctxt = cxTuple assts
       arg0
         | isVirtualFunc f    = (mkTVar "a" :)

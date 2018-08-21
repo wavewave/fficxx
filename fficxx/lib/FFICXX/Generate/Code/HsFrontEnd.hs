@@ -201,11 +201,11 @@ genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs No
 genTopLevelFuncDef :: TopLevelFunction -> [Decl ()]
 genTopLevelFuncDef f@TopLevelFunction {..} =
     let fname = hsFrontNameForTopLevelFunction f
-        HaskellTypeSig typs assts =
+        HsFunSig typs assts =
           extractArgRetTypes
             Nothing
             False
-            (toplevelfunc_args,toplevelfunc_ret)
+            (CFunSig toplevelfunc_args toplevelfunc_ret)
         sig = tyForall Nothing (Just (cxTuple assts)) (foldr1 tyfun typs)
         xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len-1) else "xformnull"
         cfname = "c_" <> toLowers fname
