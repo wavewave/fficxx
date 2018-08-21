@@ -4,6 +4,7 @@ module FFICXX.Generate.Code.Primitive where
 
 import           Control.Monad.Trans.State         (runState,put,get)
 import           Data.Char                         (toLower)
+import           Data.Maybe                        (fromMaybe,maybe)
 import           Data.Monoid                       ((<>))
 import           Language.Haskell.Exts.Syntax      (Asst(..),Context,Type(..))
 --
@@ -233,8 +234,8 @@ hsCTypeName (CRef t) = "(Ptr " <> hsCTypeName t <> ")"
 hsFrontNameForTopLevelFunction :: TopLevelFunction -> String
 hsFrontNameForTopLevelFunction tfn =
     let (x:xs) = case tfn of
-                   TopLevelFunction {..} -> maybe toplevelfunc_name id toplevelfunc_alias
-                   TopLevelVariable {..} -> maybe toplevelvar_name id toplevelvar_alias
+                   TopLevelFunction {..} -> fromMaybe toplevelfunc_name toplevelfunc_alias
+                   TopLevelVariable {..} -> fromMaybe toplevelvar_name  toplevelvar_alias
     in toLower x : xs
 
 
@@ -530,11 +531,11 @@ hsFuncXformer func = let len = length (genericFuncArgs func)
 aliasedFuncName :: Class -> Function -> String
 aliasedFuncName c f =
   case f of
-    Constructor _ a -> maybe (constructorName c) id a
-    Virtual _ str _ a -> maybe str id a
-    NonVirtual _ str _ a-> maybe (nonvirtualName c str) id a
-    Static _ str _ a -> maybe (nonvirtualName c str) id a
-    Destructor a -> maybe destructorName id a
+    Constructor _ a      -> fromMaybe (constructorName c) a
+    Virtual _ str _ a    -> fromMaybe str a
+    NonVirtual _ str _ a -> fromMaybe (nonvirtualName c str) a
+    Static _ str _ a     -> fromMaybe (nonvirtualName c str) a
+    Destructor a         -> fromMaybe destructorName a
 
 cppStaticName :: Class -> Function -> String
 cppStaticName c f = class_name c <> "::" <> func_name f
@@ -551,7 +552,7 @@ constructorName :: Class -> String
 constructorName c = "new" <> (fst.hsClassName) c
 
 nonvirtualName :: Class -> String -> String
-nonvirtualName c str = (firstLower.fst.hsClassName) c <> str
+nonvirtualName c str = (firstLower.fst.hsClassName) c <> "_" <> str
 
 destructorName :: String
 destructorName = "delete"
