@@ -35,32 +35,32 @@ import           FFICXX.Generate.Util
 
 ---- "Class Type Declaration" Instances
 
-genCppHeaderTmplType :: Class -> String
-genCppHeaderTmplType c = let tmpl = "// Opaque type definition for $classname \n\
+genCppHeaderMacroType :: Class -> String
+genCppHeaderMacroType c = let tmpl = "// Opaque type definition for $classname \n\
                                     \typedef struct ${classname}_tag ${classname}_t; \n\
                                     \typedef ${classname}_t * ${classname}_p; \n\
                                     \typedef ${classname}_t const* const_${classname}_p; \n"
                       in subst tmpl (context [ ("classname", ffiClassName c) ])
 
-genAllCppHeaderTmplType :: [Class] -> String
-genAllCppHeaderTmplType = intercalateWith connRet2 (genCppHeaderTmplType)
+genAllCppHeaderMacroType :: [Class] -> String
+genAllCppHeaderMacroType = intercalateWith connRet2 (genCppHeaderMacroType)
 
 ---- "Class Declaration Virtual" Declaration
 
-genCppHeaderTmplVirtual :: Class -> String
-genCppHeaderTmplVirtual aclass =
+genCppHeaderMacroVirtual :: Class -> String
+genCppHeaderMacroVirtual aclass =
   let tmpl = "#undef ${classname}_DECL_VIRT \n#define ${classname}_DECL_VIRT(Type) \\\n${funcdecl}"
       funcDeclStr = (funcsToDecls aclass) . virtualFuncs . class_funcs $ aclass
   in subst tmpl (context [ ("classname", map toUpper (ffiClassName aclass) )
                          , ("funcdecl" , funcDeclStr                     ) ])
 
-genAllCppHeaderTmplVirtual :: [Class] -> String
-genAllCppHeaderTmplVirtual = intercalateWith connRet2 genCppHeaderTmplVirtual
+genAllCppHeaderMacroVirtual :: [Class] -> String
+genAllCppHeaderMacroVirtual = intercalateWith connRet2 genCppHeaderMacroVirtual
 
 ---- "Class Declaration Non-Virtual" Declaration
 
-genCppHeaderTmplNonVirtual :: Class -> String
-genCppHeaderTmplNonVirtual c =
+genCppHeaderMacroNonVirtual :: Class -> String
+genCppHeaderMacroNonVirtual c =
   let tmpl = "#undef ${classname}_DECL_NONVIRT \n#define ${classname}_DECL_NONVIRT(Type) \\\n$funcdecl"
       declBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
                                         , ("funcdecl" , funcDeclStr               ) ])
@@ -68,8 +68,8 @@ genCppHeaderTmplNonVirtual c =
                                      . class_funcs $ c
   in  declBodyStr
 
-genAllCppHeaderTmplNonVirtual :: [Class] -> String
-genAllCppHeaderTmplNonVirtual = intercalateWith connRet genCppHeaderTmplNonVirtual
+genAllCppHeaderMacroNonVirtual :: [Class] -> String
+genAllCppHeaderMacroNonVirtual = intercalateWith connRet genCppHeaderMacroNonVirtual
 
 ---- "Class Declaration Virtual/NonVirtual" Instances
 
@@ -94,21 +94,21 @@ genAllCppHeaderInstNonVirtual =
 
 ---- "Class Definition Virtual" Declaration
 
-genCppDefTmplVirtual :: Class -> String
-genCppDefTmplVirtual aclass =
+genCppDefMacroVirtual :: Class -> String
+genCppDefMacroVirtual aclass =
   let tmpl = "#undef ${classname}_DEF_VIRT\n#define ${classname}_DEF_VIRT(Type)\\\n$funcdef"
       defBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName aclass) )
                                        , ("funcdef"  , funcDefStr                      ) ])
       funcDefStr = (funcsToDefs aclass) . virtualFuncs . class_funcs $ aclass
   in  defBodyStr
 
-genAllCppDefTmplVirtual :: [Class] -> String
-genAllCppDefTmplVirtual = intercalateWith connRet2 genCppDefTmplVirtual
+genAllCppDefMacroVirtual :: [Class] -> String
+genAllCppDefMacroVirtual = intercalateWith connRet2 genCppDefMacroVirtual
 
 ---- "Class Definition NonVirtual" Declaration
 
-genCppDefTmplNonVirtual :: Class -> String
-genCppDefTmplNonVirtual aclass =
+genCppDefMacroNonVirtual :: Class -> String
+genCppDefMacroNonVirtual aclass =
   let tmpl = "#undef ${classname}_DEF_NONVIRT\n#define ${classname}_DEF_NONVIRT(Type)\\\n$funcdef"
       defBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName aclass) )
                                        , ("funcdef"  , funcDefStr                      ) ])
@@ -116,8 +116,8 @@ genCppDefTmplNonVirtual aclass =
                                         . class_funcs $ aclass
   in  defBodyStr
 
-genAllCppDefTmplNonVirtual :: [Class] -> String
-genAllCppDefTmplNonVirtual = intercalateWith connRet2 genCppDefTmplNonVirtual
+genAllCppDefMacroNonVirtual :: [Class] -> String
+genAllCppDefMacroNonVirtual = intercalateWith connRet2 genCppDefMacroNonVirtual
 
 ---- "Class Definition Virtual/NonVirtual" Instances
 

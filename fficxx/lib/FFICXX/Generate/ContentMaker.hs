@@ -87,7 +87,7 @@ buildTypeDeclHeader :: TypeMacro -- ^ typemacro
                  -> [Class]
                  -> String
 buildTypeDeclHeader (TypMcro typemacro) classes =
-  let typeDeclBodyStr   = genAllCppHeaderTmplType classes
+  let typeDeclBodyStr   = genAllCppHeaderMacroType classes
   in subst
        "#ifdef __cplusplus\n\
        \extern \"C\" { \n\
@@ -142,13 +142,15 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
                         connRet
                         (\x->"#include \""<>x<>"\"")
                         (map unHdrName (cihIncludedHPkgHeadersInH header))
-      declDefStr    = genAllCppHeaderTmplVirtual classes
+      declDefStr    = genAllCppHeaderMacroVirtual classes
                       `connRet2`
-                      genAllCppHeaderTmplNonVirtual classes
+                      genAllCppHeaderMacroNonVirtual classes
                       `connRet2`
-                      genAllCppDefTmplVirtual classes
+                      -- genAllCppHeaderMacroAccessor classes
+                      -- `connRet2`
+                      genAllCppDefMacroVirtual classes
                       `connRet2`
-                      genAllCppDefTmplNonVirtual classes
+                      genAllCppDefMacroNonVirtual classes
       classDeclsStr = -- NOTE: Deletable is treated specially.
                       -- TODO: We had better make it as a separate constructor in Class.
                       if (fst.hsClassName) aclass /= "Deletable"
@@ -240,9 +242,9 @@ buildTopLevelCppDef tih =
         intercalateWith connRet (\x->"#include \""<>x<>"\"") $
           map unHdrName $
             map cihSelfHeader cihs ++ tihExtraHeaders tih
-                      
+
       allns = nubBy ((==) `on` unNamespace) ((tihClassDep tih >>= cihNamespace) ++ tihNamespaces tih)
-             
+
       namespaceStr = do ns <- allns
                         ("using namespace " <> unNamespace ns <> ";\n")
       aliasStr = ""
