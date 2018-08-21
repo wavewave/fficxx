@@ -17,6 +17,7 @@ import           STD.Vector.TH
 
 import           TestPkg (test)
 import           TestPkg.A
+import           TestPkg.A.Implementation
 import           TestPkg.B
 
 $(genVectorInstanceFor ''CFloat "float")
@@ -28,6 +29,9 @@ main = do
   test v
 
   a <- newA
+  a_member_set a 3772
+  m <- a_member_get a
+  print m
   ptr <- newUniquePtr a
   deleteUniquePtr ptr
   -- delete a
