@@ -552,6 +552,9 @@ accessorName c v a =    nonvirtualName c (var_name v)
                           Getter -> "get"
                           Setter -> "set"
 
+hscAccessorName :: Class -> Variable -> Accessor -> String
+hscAccessorName c v a = "c_" <> toLowers (accessorName c v a)
+
 
 cppStaticName :: Class -> Function -> String
 cppStaticName c f = class_name c <> "::" <> func_name f
@@ -675,17 +678,17 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
       TFunDelete -> [e]
 
 
-{-
-accessorSignature :: Class -> Variable -> Type ()
-accessorSignature c f =
-  let (typs,assts) = extractArgRetTypes (Just c) (isVirtualFunc f) (genericFuncArgs f,genericFuncRet f)
+
+accessorSignature :: Class -> Variable -> Accessor -> Type ()
+accessorSignature c v accessor =
+  let csig = case accessor of
+               Getter -> CFunSig [] (var_type v)
+               Setter -> CFunSig [(var_type v,"x")] Void
+      HsFunSig typs assts = extractArgRetTypes (Just c) False csig
       ctxt = cxTuple assts
-      arg0
-        | isVirtualFunc f    = (mkTVar "a" :)
-        | isNonVirtualFunc f = (mkTVar (fst (hsClassName c)) :)
-        | otherwise          = id
+      arg0 = (mkTVar (fst (hsClassName c)) :)
   in TyForall () Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
--}
+
 
 -- | this is for FFI type.
 hsFFIFuncTyp :: Maybe (Selfness, Class) -> (Args,Types) -> Type ()

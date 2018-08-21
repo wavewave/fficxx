@@ -360,7 +360,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
-                   --  <> concatMap genHsFrontInstVariables classes
+                   <> concatMap genHsFrontInstVariables classes
 
 buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m = mkModule (tcmModule m <.> "Template")

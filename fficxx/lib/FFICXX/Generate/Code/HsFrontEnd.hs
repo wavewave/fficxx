@@ -95,13 +95,16 @@ genHsFrontInstStatic c =
     in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
 
 -----
-{-
+
 genHsFrontInstVariables :: Class -> [Decl ()]
 genHsFrontInstVariables c =
   flip concatMap (class_vars c) $ \v ->
-    let rhs = mkVar "undefined" -- app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-    in mkFun (accessorName c v Getter) (accessorSignature c v Getter) [] rhs Nothing
--}
+    let rhs accessor =
+          app (mkVar (case accessor of Getter -> "xform0"; _ -> "xform1"))
+              (mkVar (hscAccessorName c v accessor))
+    in    mkFun (accessorName c v Getter) (accessorSignature c v Getter) [] (rhs Getter) Nothing
+       <> mkFun (accessorName c v Setter) (accessorSignature c v Setter) [] (rhs Setter) Nothing
+
 
 -----
 
