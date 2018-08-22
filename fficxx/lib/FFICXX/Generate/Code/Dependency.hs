@@ -208,21 +208,21 @@ mkModuleDepCpp y@(Left t) =
         <> getparents y
 
 -- |
-mkModuleDepFFI4One :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepFFI4One (Right c) =
-  let fs = class_funcs c
-  in concatMap (returnDependency.extractClassDep) fs <> concatMap (argumentDependency.extractClassDep) fs
-mkModuleDepFFI4One (Left t) =
-  let fs = tclass_funcs t
-  in concatMap (returnDependency.extractClassDepForTmplFun) fs <>
-     concatMap (argumentDependency.extractClassDepForTmplFun) fs
-
+mkModuleDepFFI1 :: Either TemplateClass Class -> [Either TemplateClass Class]
+mkModuleDepFFI1 (Right c) = let fs = class_funcs c
+                                vs = class_vars c
+                            in    concatMap (returnDependency.extractClassDep) fs
+                               <> concatMap (argumentDependency.extractClassDep) fs
+                               <> concatMap (extractClassFromType . var_type) vs
+mkModuleDepFFI1 (Left t)  = let fs = tclass_funcs t
+                            in    concatMap (returnDependency.extractClassDepForTmplFun) fs
+                               <> concatMap (argumentDependency.extractClassDepForTmplFun) fs
 
 -- |
 mkModuleDepFFI :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepFFI y@(Right c) =
   let ps = map Right (class_allparents c)
-      alldeps' = (concatMap mkModuleDepFFI4One ps) <> mkModuleDepFFI4One y
+      alldeps' = (concatMap mkModuleDepFFI1 ps) <> mkModuleDepFFI1 y
   in nub (filter (/= y) alldeps')
 mkModuleDepFFI (Left _) = []
 
