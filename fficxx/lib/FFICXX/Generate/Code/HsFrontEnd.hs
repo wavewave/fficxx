@@ -269,10 +269,6 @@ genImportInModule :: [Class] -> [ImportDecl ()]
 genImportInModule = concatMap (\x -> map (\y -> mkImport (getClassModuleBase x<.>y)) ["RawType","Interface","Implementation"])
 
 
-genImportInFFI :: ClassModule -> [ImportDecl ()]
-genImportInFFI = map mkMod . cmImportedModulesForFFI
-  where mkMod (Left t)  = mkImport (getTClassModuleBase t <.> "Template")
-        mkMod (Right c) = mkImport (getClassModuleBase c <.> "RawType")
 
 genImportInInterface :: ClassModule -> [ImportDecl ()]
 genImportInInterface m =
