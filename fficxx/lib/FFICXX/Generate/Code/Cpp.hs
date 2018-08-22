@@ -431,11 +431,11 @@ accessorToDef :: Variable -> Accessor -> String
 accessorToDef v a =
   let csig = accessorCFunSig (var_type v) a
       declstr = accessorToDecl v a
-      varstr = "to_nonconst<Type,Type ## _t>(p)->" <> var_name v
-      body Getter = returnCpp False (cRetType csig) varstr
-      body Setter =    varstr
+      varexp = "to_nonconst<Type,Type ## _t>(p)->" <> var_name v
+      body Getter = "return (" <> castCpp2C (var_type v) varexp <> ");"
+      body Setter =    varexp
                     <> " = "
-                    <> argToCallString (var_type v,"x")
+                    <> castC2Cpp (var_type v) "x"  -- TODO: somehow clean up this hard-coded "x".
                     <> ";"
   in  intercalate "\\\n" [declstr, "{", body a, "}"]
 
