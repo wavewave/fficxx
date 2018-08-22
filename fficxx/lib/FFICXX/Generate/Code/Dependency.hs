@@ -196,9 +196,11 @@ mkModuleDepHighSource y@(Left t) =
 mkModuleDepCpp :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepCpp y@(Right c) =
   let fs = class_funcs c
+      vs = class_vars c
   in  nub . filter (/= y)  $
            concatMap (returnDependency.extractClassDep) fs
         <> concatMap (argumentDependency.extractClassDep) fs
+        <> concatMap (extractClassFromType . var_type) vs
         <> getparents y
 mkModuleDepCpp y@(Left t) =
   let fs = tclass_funcs t
