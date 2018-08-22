@@ -31,18 +31,18 @@ import           System.FilePath
 --
 import           FFICXX.Generate.Code.Cpp
 import           FFICXX.Generate.Code.Dependency
-import           FFICXX.Generate.Code.HsFFI
+import           FFICXX.Generate.Code.HsFFI             (genHsFFI
+                                                        ,genImportInFFI
+                                                        ,genTopLevelFuncFFI)
 import           FFICXX.Generate.Code.HsFrontEnd
 import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
-                                                        , HeaderName(..)
-                                                        , Namespace(..)
-                                                        , PackageInterface, PackageName(..)
-                                                        , TypeMacro(..)
-                                                        )
+import           FFICXX.Generate.Type.PackageInterface  (ClassName(..),HeaderName(..)
+                                                        ,Namespace(..)
+                                                        ,PackageInterface,PackageName(..)
+                                                        ,TypeMacro(..))
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 --

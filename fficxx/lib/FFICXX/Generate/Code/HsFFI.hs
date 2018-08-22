@@ -15,27 +15,28 @@
 
 module FFICXX.Generate.Code.HsFFI where
 
-import           Data.Maybe                              (fromMaybe,mapMaybe)
-import           Data.Monoid                             ((<>))
-import           Language.Haskell.Exts.Syntax            (Decl(..))
-import           System.FilePath                         ((<.>))
+import Data.Maybe                              (fromMaybe,mapMaybe)
+import Data.Monoid                             ((<>))
+import Language.Haskell.Exts.Syntax            (Decl(..),ImportDecl(..))
+import System.FilePath                         ((<.>))
 --
-import           FFICXX.Generate.Code.Dependency         (class_allparents)
-import           FFICXX.Generate.Code.Primitive          (CFunSig(..)
-                                                         ,accessorCFunSig
-                                                         ,accessorName
-                                                         ,aliasedFuncName
-                                                         ,ffiClassName
-                                                         ,genericFuncArgs
-                                                         ,genericFuncRet
-                                                         ,hscAccessorName
-                                                         ,hscFuncName
-                                                         ,hsFFIFuncTyp)
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface
-import           FFICXX.Generate.Util
-import           FFICXX.Generate.Util.HaskellSrcExts
+import FFICXX.Generate.Code.Dependency         (class_allparents
+                                               ,getClassModuleBase
+                                               ,getTClassModuleBase)
+import FFICXX.Generate.Code.Primitive          (CFunSig(..)
+                                               ,accessorCFunSig
+                                               ,aliasedFuncName
+                                               ,ffiClassName
+                                               ,genericFuncArgs
+                                               ,genericFuncRet
+                                               ,hscAccessorName
+                                               ,hscFuncName
+                                               ,hsFFIFuncTyp)
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Module
+import FFICXX.Generate.Type.PackageInterface
+import FFICXX.Generate.Util
+import FFICXX.Generate.Util.HaskellSrcExts
 
 
 genHsFFI :: ClassImportHeader -> [Decl ()]
@@ -79,6 +80,12 @@ hsFFIAccessor c v a =
   in mkForImpCcall cname (hscAccessorName c v a) typ
 
 
+-- import for FFI
+
+genImportInFFI :: ClassModule -> [ImportDecl ()]
+genImportInFFI = map mkMod . cmImportedModulesForFFI
+  where mkMod (Left t)  = mkImport (getTClassModuleBase t <.> "Template")
+        mkMod (Right c) = mkImport (getClassModuleBase c <.> "RawType")
 
 
 ----------------------------

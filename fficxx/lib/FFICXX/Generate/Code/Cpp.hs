@@ -80,7 +80,7 @@ genCppHeaderMacroAccessor c =
   let tmpl = "#undef ${classname}_DECL_ACCESSOR\n#define ${classname}_DECL_ACCESSOR(Type)\\\n$funcdecl"
       declBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
                                         , ("funcdecl" , funcDeclStr               ) ])
-      funcDeclStr = accessorsToDecls c (class_vars c)
+      funcDeclStr = accessorsToDecls (class_vars c)
   in  declBodyStr
 
 genAllCppHeaderMacroAccessor :: [Class] -> String
@@ -146,7 +146,7 @@ genCppDefMacroAccessor c =
   let tmpl = "#undef ${classname}_DEF_ACCESSOR\n#define ${classname}_DEF_ACCESSOR(Type)\\\n$funcdef"
       defBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
                                        , ("funcdef"  , funcDefStr                  ) ])
-      funcDefStr = accessorsToDefs c (class_vars c)
+      funcDefStr = accessorsToDefs (class_vars c)
   in  defBodyStr
 
 genAllCppDefMacroAccessor :: [Class] -> String
@@ -412,8 +412,8 @@ tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {",
 
 -- Accessor Declaration and Definition
 
-accessorToDecl :: Class -> Variable -> Accessor -> String
-accessorToDecl c v a =
+accessorToDecl :: Variable -> Accessor -> String
+accessorToDecl v a =
   let tmpl = "$returntype Type ## _$funcname ( $args )"
       csig = accessorCFunSig (var_type v) a
   in subst tmpl (context [ ("returntype", rettypeToString (cRetType csig))
@@ -421,16 +421,16 @@ accessorToDecl c v a =
                          , ("args"      , argsToString (cArgTypes csig))
                          ])
 
-accessorsToDecls :: Class -> [Variable] -> String
-accessorsToDecls c vs =
-  let dcls = concatMap (\v -> [accessorToDecl c v Getter,accessorToDecl c v Setter]) vs
+accessorsToDecls :: [Variable] -> String
+accessorsToDecls vs =
+  let dcls = concatMap (\v -> [accessorToDecl v Getter,accessorToDecl v Setter]) vs
   in intercalate "; \\\n" dcls
 
 
-accessorToDef :: Class -> Variable -> Accessor -> String
-accessorToDef c v a =
+accessorToDef :: Variable -> Accessor -> String
+accessorToDef v a =
   let csig = accessorCFunSig (var_type v) a
-      declstr = accessorToDecl c v a
+      declstr = accessorToDecl v a
       varstr = "to_nonconst<Type,Type ## _t>(p)->" <> var_name v
       body Getter = returnCpp False (cRetType csig) varstr
       body Setter =    varstr
@@ -440,7 +440,7 @@ accessorToDef c v a =
   in  intercalate "\\\n" [declstr, "{", body a, "}"]
 
 
-accessorsToDefs :: Class -> [Variable] -> String
-accessorsToDefs c vs =
-  let defs = concatMap (\v -> [accessorToDef c v Getter,accessorToDef c v Setter]) vs
+accessorsToDefs :: [Variable] -> String
+accessorsToDefs vs =
+  let defs = concatMap (\v -> [accessorToDef v Getter,accessorToDef v Setter]) vs
   in intercalate "; \\\n" defs
