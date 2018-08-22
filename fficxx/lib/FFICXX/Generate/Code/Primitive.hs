@@ -259,13 +259,17 @@ argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
   where cname = ffiClassName c
+argToString (CPT (CPTClassCopy c) isconst, varname) = case isconst of
+    Const   -> "const_" <> cname <> "_p " <> varname
+    NoConst -> cname <> "_p " <> varname
+  where cname = ffiClassName c
 argToString (CPT (CPTClassMove c) isconst, varname) = case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
   where cname = ffiClassName c
 argToString (TemplateApp _ _ _,varname) = "void* " <> varname
 argToString (TemplateAppRef _ _ _,varname) = "void* " <> varname
-argToString _ = error "undefined argToString"
+argToString t = error ("argToString: " <> show t)
 
 argsToString :: Args -> String
 argsToString args =
@@ -275,31 +279,15 @@ argsToString args =
 argsToStringNoSelf :: Args -> String
 argsToStringNoSelf = intercalateWith conncomma argToString
 
-
+-- TODO: remove this function
 argToCallString :: (Types,String) -> String
-argToCallString (CT (CRef _) _,varname) = "(*"<> varname<> ")"
-argToCallString (CPT (CPTClass c) _,varname) =
-  -- TODO: Rewrite this with static_cast
-  "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")"
-  where str = ffiClassName c
-argToCallString (CPT (CPTClassRef c) _,varname) =
-  -- TODO: Rewrite this with static_cast
-  "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")"
-  where str = ffiClassName c
-argToCallString (CPT (CPTClassMove c) _,varname) =
-  -- TODO: Rewrite this withd static_cast
-  "std::move(to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>"))"
-  where str = ffiClassName c
-argToCallString (TemplateApp _ _ cp,varname) =
-    "to_nonconst<"<>str<>",void>("<>varname<>")" where str = cp
-argToCallString (TemplateAppRef _ _ cp,varname) =
-    "*( ("<> str   <> "*) " <>varname<>")" where str = cp
-argToCallString (_,varname) = varname
+argToCallString = uncurry castC2Cpp
+
 
 argsToCallString :: Args -> String
 argsToCallString = intercalateWith conncomma argToCallString
 
-
+-- TODO: rename this function by castExpressionFrom/To or something like that.
 rettypeToString :: Types -> String
 rettypeToString (CT ctyp isconst)        = ctypToStr ctyp isconst
 rettypeToString Void                     = "void"
@@ -313,6 +301,58 @@ rettypeToString (TemplateAppRef _ _ _)   = "void*"
 rettypeToString (TemplateType _)         = "void*"
 rettypeToString (TemplateParam _)        = "Type ## _p"
 rettypeToString (TemplateParamPointer _) = "Type ## _p"
+
+
+
+-- TODO: Rewrite this with static_cast
+castC2Cpp :: Types -> String -> String
+castC2Cpp t e =
+  case t of
+    CT  (CRef _)         _ -> "(*"<> e <> ")"
+    CPT (CPTClass     c) _ -> "to_nonconst<" <> f <> "," <> f <> "_t>(" <> e <> ")"
+                              where f = ffiClassName c
+    CPT (CPTClassRef  c) _ -> "to_nonconstref<" <> f <> "," <> f <> "_t>(*" <> e <> ")"
+                              where f = ffiClassName c
+    CPT (CPTClassCopy c) _ -> "*(to_nonconst<" <> f <> "," <> f <> "_t>(" <> e <> "))"
+                              where f = ffiClassName c
+    CPT (CPTClassMove c) _ -> "std::move(to_nonconstref<" <> f <> "," <> f<> "_t>(*" <> e <> "))"
+                              where f = ffiClassName c
+    TemplateApp    _ _ g   -> "to_nonconst<" <> g <> ",void>(" <> e <> ")"
+    TemplateAppRef _ _ g   -> "*( (" <> g <> "*) " <> e <> ")"
+    _                      -> e
+
+
+-- TODO: Rewrite this with static_cast
+--       Merge this with returnCpp after Void and simple type adjustment
+castCpp2C :: Types -> String -> String
+castCpp2C t e =
+  case t of
+    Void                   -> ""
+    SelfType               -> "to_nonconst<Type ## _t, Type>((Type *)" <> e <> ")"
+    CT (CRef _) _          -> "&(" <> e <> ")"
+    CT _ _                 -> e
+    CPT (CPTClass c) _     -> "to_nonconst<" <> f <> "_t," <> f <> ">((" <> f <> "*)" <> e <> ")"
+                               where f = ffiClassName c
+    CPT (CPTClassRef c) _  -> "to_nonconst<" <> f <> "_t," <> f <> ">(&(" <> e <> "))"
+                               where f = ffiClassName c
+    CPT (CPTClassCopy c) _ -> "to_nonconst<" <> f <> "_t," <> f <> ">(new " <> f <> "(" <> e <> "))"
+                               where f = ffiClassName c
+    CPT (CPTClassMove c) _ -> "std::move(to_nonconst<" <> f <> "_t," <> f <>">(&(" <> e <> ")))"
+                               where f = ffiClassName c
+    TemplateApp _ _ g      -> error "castCpp2C: TemplateApp"
+                              -- g <> "* r = new " <> g <> "(" <> e <> "); "
+                              --  <> "return (static_cast<void*>(r));"
+    TemplateAppRef _ _ g   -> error "castCpp2C: TemplateAppRef"
+                              -- g <> "* r = new " <> g <> "(" <> e <> "); "
+                              -- <> "return (static_cast<void*>(r));"
+    TemplateType _         -> error "castCpp2C: TemplateType"
+    TemplateParam _        -> error "castCpp2C: TemplateParam"
+                              -- if b then e
+                              --      else "to_nonconst<Type ## _t, Type>((Type *)&(" <> e <> "))"
+    TemplateParamPointer _ -> error "castCpp2C: TemplateParamPointer"
+                              -- if b then "(" <> callstr <> ");"
+                              --      else "to_nonconst<Type ## _t, Type>(" <> e <> ") ;"
+
 
 
 tmplArgToString :: Bool -> TemplateClass -> (Types,String) -> String
