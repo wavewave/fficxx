@@ -96,6 +96,18 @@ genHsFrontInstStatic c =
 
 -----
 
+genHsFrontInstVariables :: Class -> [Decl ()]
+genHsFrontInstVariables c =
+  flip concatMap (class_vars c) $ \v ->
+    let rhs accessor =
+          app (mkVar (case accessor of Getter -> "xform0"; _ -> "xform1"))
+              (mkVar (hscAccessorName c v accessor))
+    in    mkFun (accessorName c v Getter) (accessorSignature c v Getter) [] (rhs Getter) Nothing
+       <> mkFun (accessorName c v Setter) (accessorSignature c v Setter) [] (rhs Setter) Nothing
+
+
+-----
+
 castBody :: [InstDecl ()]
 castBody =
   [ insDecl (mkBind1 "cast" [mkPVar "x",mkPVar "f"] (app (mkVar "f") (app (mkVar "castPtr") (app (mkVar "get_fptr") (mkVar "x")))) Nothing)
@@ -192,7 +204,11 @@ genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs No
 genTopLevelFuncDef :: TopLevelFunction -> [Decl ()]
 genTopLevelFuncDef f@TopLevelFunction {..} =
     let fname = hsFrontNameForTopLevelFunction f
-        (typs,assts) = extractArgRetTypes Nothing False (toplevelfunc_args,toplevelfunc_ret)
+        HsFunSig typs assts =
+          extractArgRetTypes
+            Nothing
+            False
+            (CFunSig toplevelfunc_args toplevelfunc_ret)
         sig = tyForall Nothing (Just (cxTuple assts)) (foldr1 tyfun typs)
         xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len-1) else "xformnull"
         cfname = "c_" <> toLowers fname

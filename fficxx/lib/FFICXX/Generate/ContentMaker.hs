@@ -87,7 +87,7 @@ buildTypeDeclHeader :: TypeMacro -- ^ typemacro
                  -> [Class]
                  -> String
 buildTypeDeclHeader (TypMcro typemacro) classes =
-  let typeDeclBodyStr   = genAllCppHeaderTmplType classes
+  let typeDeclBodyStr   = genAllCppHeaderMacroType classes
   in subst
        "#ifdef __cplusplus\n\
        \extern \"C\" { \n\
@@ -142,19 +142,27 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
                         connRet
                         (\x->"#include \""<>x<>"\"")
                         (map unHdrName (cihIncludedHPkgHeadersInH header))
-      declDefStr    = genAllCppHeaderTmplVirtual classes
+      declDefStr    = genAllCppHeaderMacroVirtual classes
                       `connRet2`
-                      genAllCppHeaderTmplNonVirtual classes
+                      genAllCppHeaderMacroNonVirtual classes
                       `connRet2`
-                      genAllCppDefTmplVirtual classes
+                      genAllCppHeaderMacroAccessor classes
                       `connRet2`
-                      genAllCppDefTmplNonVirtual classes
-      classDeclsStr = if (fst.hsClassName) aclass /= "Deletable"
+                      genAllCppDefMacroVirtual classes
+                      `connRet2`
+                      genAllCppDefMacroNonVirtual classes
+                      `connRet2`
+                      genAllCppDefMacroAccessor classes
+      classDeclsStr = -- NOTE: Deletable is treated specially.
+                      -- TODO: We had better make it as a separate constructor in Class.
+                      if (fst.hsClassName) aclass /= "Deletable"
                         then buildParentDef genCppHeaderInstVirtual aclass
                              `connRet2`
                              genCppHeaderInstVirtual (aclass, aclass)
                              `connRet2`
-                             genAllCppHeaderInstNonVirtual classes
+                             intercalateWith connRet genCppHeaderInstNonVirtual classes
+                             `connRet2`
+                             intercalateWith connRet genCppHeaderInstAccessor classes
                         else ""
       declBodyStr   = declDefStr
                       `connRet2`
@@ -203,7 +211,9 @@ buildDefMain cih =
                   then ""
                   else genCppDefInstVirtual (aclass, aclass)
                 `connRet`
-                genAllCppDefInstNonVirtual classes
+                intercalateWith connRet genCppDefInstNonVirtual classes
+                `connRet`
+                intercalateWith connRet genCppDefInstAccessor classes
   in subst definitionTemplate (context ([ ("header"   , headerStr    )
                                         , ("alias"    , aliasStr     )
                                         , ("namespace", namespaceStr )
@@ -238,9 +248,9 @@ buildTopLevelCppDef tih =
         intercalateWith connRet (\x->"#include \""<>x<>"\"") $
           map unHdrName $
             map cihSelfHeader cihs ++ tihExtraHeaders tih
-                      
+
       allns = nubBy ((==) `on` unNamespace) ((tihClassDep tih >>= cihNamespace) ++ tihNamespaces tih)
-             
+
       namespaceStr = do ns <- allns
                         ("using namespace " <> unNamespace ns <> ";\n")
       aliasStr = ""
@@ -327,11 +337,11 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                       , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
                castImports body
   where classes = cmClass m
-        castImports = [ mkImport "Foreign.Ptr"
-                      , mkImport "FFICXX.Runtime.Cast"
-                      , mkImport "System.IO.Unsafe" ]
+        castImports =    [ mkImport "Foreign.Ptr"
+                         , mkImport "FFICXX.Runtime.Cast"
+                         , mkImport "System.IO.Unsafe" ]
                       <> genImportInCast m
-        body = mapMaybe genHsFrontInstCastable classes
+        body =    mapMaybe genHsFrontInstCastable classes
                <> mapMaybe genHsFrontInstCastableSelf classes
 
 -- |
@@ -356,10 +366,11 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
         f :: Class -> [Decl ()]
         f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
 
-        implBody = concatMap f classes
+        implBody =    concatMap f classes
                    <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
+                   <> concatMap genHsFrontInstVariables classes
 
 buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m = mkModule (tcmModule m <.> "Template")

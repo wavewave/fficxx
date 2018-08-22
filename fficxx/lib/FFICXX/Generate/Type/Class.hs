@@ -99,6 +99,11 @@ data Function = Constructor { func_args :: Args
               deriving Show
 
 
+data Variable = Variable { var_type :: Types
+                         , var_name :: String
+                         }
+              deriving Show
+
 data TopLevelFunction = TopLevelFunction { toplevelfunc_ret :: Types
                                          , toplevelfunc_name :: String
                                          , toplevelfunc_args :: Args
@@ -158,12 +163,14 @@ data ClassAlias = ClassAlias { caHaskellName :: String
                              , caFFIName :: String
                              }
 
+-- TODO: partial record must be avoided.
 data Class = Class { class_cabal :: Cabal
                    , class_name :: String
                    , class_parents :: [Class]
                    , class_protected :: ProtectedMethod
                    , class_alias :: Maybe ClassAlias
                    , class_funcs :: [Function]
+                   , class_vars :: [Variable]
                    }
            | AbstractClass { class_cabal :: Cabal
                            , class_name :: String
@@ -171,14 +178,18 @@ data Class = Class { class_cabal :: Cabal
                            , class_protected :: ProtectedMethod
                            , class_alias :: Maybe ClassAlias
                            , class_funcs :: [Function]
+                           , class_vars :: [Variable]
                            }
 
+-- TODO: we had better not override standard definitions
 instance Show Class where
   show x = show (class_name x)
 
+-- TODO: we had better not override standard definitions
 instance Eq Class where
   (==) x y = class_name x == class_name y
 
+-- TODO: we had better not override standard definitions
 instance Ord Class where
   compare x y = compare (class_name x) (class_name y)
 
@@ -190,7 +201,7 @@ data TemplateFunction = TFun { tfun_ret :: Types
                              , tfun_alias :: Maybe String }
                       | TFunNew { tfun_new_args :: Args }
                       | TFunDelete
---                       deriving (Show,Eq,Ord)
+
 
 data TemplateClass = TmplCls { tclass_cabal :: Cabal
                              , tclass_name :: String
@@ -198,14 +209,16 @@ data TemplateClass = TmplCls { tclass_cabal :: Cabal
                              , tclass_param :: String
                              , tclass_funcs :: [TemplateFunction]
                              }
---                     deriving (Show,Eq,Ord)
 
+-- TODO: we had better not override standard definitions
 instance Show TemplateClass where
   show x = show (tclass_name x <> " " <> tclass_param x)
 
+-- TODO: we had better not override standard definitions
 instance Eq TemplateClass where
   (==) x y = tclass_name x == tclass_name y
 
+-- TODO: we had better not override standard definitions
 instance Ord TemplateClass where
   compare x y = compare (tclass_name x) (tclass_name y)
 
@@ -228,3 +241,6 @@ isAbstractClass AbstractClass{} = True
 
 
 type DaughterMap = M.Map String [Class]
+
+data Accessor = Getter | Setter
+              deriving (Show, Eq)
