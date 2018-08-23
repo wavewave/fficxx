@@ -61,7 +61,7 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
 
       pkgconfig@(PkgConfig mods cihs tih tcms _tcihs _ _) =
         mkPackageConfig
-          (unCabalName pkgname, findModuleUnitImports mumap)
+          (pkgname, findModuleUnitImports mumap)
           (classes, toplevelfunctions,templates,extramods)
           (cabal_additional_c_incs cabal)
           (cabal_additional_c_srcs cabal)

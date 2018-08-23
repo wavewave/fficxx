@@ -54,11 +54,12 @@ data TemplateClassImportHeader = TCIH { tcihTClass :: TemplateClass
                                       , tcihSelfHeader :: HeaderName
                                       } deriving (Show)
 
-data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName :: String
-                                                 , tihClassDep :: [ClassImportHeader]
-                                                 , tihFuncs :: [TopLevelFunction]
-                                                 , tihNamespaces :: [Namespace]
-                                                 , tihExtraHeaders :: [HeaderName]
+data TopLevelImportHeader = TopLevelImportHeader { tihHeaderFileName    :: String
+                                                 , tihClassDep          :: [ClassImportHeader]
+                                                 , tihFuncs             :: [TopLevelFunction]
+                                                 , tihNamespaces        :: [Namespace]
+                                                 , tihExtraHeadersInH   :: [HeaderName]
+                                                 , tihExtraHeadersInCPP :: [HeaderName]
                                                  } deriving (Show)
 
 data PackageConfig = PkgConfig { pcfg_classModules :: [ClassModule]

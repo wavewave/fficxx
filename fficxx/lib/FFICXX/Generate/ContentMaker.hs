@@ -228,7 +228,8 @@ buildTopLevelHeader (TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix <> "TOPLEVEL" <> "__"
       declHeaderStr = intercalateWith connRet (\x->"#include \""<>x<>"\"") $
                         map unHdrName $
-                             map cihSelfHeader (tihClassDep tih)
+                                 map cihSelfHeader (tihClassDep tih)
+                              ++ tihExtraHeadersInH tih
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
   in subst declarationTemplate (context [ ("typemacro"        , typemacrostr  )
                                         , ("cprefix"          , cprefix       )
@@ -247,7 +248,8 @@ buildTopLevelCppDef tih =
       otherHeaders =
         intercalateWith connRet (\x->"#include \""<>x<>"\"") $
           map unHdrName $
-            map cihSelfHeader cihs ++ tihExtraHeaders tih
+               map cihSelfHeader cihs
+            ++ tihExtraHeadersInCPP tih
 
       allns = nubBy ((==) `on` unNamespace) ((tihClassDep tih >>= cihNamespace) ++ tihNamespaces tih)
 
