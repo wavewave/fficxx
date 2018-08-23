@@ -38,7 +38,7 @@ deletable =
 string :: Class
 string =
   Class stdcxx_cabal "string" [ ] mempty
-  (Just (ClassAlias { caHaskellName = "CppString", caFFIName = "CppString"}))
+  (Just (ClassAlias { caHaskellName = "CppString", caFFIName = "string"}))
   []
   []
 
@@ -47,8 +47,10 @@ t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t" [ ]
 testH =
   "#include <iostream>\n\
   \#include <vector>\n\
+  \#include <string>\n\
   \using namespace std;\n\
   \void test( vector<float>&  vect);\n\
+  \void test2( const string& x );\n\
   \class A {\n\
   \public:\n\
   \  A() {\n\
@@ -57,7 +59,10 @@ testH =
   \  virtual ~A() {\n\
   \    cout << \"A deleted\" << endl;\n\
   \  }\n\
+  \  virtual void func( const string& s ) {\n\
+  \  }\n\
   \  int member;\n\
+  \  string member2;\n\
   \};\n\
   \class B {\n\
   \public:\n\
@@ -78,6 +83,10 @@ testCpp  =
   \using namespace std;\n\
   \void test( vector<float>& vec ) {\n\
   \  cout << vec.size() << endl;\n\
+  \}\n\
+  \\n\
+  \void test2( const string& s ) {\n\
+  \  cout << s << endl;\n\
   \}\n\
   \\n\
   \void B::call( vector<float>& vec ) {\n\
@@ -121,8 +130,12 @@ vectorfloatref_ = TemplateAppRef t_vector (TArg_Other "CFloat") "std::vector<flo
 
 classA =
   Class cabal "A" [ deletable ] mempty Nothing
-    [ Constructor [ ] Nothing ]
-    [ Variable cint_ "member" ]
+    [ Constructor [ ] Nothing
+    , Virtual void_ "func" [ (cppclassref_ string, "s") ] Nothing
+    ]
+    [ Variable cint_ "member"
+    , Variable (cppclasscopy_ string) "member2"
+    ]
 
 classB =
   Class cabal "B" [ deletable ] mempty Nothing
