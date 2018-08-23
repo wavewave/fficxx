@@ -149,6 +149,7 @@ classes = [ classA, classB ]
 
 toplevelfunctions =
   [ TopLevelFunction void_ "test" [ (vectorfloatref_, "vec") ] Nothing
+  , TopLevelFunction void_ "test2" [ (cppclassref_ string, "x") ] Nothing
   ]
 
 templates = [  ]

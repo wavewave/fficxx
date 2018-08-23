@@ -41,7 +41,7 @@ import           Data.Monoid                ((<>))
 import           System.FilePath
 --
 import           FFICXX.Generate.Code.Primitive (ffiClassName,hsClassName,hsTemplateClassName)
-import           FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc
+import           FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc,CabalName(..)
                                             ,cabal_moduleprefix,cabal_pkgname
                                             ,cabal_cheaderprefix,unCabalName)
 import           FFICXX.Generate.Type.Class
@@ -50,18 +50,16 @@ import           FFICXX.Generate.Type.Config (ModuleUnit(..)
                                              ,ModuleUnitMap(..))
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
---
 
 
 -- utility functions
-
-getclassname = either tclass_name class_name
 
 getcabal = either tclass_cabal class_cabal
 
 getparents = either (const []) (map Right . class_parents)
 
--- getmodulebase = either getTClassModuleBase getClassModuleBase
+-- TODO: replace tclass_name with appropriate FFI name when supported.
+getFFIName = either tclass_name ffiClassName
 
 -- |
 extractClassFromType :: Types -> [Either TemplateClass Class]
@@ -186,6 +184,7 @@ mkModuleDepHighSource :: Either TemplateClass Class -> [Either TemplateClass Cla
 mkModuleDepHighSource y@(Right c) =
   let fs = class_funcs c
       pkgname = (cabal_pkgname . class_cabal) c
+      -- TODO: QUESTION: why returnDependency is not considered?
   in  nub . filter (\x-> x /= y && not (x `elem` getparents y) && (((== pkgname) . cabal_pkgname . getcabal) x)) . concatMap (argumentDependency.extractClassDep) $ fs
 mkModuleDepHighSource y@(Left t) =
   let fs = tclass_funcs t
@@ -261,7 +260,7 @@ mkTCM (t,hdr) = TCM  (getTClassModuleBase t) [t] [TCIH t hdr]
 
 
 mkPackageConfig
-  :: (String, ModuleUnit -> ModuleUnitImports) -- ^ (package name,getImports)
+  :: (CabalName, ModuleUnit -> ModuleUnitImports) -- ^ (package name,getImports)
   -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)],[(String,[String])])
   -> [AddCInc]
   -> [AddCSrc]
@@ -270,23 +269,20 @@ mkPackageConfig (pkgname,getImports) (cs,fs,ts,extra) acincs acsrcs =
   let ms = map (mkClassModule getImports extra) cs
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
       cihs = nubBy cmpfunc (concatMap cmCIH ms)
-      -- for toplevel
-      tl_cs1 = concatMap (argumentDependency . extractClassDepForTopLevelFunction) fs
-      tl_cs2 = concatMap (returnDependency . extractClassDepForTopLevelFunction) fs
-      tl_cs = nubBy ((==) `on` getclassname) (tl_cs1 <> tl_cs2)
-      tl_cihs = catMaybes $
-        foldr (\c acc-> (find (\x -> (class_name . cihClass) x == getclassname c) cihs):acc) [] tl_cs
       --
-      tih = TopLevelImportHeader {
-              tihHeaderFileName = pkgname <> "TopLevel"
-            , tihClassDep = tl_cihs
-            , tihFuncs = fs
-            , tihNamespaces = muimports_namespaces (getImports MU_TopLevel)
-            , tihExtraHeaders = muimports_headers (getImports MU_TopLevel)
-            }
+      tih = mkTIH pkgname getImports cihs fs
       tcms = map mkTCM ts
       tcihs = concatMap tcmTCIH tcms
-  in PkgConfig ms cihs tih tcms tcihs acincs acsrcs
+  in PkgConfig {
+       pcfg_classModules = ms
+     , pcfg_classImportHeaders = cihs
+     , pcfg_topLevelImportHeader = tih
+     , pcfg_templateClassModules = tcms
+     , pcfg_templateClassImportHeaders = tcihs
+     , pcfg_additional_c_incs = acincs
+     , pcfg_additional_c_srcs = acsrcs
+     }
+
 
 -- TODO: change [String] to Set String
 mkHSBOOTCandidateList :: [ClassModule] -> [String]
@@ -344,3 +340,34 @@ mkCIH getImports c =
   , cihIncludedHPkgHeadersInCPP = mkPkgIncludeHeadersInCPP c
   , cihIncludedCPkgHeaders      = (muimports_headers . getImports . MU_Class . class_name) c
   }
+
+-- | for top-level
+mkTIH
+  :: CabalName
+  -> (ModuleUnit -> ModuleUnitImports)
+  -> [ClassImportHeader]
+  -> [TopLevelFunction]
+  -> TopLevelImportHeader
+mkTIH pkgname getImports cihs fs =
+  let tl_cs1 = concatMap (argumentDependency . extractClassDepForTopLevelFunction) fs
+      tl_cs2 = concatMap (returnDependency . extractClassDepForTopLevelFunction) fs
+      tl_cs = nubBy ((==) `on` either tclass_name ffiClassName) (tl_cs1 <> tl_cs2)
+      tl_cihs = catMaybes (foldr fn [] tl_cs)
+         where
+           fn c ys =
+             let y = find (\x -> (ffiClassName . cihClass) x == getFFIName c) cihs
+             in y:ys
+      extclasses = filter ((/= pkgname) . cabal_pkgname . getcabal) tl_cs
+      extheaders = map HdrName $
+                     nub $
+                       map ((<>"Type.h") . unCabalName . cabal_pkgname . getcabal)  extclasses
+
+  in
+     TopLevelImportHeader {
+       tihHeaderFileName = unCabalName pkgname <> "TopLevel"
+     , tihClassDep = tl_cihs
+     , tihFuncs = fs
+     , tihNamespaces        = muimports_namespaces (getImports MU_TopLevel)
+     , tihExtraHeadersInH   = extheaders
+     , tihExtraHeadersInCPP = muimports_headers (getImports MU_TopLevel)
+     }
