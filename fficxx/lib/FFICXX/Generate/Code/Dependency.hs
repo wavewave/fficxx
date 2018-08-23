@@ -303,7 +303,7 @@ mkHSBOOTCandidateList ms =
 mkPkgHeaderFileName ::Class -> HeaderName
 mkPkgHeaderFileName c =
     HdrName (   (cabal_cheaderprefix.class_cabal) c
-            <>  ffiClassName c
+            <>  fst (hsClassName c)
             <.> "h"
             )
 
@@ -311,7 +311,7 @@ mkPkgHeaderFileName c =
 mkPkgCppFileName ::Class -> String
 mkPkgCppFileName c =
         (cabal_cheaderprefix.class_cabal) c
-    <>  ffiClassName c
+    <>  fst (hsClassName c)
     <.> "cpp"
 
 -- |
