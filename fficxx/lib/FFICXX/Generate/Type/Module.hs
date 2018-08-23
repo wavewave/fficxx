@@ -17,15 +17,16 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.PackageInterface (HeaderName(..),Namespace(..))
 
 -- | C++ side
+--   HPkg is generated C++ headers by fficxx, CPkg is original C++ headers
 data ClassImportHeader = ClassImportHeader
                        { cihClass :: Class
                        , cihSelfHeader :: HeaderName
                        , cihNamespace :: [Namespace]
                        , cihSelfCpp :: String
-                       , cihImportedClasses :: [Either TemplateClass Class]
-                       , cihIncludedHPkgHeadersInH :: [HeaderName]    -- TODO: Explain why we need to have these two
-                       , cihIncludedHPkgHeadersInCPP :: [HeaderName]  --       separately.
-                       , cihIncludedCPkgHeaders :: [HeaderName]
+                       , cihImportedClasses :: [Either TemplateClass Class]  -- ^ Dependencies TODO: clarify this.
+                       , cihIncludedHPkgHeadersInH   :: [HeaderName]         -- TODO: Explain why we need to have these two
+                       , cihIncludedHPkgHeadersInCPP :: [HeaderName]         --       separately.
+                       , cihIncludedCPkgHeaders      :: [HeaderName]
                        } deriving (Show)
 
 
