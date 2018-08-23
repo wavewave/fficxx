@@ -71,7 +71,8 @@ t_vector = TmplCls cabal "Vector" "std::vector" "t"
              ]
 
 t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
-             [ TFunNew [(TemplateParamPointer "t", "p")] Nothing
+             [ TFunNew [] (Just "newUniquePtr0")
+             , TFunNew [(TemplateParamPointer "t", "p")] Nothing
              , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
              , TFun (TemplateParamPointer "t") "release" "release" [] Nothing
              , TFun void_ "reset" "reset" [] Nothing
