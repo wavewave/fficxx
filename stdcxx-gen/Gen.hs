@@ -62,7 +62,7 @@ classes = [ deletable
 toplevelfunctions = [ ]
 
 t_vector = TmplCls cabal "Vector" "std::vector" "t"
-             [ TFunNew []
+             [ TFunNew [] Nothing
              , TFun void_ "push_back" "push_back" [(TemplateParam "t","x")] Nothing
              , TFun void_ "pop_back"  "pop_back"  []                        Nothing
              , TFun (TemplateParam "t") "at" "at" [int "n"]                 Nothing
@@ -71,7 +71,7 @@ t_vector = TmplCls cabal "Vector" "std::vector" "t"
              ]
 
 t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
-             [ TFunNew [(TemplateParamPointer "t", "p")]
+             [ TFunNew [(TemplateParamPointer "t", "p")] Nothing
              , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
              , TFun (TemplateParamPointer "t") "release" "release" [] Nothing
              , TFun void_ "reset" "reset" [] Nothing
