@@ -345,9 +345,7 @@ genTmplInterface t =
        fs = tclass_funcs t
        rawtype = tyapp (tycon rname) (mkTVar tp)
        hightype = tyapp (tycon hname) (mkTVar tp)
-       sigdecl f@TFun {..}    = mkFunSig tfun_name (functionSignatureT t f)
-       sigdecl f@TFunNew {..} = mkFunSig ("new"<>tclass_name t) (functionSignatureT t f)
-       sigdecl f@TFunDelete = mkFunSig ("delete"<>tclass_name t) (functionSignatureT t f)
+       sigdecl f = mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
        methods = map (clsDecl . sigdecl) fs
        fptrbody = [ insType (tyapp (tycon "Raw") hightype) rawtype
                   , insDecl (mkBind1 "get_fptr" [pApp (name hname) [mkPVar "ptr"]] (mkVar "ptr") Nothing)
@@ -359,14 +357,8 @@ genTmplImplementation :: TemplateClass -> [Decl ()]
 genTmplImplementation t = concatMap gen (tclass_funcs t)
   where
     gen f = mkFun nh sig [p "nty", p "ncty"] rhs (Just bstmts)
-      where nh = case f of
-                   TFun {..}    -> "t_" <> tfun_name
-                   TFunNew {..} -> "t_" <> "new" <> tclass_name t
-                   TFunDelete   -> "t_" <> "delete" <> tclass_name t
-            nc = case f of
-                   TFun {..}    -> tfun_name
-                   TFunNew {..} -> "new"
-                   TFunDelete   -> "delete"
+      where nh = hsTmplFuncNameTH t f
+            nc = cppTmplFuncName f
             sig = tycon "Name" `tyfun` (tycon "String" `tyfun` tycon "ExpQ")
             v = mkVar
             p = mkPVar

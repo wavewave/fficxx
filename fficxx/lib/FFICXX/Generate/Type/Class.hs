@@ -199,7 +199,9 @@ data TemplateFunction = TFun { tfun_ret :: Types
                              , tfun_oname :: String
                              , tfun_args :: Args
                              , tfun_alias :: Maybe String }
-                      | TFunNew { tfun_new_args :: Args }
+                      | TFunNew { tfun_new_args :: Args
+                                , tfun_new_alias :: Maybe String
+                                }
                       | TFunDelete
 
 
