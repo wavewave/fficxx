@@ -139,7 +139,7 @@ extractClassDep (Destructor _) =
 extractClassDepForTmplFun :: TemplateFunction -> Dep4Func
 extractClassDepForTmplFun (TFun ret  _ _ args _) =
     Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
-extractClassDepForTmplFun (TFunNew args) =
+extractClassDepForTmplFun (TFunNew args _) =
     Dep4Func [] (concatMap (extractClassFromType.fst) args)
 extractClassDepForTmplFun TFunDelete =
     Dep4Func [] []
