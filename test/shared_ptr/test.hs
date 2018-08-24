@@ -4,7 +4,7 @@
 
 module Main where
 
-import Control.Concurrent (forkOS,threadDelay)
+import Control.Concurrent (forkIO,forkOS,threadDelay)
 import qualified Data.ByteString.Char8 as B
 
 import Foreign.C.Types
@@ -38,7 +38,7 @@ main = do
     cppstr <- newCppString cstr
     ptr <- newSharedPtr cppstr
 
-    forkOS $ worker ptr
+    forkIO $ worker ptr
     forkOS $ worker ptr
 
     threadDelay 10000000
