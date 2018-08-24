@@ -598,6 +598,14 @@ hsTmplFuncNameTH :: TemplateClass -> TemplateFunction -> String
 hsTmplFuncNameTH t f = "t_" <> hsTmplFuncName t f
 
 
+ffiTmplFuncName :: TemplateFunction -> String
+ffiTmplFuncName f =
+  case f of
+    TFun {..}    -> fromMaybe tfun_name tfun_alias
+    TFunNew {..} -> fromMaybe "new" tfun_new_alias
+    TFunDelete   -> "delete"
+
+
 cppTmplFuncName :: TemplateFunction -> String
 cppTmplFuncName f =
   case f of
