@@ -80,9 +80,20 @@ t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
              ]
 
 
+t_shared_ptr = TmplCls cabal "SharedPtr" "std::shared_ptr" "t"
+             [ TFunNew [] (Just "newSharedPtr0")
+             , TFunNew [(TemplateParamPointer "t", "p")] Nothing
+             , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
+             , TFun void_ "reset" "reset" [] Nothing
+             , TFun int_ "use_count" "use_count" [] Nothing
+             , TFunDelete
+             ]
+
+
 
 templates = [ (t_vector, HdrName "Vector.h")
             , (t_unique_ptr, HdrName "UniquePtr.h")
+            , (t_shared_ptr, HdrName "SharedPtr.h")
             ]
 
 
