@@ -6,7 +6,7 @@ import           Control.Monad.Trans.State         (runState,put,get)
 import           Data.Char                         (toLower)
 import           Data.Maybe                        (fromMaybe,maybe)
 import           Data.Monoid                       ((<>))
-import           Language.Haskell.Exts.Syntax      (Asst(..),Context,Type(..))
+import           Language.Haskell.Exts.Syntax      (Asst(..),Context,Type(..),Exp)
 --
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util
@@ -473,7 +473,7 @@ convertCpp2HS _c (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
 convertCpp2HS _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
-convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (hsTemplateParam (tclass_param t)))
+convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (hsTPVar (tclass_param t)))
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
 
@@ -653,7 +653,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
          let tvar = mkTVar ('c' : show n)
              ctxt = classA (unqual "Castable") [tvar,tycon "CString"]
          put (ctxt:ctxts,n+1)
-         return tvar
+         pure tvar
 
        mktyp typ =
          case typ of
@@ -665,13 +665,14 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
            CPT (CPTClassCopy c') _ -> addclass c'
            CPT (CPTClassMove c') _ -> addclass c'
            -- it is not clear whether the following is okay or not.
-           (TemplateApp t p _)    -> return (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
-           (TemplateAppRef t p _) -> return (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
-           (TemplateType t)       -> return (tyapp (tycon (tclass_name t)) (mkTVar (hsTemplateParam (tclass_param t))))
-           (TemplateParam p)      -> return (mkTVar p)
-           Void -> return unit_tycon
+           (TemplateApp t p _)    -> pure (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
+           (TemplateAppRef t p _) -> pure (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
+           (TemplateType t)       -> pure (tyapp (tycon (tclass_name t)) (mkTVar (hsTPVar (tclass_param t))))
+           (TemplateParam p)      -> pure (mkTVar p)
+           Void -> pure unit_tycon
            _ -> error ("No such c type : " <> show typ)
 
+-- TODO: explain this function, comparing with functionSignatureT and functionSignatureTT.
 functionSignature :: Class -> Function -> Type ()
 functionSignature c f =
   let HsFunSig typs assts = extractArgRetTypes
@@ -685,10 +686,12 @@ functionSignature c f =
         | otherwise          = id
   in TyForall () Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
 
+
+-- TODO: explain this function
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureT t TFun {..} =
   let (hname,_) = hsTemplateClassName t
-      tp = hsTemplateParam (tclass_param t)
+      tp = hsTPVar (tclass_param t)
       ctyp = convertCpp2HS Nothing tfun_ret
       arg0 =  (tyapp (tycon hname) (mkTVar tp) :)
       lst = arg0 (map (convertCpp2HS Nothing . fst) tfun_args)
@@ -702,7 +705,7 @@ functionSignatureT t TFunDelete =
   in ctyp `tyfun` (tyapp (tycon "IO") unit_tycon)
 
 
-
+-- TODO: explain this function
 functionSignatureTT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
  where
@@ -712,7 +715,7 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
            TFunNew {..} -> convertCpp2HS4Tmpl e Nothing spl (TemplateType t)
            TFunDelete   -> unit_tycon
   e = tyapp (tycon hname) spl
-  spl = tySplice (parenSplice (mkVar (hsTemplateParam (tclass_param t))))
+  spl = tySplice (parenSplice (mkVar (hsTPVar (tclass_param t))))
   lst =
     case f of
       TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_args
@@ -764,7 +767,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
         hsargtype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
           where rawname = snd (hsTemplateClassName t)
 
-        hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (hsTemplateParam (tclass_param t))))
+        hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (hsTPVar (tclass_param t))))
           where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateParam p)          = mkTVar p
         hsargtype SelfType                   = selftyp
@@ -785,7 +788,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
           where rawname = snd (hsTemplateClassName t)
-        hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (hsTemplateParam (tclass_param t))))
+        hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (hsTPVar (tclass_param t))))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p)          = mkTVar p
         hsrettype (TemplateParamPointer p)   = mkTVar p
@@ -807,9 +810,17 @@ genericFuncArgs f = func_args f
 
 
 -- | template parameter on Haskell side
-hsTemplateParam :: TemplateParamType -> String -- Type ()
-hsTemplateParam (TParam_Simple s) = s
-hsTemplateParam (TParam_Function s) = s
+hsTPVar :: TemplateParamType -> String
+hsTPVar (TParam_Simple s)   = s
+hsTPVar (TParam_Function s) = s
+
+
+{- 
+-- in-splice expression in Template Haskell module
+hsTemplateParamAsTHValue :: TemplateParamType -> String
+hsTemplateParamAsTHValue (TParam_Simple s)   = s
+hsTemplateParamAsTHValue (TParam_Function s) = s
+-}
 
 
 -- | template parameter on C++ side
