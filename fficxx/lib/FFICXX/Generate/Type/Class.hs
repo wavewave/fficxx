@@ -56,6 +56,17 @@ data TemplateArgType = TArg_Class Class
                      | TArg_Other String
                      deriving Show
 
+-- | Template parameter type T. template<typename T> C ;
+--   Distinguish function pointer type parameter and simple type parameter.
+--   Later, we will adapt this to multi-parameters.
+data TemplateParamType = TParam_Simple String
+                       | TParam_Function
+
+instance Show TemplateParamType where
+  show (TParam_Simple s) = s
+  show (TParam_Function) = "function"
+
+
 data Types = Void
            | SelfType
            | CT  CTypes IsConst
@@ -208,13 +219,13 @@ data TemplateFunction = TFun { tfun_ret :: Types
 data TemplateClass = TmplCls { tclass_cabal :: Cabal
                              , tclass_name :: String
                              , tclass_oname :: String
-                             , tclass_param :: String
+                             , tclass_param :: TemplateParamType -- String
                              , tclass_funcs :: [TemplateFunction]
                              }
 
 -- TODO: we had better not override standard definitions
 instance Show TemplateClass where
-  show x = show (tclass_name x <> " " <> tclass_param x)
+  show x = show (tclass_name x <> "<" <> show (tclass_param x) <> ">")
 
 -- TODO: we had better not override standard definitions
 instance Eq TemplateClass where

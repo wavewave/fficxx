@@ -465,7 +465,7 @@ ctypToHsTyp _c (CPT (CPTClassCopy c') _) = (fst . hsClassName) c'
 ctypToHsTyp _c (CPT (CPTClassMove c') _) = (fst . hsClassName) c'
 ctypToHsTyp _c (TemplateApp t p _) = "("<> tclass_name t <> " " <> hsClassNameForTArg p <> ")"
 ctypToHsTyp _c (TemplateAppRef t p _) = "("<> tclass_name t <> " " <> hsClassNameForTArg p <> ")"
-ctypToHsTyp _c (TemplateType t) = "("<> tclass_name t <> " " <> tclass_param t <> ")"
+ctypToHsTyp _c (TemplateType t) = "("<> tclass_name t <> " " <> templateParam (tclass_param t) <> ")"
 ctypToHsTyp _c (TemplateParam p) = "("<> p <> ")"
 ctypToHsTyp _c (TemplateParamPointer p) = "("<> p <> ")"
 
@@ -499,7 +499,7 @@ convertCpp2HS _c (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
 convertCpp2HS _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
-convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (tclass_param t))
+convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (templateParam (tclass_param t)))
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
 
@@ -693,7 +693,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
            -- it is not clear whether the following is okay or not.
            (TemplateApp t p _)    -> return (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
            (TemplateAppRef t p _) -> return (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
-           (TemplateType t)       -> return (tyapp (tycon (tclass_name t)) (mkTVar (tclass_param t)))
+           (TemplateType t)       -> return (tyapp (tycon (tclass_name t)) (mkTVar (templateParam (tclass_param t))))
            (TemplateParam p)      -> return (mkTVar p)
            Void -> return unit_tycon
            _ -> error ("No such c type : " <> show typ)
@@ -714,7 +714,7 @@ functionSignature c f =
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureT t TFun {..} =
   let (hname,_) = hsTemplateClassName t
-      tp = tclass_param t
+      tp = templateParam (tclass_param t)
       ctyp = convertCpp2HS Nothing tfun_ret
       arg0 =  (tyapp (tycon hname) (mkTVar tp) :)
       lst = arg0 (map (convertCpp2HS Nothing . fst) tfun_args)
@@ -738,7 +738,7 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
            TFunNew {..} -> convertCpp2HS4Tmpl e Nothing spl (TemplateType t)
            TFunDelete   -> unit_tycon
   e = tyapp (tycon hname) spl
-  spl = tySplice (parenSplice (mkVar (tclass_param t)))
+  spl = tySplice (parenSplice (mkVar (templateParam (tclass_param t))))
   lst =
     case f of
       TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_args
@@ -789,7 +789,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
         hsargtype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
           where rawname = snd (hsTemplateClassName t)
 
-        hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
+        hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (templateParam (tclass_param t))))
           where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateParam p)          = mkTVar p
         hsargtype SelfType                   = selftyp
@@ -810,7 +810,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
           where rawname = snd (hsTemplateClassName t)
-        hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
+        hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (templateParam (tclass_param t))))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p)          = mkTVar p
         hsrettype (TemplateParamPointer p)   = mkTVar p
@@ -829,3 +829,8 @@ genericFuncRet f =
 genericFuncArgs :: Function -> Args
 genericFuncArgs (Destructor _) = []
 genericFuncArgs f = func_args f
+
+
+templateParam :: TemplateParamType -> String
+templateParam (TParam_Simple s) = s
+templateParam (TParam_Function) = "function"

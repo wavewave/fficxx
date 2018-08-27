@@ -61,7 +61,7 @@ classes = [ deletable
 
 toplevelfunctions = [ ]
 
-t_vector = TmplCls cabal "Vector" "std::vector" "t"
+t_vector = TmplCls cabal "Vector" "std::vector" (TParam_Simple "t")
              [ TFunNew [] Nothing
              , TFun void_ "push_back" "push_back" [(TemplateParam "t","x")] Nothing
              , TFun void_ "pop_back"  "pop_back"  []                        Nothing
@@ -70,7 +70,7 @@ t_vector = TmplCls cabal "Vector" "std::vector" "t"
              , TFunDelete
              ]
 
-t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
+t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" (TParam_Simple "t")
              [ TFunNew [] (Just "newUniquePtr0")
              , TFunNew [(TemplateParamPointer "t", "p")] Nothing
              , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
@@ -80,7 +80,7 @@ t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
              ]
 
 
-t_shared_ptr = TmplCls cabal "SharedPtr" "std::shared_ptr" "t"
+t_shared_ptr = TmplCls cabal "SharedPtr" "std::shared_ptr" (TParam_Simple "t")
              [ TFunNew [] (Just "newSharedPtr0")
              , TFunNew [(TemplateParamPointer "t", "p")] Nothing
              , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
@@ -89,11 +89,17 @@ t_shared_ptr = TmplCls cabal "SharedPtr" "std::shared_ptr" "t"
              , TFunDelete
              ]
 
+t_function = TmplCls cabal "Function" "std::function" (TParam_Function)
+             [ TFunNew [(TemplateParam "t", "p")] Nothing
+             , TFunDelete
+             ]
 
 
-templates = [ (t_vector, HdrName "Vector.h")
+
+templates = [ (t_vector    , HdrName "Vector.h")
             , (t_unique_ptr, HdrName "UniquePtr.h")
             , (t_shared_ptr, HdrName "SharedPtr.h")
+            , (t_function  , HdrName "Function.h")
             ]
 
 

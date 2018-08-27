@@ -341,7 +341,7 @@ genTmplInterface t =
   , mkInstance cxEmpty "Castable" [ hightype, tyapp tyPtr rawtype ] castBody
   ]
  where (hname,rname) = hsTemplateClassName t
-       tp = tclass_param t
+       tp = templateParam (tclass_param t)
        fs = tclass_funcs t
        rawtype = tyapp (tycon rname) (mkTVar tp)
        hightype = tyapp (tycon hname) (mkTVar tp)
@@ -362,7 +362,7 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
             sig = tycon "Name" `tyfun` (tycon "String" `tyfun` tycon "ExpQ")
             v = mkVar
             p = mkPVar
-            tp = tclass_param t
+            tp = templateParam (tclass_param t)
             prefix = tclass_name t
             lit' = strE (prefix<>"_"<>nc<>"_")
             lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
