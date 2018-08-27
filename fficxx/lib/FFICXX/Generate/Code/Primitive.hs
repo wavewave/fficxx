@@ -474,8 +474,8 @@ convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
 convertCpp2HS _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
 convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (hsTPVar (tclass_param t)))
-convertCpp2HS _c (TemplateParam p)         = mkTVar p
-convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
+convertCpp2HS _c (TemplateParam p)         = mkTVar (hsTPVar p)
+convertCpp2HS _c (TemplateParamPointer p)  = mkTVar (hsTPVar p)
 
 -- TODO: explain this and refactor out if possible.
 convertCpp2HS4Tmpl :: Type () -> Maybe Class -> Type () -> Types -> Type ()
@@ -668,7 +668,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
            (TemplateApp t p _)    -> pure (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
            (TemplateAppRef t p _) -> pure (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
            (TemplateType t)       -> pure (tyapp (tycon (tclass_name t)) (mkTVar (hsTPVar (tclass_param t))))
-           (TemplateParam p)      -> pure (mkTVar p)
+           (TemplateParam p)      -> pure (mkTVar (hsTPVar p))
            Void -> pure unit_tycon
            _ -> error ("No such c type : " <> show typ)
 
@@ -769,7 +769,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
 
         hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (hsTPVar (tclass_param t))))
           where rawname = snd (hsTemplateClassName t)
-        hsargtype (TemplateParam p)          = mkTVar p
+        hsargtype (TemplateParam p)          = mkTVar (hsTPVar p)
         hsargtype SelfType                   = selftyp
         hsargtype _ = error "hsFuncTyp: undefined hsargtype"
         ---------------------------------------------------------
@@ -790,8 +790,8 @@ hsFFIFuncTyp msc (CFunSig args ret) =
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (hsTPVar (tclass_param t))))
           where rawname = snd (hsTemplateClassName t)
-        hsrettype (TemplateParam p)          = mkTVar p
-        hsrettype (TemplateParamPointer p)   = mkTVar p
+        hsrettype (TemplateParam p)          = mkTVar (hsTPVar p)
+        hsrettype (TemplateParamPointer p)   = mkTVar (hsTPVar p)
 
 
 
@@ -811,8 +811,8 @@ genericFuncArgs f = func_args f
 
 -- | template parameter on Haskell side
 hsTPVar :: TemplateParamType -> String
-hsTPVar (TParam_Simple s)     = s
-hsTPVar (TParam_Function s _) = s
+hsTPVar (TParam_Simple s)   = s
+hsTPVar (TParam_Function s) = s
 
 
 {-

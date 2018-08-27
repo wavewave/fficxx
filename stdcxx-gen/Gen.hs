@@ -63,18 +63,18 @@ toplevelfunctions = [ ]
 
 t_vector = TmplCls cabal "Vector" "std::vector" (TParam_Simple "t")
              [ TFunNew [] Nothing
-             , TFun void_ "push_back" "push_back" [(TemplateParam "t","x")] Nothing
+             , TFun void_ "push_back" "push_back" [(TemplateParam (TParam_Simple "t"),"x")] Nothing
              , TFun void_ "pop_back"  "pop_back"  []                        Nothing
-             , TFun (TemplateParam "t") "at" "at" [int "n"]                 Nothing
+             , TFun (TemplateParam (TParam_Simple "t")) "at" "at" [int "n"]                 Nothing
              , TFun int_  "size"      "size"      []                        Nothing
              , TFunDelete
              ]
 
 t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" (TParam_Simple "t")
              [ TFunNew [] (Just "newUniquePtr0")
-             , TFunNew [(TemplateParamPointer "t", "p")] Nothing
-             , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
-             , TFun (TemplateParamPointer "t") "release" "release" [] Nothing
+             , TFunNew [(TemplateParamPointer (TParam_Simple "t"), "p")] Nothing
+             , TFun (TemplateParamPointer (TParam_Simple "t")) "get" "get" [] Nothing
+             , TFun (TemplateParamPointer (TParam_Simple "t")) "release" "release" [] Nothing
              , TFun void_ "reset" "reset" [] Nothing
              , TFunDelete
              ]
@@ -82,15 +82,15 @@ t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" (TParam_Simple "t")
 
 t_shared_ptr = TmplCls cabal "SharedPtr" "std::shared_ptr" (TParam_Simple "t")
              [ TFunNew [] (Just "newSharedPtr0")
-             , TFunNew [(TemplateParamPointer "t", "p")] Nothing
-             , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
+             , TFunNew [(TemplateParamPointer (TParam_Simple "t"), "p")] Nothing
+             , TFun (TemplateParamPointer (TParam_Simple "t")) "get" "get" [] Nothing
              , TFun void_ "reset" "reset" [] Nothing
              , TFun int_ "use_count" "use_count" [] Nothing
              , TFunDelete
              ]
 
 t_function = TmplCls cabal "Function" "std::function" (TParam_Function "t")
-             [ TFunNew [(TemplateParam "t", "p")] Nothing
+             [ TFunNew [(TemplateParam (TParam_Function "t"), "p")] Nothing
              , TFunDelete
              ]
 
