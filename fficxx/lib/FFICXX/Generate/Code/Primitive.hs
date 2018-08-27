@@ -474,8 +474,15 @@ convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
 convertCpp2HS _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
 convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (hsTPVar (tclass_param t)))
-convertCpp2HS _c (TemplateParam p)         = mkTVar (hsTPVar p)
-convertCpp2HS _c (TemplateParamPointer p)  = mkTVar (hsTPVar p)
+convertCpp2HS _c (TemplateParam p)         =
+  case p of
+    TParam_Simple _ -> mkTVar (hsTPVar p)
+    TParam_Function _ -> tyapp (tycon "FunPtr") (mkTVar (hsTPVar p))
+convertCpp2HS _c (TemplateParamPointer p)  =
+  case p of
+    TParam_Simple _ -> mkTVar (hsTPVar p)
+    TParam_Function _ -> tyapp (tycon "FunPtr") (mkTVar (hsTPVar p))
+--   mkTVar (hsTPVar p)
 
 -- TODO: explain this and refactor out if possible.
 convertCpp2HS4Tmpl :: Type () -> Maybe Class -> Type () -> Types -> Type ()
