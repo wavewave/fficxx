@@ -331,6 +331,7 @@ genImportInTopLevel modname (mods,tmods) tih =
 -- Template --
 --------------
 
+-- | generate .Template module
 genTmplInterface :: TemplateClass -> [Decl ()]
 genTmplInterface t =
   [ mkData rname [mkTBind tp] [] Nothing
@@ -353,6 +354,7 @@ genTmplInterface t =
                   ]
 
 
+-- | generate .TH module
 genTmplImplementation :: TemplateClass -> [Decl ()]
 genTmplImplementation t = concatMap gen (tclass_funcs t)
   where

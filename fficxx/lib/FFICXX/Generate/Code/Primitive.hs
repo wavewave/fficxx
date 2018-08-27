@@ -477,7 +477,7 @@ convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTV
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
 
--- |
+-- TODO: explain this and refactor out if possible.
 convertCpp2HS4Tmpl :: Type () -> Maybe Class -> Type () -> Types -> Type ()
 convertCpp2HS4Tmpl _ _c _ Void                  = unit_tycon
 convertCpp2HS4Tmpl _ (Just c) _ SelfType        = tycon ((fst.hsClassName) c)
@@ -672,7 +672,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
            Void -> pure unit_tycon
            _ -> error ("No such c type : " <> show typ)
 
--- TODO: explain this function, comparing with functionSignatureT and functionSignatureTT.
+-- | Method function signature declared for typeclass of C++ ordinary class.
 functionSignature :: Class -> Function -> Type ()
 functionSignature c f =
   let HsFunSig typs assts = extractArgRetTypes
@@ -687,14 +687,14 @@ functionSignature c f =
   in TyForall () Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
 
 
--- TODO: explain this function
+-- | Method function signature declared for typeclass of C++ template class.
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureT t TFun {..} =
   let (hname,_) = hsTemplateClassName t
       tp = hsTPVar (tclass_param t)
       ctyp = convertCpp2HS Nothing tfun_ret
-      arg0 =  (tyapp (tycon hname) (mkTVar tp) :)
-      lst = arg0 (map (convertCpp2HS Nothing . fst) tfun_args)
+      arg0 = tyapp (tycon hname) (mkTVar tp)
+      lst = arg0 : map (convertCpp2HS Nothing . fst) tfun_args
   in foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
 functionSignatureT t TFunNew {..} =
   let ctyp = convertCpp2HS Nothing (TemplateType t)
@@ -811,19 +811,20 @@ genericFuncArgs f = func_args f
 
 -- | template parameter on Haskell side
 hsTPVar :: TemplateParamType -> String
-hsTPVar (TParam_Simple s)   = s
-hsTPVar (TParam_Function s) = s
+hsTPVar (TParam_Simple s)     = s
+hsTPVar (TParam_Function s _) = s
 
 
-{- 
+{-
 -- in-splice expression in Template Haskell module
 hsTemplateParamAsTHValue :: TemplateParamType -> String
 hsTemplateParamAsTHValue (TParam_Simple s)   = s
 hsTemplateParamAsTHValue (TParam_Function s) = s
--}
+
 
 
 -- | template parameter on C++ side
 cppTemplateParam :: TemplateParamType -> String
 cppTemplateParam (TParam_Simple s) = s
-cppTemplateParam (TParam_Function s) = s
+cppTemplateParam (TParam_Function s _) = s
+-}

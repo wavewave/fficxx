@@ -67,11 +67,11 @@ data FunctionType = FunctionType {
 --   Distinguish function pointer type parameter and simple type parameter.
 --   Later, we will adapt this to multi-parameters.
 data TemplateParamType = TParam_Simple String
-                       | TParam_Function String -- FunctionType
+                       | TParam_Function String FunctionType
 
 instance Show TemplateParamType where
   show (TParam_Simple s) = s
-  show (TParam_Function s) = "function<" <> s <> ">"
+  show (TParam_Function s _) = "function<" <> s <> ">"
 
 
 data Types = Void
