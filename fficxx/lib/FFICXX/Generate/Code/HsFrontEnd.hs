@@ -218,7 +218,7 @@ genTopLevelFuncDef f@TopLevelFunction {..} =
 genTopLevelFuncDef v@TopLevelVariable {..} =
     let fname = hsFrontNameForTopLevelFunction v
         cfname = "c_" <> toLowers fname
-        rtyp = ctypToHsTyp Nothing toplevelvar_ret
+        rtyp = convertCpp2HS Nothing toplevelvar_ret
         sig = tyapp (tycon "IO") rtyp
         rhs = app (mkVar "xformnull") (mkVar cfname)
 

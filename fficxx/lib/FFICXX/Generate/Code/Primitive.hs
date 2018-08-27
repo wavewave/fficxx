@@ -443,35 +443,6 @@ tmplRetTypeToString _ (TemplateType _)         = "void*"
 tmplRetTypeToString b (TemplateParam _)        = if b then "Type" else "Type ## _p"
 tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## _p"
 
--- |
-ctypToHsTyp :: Maybe Class -> Types -> Type ()
-ctypToHsTyp _c Void            = tycon "()"
-ctypToHsTyp (Just c) SelfType  = tycon ((fst.hsClassName) c)
-ctypToHsTyp Nothing SelfType   = error "ctypToHsTyp : SelfType but no class "
-ctypToHsTyp _c (CT CTString _) = tycon "CString"
-ctypToHsTyp _c (CT CTInt _)    = tycon "CInt"
-ctypToHsTyp _c (CT CTUInt _)   = tycon "CUInt"
-ctypToHsTyp _c (CT CTChar _)   = tycon "CChar"
-ctypToHsTyp _c (CT CTLong _)   = tycon "CLong"
-ctypToHsTyp _c (CT CTULong _)  = tycon "CULong"
-ctypToHsTyp _c (CT CTDouble _) = tycon "CDouble"
-ctypToHsTyp _c (CT CTBool _ )  = tycon "CInt"
-ctypToHsTyp _c (CT CTDoubleStar _) = tycon "(Ptr CDouble)"  -- TODO: further ASTify.
-ctypToHsTyp _c (CT CTVoidStar _)   = tycon "(Ptr ())"       -- TODO: further ASTify
-ctypToHsTyp _c (CT CTIntStar _)    = tycon "(Ptr CInt)"     -- TODO: further ASTify
-ctypToHsTyp _c (CT CTCharStarStar _) = tycon "(Ptr CString)" -- TODO: further ASTify
-ctypToHsTyp _c (CT (CPointer t) _) = tycon (hsCTypeName (CPointer t))
-ctypToHsTyp _c (CT (CRef t) _) = tycon (hsCTypeName (CRef t))
-ctypToHsTyp _c (CPT (CPTClass c') _)     = tycon ((fst . hsClassName) c')
-ctypToHsTyp _c (CPT (CPTClassRef c') _)  = tycon ((fst . hsClassName) c')
-ctypToHsTyp _c (CPT (CPTClassCopy c') _) = tycon ((fst . hsClassName) c')
-ctypToHsTyp _c (CPT (CPTClassMove c') _) = tycon ((fst . hsClassName) c')
-ctypToHsTyp _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
-ctypToHsTyp _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
-ctypToHsTyp _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (tycon (hsTemplateParam (tclass_param t)))
-ctypToHsTyp _c (TemplateParam p)         = tycon p
-ctypToHsTyp _c (TemplateParamPointer p)  = tycon p
-
 
 -- |
 convertC2HS :: CTypes -> Type ()
@@ -663,7 +634,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
                            SelfType -> case mc of
                                          Nothing -> error "extractArgRetTypes: SelfType return but no class"
                                          Just c -> if isvirtual then return (mkTVar "a") else return $ tycon ((fst.hsClassName) c)
-                           x -> (return . ctypToHsTyp Nothing) x
+                           x -> (return . convertCpp2HS Nothing) x
                     return (as ++ [tyapp (tycon "IO") r])
   in   HsFunSig { hsSigTypes = typs
                 , hsSigConstraints = fst s
@@ -688,7 +659,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
          case typ of
            SelfType -> return (mkTVar "a")
            CT CTString Const -> addstring
-           CT _ _   -> return $ ctypToHsTyp Nothing typ
+           CT _ _   -> return $ convertCpp2HS Nothing typ
            CPT (CPTClass c') _    -> addclass c'
            CPT (CPTClassRef c') _ -> addclass c'
            CPT (CPTClassCopy c') _ -> addclass c'
