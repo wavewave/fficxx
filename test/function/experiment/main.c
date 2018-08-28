@@ -20,6 +20,10 @@ int f4(int x, char y) {
 }
 
 
+int f5() {
+    printf("in f5\n");
+    return 3;
+}
 
 void test1() {
 
@@ -42,14 +46,19 @@ void test1() {
     printf("result = %d\n",r4);
 }
 
+
+// using macro.
 void test2() {
     
-    // using macro.
     printf("----\n");
     void* f1p = Function_new_f1(&f1);
     Function_call_f1(f1p);
 
-    
+    printf("----\n");
+    void* f5p = Function_new_f5(&f5);
+    int r5 = Function_call_f5(f5p);
+    printf("result = %d\n",r5);
+
 }
 
 int main( int argc, char** argv ) {

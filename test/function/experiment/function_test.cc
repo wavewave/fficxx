@@ -1,7 +1,7 @@
 #include <functional>
 #include <iostream>
 #include "function_test.h"
-
+// #include "MacroPatternMatch.h"
 
 void* newFunction1( void (*fp)() ) {
     std::function<void()>* p = new std::function<void()>(fp);
@@ -44,25 +44,36 @@ int callFunction4( void* stdfn, int x, char y ) {
     return (*p)(x,y);
 }
 
-#define Function_new_inst(NAME)\
-  inline void* Function_new_ ## NAME ( void(*fp)() )\
+#define Function_new_inst(NAME,R)\
+  inline void* Function_new_ ## NAME ( R (*fp)() )\
   {\
-    std::function<void()>* p = new std::function<void()>(fp);\
+    std::function< R ()>* p = new std::function< R () >(fp);\
     return static_cast<void*>(p);\
   }\
   auto a_Function_new_ ## NAME = Function_new_ ## NAME;
   
 
-#define Function_call_inst(NAME)\
-  inline void* Function_call_ ## NAME ( void* stdfn )\
+// #define CHECK_VOID(x) IS_PAREN(IS_ ## x ## _VOID)
+
+
+// #define RETURNESCAPE(x)                       \
+//    IIF(CHECK_VOID(x)) ( , return )
+
+
+#define Function_call_inst(NAME,R)\
+  inline R Function_call_ ## NAME ( void* stdfn )\
   {\
-    std::function<void()>* p = static_cast<std::function<void()>*>(stdfn);\
-    (*p)();\
+    std::function< R () >* p = static_cast< std::function< R () >* >(stdfn);\
+    return (*p)();                                 \
   }\
   auto a_Function_call_ ## NAME = Function_call_ ## NAME;
 
 
 
-Function_new_inst(f1)
+Function_new_inst(f1,void)
 
-Function_call_inst(f1)
+Function_call_inst(f1,void)
+
+Function_new_inst(f5,int)
+
+Function_call_inst(f5,int)
