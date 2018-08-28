@@ -44,33 +44,17 @@ int callFunction4( void* stdfn, int x, char y ) {
     return (*p)(x,y);
 }
 
-#define Function_new_inst(NAME,R,...)\
-  inline void* Function_new_ ## NAME ( R (*fp)( __VA_ARGS__ ) )\
+
+
+
+#define Function_new_inst(NAME,R,ATYPS)                     \
+    inline void* Function_new_ ## NAME ( R (*fp)( UNPAREN(ATYPS) ) ) \
   {\
-    std::function< R ( __VA_ARGS__ )>* p = new std::function< R ( __VA_ARGS__ ) >(fp);\
+      std::function< R ( UNPAREN(ATYPS) )>* p = new std::function< R ( UNPAREN(ATYPS) ) >(fp); \
     return static_cast<void*>(p);\
   }\
   auto a_Function_new_ ## NAME = Function_new_ ## NAME;
 
-
-#define VARGS(...) __VA_ARGS__
-
-// works only for gcc and clang
-#define VARGS1(x,...) x, ## __VA_ARGS__
-
-//#define COMMA ,
-
-//#define CALLARGS(p,ps)                                \
-//    IIF(CHECK(UNPAREN(ps))) (p , p COMMA UNPAREN(ps))
-
-
-// #define HEAD(x,...) x
-
-#define TAIL(x,...) __VA_ARGS__
-
-#define UNPAREN(x) VARGS x
-
-//UNPAREN(ATYPS) )
 
 #define Function_call_inst(NAME,R,ATYPS,AVARS)        \
   inline R Function_call_ ## NAME ( UNPAREN(ATYPS) ) \
@@ -81,21 +65,22 @@ int callFunction4( void* stdfn, int x, char y ) {
   auto a_Function_call_ ## NAME = Function_call_ ## NAME;
 
 
-
-Function_new_inst(f1,void)
+Function_new_inst(f1,void,())
 
 Function_call_inst(f1,void,(void* op),())
 
-Function_new_inst(f2,void)
+Function_new_inst(f2,void,(int))
 
 Function_call_inst(f2,void,(void* op,int x),(x))
 
+Function_new_inst(f3,int,(int))
 
-//#define TEST(x,...) x, ## __VA_ARGS__
+Function_call_inst(f3,int,(void* op,int x),(x))
 
-//TEST(void* stdfn)
-//TEST(void* stdfn,)
+Function_new_inst(f4,int,(int,char))
 
-//Function_new_inst(f5,int)
+Function_call_inst(f4,int,(void* op,int x,char y),(x,y))
 
-//Function_call_inst(f5,int,(),)
+Function_new_inst(f5,int,())
+
+Function_call_inst(f5,int,(void* op),())
