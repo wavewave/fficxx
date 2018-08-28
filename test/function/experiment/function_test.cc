@@ -43,3 +43,26 @@ int callFunction4( void* stdfn, int x, char y ) {
     std::function<int(int,char)>* p = static_cast<std::function<int(int,char)>*>(stdfn);
     return (*p)(x,y);
 }
+
+#define Function_new_inst(NAME)\
+  inline void* Function_new_ ## NAME ( void(*fp)() )\
+  {\
+    std::function<void()>* p = new std::function<void()>(fp);\
+    return static_cast<void*>(p);\
+  }\
+  auto a_Function_new_ ## NAME = Function_new_ ## NAME;
+  
+
+#define Function_call_inst(NAME)\
+  inline void* Function_call_ ## NAME ( void* stdfn )\
+  {\
+    std::function<void()>* p = static_cast<std::function<void()>*>(stdfn);\
+    (*p)();\
+  }\
+  auto a_Function_call_ ## NAME = Function_call_ ## NAME;
+
+
+
+Function_new_inst(f1)
+
+Function_call_inst(f1)

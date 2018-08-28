@@ -21,7 +21,8 @@ int f4(int x, char y) {
 
 
 
-int main( int argc, char** argv ) {
+void test1() {
+
     printf("----\n");
     void* f1p = newFunction1(&f1);
     callFunction1(f1p);
@@ -39,6 +40,20 @@ int main( int argc, char** argv ) {
     void* f4p = newFunction4(&f4);
     int r4 = callFunction4(f4p,10,'k');
     printf("result = %d\n",r4);
-
-    return 0;
 }
+
+void test2() {
+    
+    // using macro.
+    printf("----\n");
+    void* f1p = Function_new_f1(&f1);
+    Function_call_f1(f1p);
+
+    
+}
+
+int main( int argc, char** argv ) {
+    test1();
+    test2();
+    return 0;
+}    

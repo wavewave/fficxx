@@ -1,26 +1,38 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    // testing void
-    void* newFunction1( void(*fp)() );
 
-    void callFunction1( void* stdfn );
+// testing void
+void* newFunction1( void(*fp)() );
 
-    // testing param
-    void* newFunction2( void(*fp)(int) );
+void callFunction1( void* stdfn );
 
-    void callFunction2( void* stdfn, int x );
+// testing param
+void* newFunction2( void(*fp)(int) );
 
-    // testing return
-    void* newFunction3( int(*fp)(int) );
+void callFunction2( void* stdfn, int x );
 
-    int callFunction3( void* stdfn, int x );
+// testing return
+void* newFunction3( int(*fp)(int) );
 
-    // testing multiparam
-    void* newFunction4( int(*fp)(int,char) );
+int callFunction3( void* stdfn, int x );
 
-    int callFunction4( void* stdfn, int x, char y);
+// testing multiparam
+void* newFunction4( int(*fp)(int,char) );
 
+int callFunction4( void* stdfn, int x, char y);
+
+
+#define Function_new(NAME)\
+  void* Function_new_ ## NAME ( void(*fp)() );
+
+#define Function_call(NAME)\
+  void* Function_call_ ## NAME ( void* fp );
+
+
+Function_new(f1)
+
+Function_call(f1)
 
 #ifdef __cplusplus
 }
