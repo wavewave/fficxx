@@ -44,27 +44,39 @@ int callFunction4( void* stdfn, int x, char y ) {
     return (*p)(x,y);
 }
 
-#define Function_new_inst(NAME,R)\
-  inline void* Function_new_ ## NAME ( R (*fp)() )\
+#define Function_new_inst(NAME,R,...)\
+  inline void* Function_new_ ## NAME ( R (*fp)( __VA_ARGS__ ) )\
   {\
-    std::function< R ()>* p = new std::function< R () >(fp);\
+    std::function< R ( __VA_ARGS__ )>* p = new std::function< R ( __VA_ARGS__ ) >(fp);\
     return static_cast<void*>(p);\
   }\
   auto a_Function_new_ ## NAME = Function_new_ ## NAME;
-  
-
-// #define CHECK_VOID(x) IS_PAREN(IS_ ## x ## _VOID)
 
 
-// #define RETURNESCAPE(x)                       \
-//    IIF(CHECK_VOID(x)) ( , return )
+#define VARGS(...) __VA_ARGS__
+
+// works only for gcc and clang
+#define VARGS1(x,...) x, ## __VA_ARGS__
+
+//#define COMMA ,
+
+//#define CALLARGS(p,ps)                                \
+//    IIF(CHECK(UNPAREN(ps))) (p , p COMMA UNPAREN(ps))
 
 
-#define Function_call_inst(NAME,R)\
-  inline R Function_call_ ## NAME ( void* stdfn )\
+// #define HEAD(x,...) x
+
+#define TAIL(x,...) __VA_ARGS__
+
+#define UNPAREN(x) VARGS x
+
+//UNPAREN(ATYPS) )
+
+#define Function_call_inst(NAME,R,ATYPS,AVARS)        \
+  inline R Function_call_ ## NAME ( UNPAREN(ATYPS) ) \
   {\
-    std::function< R () >* p = static_cast< std::function< R () >* >(stdfn);\
-    return (*p)();                                 \
+      std::function< R (TAIL ATYPS) >* p = static_cast< std::function< R (TAIL ATYPS) >* >(op); \
+    return (*p) AVARS;                                 \
   }\
   auto a_Function_call_ ## NAME = Function_call_ ## NAME;
 
@@ -72,8 +84,18 @@ int callFunction4( void* stdfn, int x, char y ) {
 
 Function_new_inst(f1,void)
 
-Function_call_inst(f1,void)
+Function_call_inst(f1,void,(void* op),())
 
-Function_new_inst(f5,int)
+Function_new_inst(f2,void)
 
-Function_call_inst(f5,int)
+Function_call_inst(f2,void,(void* op,int x),(x))
+
+
+//#define TEST(x,...) x, ## __VA_ARGS__
+
+//TEST(void* stdfn)
+//TEST(void* stdfn,)
+
+//Function_new_inst(f5,int)
+
+//Function_call_inst(f5,int,(),)

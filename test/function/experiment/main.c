@@ -54,11 +54,11 @@ void test2() {
     void* f1p = Function_new_f1(&f1);
     Function_call_f1(f1p);
 
-    printf("----\n");
+/*    printf("----\n");
     void* f5p = Function_new_f5(&f5);
     int r5 = Function_call_f5(f5p);
     printf("result = %d\n",r5);
-
+*/
 }
 
 int main( int argc, char** argv ) {
