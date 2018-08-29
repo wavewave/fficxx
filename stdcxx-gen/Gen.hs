@@ -89,7 +89,7 @@ t_shared_ptr = TmplCls cabal "SharedPtr" "std::shared_ptr" (TParam_Simple "t")
              , TFunDelete
              ]
 
-t_function = TmplCls cabal "Function" "std::function" (TParam_Function)
+t_function = TmplCls cabal "Function" "std::function" (TParam_Function "t")
              [ TFunNew [(TemplateParam "t", "p")] Nothing
              , TFunDelete
              ]

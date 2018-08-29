@@ -12,10 +12,13 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 
+
+-- TODO: move this to Type.*
 data CFunSig = CFunSig { cArgTypes :: Args
                        , cRetType :: Types
                        }
 
+-- TODO: move this to Type.*
 data HsFunSig = HsFunSig { hsSigTypes :: [Type ()]
                          , hsSigConstraints :: [Asst ()]
                          }
@@ -441,33 +444,33 @@ tmplRetTypeToString b (TemplateParam _)        = if b then "Type" else "Type ## 
 tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## _p"
 
 -- |
-ctypToHsTyp :: Maybe Class -> Types -> String
-ctypToHsTyp _c Void = "()"
-ctypToHsTyp (Just c) SelfType = (fst.hsClassName) c
-ctypToHsTyp Nothing SelfType = error "ctypToHsTyp : SelfType but no class "
-ctypToHsTyp _c (CT CTString _) = "CString"
-ctypToHsTyp _c (CT CTInt _) = "CInt"
-ctypToHsTyp _c (CT CTUInt _) = "CUInt"
-ctypToHsTyp _c (CT CTChar _) = "CChar"
-ctypToHsTyp _c (CT CTLong _) = "CLong"
-ctypToHsTyp _c (CT CTULong _) = "CULong"
-ctypToHsTyp _c (CT CTDouble _) = "CDouble"
-ctypToHsTyp _c (CT CTBool _ ) = "CInt"
-ctypToHsTyp _c (CT CTDoubleStar _) = "(Ptr CDouble)"
-ctypToHsTyp _c (CT CTVoidStar _) = "(Ptr ())"
-ctypToHsTyp _c (CT CTIntStar _) = "(Ptr CInt)"
-ctypToHsTyp _c (CT CTCharStarStar _) = "(Ptr CString)"
-ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
-ctypToHsTyp _c (CT (CRef t) _) = hsCTypeName (CRef t)
-ctypToHsTyp _c (CPT (CPTClass c') _) = (fst . hsClassName) c'
-ctypToHsTyp _c (CPT (CPTClassRef c') _) = (fst . hsClassName) c'
-ctypToHsTyp _c (CPT (CPTClassCopy c') _) = (fst . hsClassName) c'
-ctypToHsTyp _c (CPT (CPTClassMove c') _) = (fst . hsClassName) c'
-ctypToHsTyp _c (TemplateApp t p _) = "("<> tclass_name t <> " " <> hsClassNameForTArg p <> ")"
-ctypToHsTyp _c (TemplateAppRef t p _) = "("<> tclass_name t <> " " <> hsClassNameForTArg p <> ")"
-ctypToHsTyp _c (TemplateType t) = "("<> tclass_name t <> " " <> templateParam (tclass_param t) <> ")"
-ctypToHsTyp _c (TemplateParam p) = "("<> p <> ")"
-ctypToHsTyp _c (TemplateParamPointer p) = "("<> p <> ")"
+ctypToHsTyp :: Maybe Class -> Types -> Type ()
+ctypToHsTyp _c Void            = tycon "()"
+ctypToHsTyp (Just c) SelfType  = tycon ((fst.hsClassName) c)
+ctypToHsTyp Nothing SelfType   = error "ctypToHsTyp : SelfType but no class "
+ctypToHsTyp _c (CT CTString _) = tycon "CString"
+ctypToHsTyp _c (CT CTInt _)    = tycon "CInt"
+ctypToHsTyp _c (CT CTUInt _)   = tycon "CUInt"
+ctypToHsTyp _c (CT CTChar _)   = tycon "CChar"
+ctypToHsTyp _c (CT CTLong _)   = tycon "CLong"
+ctypToHsTyp _c (CT CTULong _)  = tycon "CULong"
+ctypToHsTyp _c (CT CTDouble _) = tycon "CDouble"
+ctypToHsTyp _c (CT CTBool _ )  = tycon "CInt"
+ctypToHsTyp _c (CT CTDoubleStar _) = tycon "(Ptr CDouble)"  -- TODO: further ASTify.
+ctypToHsTyp _c (CT CTVoidStar _)   = tycon "(Ptr ())"       -- TODO: further ASTify
+ctypToHsTyp _c (CT CTIntStar _)    = tycon "(Ptr CInt)"     -- TODO: further ASTify
+ctypToHsTyp _c (CT CTCharStarStar _) = tycon "(Ptr CString)" -- TODO: further ASTify
+ctypToHsTyp _c (CT (CPointer t) _) = tycon (hsCTypeName (CPointer t))
+ctypToHsTyp _c (CT (CRef t) _) = tycon (hsCTypeName (CRef t))
+ctypToHsTyp _c (CPT (CPTClass c') _)     = tycon ((fst . hsClassName) c')
+ctypToHsTyp _c (CPT (CPTClassRef c') _)  = tycon ((fst . hsClassName) c')
+ctypToHsTyp _c (CPT (CPTClassCopy c') _) = tycon ((fst . hsClassName) c')
+ctypToHsTyp _c (CPT (CPTClassMove c') _) = tycon ((fst . hsClassName) c')
+ctypToHsTyp _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
+ctypToHsTyp _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
+ctypToHsTyp _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (tycon (hsTemplateParam (tclass_param t)))
+ctypToHsTyp _c (TemplateParam p)         = tycon p
+ctypToHsTyp _c (TemplateParamPointer p)  = tycon p
 
 
 -- |
@@ -499,7 +502,7 @@ convertCpp2HS _c (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
 convertCpp2HS _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
-convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (templateParam (tclass_param t)))
+convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (hsTemplateParam (tclass_param t)))
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
 
@@ -660,7 +663,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
                            SelfType -> case mc of
                                          Nothing -> error "extractArgRetTypes: SelfType return but no class"
                                          Just c -> if isvirtual then return (mkTVar "a") else return $ tycon ((fst.hsClassName) c)
-                           x -> (return . tycon . ctypToHsTyp Nothing) x
+                           x -> (return . ctypToHsTyp Nothing) x
                     return (as ++ [tyapp (tycon "IO") r])
   in   HsFunSig { hsSigTypes = typs
                 , hsSigConstraints = fst s
@@ -685,7 +688,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
          case typ of
            SelfType -> return (mkTVar "a")
            CT CTString Const -> addstring
-           CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
+           CT _ _   -> return $ ctypToHsTyp Nothing typ
            CPT (CPTClass c') _    -> addclass c'
            CPT (CPTClassRef c') _ -> addclass c'
            CPT (CPTClassCopy c') _ -> addclass c'
@@ -693,7 +696,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
            -- it is not clear whether the following is okay or not.
            (TemplateApp t p _)    -> return (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
            (TemplateAppRef t p _) -> return (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
-           (TemplateType t)       -> return (tyapp (tycon (tclass_name t)) (mkTVar (templateParam (tclass_param t))))
+           (TemplateType t)       -> return (tyapp (tycon (tclass_name t)) (mkTVar (hsTemplateParam (tclass_param t))))
            (TemplateParam p)      -> return (mkTVar p)
            Void -> return unit_tycon
            _ -> error ("No such c type : " <> show typ)
@@ -714,7 +717,7 @@ functionSignature c f =
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureT t TFun {..} =
   let (hname,_) = hsTemplateClassName t
-      tp = templateParam (tclass_param t)
+      tp = hsTemplateParam (tclass_param t)
       ctyp = convertCpp2HS Nothing tfun_ret
       arg0 =  (tyapp (tycon hname) (mkTVar tp) :)
       lst = arg0 (map (convertCpp2HS Nothing . fst) tfun_args)
@@ -738,12 +741,13 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
            TFunNew {..} -> convertCpp2HS4Tmpl e Nothing spl (TemplateType t)
            TFunDelete   -> unit_tycon
   e = tyapp (tycon hname) spl
-  spl = tySplice (parenSplice (mkVar (templateParam (tclass_param t))))
+  spl = tySplice (parenSplice (mkVar (hsTemplateParam (tclass_param t))))
   lst =
     case f of
       TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_args
       TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_new_args
       TFunDelete -> [e]
+
 
 
 accessorCFunSig :: Types -> Accessor -> CFunSig
@@ -789,7 +793,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
         hsargtype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
           where rawname = snd (hsTemplateClassName t)
 
-        hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (templateParam (tclass_param t))))
+        hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (hsTemplateParam (tclass_param t))))
           where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateParam p)          = mkTVar p
         hsargtype SelfType                   = selftyp
@@ -810,7 +814,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
           where rawname = snd (hsTemplateClassName t)
-        hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (templateParam (tclass_param t))))
+        hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (hsTemplateParam (tclass_param t))))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p)          = mkTVar p
         hsrettype (TemplateParamPointer p)   = mkTVar p
@@ -831,6 +835,13 @@ genericFuncArgs (Destructor _) = []
 genericFuncArgs f = func_args f
 
 
-templateParam :: TemplateParamType -> String
-templateParam (TParam_Simple s) = s
-templateParam (TParam_Function) = "function"
+-- | template parameter on Haskell side
+hsTemplateParam :: TemplateParamType -> String -- Type ()
+hsTemplateParam (TParam_Simple s) = s
+hsTemplateParam (TParam_Function s) = s
+
+
+-- | template parameter on C++ side
+cppTemplateParam :: TemplateParamType -> String
+cppTemplateParam (TParam_Simple s) = s
+cppTemplateParam (TParam_Function s) = s

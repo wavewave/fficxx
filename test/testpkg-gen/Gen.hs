@@ -42,7 +42,7 @@ string =
   []
   []
 
-t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t" [ ]
+t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" (TParam_Simple "t") [ ]
 
 testH =
   "#include <iostream>\n\

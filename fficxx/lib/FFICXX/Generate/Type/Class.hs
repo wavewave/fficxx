@@ -56,15 +56,22 @@ data TemplateArgType = TArg_Class Class
                      | TArg_Other String
                      deriving Show
 
+-- TODO: merge this with CFunSig. change String to Types.
+data FunctionType = FunctionType {
+                      ft_ret :: String
+                    , ft_args :: [String]
+                    }
+                  deriving Show
+
 -- | Template parameter type T. template<typename T> C ;
 --   Distinguish function pointer type parameter and simple type parameter.
 --   Later, we will adapt this to multi-parameters.
 data TemplateParamType = TParam_Simple String
-                       | TParam_Function
+                       | TParam_Function String -- FunctionType
 
 instance Show TemplateParamType where
   show (TParam_Simple s) = s
-  show (TParam_Function) = "function"
+  show (TParam_Function s) = "function<" <> s <> ">"
 
 
 data Types = Void
@@ -79,8 +86,8 @@ data Types = Void
                             , tappref_HaskellTypeForParam :: TemplateArgType
                             , tappref_CppTypeForParam :: String }
              -- ^ like vector<float>&
-           | TemplateType TemplateClass  -- ^ template self? TODO: clarify this.
-           | TemplateParam String
+           | TemplateType TemplateClass  -- ^ the template class itself. myclass<T> in template<typename T> myclass;
+           | TemplateParam String        -- ^ parameter class. T in template<typename T> myclass;
            | TemplateParamPointer String -- ^ this is A* with template<A>
            deriving Show
 
