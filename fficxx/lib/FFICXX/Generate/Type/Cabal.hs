@@ -20,6 +20,7 @@ newtype CabalName = CabalName { unCabalName :: String }
                   deriving (Show,Eq,Ord)
 
 data Cabal = Cabal  { cabal_pkgname       :: CabalName
+                    , cabal_version       :: String
                     , cabal_cheaderprefix :: String
                     , cabal_moduleprefix  :: String
                     , cabal_additional_c_incs :: [AddCInc]

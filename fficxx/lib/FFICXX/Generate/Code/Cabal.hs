@@ -179,7 +179,7 @@ buildCabalFile cabal summarymodule pkgconfig extralibs cabalfile = do
                         [ ("licenseFileField", "license-file: " <> licensefile)
                           | Just licensefile <- [cabal_licensefile cabal] ] <>
                         [ ("pkgname", unCabalName (cabal_pkgname cabal))
-                        , ("version",  "0.0")
+                        , ("version",  cabal_version cabal)
                         , ("buildtype", "Simple")
                         , ("synopsis", "")
                         , ("description", "")
