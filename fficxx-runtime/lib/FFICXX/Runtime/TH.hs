@@ -31,7 +31,7 @@ mkTFunc (nty, ncty, nf, tyf)
   = do let fn = nf ncty
        let fn' = "c_" <> fn
        n <- newName fn'
-       d <- forImpD CCall unsafe fn n (tyf nty)
+       d <- forImpD CCall safe fn n (tyf nty)
        addTopDecls [d]
        [| $( varE n ) |]
 
