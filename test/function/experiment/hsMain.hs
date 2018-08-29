@@ -5,8 +5,8 @@ module Main where
 
 import Foreign.Ptr
 
-ximport Template
-import TH
+import FFICXX.Runtime.Function.Template
+import qualified FFICXX.Runtime.Function.TH as TH
 
 $(TH.genFunctionInstanceFor [t|IO ()|] "f1" )
 $(TH.genFunctionInstanceFor [t|Int -> IO ()|] "f2")

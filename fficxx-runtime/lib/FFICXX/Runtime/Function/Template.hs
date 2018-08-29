@@ -1,6 +1,6 @@
 {-# LANGUAGE EmptyDataDecls, FlexibleInstances,
   MultiParamTypeClasses, TypeFamilies #-}
-module Template where
+module FFICXX.Runtime.Function.Template where
 import Foreign.C.Types
 import Foreign.Ptr
 import FFICXX.Runtime.Cast

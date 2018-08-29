@@ -27,6 +27,8 @@ Library
   Exposed-Modules: 
                    FFICXX.Runtime.Cast
                    FFICXX.Runtime.TH
+                   FFICXX.Runtime.Function.Template
+                   FFICXX.Runtime.Function.TH
 
                    
   Include-dirs:    csrc

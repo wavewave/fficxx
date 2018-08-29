@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-module TH where
+module FFICXX.Runtime.Function.TH where
 import Data.Char
 import Data.Monoid
 import Foreign.C.Types
@@ -7,7 +7,7 @@ import Foreign.Ptr
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import FFICXX.Runtime.TH
-import Template
+import FFICXX.Runtime.Function.Template
 
 
 mkTFunc' :: (Type, String, String -> String, Type -> Q Type) -> Q Exp
