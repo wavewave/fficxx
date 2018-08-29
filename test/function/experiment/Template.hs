@@ -28,3 +28,5 @@ instance () => Castable (FunPtr t) (FunPtr t) where
   uncast x f = f x
 
 
+class () => FunPtrWrapper t where
+  wrapFunPtr :: t -> IO (FunPtr t)
