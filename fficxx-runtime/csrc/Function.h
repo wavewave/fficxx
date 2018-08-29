@@ -15,6 +15,8 @@ extern "C" {
 #define Function_call_decl(NAME,R,ATYPS)\
   R Function_call_ ## NAME ( UNPAREN(ATYPS) );
 
+#define Function_delete_decl(NAME)\
+  void Function_delete_ ## NAME ( void* );
 
 #define Function_new_inst(NAME,R,ATYPS)                     \
     inline void* Function_new_ ## NAME ( R (*fp)( UNPAREN(ATYPS) ) ) \
@@ -32,6 +34,14 @@ extern "C" {
     return (*p) AVARS;                                 \
   }\
   auto a_Function_call_ ## NAME = Function_call_ ## NAME;
+
+#define Function_delete_inst(NAME,R,ATYPS)        \
+  inline void Function_delete_ ## NAME ( void* op ) \
+  {\
+      std::function< R (TAIL ATYPS) >* p = static_cast< std::function< R (TAIL ATYPS) >* >(op); \
+    delete p;\
+  }\
+  auto a_Function_delete_ ## NAME = Function_delete_ ## NAME;
 
 
 #ifdef __cplusplus

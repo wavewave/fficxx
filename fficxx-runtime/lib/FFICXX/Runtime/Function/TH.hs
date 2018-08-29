@@ -61,13 +61,22 @@ t_call typ suffix
           let t = pure typ
           in [t| Function $( t ) -> $( t ) |]
 
+t_deleteFunction :: Type -> String -> ExpQ
+t_deleteFunction typ suffix
+  = mkTFunc' (typ, suffix, \ n -> "Function_delete_" <> n, tyf)
+  where tyf n =
+          let t = pure typ
+          in [t| Function $( t ) -> IO () |]
+
+
 genFunctionInstanceFor :: Q Type -> String -> Q [Dec]
 genFunctionInstanceFor qtyp suffix
   = do typ <- qtyp
        f1 <- mkNew' "newFunction" t_newFunction typ suffix
        f2 <- mkMember' "call" t_call typ suffix
+       f3 <- mkMember' "deleteFunction" t_deleteFunction typ suffix
        wrap <- mkWrapper (typ,suffix)
-       let lst = [f1,f2]
+       let lst = [f1,f2,f3]
        return [ mkInstance [] (AppT (con "IFunction") typ) lst
               , mkInstance [] (AppT (con "FunPtrWrapper") typ) [wrap]
               ]

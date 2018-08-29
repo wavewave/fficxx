@@ -42,6 +42,7 @@ main = do
   p_test1 <- wrapFunPtr test
   fptr1 <- newFunction p_test1
   call fptr1
+  deleteFunction fptr1
 
   putStrLn "-- test 1-1 --------"
   p_test1_1 <- wrapFunPtr (closureTest 32)

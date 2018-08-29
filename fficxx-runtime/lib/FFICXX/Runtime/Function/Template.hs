@@ -12,6 +12,7 @@ newtype Function t = Function (Ptr (RawFunction t))
 class () => IFunction t where
   newFunction :: FunPtr t -> IO (Function t)
   call :: Function t -> t
+  deleteFunction :: Function t -> IO ()
 
 instance () => FPtr (Function t) where
         type Raw (Function t) = RawFunction t
