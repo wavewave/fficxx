@@ -5,16 +5,11 @@ module Main where
 
 import Foreign.Ptr
 
--- import Binding
-import Template
+ximport Template
 import TH
 
 $(TH.genFunctionInstanceFor [t|IO ()|] "f1" )
 $(TH.genFunctionInstanceFor [t|Int -> IO ()|] "f2")
-
-foreign import ccall "wrapper" create_f1 :: IO () -> IO (FunPtr (IO ()))
-
-foreign import ccall "wrapper" create_f2 :: (Int -> IO ()) -> IO (FunPtr (Int -> IO ()))
 
 
 test :: IO ()
@@ -39,33 +34,32 @@ closureTest3 f x = do
   putStrLn (" f(x) = " ++ show (f x))
 
 
-
-
+main :: IO ()
 main = do
   putStrLn "hsMain"
 
   putStrLn "-- test 1 ----------"
-  p_test1 <- create_f1 test
+  p_test1 <- wrapFunPtr test
   fptr1 <- newFunction p_test1
   call fptr1
 
   putStrLn "-- test 1-1 --------"
-  p_test1_1 <- create_f1 (closureTest 32)
+  p_test1_1 <- wrapFunPtr (closureTest 32)
   fptr1_1 <- newFunction p_test1_1
   call fptr1_1
 
   putStrLn "-- test 2 ----------"
-  p_test2 <- create_f2 closureTest
+  p_test2 <- wrapFunPtr closureTest
   fptr2 <- newFunction p_test2
   call fptr2 26
 
   putStrLn "-- test 2-1 --------"
-  p_test2_1 <- create_f2 (closureTest2 "this is a captured message")
+  p_test2_1 <- wrapFunPtr (closureTest2 "this is a captured message")
   fptr2_1 <- newFunction p_test2_1
   call fptr2_1 27
 
   putStrLn "-- test 2-2 --------"
-  p_test2_2 <- create_f2 (closureTest3 (+100))
+  p_test2_2 <- wrapFunPtr (closureTest3 (+100))
   fptr2_2 <- newFunction p_test2_2
   call fptr2_2 27
 
