@@ -26,6 +26,11 @@ closureTest2 msg x = do
   putStrLn msg
   putStrLn (" x = " ++ show x)
 
+closureTest3 :: (Int -> Int) -> Int -> IO ()
+closureTest3 f x = do
+  putStrLn "closure test 3 "
+  putStrLn (" f(x) = " ++ show (f x))
+
 
 
 
@@ -52,5 +57,10 @@ main = do
   p_test2_1 <- create_f2 (closureTest2 "this is a captured message")
   Function fptr2_1 <- c_Function_new_f2 p_test2_1
   c_Function_call_f2 fptr2_1 27
+
+  putStrLn "-- test 2-2 --------"
+  p_test2_2 <- create_f2 (closureTest3 (+100))
+  Function fptr2_2 <- c_Function_new_f2 p_test2_2
+  c_Function_call_f2 fptr2_2 27
 
   pure ()
