@@ -240,6 +240,7 @@ buildTopLevelHeader (TypMcro typemacroprefix) cprefix tih =
 buildTopLevelCppDef :: TopLevelImportHeader -> String
 buildTopLevelCppDef tih =
   let cihs = tihClassDep tih
+      extclasses = tihExtraClassDep tih
       declHeaderStr = "#include \"" <> tihHeaderFileName tih <.> "h" <> "\""
                       `connRet2`
                       (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
@@ -255,7 +256,14 @@ buildTopLevelCppDef tih =
 
       namespaceStr = do ns <- allns
                         ("using namespace " <> unNamespace ns <> ";\n")
-      aliasStr = ""
+      aliasStr = intercalate "\n" $
+                   mapMaybe typedefstmt $
+                     rights (concatMap cihImportedClasses cihs ++ extclasses)
+        where typedefstmt c = let n1 = class_name c
+                                  n2 = ffiClassName c
+                              in if n1 == n2
+                                 then Nothing
+                                 else Just ("typedef " <> n1 <> " " <> n2 <> ";")
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
   in subst definitionTemplate (context [ ("header"   , declHeaderStr)
