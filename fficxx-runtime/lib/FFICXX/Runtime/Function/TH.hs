@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-module TH where
+module FFICXX.Runtime.Function.TH where
 import Data.Char
 import Data.Monoid
 import Foreign.C.Types
@@ -7,7 +7,7 @@ import Foreign.Ptr
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import FFICXX.Runtime.TH
-import Template
+import FFICXX.Runtime.Function.Template
 
 
 mkTFunc' :: (Type, String, String -> String, Type -> Q Type) -> Q Exp
@@ -61,13 +61,22 @@ t_call typ suffix
           let t = pure typ
           in [t| Function $( t ) -> $( t ) |]
 
+t_deleteFunction :: Type -> String -> ExpQ
+t_deleteFunction typ suffix
+  = mkTFunc' (typ, suffix, \ n -> "Function_delete_" <> n, tyf)
+  where tyf n =
+          let t = pure typ
+          in [t| Function $( t ) -> IO () |]
+
+
 genFunctionInstanceFor :: Q Type -> String -> Q [Dec]
 genFunctionInstanceFor qtyp suffix
   = do typ <- qtyp
        f1 <- mkNew' "newFunction" t_newFunction typ suffix
        f2 <- mkMember' "call" t_call typ suffix
+       f3 <- mkMember' "deleteFunction" t_deleteFunction typ suffix
        wrap <- mkWrapper (typ,suffix)
-       let lst = [f1,f2]
+       let lst = [f1,f2,f3]
        return [ mkInstance [] (AppT (con "IFunction") typ) lst
               , mkInstance [] (AppT (con "FunPtrWrapper") typ) [wrap]
               ]

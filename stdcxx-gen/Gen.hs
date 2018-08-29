@@ -13,6 +13,7 @@ import FFICXX.Generate.Type.PackageInterface
 
 
 cabal = Cabal { cabal_pkgname = CabalName "stdcxx"
+              , cabal_version = "0.5"
               , cabal_cheaderprefix = "STD"
               , cabal_moduleprefix = "STD"
               , cabal_additional_c_incs = []

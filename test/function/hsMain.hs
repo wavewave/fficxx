@@ -5,8 +5,8 @@ module Main where
 
 import Foreign.Ptr
 
-ximport Template
-import TH
+import FFICXX.Runtime.Function.Template
+import qualified FFICXX.Runtime.Function.TH as TH
 
 $(TH.genFunctionInstanceFor [t|IO ()|] "f1" )
 $(TH.genFunctionInstanceFor [t|Int -> IO ()|] "f2")
@@ -42,25 +42,30 @@ main = do
   p_test1 <- wrapFunPtr test
   fptr1 <- newFunction p_test1
   call fptr1
+  deleteFunction fptr1
 
   putStrLn "-- test 1-1 --------"
   p_test1_1 <- wrapFunPtr (closureTest 32)
   fptr1_1 <- newFunction p_test1_1
   call fptr1_1
+  deleteFunction fptr1_1
 
   putStrLn "-- test 2 ----------"
   p_test2 <- wrapFunPtr closureTest
   fptr2 <- newFunction p_test2
   call fptr2 26
+  deleteFunction fptr2
 
   putStrLn "-- test 2-1 --------"
   p_test2_1 <- wrapFunPtr (closureTest2 "this is a captured message")
   fptr2_1 <- newFunction p_test2_1
   call fptr2_1 27
+  deleteFunction fptr2_1
 
   putStrLn "-- test 2-2 --------"
   p_test2_2 <- wrapFunPtr (closureTest3 (+100))
   fptr2_2 <- newFunction p_test2_2
   call fptr2_2 27
+  deleteFunction fptr2_2
 
   pure ()

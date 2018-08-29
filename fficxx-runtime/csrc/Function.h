@@ -15,6 +15,8 @@ extern "C" {
 #define Function_call_decl(NAME,R,ATYPS)\
   R Function_call_ ## NAME ( UNPAREN(ATYPS) );
 
+#define Function_delete_decl(NAME)\
+  void Function_delete_ ## NAME ( void* );
 
 #define Function_new_inst(NAME,R,ATYPS)                     \
     inline void* Function_new_ ## NAME ( R (*fp)( UNPAREN(ATYPS) ) ) \
@@ -33,26 +35,13 @@ extern "C" {
   }\
   auto a_Function_call_ ## NAME = Function_call_ ## NAME;
 
-
-Function_new_decl(f1,void,())
-
-Function_call_decl(f1,void,(void* op))
-
-Function_new_decl(f2,void,(int x))
-
-Function_call_decl(f2,void,(void* op,int x))
-
-Function_new_decl(f3,int,(int x))
-
-Function_call_decl(f3,int,(void* op,int x))
-
-Function_new_decl(f4,int,(int x,char y))
-
-Function_call_decl(f4,int,(void* op,int x,char y))
-
-Function_new_decl(f5,int,())
-
-Function_call_decl(f5,int,(void* op))
+#define Function_delete_inst(NAME,R,ATYPS)        \
+  inline void Function_delete_ ## NAME ( void* op ) \
+  {\
+      std::function< R (TAIL ATYPS) >* p = static_cast< std::function< R (TAIL ATYPS) >* >(op); \
+    delete p;\
+  }\
+  auto a_Function_delete_ ## NAME = Function_delete_ ## NAME;
 
 
 #ifdef __cplusplus
