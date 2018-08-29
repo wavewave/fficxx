@@ -39,28 +39,28 @@ main = do
 
   putStrLn "-- test 1 ----------"
   p_test1 <- create_f1 test
-  Function fptr1 <- c_Function_new_f1 p_test1
+  fptr1 <- c_Function_new_f1 p_test1
   c_Function_call_f1 fptr1
 
   putStrLn "-- test 1-1 --------"
   p_test1_1 <- create_f1 (closureTest 32)
-  Function fptr1_1 <- c_Function_new_f1 p_test1_1
+  fptr1_1 <- c_Function_new_f1 p_test1_1
   c_Function_call_f1 fptr1_1
 
 
   putStrLn "-- test 2 ----------"
   p_test2 <- create_f2 closureTest
-  Function fptr2 <- c_Function_new_f2 p_test2
+  fptr2 <- c_Function_new_f2 p_test2
   c_Function_call_f2 fptr2 26
 
   putStrLn "-- test 2-1 --------"
   p_test2_1 <- create_f2 (closureTest2 "this is a captured message")
-  Function fptr2_1 <- c_Function_new_f2 p_test2_1
+  fptr2_1 <- c_Function_new_f2 p_test2_1
   c_Function_call_f2 fptr2_1 27
 
   putStrLn "-- test 2-2 --------"
   p_test2_2 <- create_f2 (closureTest3 (+100))
-  Function fptr2_2 <- c_Function_new_f2 p_test2_2
+  fptr2_2 <- c_Function_new_f2 p_test2_2
   c_Function_call_f2 fptr2_2 27
 
   pure ()
