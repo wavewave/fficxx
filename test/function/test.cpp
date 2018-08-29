@@ -1,9 +1,6 @@
 #include <functional>
 #include <iostream>
-#include "function_test.h"
-
-
-
+#include "test.h"
 
 
 Function_new_inst(f1,void,())
