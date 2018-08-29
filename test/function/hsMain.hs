@@ -48,20 +48,24 @@ main = do
   p_test1_1 <- wrapFunPtr (closureTest 32)
   fptr1_1 <- newFunction p_test1_1
   call fptr1_1
+  deleteFunction fptr1_1
 
   putStrLn "-- test 2 ----------"
   p_test2 <- wrapFunPtr closureTest
   fptr2 <- newFunction p_test2
   call fptr2 26
+  deleteFunction fptr2
 
   putStrLn "-- test 2-1 --------"
   p_test2_1 <- wrapFunPtr (closureTest2 "this is a captured message")
   fptr2_1 <- newFunction p_test2_1
   call fptr2_1 27
+  deleteFunction fptr2_1
 
   putStrLn "-- test 2-2 --------"
   p_test2_2 <- wrapFunPtr (closureTest3 (+100))
   fptr2_2 <- newFunction p_test2_2
   call fptr2_2 27
+  deleteFunction fptr2_2
 
   pure ()
