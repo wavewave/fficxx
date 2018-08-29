@@ -15,7 +15,6 @@ mkTFunc' (typ, ncty, nf, tyf)
   = do let fn = nf ncty
        let fn' = "c_" <> fn
        n <- newName fn'
-       -- let n = mkNameU fn'
        d <- forImpD CCall safe fn n (tyf typ)
        addTopDecls [d]
        [| $( varE n ) |]

@@ -47,14 +47,12 @@ main = do
   putStrLn "-- test 1 ----------"
   p_test1 <- create_f1 test
   fptr1 <- newFunction p_test1
-  -- fptr1 <- c_Function_new_f1 p_test1
   call fptr1
 
   putStrLn "-- test 1-1 --------"
   p_test1_1 <- create_f1 (closureTest 32)
   fptr1_1 <- newFunction p_test1_1
   call fptr1_1
-
 
   putStrLn "-- test 2 ----------"
   p_test2 <- create_f2 closureTest

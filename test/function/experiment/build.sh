@@ -9,7 +9,7 @@ g++ -c function_test.cpp -I${BASEDIR}/fficxx-runtime-0.3/include
 #ghc -c TH.hs
 #ghc -c Binding.hs
 ghc -ddump-splices hsMain.hs
-ghc -o hsMain hsMain.hs Binding.hs function_test.o -lstdc++
+ghc -o hsMain hsMain.hs function_test.o -lstdc++
 
 
 
