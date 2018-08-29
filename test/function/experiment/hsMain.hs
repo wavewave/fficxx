@@ -9,8 +9,6 @@ import Foreign.Ptr
 import Template
 import TH
 
-data Test = Test
-
 $(TH.genFunctionInstanceFor [t|IO ()|] "f1" )
 $(TH.genFunctionInstanceFor [t|Int -> IO ()|] "f2")
 
@@ -50,29 +48,27 @@ main = do
   p_test1 <- create_f1 test
   fptr1 <- newFunction p_test1
   -- fptr1 <- c_Function_new_f1 p_test1
-
-
-  -- c_Function_call_f1 fptr1
+  call fptr1
 
   putStrLn "-- test 1-1 --------"
   p_test1_1 <- create_f1 (closureTest 32)
   fptr1_1 <- newFunction p_test1_1
-  -- c_Function_call_f1 fptr1_1
+  call fptr1_1
 
 
   putStrLn "-- test 2 ----------"
   p_test2 <- create_f2 closureTest
   fptr2 <- newFunction p_test2
-  -- c_Function_call_f2 fptr2 26
+  call fptr2 26
 
   putStrLn "-- test 2-1 --------"
   p_test2_1 <- create_f2 (closureTest2 "this is a captured message")
   fptr2_1 <- newFunction p_test2_1
-  -- c_Function_call_f2 fptr2_1 27
+  call fptr2_1 27
 
   putStrLn "-- test 2-2 --------"
   p_test2_2 <- create_f2 (closureTest3 (+100))
   fptr2_2 <- newFunction p_test2_2
-  -- c_Function_call_f2 fptr2_2 27
+  call fptr2_2 27
 
   pure ()
