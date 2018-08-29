@@ -5,16 +5,11 @@ module Main where
 
 import Foreign.Ptr
 
--- import Binding
-import Template
+ximport Template
 import TH
 
 $(TH.genFunctionInstanceFor [t|IO ()|] "f1" )
 $(TH.genFunctionInstanceFor [t|Int -> IO ()|] "f2")
-
--- foreign import ccall "wrapper" create_f1 :: IO () -> IO (FunPtr (IO ()))
-
--- foreign import ccall "wrapper" create_f2 :: (Int -> IO ()) -> IO (FunPtr (Int -> IO ()))
 
 
 test :: IO ()
@@ -39,8 +34,7 @@ closureTest3 f x = do
   putStrLn (" f(x) = " ++ show (f x))
 
 
-
-
+main :: IO ()
 main = do
   putStrLn "hsMain"
 

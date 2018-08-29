@@ -32,8 +32,6 @@ mkWrapper (typ,suffix)
        pure $
          FunD (mkNameS "wrapFunPtr") [ Clause [] (NormalB (VarE n)) [] ]
 
-       -- [| $( varE n ) |]
-
 mkNew' :: String -> (Type -> String -> Q Exp) -> Type -> String -> Q Dec
 mkNew' fname f typ suffix = do
   e <- f typ suffix
@@ -69,8 +67,6 @@ genFunctionInstanceFor qtyp suffix
        f1 <- mkNew' "newFunction" t_newFunction typ suffix
        f2 <- mkMember' "call" t_call typ suffix
        wrap <- mkWrapper (typ,suffix)
-       
-       -- addTopDecls [d_wrap]       
        let lst = [f1,f2]
        return [ mkInstance [] (AppT (con "IFunction") typ) lst
               , mkInstance [] (AppT (con "FunPtrWrapper") typ) [wrap]
