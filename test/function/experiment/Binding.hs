@@ -14,3 +14,9 @@ foreign import ccall safe "Function_new_f1"
 
 foreign import ccall safe "Function_call_f1"
    c_Function_call_f1 :: Ptr (RawFunction (IO ())) -> IO ()
+
+foreign import ccall safe "Function_new_f2"
+   c_Function_new_f2 :: FunPtr (Int -> IO ()) -> IO (Function (Int -> IO ()))
+
+foreign import ccall safe "Function_call_f2"
+   c_Function_call_f2 :: Ptr (RawFunction (Int -> IO ())) -> Int -> IO ()
