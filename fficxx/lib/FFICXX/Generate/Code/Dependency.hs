@@ -352,11 +352,15 @@ mkTIH pkgname getImports cihs fs =
   let tl_cs1 = concatMap (argumentDependency . extractClassDepForTopLevelFunction) fs
       tl_cs2 = concatMap (returnDependency . extractClassDepForTopLevelFunction) fs
       tl_cs = nubBy ((==) `on` either tclass_name ffiClassName) (tl_cs1 <> tl_cs2)
+      -- NOTE: Select only class dependencies in the current package.
+      -- TODO: This is clearly not a good impl. we need to look into this again
+      --       after reconsidering multi-package generation.
       tl_cihs = catMaybes (foldr fn [] tl_cs)
          where
            fn c ys =
              let y = find (\x -> (ffiClassName . cihClass) x == getFFIName c) cihs
              in y:ys
+      -- NOTE: The remaining class dependencies outside the current package
       extclasses = filter ((/= pkgname) . cabal_pkgname . getcabal) tl_cs
       extheaders = map HdrName $
                      nub $
@@ -366,6 +370,7 @@ mkTIH pkgname getImports cihs fs =
      TopLevelImportHeader {
        tihHeaderFileName = unCabalName pkgname <> "TopLevel"
      , tihClassDep = tl_cihs
+     , tihExtraClassDep = extclasses
      , tihFuncs = fs
      , tihNamespaces        = muimports_namespaces (getImports MU_TopLevel)
      , tihExtraHeadersInH   = extheaders
