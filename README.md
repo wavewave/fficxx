@@ -156,3 +156,8 @@ We use C Macro tricks described in the following:
 * https://github.com/pfultz2/Cloak/wiki/C-Preprocessor-tricks,-tips,-and-idioms
 * https://gustedt.wordpress.com/2010/06/08/detect-empty-macro-arguments/
 * https://stackoverflow.com/questions/3046889/optional-parameters-with-c-macros/3048361#3048361
+
+C++ Template tricks
+===================
+* https://en.cppreference.com/w/cpp/language/template_argument_deduction
+* http://anderberg.me/2016/08/01/c-variadic-templates/
