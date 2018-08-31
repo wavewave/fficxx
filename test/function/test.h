@@ -4,12 +4,12 @@
 extern "C" {
 #endif // __cplusplus
 
-Function_new_decl(f1,void,((,)))
+//Function_new_decl(f1,void,((,)))
 
-Function_call_decl(f1,void,((,)))
+//Function_call_decl(f1,void,((,)))
 
-Function_delete_decl(f1,void,((,)))
-
+//Function_delete_decl(f1,void,((,)))
+/*
 Function_new_decl(f2,void,((int,x)))
 
 Function_call_decl(f2,void,((int,x)))
@@ -33,7 +33,7 @@ Function_new_decl(f5,int,((,)))
 Function_call_decl(f5,int,((,)))
 
 Function_delete_decl(f5,int,((,)))
-
+*/
 
 #ifdef __cplusplus
 }
