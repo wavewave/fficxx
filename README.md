@@ -153,6 +153,14 @@ For the time being, to see how to use generated haskell library, check examples 
 C Macro tricks
 ==============
 We use C Macro tricks described in the following:
+* http://jhnet.co.uk/articles/cpp_magic
+* https://stackoverflow.com/questions/45585903/c-macros-how-to-map-another-macro-to-variadic-arguments
 * https://github.com/pfultz2/Cloak/wiki/C-Preprocessor-tricks,-tips,-and-idioms
 * https://gustedt.wordpress.com/2010/06/08/detect-empty-macro-arguments/
 * https://stackoverflow.com/questions/3046889/optional-parameters-with-c-macros/3048361#3048361
+
+C++ Template tricks
+===================
+* https://en.cppreference.com/w/cpp/language/template_argument_deduction
+* http://anderberg.me/2016/08/01/c-variadic-templates/
+* https://crascit.com/2015/03/21/practical-uses-for-variadic-templates/

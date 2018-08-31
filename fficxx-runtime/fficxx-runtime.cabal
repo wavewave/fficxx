@@ -34,3 +34,4 @@ Library
   Include-dirs:    csrc
   Install-includes: MacroPatternMatch.h
                     Function.h
+                    cpp_magic.h
