@@ -70,12 +70,18 @@ extractClassFromType (CPT (CPTClass c) _)     = [Right c]
 extractClassFromType (CPT (CPTClassRef c) _)  = [Right c]
 extractClassFromType (CPT (CPTClassCopy c) _) = [Right c]
 extractClassFromType (CPT (CPTClassMove c) _) = [Right c]
-extractClassFromType (TemplateApp t p _)      = (Left t): case p of
-                                                            TArg_Class c -> [Right c]
-                                                            _            -> []
-extractClassFromType (TemplateAppRef t p _)   = (Left t): case p of
-                                                            TArg_Class c -> [Right c]
-                                                            _            -> []
+extractClassFromType (TemplateApp (TemplateAppInfo t p _)) =
+  (Left t): case p of
+              TArg_Class c -> [Right c]
+              _            -> []
+extractClassFromType (TemplateAppRef (TemplateAppInfo t p _))   =
+  (Left t): case p of
+              TArg_Class c -> [Right c]
+              _            -> []
+extractClassFromType (TemplateAppMove (TemplateAppInfo t p _))   =
+  (Left t): case p of
+              TArg_Class c -> [Right c]
+              _            -> []
 extractClassFromType (TemplateType t)         = [Left t]
 extractClassFromType (TemplateParam _)        = []
 extractClassFromType (TemplateParamPointer _) = []

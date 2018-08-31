@@ -285,10 +285,15 @@ returnCpp b ret callstr =
                                "return std::move(to_nonconst<"<>str<>"_t,"<>str
                                <>">(&("<>callstr<>")));"
                                where str = ffiClassName c'
-    TemplateApp _ _ cpptype -> cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
-                               <> "return (static_cast<void*>(r));"
-    TemplateAppRef _ _ cpptype -> cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
-                                  <> "return (static_cast<void*>(r));"
+    TemplateApp (TemplateAppInfo _ _ cpptype) ->
+         cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
+      <> "return (static_cast<void*>(r));"
+    TemplateAppRef (TemplateAppInfo _ _ cpptype) ->
+         cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
+      <> "return (static_cast<void*>(r));"
+    TemplateAppMove (TemplateAppInfo _ _ cpptype) ->
+         cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
+      <> "return std::move(static_cast<void*>(r));"
     TemplateType _          -> error "returnCpp: TemplateType"
     TemplateParam _         ->
       if b then "return (" <> callstr <> ");"
@@ -421,7 +426,7 @@ accessorsToDecls vs =
 
 accessorToDef :: Variable -> Accessor -> String
 accessorToDef v a =
-  let csig = accessorCFunSig (var_type v) a
+  let -- csig = accessorCFunSig (var_type v) a
       declstr = accessorToDecl v a
       varexp = "to_nonconst<Type,Type ## _t>(p)->" <> var_name v
       body Getter = "return (" <> castCpp2C (var_type v) varexp <> ");"

@@ -56,20 +56,22 @@ data TemplateArgType = TArg_Class Class
                      | TArg_Other String
                      deriving Show
 
+data TemplateAppInfo = TemplateAppInfo {
+                         tapp_hstemplate :: TemplateClass
+                       , tapp_HsTypeForParam :: TemplateArgType
+                       , tapp_CppTypeForParam :: String
+                       }
+                     deriving Show
+
 data Types = Void
            | SelfType
            | CT  CTypes IsConst
            | CPT CPPTypes IsConst
-           | TemplateApp { tapp_hstemplate :: TemplateClass
-                         , tapp_HaskellTypeForParam :: TemplateArgType
-                         , tapp_CppTypeForParam :: String }
-             -- ^ like vector<float>
-           | TemplateAppRef { tappref_hstemplate :: TemplateClass
-                            , tappref_HaskellTypeForParam :: TemplateArgType
-                            , tappref_CppTypeForParam :: String }
-             -- ^ like vector<float>&
-           | TemplateType TemplateClass  -- ^ template self? TODO: clarify this.
-           | TemplateParam String
+           | TemplateApp     TemplateAppInfo     -- ^ like vector<float>*
+           | TemplateAppRef  TemplateAppInfo     -- ^ like vector<float>&
+           | TemplateAppMove TemplateAppInfo     -- ^ like unique_ptr<float> (using std::move)
+           | TemplateType    TemplateClass       -- ^ template self? TODO: clarify this.
+           | TemplateParam   String
            | TemplateParamPointer String -- ^ this is A* with template<A>
            deriving Show
 

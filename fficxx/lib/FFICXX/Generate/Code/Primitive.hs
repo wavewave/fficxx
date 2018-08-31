@@ -267,8 +267,9 @@ argToString (CPT (CPTClassMove c) isconst, varname) = case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
   where cname = ffiClassName c
-argToString (TemplateApp _ _ _,varname) = "void* " <> varname
-argToString (TemplateAppRef _ _ _,varname) = "void* " <> varname
+argToString (TemplateApp     _, varname) = "void* " <> varname
+argToString (TemplateAppRef  _, varname) = "void* " <> varname
+argToString (TemplateAppMove _, varname) = "void* " <> varname
 argToString t = error ("argToString: " <> show t)
 
 argsToString :: Args -> String
@@ -296,8 +297,9 @@ rettypeToString (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
 rettypeToString (CPT (CPTClassRef c) _)  = ffiClassName c <> "_p"
 rettypeToString (CPT (CPTClassCopy c) _) = ffiClassName c <> "_p"
 rettypeToString (CPT (CPTClassMove c) _) = ffiClassName c <> "_p"
-rettypeToString (TemplateApp _ _ _)      = "void*"
-rettypeToString (TemplateAppRef _ _ _)   = "void*"
+rettypeToString (TemplateApp     _)      = "void*"
+rettypeToString (TemplateAppRef  _)      = "void*"
+rettypeToString (TemplateAppMove _)      = "void*"
 rettypeToString (TemplateType _)         = "void*"
 rettypeToString (TemplateParam _)        = "Type ## _p"
 rettypeToString (TemplateParamPointer _) = "Type ## _p"
@@ -317,9 +319,10 @@ castC2Cpp t e =
                               where f = ffiClassName c
     CPT (CPTClassMove c) _ -> "std::move(to_nonconstref<" <> f <> "," <> f<> "_t>(*" <> e <> "))"
                               where f = ffiClassName c
-    TemplateApp    _ _ g   -> "to_nonconst<" <> g <> ",void>(" <> e <> ")"
-    TemplateAppRef _ _ g   -> "*( (" <> g <> "*) " <> e <> ")"
-    _                      -> e
+    TemplateApp    p  -> "to_nonconst<" <> tapp_CppTypeForParam p <> ",void>(" <> e <> ")"
+    TemplateAppRef p  -> "*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> ")"
+    TemplateAppMove p -> "std::move(*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> "))"
+    _                 -> e
 
 
 -- TODO: Rewrite this with static_cast
@@ -339,12 +342,13 @@ castCpp2C t e =
                                where f = ffiClassName c
     CPT (CPTClassMove c) _ -> "std::move(to_nonconst<" <> f <> "_t," <> f <>">(&(" <> e <> ")))"
                                where f = ffiClassName c
-    TemplateApp _ _ g      -> error "castCpp2C: TemplateApp"
+    TemplateApp _          -> error "castCpp2C: TemplateApp"
                               -- g <> "* r = new " <> g <> "(" <> e <> "); "
                               --  <> "return (static_cast<void*>(r));"
-    TemplateAppRef _ _ g   -> error "castCpp2C: TemplateAppRef"
+    TemplateAppRef _       -> error "castCpp2C: TemplateAppRef"
                               -- g <> "* r = new " <> g <> "(" <> e <> "); "
                               -- <> "return (static_cast<void*>(r));"
+    TemplateAppMove _      -> error "castCpp2C: TemplateAppMove"
     TemplateType _         -> error "castCpp2C: TemplateType"
     TemplateParam _        -> error "castCpp2C: TemplateParam"
                               -- if b then e
@@ -370,9 +374,10 @@ tmplArgToString _ _ (CPT (CPTClassMove c) isconst, varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplArgToString _ _ (TemplateApp _ _ _,_v) = error "tmpArgToString: TemplateApp"
-tmplArgToString _ _ (TemplateAppRef _ _ _,_v) = error "tmpArgToString: TemplateAppRef"
-tmplArgToString _ _ (TemplateType _,v) = "void* " <> v
+tmplArgToString _ _ (TemplateApp     _, _v) = error "tmpArgToString: TemplateApp"
+tmplArgToString _ _ (TemplateAppRef  _, _v) = error "tmpArgToString: TemplateAppRef"
+tmplArgToString _ _ (TemplateAppMove _, _v) = error "tmpArgToString: TemplateAppMove"
+tmplArgToString _ _ (TemplateType   _,  v) = "void* " <> v
 tmplArgToString True  _ (TemplateParam _,v) = "Type " <> v
 tmplArgToString False _ (TemplateParam _,v) = "Type ## _p " <> v
 tmplArgToString True  _ (TemplateParamPointer _,v) = "Type " <> v
@@ -434,40 +439,12 @@ tmplRetTypeToString _ (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
 tmplRetTypeToString _ (CPT (CPTClassRef c) _)  = ffiClassName c <> "_p"
 tmplRetTypeToString _ (CPT (CPTClassCopy c) _) = ffiClassName c <> "_p"
 tmplRetTypeToString _ (CPT (CPTClassMove c) _) = ffiClassName c <> "_p"
-tmplRetTypeToString _ (TemplateApp _ _ _)      = "void*"
-tmplRetTypeToString _ (TemplateAppRef _ _ _)   = "void*"
+tmplRetTypeToString _ (TemplateApp     _)      = "void*"
+tmplRetTypeToString _ (TemplateAppRef  _)      = "void*"
+tmplRetTypeToString _ (TemplateAppMove _)      = "void*"
 tmplRetTypeToString _ (TemplateType _)         = "void*"
 tmplRetTypeToString b (TemplateParam _)        = if b then "Type" else "Type ## _p"
 tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## _p"
-
--- |
-ctypToHsTyp :: Maybe Class -> Types -> String
-ctypToHsTyp _c Void = "()"
-ctypToHsTyp (Just c) SelfType = (fst.hsClassName) c
-ctypToHsTyp Nothing SelfType = error "ctypToHsTyp : SelfType but no class "
-ctypToHsTyp _c (CT CTString _) = "CString"
-ctypToHsTyp _c (CT CTInt _) = "CInt"
-ctypToHsTyp _c (CT CTUInt _) = "CUInt"
-ctypToHsTyp _c (CT CTChar _) = "CChar"
-ctypToHsTyp _c (CT CTLong _) = "CLong"
-ctypToHsTyp _c (CT CTULong _) = "CULong"
-ctypToHsTyp _c (CT CTDouble _) = "CDouble"
-ctypToHsTyp _c (CT CTBool _ ) = "CInt"
-ctypToHsTyp _c (CT CTDoubleStar _) = "(Ptr CDouble)"
-ctypToHsTyp _c (CT CTVoidStar _) = "(Ptr ())"
-ctypToHsTyp _c (CT CTIntStar _) = "(Ptr CInt)"
-ctypToHsTyp _c (CT CTCharStarStar _) = "(Ptr CString)"
-ctypToHsTyp _c (CT (CPointer t) _) = hsCTypeName (CPointer t)
-ctypToHsTyp _c (CT (CRef t) _) = hsCTypeName (CRef t)
-ctypToHsTyp _c (CPT (CPTClass c') _) = (fst . hsClassName) c'
-ctypToHsTyp _c (CPT (CPTClassRef c') _) = (fst . hsClassName) c'
-ctypToHsTyp _c (CPT (CPTClassCopy c') _) = (fst . hsClassName) c'
-ctypToHsTyp _c (CPT (CPTClassMove c') _) = (fst . hsClassName) c'
-ctypToHsTyp _c (TemplateApp t p _) = "("<> tclass_name t <> " " <> hsClassNameForTArg p <> ")"
-ctypToHsTyp _c (TemplateAppRef t p _) = "("<> tclass_name t <> " " <> hsClassNameForTArg p <> ")"
-ctypToHsTyp _c (TemplateType t) = "("<> tclass_name t <> " " <> tclass_param t <> ")"
-ctypToHsTyp _c (TemplateParam p) = "("<> p <> ")"
-ctypToHsTyp _c (TemplateParamPointer p) = "("<> p <> ")"
 
 
 -- |
@@ -497,9 +474,18 @@ convertCpp2HS _c (CPT (CPTClass c') _)     = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassRef c') _)  = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (TemplateApp t p _)       = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
-convertCpp2HS _c (TemplateAppRef t p _)    = tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p))
-convertCpp2HS _c (TemplateType t)          = tyapp (tycon (tclass_name t)) (mkTVar (tclass_param t))
+convertCpp2HS _c (TemplateApp x)     = tyapp
+                                         (tycon (tclass_name (tapp_hstemplate x)))
+                                         (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
+convertCpp2HS _c (TemplateAppRef x)  = tyapp
+                                         (tycon (tclass_name (tapp_hstemplate x)))
+                                         (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
+convertCpp2HS _c (TemplateAppMove x) = tyapp
+                                         (tycon (tclass_name (tapp_hstemplate x)))
+                                         (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
+convertCpp2HS _c (TemplateType t)    = tyapp
+                                         (tycon (tclass_name t))
+                                         (mkTVar (tclass_param t))
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
 
@@ -513,11 +499,12 @@ convertCpp2HS4Tmpl _ _c _ (CPT (CPTClass c') _)     = (tycon . fst . hsClassName
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassRef c') _)  = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS4Tmpl e _c _ (TemplateApp _ _ _ )     = e
-convertCpp2HS4Tmpl e _c _ (TemplateAppRef _ _ _ )  = e
-convertCpp2HS4Tmpl e _c _ (TemplateType _)         = e
-convertCpp2HS4Tmpl _ _c t (TemplateParam _)        = t
-convertCpp2HS4Tmpl _ _c t (TemplateParamPointer _) = t
+convertCpp2HS4Tmpl e _c _ (TemplateApp _ )          = e
+convertCpp2HS4Tmpl e _c _ (TemplateAppRef _)        = e
+convertCpp2HS4Tmpl e _c _ (TemplateAppMove _)       = e
+convertCpp2HS4Tmpl e _c _ (TemplateType _)          = e
+convertCpp2HS4Tmpl _ _c t (TemplateParam _)         = t
+convertCpp2HS4Tmpl _ _c t (TemplateParamPointer _)  = t
 
 
 typeclassName :: Class -> String
@@ -660,7 +647,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
                            SelfType -> case mc of
                                          Nothing -> error "extractArgRetTypes: SelfType return but no class"
                                          Just c -> if isvirtual then return (mkTVar "a") else return $ tycon ((fst.hsClassName) c)
-                           x -> (return . tycon . ctypToHsTyp Nothing) x
+                           x -> (return . convertCpp2HS Nothing) x
                     return (as ++ [tyapp (tycon "IO") r])
   in   HsFunSig { hsSigTypes = typs
                 , hsSigConstraints = fst s
@@ -685,15 +672,28 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
          case typ of
            SelfType -> return (mkTVar "a")
            CT CTString Const -> addstring
-           CT _ _   -> return $ tycon (ctypToHsTyp Nothing typ)
+           CT _ _   -> return $ convertCpp2HS Nothing typ
            CPT (CPTClass c') _    -> addclass c'
            CPT (CPTClassRef c') _ -> addclass c'
            CPT (CPTClassCopy c') _ -> addclass c'
            CPT (CPTClassMove c') _ -> addclass c'
            -- it is not clear whether the following is okay or not.
-           (TemplateApp t p _)    -> return (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
-           (TemplateAppRef t p _) -> return (tyapp (tycon (tclass_name t)) (tycon (hsClassNameForTArg p)))
-           (TemplateType t)       -> return (tyapp (tycon (tclass_name t)) (mkTVar (tclass_param t)))
+           (TemplateApp x)    -> pure $
+                                   tyapp
+                                     (tycon (tclass_name (tapp_hstemplate x)))
+                                     (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
+           (TemplateAppRef x) -> pure $
+                                   tyapp
+                                     (tycon (tclass_name (tapp_hstemplate x)))
+                                     (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
+           (TemplateAppMove x)-> pure $
+                                   tyapp
+                                     (tycon (tclass_name (tapp_hstemplate x)))
+                                     (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
+           (TemplateType t)   -> pure $
+                                   tyapp
+                                     (tycon (tclass_name t))
+                                     (mkTVar (tclass_param t))
            (TemplateParam p)      -> return (mkTVar p)
            Void -> return unit_tycon
            _ -> error ("No such c type : " <> show typ)
@@ -784,11 +784,24 @@ hsFFIFuncTyp msc (CFunSig args ret) =
           where rawname = snd (hsClassName d)
         hsargtype (CPT (CPTClassCopy d) _)    = tyapp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
-        hsargtype (TemplateApp t p _)        = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
-          where rawname = snd (hsTemplateClassName t)
-        hsargtype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
-          where rawname = snd (hsTemplateClassName t)
-
+        hsargtype (TemplateApp x)   = tyapp
+                                        tyPtr
+                                        (tyapp
+                                           (tycon rawname)
+                                           (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
+          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
+        hsargtype (TemplateAppRef x) = tyapp
+                                         tyPtr
+                                         (tyapp
+                                            (tycon rawname)
+                                            (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
+          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
+        hsargtype (TemplateAppMove x)= tyapp
+                                         tyPtr
+                                         (tyapp
+                                            (tycon rawname)
+                                            (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
+          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
         hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateParam p)          = mkTVar p
@@ -806,10 +819,24 @@ hsFFIFuncTyp msc (CFunSig args ret) =
           where rawname = snd (hsClassName d)
         hsrettype (CPT (CPTClassMove d) _)   = tyapp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
-        hsrettype (TemplateApp t p _)        = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
-          where rawname = snd (hsTemplateClassName t)
-        hsrettype (TemplateAppRef t p _)     = tyapp tyPtr (tyapp (tycon rawname) (tycon (hsClassNameForTArg p)))
-          where rawname = snd (hsTemplateClassName t)
+        hsrettype (TemplateApp x)    = tyapp
+                                         tyPtr
+                                         (tyapp
+                                            (tycon rawname)
+                                            (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
+          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
+        hsrettype (TemplateAppRef x) = tyapp
+                                         tyPtr
+                                         (tyapp
+                                            (tycon rawname)
+                                            (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
+          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
+        hsrettype (TemplateAppMove x)= tyapp
+                                         tyPtr
+                                         (tyapp
+                                            (tycon rawname)
+                                            (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
+          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
         hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p)          = mkTVar p
