@@ -69,6 +69,7 @@ data Types = Void
            | CPT CPPTypes IsConst
            | TemplateApp     TemplateAppInfo     -- ^ like vector<float>*
            | TemplateAppRef  TemplateAppInfo     -- ^ like vector<float>&
+           | TemplateAppMove TemplateAppInfo     -- ^ like unique_ptr<float> (using std::move)
            | TemplateType    TemplateClass       -- ^ template self? TODO: clarify this.
            | TemplateParam   String
            | TemplateParamPointer String -- ^ this is A* with template<A>

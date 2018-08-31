@@ -291,6 +291,9 @@ returnCpp b ret callstr =
     TemplateAppRef (TemplateAppInfo _ _ cpptype) ->
          cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
       <> "return (static_cast<void*>(r));"
+    TemplateAppMove (TemplateAppInfo _ _ cpptype) ->
+         cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
+      <> "return std::move(static_cast<void*>(r));"
     TemplateType _          -> error "returnCpp: TemplateType"
     TemplateParam _         ->
       if b then "return (" <> callstr <> ");"

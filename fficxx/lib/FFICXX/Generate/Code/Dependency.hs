@@ -78,6 +78,10 @@ extractClassFromType (TemplateAppRef (TemplateAppInfo t p _))   =
   (Left t): case p of
               TArg_Class c -> [Right c]
               _            -> []
+extractClassFromType (TemplateAppMove (TemplateAppInfo t p _))   =
+  (Left t): case p of
+              TArg_Class c -> [Right c]
+              _            -> []
 extractClassFromType (TemplateType t)         = [Left t]
 extractClassFromType (TemplateParam _)        = []
 extractClassFromType (TemplateParamPointer _) = []
