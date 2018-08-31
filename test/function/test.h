@@ -4,35 +4,35 @@
 extern "C" {
 #endif // __cplusplus
 
-Function_new_decl(f1,void,())
+Function_new_decl(f1,void,((,)))
 
-Function_call_decl(f1,void,(void* op))
+Function_call_decl(f1,void,((,)))
 
-Function_delete_decl(f1)
+Function_delete_decl(f1,void,((,)))
 
-Function_new_decl(f2,void,(int x))
+Function_new_decl(f2,void,((int,x)))
 
-Function_call_decl(f2,void,(void* op,int x))
+Function_call_decl(f2,void,((int,x)))
 
-Function_delete_decl(f2)
+Function_delete_decl(f2,void,((int,x)))
 
-Function_new_decl(f3,int,(int x))
+Function_new_decl(f3,int,((int,x)))
 
-Function_call_decl(f3,int,(void* op,int x))
+Function_call_decl(f3,int,((int,x)))
 
-Function_delete_decl(f3)
+Function_delete_decl(f3,int,((int,x)))
 
-Function_new_decl(f4,int,(int x,char y))
+Function_new_decl(f4,int,((int,x),(char,y)))
 
-Function_call_decl(f4,int,(void* op,int x,char y))
+Function_call_decl(f4,int,((int,x),(char,y)))
 
-Function_delete_decl(f4)
+Function_delete_decl(f4,int,((int,x),(char,y)))
 
-Function_new_decl(f5,int,())
+Function_new_decl(f5,int,((,)))
 
-Function_call_decl(f5,int,(void* op))
+Function_call_decl(f5,int,((,)))
 
-Function_delete_decl(f5)
+Function_delete_decl(f5,int,((,)))
 
 
 #ifdef __cplusplus
