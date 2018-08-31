@@ -10,11 +10,17 @@ extern "C" {
 
 #define UNPAREN(x) VARGS x
 
+#define FIRSTSECOND(X,Y) X Y
+
 #define GETTYPE(X) FIRST X
 #define GETVAR(X) SECOND X
+#define GETTYPVAR(X) FIRSTSECOND X
+
+
 
 #define GETTYPES(x) MAP(GETTYPE,COMMA,UNPAREN(x))
 #define GETVARS(x) MAP(GETVAR,COMMA,UNPAREN(x))
+#define GETTYPVARS(x) MAP(GETTYPVAR,COMMA,UNPAREN(x))
 
 #define Function_new_decl(NAME,R,ATYPS)                         \
     void* Function_new_ ## NAME ( R (*fp) ( GETTYPES(ATYPS) ));
@@ -35,7 +41,7 @@ extern "C" {
 
 
 #define Function_call_inst(NAME,R,ATYPS)        \
-    inline R Function_call_ ## NAME ( REMOVE_TRAILING_COMMAS( void* op,  UNPAREN(ATYPS) ) ) \
+    inline R Function_call_ ## NAME ( REMOVE_TRAILING_COMMAS( void* op,  GETTYPVARS(ATYPS) ) ) \
     {                                                                   \
         std::function< R ( GETTYPES(ATYPS) )>* p = static_cast< std::function< R ( GETTYPES(ATYPS) )>* >(op); \
         return (*p) ( GETVARS(ATYPS) );                              \
