@@ -53,17 +53,17 @@ MAP(GETVAR, COMMA, (int,x), (char*,y), (A,z) )
     auto a_Function_delete_ ## NAME = Function_delete_ ## NAME;
 
 
-Function_new_decl(f1,void,(()))
+Function_new_decl(f1,void,((,)))
 
-Function_call_decl(f1,void,(()))
+Function_call_decl(f1,void,((,)))
 
-Function_delete_decl(f1,void,(()))
+Function_delete_decl(f1,void,((,)))
 
-Function_new_inst(f1,void,(()))
+Function_new_inst(f1,void,((,)))
 
-Function_call_inst(f1,void,(()))
+Function_call_inst(f1,void,((,)))
 
-Function_delete_inst(f1,void,(()))
+Function_delete_inst(f1,void,((,)))
 
 
 Function_new_decl(f4,int,((int,x),(char,y)))
@@ -105,7 +105,7 @@ TEST(1,)
 TEST(2,)
 TEST(3,x,y)
 
-MAP(GETTYPE,COMMA,())
+MAP(GETTYPE,COMMA,(,))
 MAP(GETTYPE,COMMA,(int,x))
 MAP(GETTYPE,COMMA,(x),(y))
 FIRST()
@@ -113,5 +113,5 @@ FIRST()
 
 
 
-SECOND(x,y)
-MAP(GETVAR,COMMA,())
+SECOND(,)
+MAP(GETVAR,COMMA,(,))
