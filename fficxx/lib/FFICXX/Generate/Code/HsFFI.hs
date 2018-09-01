@@ -20,9 +20,6 @@ import Data.Monoid                             ((<>))
 import Language.Haskell.Exts.Syntax            (Decl(..),ImportDecl(..))
 import System.FilePath                         ((<.>))
 --
-import FFICXX.Generate.Code.Dependency         (class_allparents
-                                               ,getClassModuleBase
-                                               ,getTClassModuleBase)
 import FFICXX.Generate.Code.Primitive          (CFunSig(..)
                                                ,accessorCFunSig
                                                ,aliasedFuncName
@@ -32,6 +29,9 @@ import FFICXX.Generate.Code.Primitive          (CFunSig(..)
                                                ,hscAccessorName
                                                ,hscFuncName
                                                ,hsFFIFuncTyp)
+import FFICXX.Generate.Dependency              (class_allparents
+                                               ,getClassModuleBase
+                                               ,getTClassModuleBase)
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface

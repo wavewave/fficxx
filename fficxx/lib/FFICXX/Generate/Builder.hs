@@ -28,7 +28,7 @@ import           System.IO                               ( hPutStrLn, withFile, 
 import           System.Process                          ( readProcess, system )
 --
 import           FFICXX.Generate.Code.Cabal
-import           FFICXX.Generate.Code.Dependency
+import           FFICXX.Generate.Dependency
 import           FFICXX.Generate.Config
 import           FFICXX.Generate.ContentMaker
 import           FFICXX.Generate.Type.Cabal (Cabal(..),AddCInc(..),AddCSrc(..),CabalName(..))

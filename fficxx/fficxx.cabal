@@ -46,9 +46,9 @@ Library
                    FFICXX.Generate.Code.HsFrontEnd
                    FFICXX.Generate.Code.HsFFI
                    FFICXX.Generate.Code.Cabal
-                   FFICXX.Generate.Code.Dependency
                    FFICXX.Generate.Code.Primitive
                    FFICXX.Generate.ContentMaker
+                   FFICXX.Generate.Dependency
                    FFICXX.Generate.QQ.Verbatim
                    FFICXX.Generate.Util
                    FFICXX.Generate.Util.HaskellSrcExts

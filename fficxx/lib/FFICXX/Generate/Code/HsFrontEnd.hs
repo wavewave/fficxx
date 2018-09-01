@@ -17,25 +17,29 @@
 
 module FFICXX.Generate.Code.HsFrontEnd where
 
-import           Control.Monad.Reader
-import           Data.Either                             (lefts,rights)
-import           Data.List
-import           Data.Monoid                             ((<>))
-import           Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt
-                                                         ,name,pApp
-                                                         ,qualStmt,strE,tuple)
-import           Language.Haskell.Exts.Syntax            (Decl(..)
-                                                         ,ExportSpec(..)
-                                                         ,ImportDecl(..),InstDecl(..))
-import           System.FilePath                         ((<.>))
+import Control.Monad.Reader
+import Data.Either                             (lefts,rights)
+import Data.List
+import Data.Monoid                             ((<>))
+import Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt
+                                               ,name,pApp
+                                               ,qualStmt,strE,tuple)
+import Language.Haskell.Exts.Syntax            (Decl(..)
+                                               ,ExportSpec(..)
+                                               ,ImportDecl(..),InstDecl(..))
+import System.FilePath                         ((<.>))
 --
-import           FFICXX.Generate.Code.Dependency
-import           FFICXX.Generate.Code.Primitive
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Type.Annotate
-import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Util
-import           FFICXX.Generate.Util.HaskellSrcExts
+import FFICXX.Generate.Code.Primitive
+import FFICXX.Generate.Dependency              (class_allparents
+                                               ,extractClassDepForTopLevelFunction
+                                               ,getClassModuleBase,getTClassModuleBase
+                                               ,argumentDependency,returnDependency
+                                               )
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Annotate
+import FFICXX.Generate.Type.Module
+import FFICXX.Generate.Util
+import FFICXX.Generate.Util.HaskellSrcExts
 
 
 genHsFrontDecl :: Class -> Reader AnnotateMap (Decl ())
