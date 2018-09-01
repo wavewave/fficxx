@@ -164,3 +164,7 @@ C++ Template tricks
 * https://en.cppreference.com/w/cpp/language/template_argument_deduction
 * http://anderberg.me/2016/08/01/c-variadic-templates/
 * https://crascit.com/2015/03/21/practical-uses-for-variadic-templates/
+
+C++ Template Peculiarity
+========================
+* https://stackoverflow.com/questions/2354210/can-a-c-class-member-function-template-be-virtual

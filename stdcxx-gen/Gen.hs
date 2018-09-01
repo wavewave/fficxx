@@ -35,6 +35,7 @@ deletable =
   AbstractClass cabal "Deletable" [] mempty Nothing
   [ Destructor Nothing ]
   []
+  []
 
 string :: Class
 string =
@@ -46,11 +47,12 @@ string =
     , NonVirtual (cppclassref_ string) "erase" [] Nothing
     ]
     []
-
+    []
 
 ostream :: Class
 ostream = Class cabal "ostream" [] mempty
                 (Just (ClassAlias { caHaskellName = "Ostream", caFFIName = "ostream" }))
+                []
                 []
                 []
 
