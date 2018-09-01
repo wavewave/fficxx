@@ -43,12 +43,14 @@ Library
                    FFICXX.Generate.Builder
                    FFICXX.Generate.Config
                    FFICXX.Generate.Code.Cpp
+                   FFICXX.Generate.Code.HsCast
                    FFICXX.Generate.Code.HsFrontEnd
                    FFICXX.Generate.Code.HsFFI
+                   FFICXX.Generate.Code.HsTemplate
                    FFICXX.Generate.Code.Cabal
-                   FFICXX.Generate.Code.Dependency
                    FFICXX.Generate.Code.Primitive
                    FFICXX.Generate.ContentMaker
+                   FFICXX.Generate.Dependency
                    FFICXX.Generate.QQ.Verbatim
                    FFICXX.Generate.Util
                    FFICXX.Generate.Util.HaskellSrcExts
@@ -58,7 +60,7 @@ Library
                    FFICXX.Generate.Type.Class
                    FFICXX.Generate.Type.Module
                    FFICXX.Generate.Type.PackageInterface
-  ghc-options:     -Wall -Werror
+  ghc-options:     -Wall
                    -funbox-strict-fields
                    -fno-warn-unused-do-bind
                    -fno-warn-missing-signatures

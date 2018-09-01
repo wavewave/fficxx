@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      : FFICXX.Generate.Code.Dependency
+-- Module      : FFICXX.Generate.Dependency
 -- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
@@ -11,7 +11,7 @@
 --
 -----------------------------------------------------------------------------
 
-module FFICXX.Generate.Code.Dependency where
+module FFICXX.Generate.Dependency where
 
 --
 -- fficxx generates one module per one C++ class, and C++ class depends on other classes,

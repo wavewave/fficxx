@@ -106,6 +106,17 @@ data Variable = Variable { var_type :: Types
                          }
               deriving Show
 
+data TemplateMemberFunction =
+       TemplateMemberFunction {
+         tmf_param :: String
+       , tmf_ret :: Types
+       , tmf_name :: String
+       , tmf_args :: Args
+       , tmf_alias :: Maybe String
+       }
+       deriving Show
+
+
 data TopLevelFunction = TopLevelFunction { toplevelfunc_ret :: Types
                                          , toplevelfunc_name :: String
                                          , toplevelfunc_args :: Args
@@ -166,22 +177,26 @@ data ClassAlias = ClassAlias { caHaskellName :: String
                              }
 
 -- TODO: partial record must be avoided.
-data Class = Class { class_cabal :: Cabal
-                   , class_name :: String
-                   , class_parents :: [Class]
-                   , class_protected :: ProtectedMethod
-                   , class_alias :: Maybe ClassAlias
-                   , class_funcs :: [Function]
-                   , class_vars :: [Variable]
-                   }
-           | AbstractClass { class_cabal :: Cabal
-                           , class_name :: String
-                           , class_parents :: [Class]
-                           , class_protected :: ProtectedMethod
-                           , class_alias :: Maybe ClassAlias
-                           , class_funcs :: [Function]
-                           , class_vars :: [Variable]
-                           }
+data Class = Class {
+               class_cabal :: Cabal
+             , class_name :: String
+             , class_parents :: [Class]
+             , class_protected :: ProtectedMethod
+             , class_alias :: Maybe ClassAlias
+             , class_funcs :: [Function]
+             , class_vars :: [Variable]
+             , class_tmpl_funcs :: [TemplateMemberFunction]
+             }
+           | AbstractClass {
+               class_cabal :: Cabal
+             , class_name :: String
+             , class_parents :: [Class]
+             , class_protected :: ProtectedMethod
+             , class_alias :: Maybe ClassAlias
+             , class_funcs :: [Function]
+             , class_vars :: [Variable]
+             , class_tmpl_funcs :: [TemplateMemberFunction]
+             }
 
 -- TODO: we had better not override standard definitions
 instance Show Class where

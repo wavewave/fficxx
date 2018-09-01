@@ -17,25 +17,25 @@
 
 module FFICXX.Generate.Code.HsFrontEnd where
 
-import           Control.Monad.Reader
-import           Data.Either                             (lefts,rights)
-import           Data.List
-import           Data.Monoid                             ((<>))
-import           Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt
-                                                         ,name,pApp
-                                                         ,qualStmt,strE,tuple)
-import           Language.Haskell.Exts.Syntax            (Decl(..)
-                                                         ,ExportSpec(..)
-                                                         ,ImportDecl(..),InstDecl(..))
-import           System.FilePath                         ((<.>))
+import Control.Monad.Reader
+import Data.Either                             (lefts,rights)
+import Data.List
+import Data.Monoid                             ((<>))
+import Language.Haskell.Exts.Build             (app,letE,name,pApp)
+import Language.Haskell.Exts.Syntax            (Decl(..),ExportSpec(..),ImportDecl(..))
+import System.FilePath                         ((<.>))
 --
-import           FFICXX.Generate.Code.Dependency
-import           FFICXX.Generate.Code.Primitive
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Type.Annotate
-import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Util
-import           FFICXX.Generate.Util.HaskellSrcExts
+import FFICXX.Generate.Code.Primitive
+import FFICXX.Generate.Dependency              (class_allparents
+                                               ,extractClassDepForTopLevelFunction
+                                               ,getClassModuleBase,getTClassModuleBase
+                                               ,argumentDependency,returnDependency
+                                               )
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Annotate
+import FFICXX.Generate.Type.Module
+import FFICXX.Generate.Util
+import FFICXX.Generate.Util.HaskellSrcExts
 
 
 genHsFrontDecl :: Class -> Reader AnnotateMap (Decl ())
@@ -106,30 +106,6 @@ genHsFrontInstVariables c =
        <> mkFun (accessorName c v Setter) (accessorSignature c v Setter) [] (rhs Setter) Nothing
 
 
------
-
-castBody :: [InstDecl ()]
-castBody =
-  [ insDecl (mkBind1 "cast" [mkPVar "x",mkPVar "f"] (app (mkVar "f") (app (mkVar "castPtr") (app (mkVar "get_fptr") (mkVar "x")))) Nothing)
-  , insDecl (mkBind1 "uncast" [mkPVar "x",mkPVar "f"] (app (mkVar "f") (app (mkVar "cast_fptr_to_obj") (app (mkVar "castPtr") (mkVar "x")))) Nothing)
-  ]
-
-genHsFrontInstCastable :: Class -> Maybe (Decl ())
-genHsFrontInstCastable c
-  | (not.isAbstractClass) c =
-    let iname = typeclassName c
-        (_,rname) = hsClassName c
-        a = mkTVar "a"
-        ctxt = cxTuple [ classA (unqual iname) [a], classA (unqual "FPtr") [a] ]
-    in Just (mkInstance ctxt "Castable" [a,tyapp tyPtr (tycon rname)] castBody)
-  | otherwise = Nothing
-
-genHsFrontInstCastableSelf :: Class -> Maybe (Decl ())
-genHsFrontInstCastableSelf c
-  | (not.isAbstractClass) c =
-    let (cname,rname) = hsClassName c
-    in Just (mkInstance cxEmpty "Castable" [tycon cname, tyapp tyPtr (tycon rname)] castBody)
-  | otherwise = Nothing
 
 
 --------------------------
@@ -327,93 +303,3 @@ genImportInTopLevel modname (mods,tmods) tih =
              ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
              ++ concatMap genImportForTopLevelFunction tfns
 
---------------
--- Template --
---------------
-
-genTmplInterface :: TemplateClass -> [Decl ()]
-genTmplInterface t =
-  [ mkData rname [mkTBind tp] [] Nothing
-  , mkNewtype hname [mkTBind tp]
-      [ qualConDecl Nothing Nothing (conDecl hname [tyapp tyPtr rawtype]) ] Nothing
-  , mkClass cxEmpty (typeclassNameT t) [mkTBind tp] methods
-  , mkInstance cxEmpty "FPtr" [ hightype ] fptrbody
-  , mkInstance cxEmpty "Castable" [ hightype, tyapp tyPtr rawtype ] castBody
-  ]
- where (hname,rname) = hsTemplateClassName t
-       tp = tclass_param t
-       fs = tclass_funcs t
-       rawtype = tyapp (tycon rname) (mkTVar tp)
-       hightype = tyapp (tycon hname) (mkTVar tp)
-       sigdecl f = mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
-       methods = map (clsDecl . sigdecl) fs
-       fptrbody = [ insType (tyapp (tycon "Raw") hightype) rawtype
-                  , insDecl (mkBind1 "get_fptr" [pApp (name hname) [mkPVar "ptr"]] (mkVar "ptr") Nothing)
-                  , insDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
-                  ]
-
-
-genTmplImplementation :: TemplateClass -> [Decl ()]
-genTmplImplementation t = concatMap gen (tclass_funcs t)
-  where
-    gen f = mkFun nh sig [p "nty", p "ncty"] rhs (Just bstmts)
-      where nh = hsTmplFuncNameTH t f
-            nc = ffiTmplFuncName f
-            sig = tycon "Name" `tyfun` (tycon "String" `tyfun` tycon "ExpQ")
-            v = mkVar
-            p = mkPVar
-            tp = tclass_param t
-            prefix = tclass_name t
-            lit' = strE (prefix<>"_"<>nc<>"_")
-            lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
-            rhs = app (v "mkTFunc") (tuple [v "nty", v "ncty", lam, v "tyf"])
-            sig' = functionSignatureTT t f
-            bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
-                               (letE [ pbind (p tp) (v "return" `app` (con "ConT" `app` v "n")) Nothing ]
-                                  (bracketExp (typeBracket sig')))
-                               Nothing
-                           ]
-
-
-genTmplInstance :: TemplateClass -> [TemplateFunction] -> [Decl ()]
-genTmplInstance t fs = mkFun fname sig [p "n", p "ctyp"] rhs Nothing
-  where tname = tclass_name t
-        fname = "gen" <> tname <> "InstanceFor"
-        p = mkPVar
-        v = mkVar
-        sig = tycon "Name" `tyfun` (tycon "String" `tyfun` (tyapp (tycon "Q") (tylist (tycon "Dec"))))
-
-        nfs = zip ([1..] :: [Int]) fs
-        rhs = doE (map genstmt nfs <> [letStmt (lststmt nfs), qualStmt retstmt])
-
-        genstmt (n,f@TFun    {..}) = generator
-                                       (p ("f"<>show n))
-                                       (v "mkMember" `app` strE (hsTmplFuncName t f)
-                                                     `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` v    "n"
-                                                     `app` v    "ctyp"
-                                       )
-        genstmt (n,f@TFunNew {..}) = generator
-                                       (p ("f"<>show n))
-                                       (v "mkNew"    `app` strE (hsTmplFuncName t f)
-                                                     `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` v    "n"
-                                                     `app` v    "ctyp"
-                                       )
-        genstmt (n,f@TFunDelete)   = generator
-                                       (p ("f"<>show n))
-                                       (v "mkDelete" `app` strE (hsTmplFuncName t f)
-                                                     `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` v    "n"
-                                                     `app` v    "ctyp"
-                                       )
-        lststmt xs = [ pbind (p "lst") (list (map (v . (\n->"f"<>show n) . fst) xs)) Nothing ]
-        retstmt = v "return"
-                  `app` list [ v "mkInstance"
-                               `app` list []
-                               `app` (con "AppT"
-                                      `app` (v "con" `app` strE (typeclassNameT t))
-                                      `app` (con "ConT" `app` (v "n"))
-                                     )
-                               `app` (v "lst")
-                             ]
