@@ -43,8 +43,10 @@ Library
                    FFICXX.Generate.Builder
                    FFICXX.Generate.Config
                    FFICXX.Generate.Code.Cpp
+                   FFICXX.Generate.Code.HsCast
                    FFICXX.Generate.Code.HsFrontEnd
                    FFICXX.Generate.Code.HsFFI
+                   FFICXX.Generate.Code.HsTemplate
                    FFICXX.Generate.Code.Cabal
                    FFICXX.Generate.Code.Primitive
                    FFICXX.Generate.ContentMaker

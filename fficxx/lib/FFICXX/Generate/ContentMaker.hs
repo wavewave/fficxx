@@ -30,10 +30,13 @@ import           Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
 import           System.FilePath
 --
 import           FFICXX.Generate.Code.Cpp
+import           FFICXX.Generate.Code.HsCast            (genHsFrontInstCastable
+                                                        ,genHsFrontInstCastableSelf)
 import           FFICXX.Generate.Code.HsFFI             (genHsFFI
                                                         ,genImportInFFI
                                                         ,genTopLevelFuncFFI)
 import           FFICXX.Generate.Code.HsFrontEnd
+import           FFICXX.Generate.Code.HsTemplate
 import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Dependency
 import           FFICXX.Generate.Type.Annotate
