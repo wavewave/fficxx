@@ -20,8 +20,8 @@ import           TestPkg.A
 import           TestPkg.A.Implementation
 import           TestPkg.B
 
-$(genVectorInstanceFor ''CFloat "float")
-$(genUniquePtrInstanceFor ''A "A")
+$(genVectorInstanceFor [t|CFloat|] "float")
+$(genUniquePtrInstanceFor [t|A|] "A")
 
 main = do
   v :: Vector CFloat <- newVector

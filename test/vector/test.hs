@@ -12,8 +12,8 @@ import           STD.CppString
 import           STD.Vector.Template
 import qualified STD.Vector.TH as TH
 
-$(TH.genVectorInstanceFor ''CInt "int")
-$(TH.genVectorInstanceFor ''CppString "string")
+$(TH.genVectorInstanceFor [t|CInt|] "int")
+$(TH.genVectorInstanceFor [t|CppString|] "string")
 
 
 test1 = do
