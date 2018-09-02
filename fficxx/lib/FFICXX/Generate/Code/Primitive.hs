@@ -447,6 +447,54 @@ tmplRetTypeToString b (TemplateParam _)        = if b then "Type" else "Type ## 
 tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## _p"
 
 
+
+
+
+-- ---------------------------
+-- Template Member Function --
+-- ---------------------------
+
+tmplMemFuncArgToString :: Class -> (Types,String) -> String
+tmplMemFuncArgToString _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
+tmplMemFuncArgToString c (SelfType, varname) = ffiClassName c <> "_p " <> varname
+tmplMemFuncArgToString _ (CPT (CPTClass c) isconst, varname) =
+  case isconst of
+    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
+    NoConst -> ffiClassName c <> "_p " <> varname
+tmplMemFuncArgToString _ (CPT (CPTClassRef c) isconst, varname) =
+  case isconst of
+    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
+    NoConst -> ffiClassName c <> "_p " <> varname
+tmplMemFuncArgToString _ (CPT (CPTClassMove c) isconst, varname) =
+  case isconst of
+    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
+    NoConst -> ffiClassName c <> "_p " <> varname
+tmplMemFuncArgToString _ (TemplateApp     _, _v) = error "tmplMemFunArgToString: TemplateApp"
+tmplMemFuncArgToString _ (TemplateAppRef  _, _v) = error "tmplMemFunArgToString: TemplateAppRef"
+tmplMemFuncArgToString _ (TemplateAppMove _, _v) = error "tmplMemFunArgToString: TemplateAppMove"
+tmplMemFuncArgToString _ (TemplateType   _,  v) = "void* " <> v
+tmplMemFuncArgToString _ (TemplateParam _,v) = "Type##_p " <> v
+tmplMemFuncArgToString _ (TemplateParamPointer _,v) = "Type##_p " <> v
+tmplMemFuncArgToString _ _ = error "tmplMemFuncArgToString: undefined"
+
+
+tmplMemFuncRetTypeToString :: Class -> Types -> String
+tmplMemFuncRetTypeToString _ (CT ctyp isconst)        = ctypToStr ctyp isconst
+tmplMemFuncRetTypeToString _ Void                     = "void"
+tmplMemFuncRetTypeToString c SelfType                 = ffiClassName c <> "_p"
+tmplMemFuncRetTypeToString _ (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
+tmplMemFuncRetTypeToString _ (CPT (CPTClassRef c) _)  = ffiClassName c <> "_p"
+tmplMemFuncRetTypeToString _ (CPT (CPTClassCopy c) _) = ffiClassName c <> "_p"
+tmplMemFuncRetTypeToString _ (CPT (CPTClassMove c) _) = ffiClassName c <> "_p"
+tmplMemFuncRetTypeToString _ (TemplateApp     _)      = "void*"
+tmplMemFuncRetTypeToString _ (TemplateAppRef  _)      = "void*"
+tmplMemFuncRetTypeToString _ (TemplateAppMove _)      = "void*"
+tmplMemFuncRetTypeToString _ (TemplateType _)         = "void*"
+tmplMemFuncRetTypeToString _ (TemplateParam _)        = "Type##_p"
+tmplMemFuncRetTypeToString _ (TemplateParamPointer _) = "Type##_p"
+
+
+
 -- |
 convertC2HS :: CTypes -> Type ()
 convertC2HS CTString     = tycon "CString"
@@ -583,6 +631,15 @@ hsTmplFuncName t f =
 
 hsTmplFuncNameTH :: TemplateClass -> TemplateFunction -> String
 hsTmplFuncNameTH t f = "t_" <> hsTmplFuncName t f
+
+
+hsTemplateMemberFunctionName :: Class -> TemplateMemberFunction -> String
+hsTemplateMemberFunctionName c f = fromMaybe (nonvirtualName c (tmf_name f)) (tmf_alias f)
+  --   fst (hsClassName c) <> "_" <> tmf_name f -- TODO: alias
+
+
+hsTemplateMemberFunctionNameTH :: Class -> TemplateMemberFunction -> String
+hsTemplateMemberFunctionNameTH c f = "t_" <> hsTemplateMemberFunctionName c f
 
 
 ffiTmplFuncName :: TemplateFunction -> String
@@ -729,6 +786,7 @@ functionSignatureT t TFunDelete =
 
 
 
+
 functionSignatureTT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
  where
@@ -744,6 +802,15 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
       TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_args
       TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_new_args
       TFunDelete -> [e]
+
+
+functionSignatureTMF :: Class -> TemplateMemberFunction -> Type ()
+functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
+  where
+    ctyp = convertCpp2HS4Tmpl e Nothing spl (tmf_ret f)
+    e = tycon (fst (hsClassName c))
+    spl = tySplice (parenSplice (mkVar (tmf_param f)))
+    lst = e : map (convertCpp2HS4Tmpl e Nothing spl . fst) (tmf_args f)
 
 
 accessorCFunSig :: Types -> Accessor -> CFunSig

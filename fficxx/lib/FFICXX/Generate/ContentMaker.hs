@@ -36,7 +36,11 @@ import           FFICXX.Generate.Code.HsFFI             (genHsFFI
                                                         ,genImportInFFI
                                                         ,genTopLevelFuncFFI)
 import           FFICXX.Generate.Code.HsFrontEnd
-import           FFICXX.Generate.Code.HsTemplate
+import           FFICXX.Generate.Code.HsTemplate        (genTemplateMemberFunctions
+                                                        ,genTmplInstance
+                                                        ,genTmplInterface
+                                                        ,genTmplImplementation
+                                                        )
 import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Dependency
 import           FFICXX.Generate.Type.Annotate
@@ -90,7 +94,7 @@ buildTypeDeclHeader :: TypeMacro -- ^ typemacro
                  -> [Class]
                  -> String
 buildTypeDeclHeader (TypMcro typemacro) classes =
-  let typeDeclBodyStr   = genAllCppHeaderMacroType classes
+  let typeDeclBodyStr = intercalateWith connRet2 (genCppHeaderMacroType) classes
   in subst
        "#ifdef __cplusplus\n\
        \extern \"C\" { \n\
@@ -145,17 +149,23 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
                         connRet
                         (\x->"#include \""<>x<>"\"")
                         (map unHdrName (cihIncludedHPkgHeadersInH header))
-      declDefStr    = genAllCppHeaderMacroVirtual classes
+      declDefStr    = intercalateWith connRet2 genCppHeaderMacroVirtual classes
                       `connRet2`
-                      genAllCppHeaderMacroNonVirtual classes
+                      intercalateWith connRet genCppHeaderMacroNonVirtual classes
                       `connRet2`
-                      genAllCppHeaderMacroAccessor classes
+                      intercalateWith connRet genCppHeaderMacroAccessor classes
                       `connRet2`
-                      genAllCppDefMacroVirtual classes
+                      intercalateWith connRet2 genCppDefMacroVirtual classes
                       `connRet2`
-                      genAllCppDefMacroNonVirtual classes
+                      intercalateWith connRet2 genCppDefMacroNonVirtual classes
                       `connRet2`
-                      genAllCppDefMacroAccessor classes
+                      intercalateWith connRet2 genCppDefMacroAccessor classes
+                      `connRet2`
+                      flip (intercalateWith connRet2) classes
+                        (\c -> intercalateWith connRet2
+                                 (genCppDefMacroTemplateMemberFunction c)
+                                 (class_tmpl_funcs c)
+                        )
       classDeclsStr = -- NOTE: Deletable is treated specially.
                       -- TODO: We had better make it as a separate constructor in Class.
                       if (fst.hsClassName) aclass /= "Deletable"
@@ -361,19 +371,28 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
 buildImplementationHs :: AnnotateMap -> ClassModule -> Module ()
 buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                                  [ lang [ "EmptyDataDecls"
-                                        , "FlexibleContexts", "FlexibleInstances", "ForeignFunctionInterface"
+                                        , "FlexibleContexts"
+                                        , "FlexibleInstances"
+                                        , "ForeignFunctionInterface"
                                         , "IncoherentInstances"
                                         , "MultiParamTypeClasses"
                                         , "OverlappingInstances"
-                                        , "TypeFamilies", "TypeSynonymInstances"
+                                        , "TemplateHaskell"
+                                        , "TypeFamilies"
+                                        , "TypeSynonymInstances"
                                         ] ]
                                  implImports implBody
   where classes = cmClass m
-        implImports = [ mkImport "FFICXX.Runtime.Cast"
+        implImports = [ mkImport "Data.Monoid"                -- for template member
                       , mkImport "Data.Word"
                       , mkImport "Foreign.C"
                       , mkImport "Foreign.Ptr"
-                      , mkImport "System.IO.Unsafe" ]
+                      , mkImport "Language.Haskell.TH"        -- for template member
+                      , mkImport "Language.Haskell.TH.Syntax" -- for template member
+                      , mkImport "System.IO.Unsafe"
+                      , mkImport "FFICXX.Runtime.Cast"
+                      , mkImport "FFICXX.Runtime.TH"          -- for template member
+                      ]
                       <> genImportInImplementation m
                       <> genExtraImport m
         f :: Class -> [Decl ()]
@@ -384,6 +403,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
                    <> concatMap genHsFrontInstVariables classes
+                   <> concatMap genTemplateMemberFunctions classes
 
 buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m = mkModule (tcmModule m <.> "Template")
