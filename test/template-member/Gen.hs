@@ -72,26 +72,44 @@ cabal_ testH testCpp =
 extraDep = [ ]
 
 classA cabal =
-  Class cabal "A" [ deletable ] mempty Nothing
-    [ Constructor [ ] Nothing ]
-    [ ]
-    [ ]
+  Class {
+    class_cabal = cabal
+  , class_name = "A"
+  , class_parents = [ deletable ]
+  , class_protected = mempty
+  , class_alias = Nothing
+  , class_funcs = [ Constructor [ ] Nothing ]
+  , class_vars  = [ ]
+  , class_tmpl_funcs = [ ]
+  }
 
 classT1 cabal =
-  Class cabal "T1" [ deletable ] mempty Nothing
-    [ Constructor [ ] Nothing
-    , NonVirtual void_ "print" [ ] Nothing
-    ]
-    [ ]
-    [ ]
+  Class {
+    class_cabal = cabal
+  , class_name = "T1"
+  , class_parents = [ deletable ]
+  , class_protected = mempty
+  , class_alias = Nothing
+  , class_funcs = [ Constructor [ ] Nothing
+                  , NonVirtual void_ "print" [ ] Nothing
+                  ]
+  , class_vars = [ ]
+  , class_tmpl_funcs = [ ]
+  }
 
 classT2 cabal =
-  Class cabal "T2" [ deletable ] mempty Nothing
-    [ Constructor [ ] Nothing
-    , NonVirtual void_ "print" [ ] Nothing
-    ]
-    [ ]
-    [ ]
+  Class {
+    class_cabal = cabal
+  , class_name = "T2"
+  , class_parents = [ deletable ]
+  , class_protected = mempty
+  , class_alias = Nothing
+  , class_funcs = [ Constructor [ ] Nothing
+                  , NonVirtual void_ "print" [ ] Nothing
+                  ]
+  , class_vars = [ ]
+  , class_tmpl_funcs = [ ]
+  }
 
 classes cabal = [ classA cabal, classT1 cabal, classT2 cabal ]
 
