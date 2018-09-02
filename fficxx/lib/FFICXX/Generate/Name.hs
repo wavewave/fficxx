@@ -9,23 +9,6 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util
 
 
--- TODO: This should be deprecated.
-hsCTypeName :: CTypes -> String
-hsCTypeName CTString = "CString"
-hsCTypeName CTChar   = "CChar"
-hsCTypeName CTInt    = "CInt"
-hsCTypeName CTUInt   = "CUInt"
-hsCTypeName CTLong   = "CLong"
-hsCTypeName CTULong  = "CULong"
-hsCTypeName CTDouble = "CDouble"
-hsCTypeName CTDoubleStar = "(Ptr CDouble)"
-hsCTypeName CTBool   = "CInt"
-hsCTypeName CTVoidStar = "(Ptr ())"
-hsCTypeName CTIntStar = "(Ptr CInt)"
-hsCTypeName CTCharStarStar = "(Ptr (CString))"
-hsCTypeName (CPointer t) = "(Ptr " <> hsCTypeName t <> ")"
-hsCTypeName (CRef t) = "(Ptr " <> hsCTypeName t <> ")"
-
 
 hsFrontNameForTopLevelFunction :: TopLevelFunction -> String
 hsFrontNameForTopLevelFunction tfn =
