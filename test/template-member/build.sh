@@ -1,6 +1,6 @@
-#g++ -c test.cpp
-#g++ -c main.cpp
-#g++ -o main main.o test.o
+g++ -c test.cpp
+g++ -c main.cpp
+g++ -o main main.o test.o
 
 rm Gen.o
 rm -rf working

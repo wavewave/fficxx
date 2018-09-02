@@ -1,3 +1,5 @@
+#include <iostream>
+
 class A {
 public:
     A() {}
@@ -7,6 +9,7 @@ public:
 };
 
 template<typename T> void A::method( T* x ) {
+    std::cout << "in A::method" << std::endl;
     x->print();
 }
 

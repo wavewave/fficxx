@@ -74,13 +74,16 @@ extraDep = [ ]
 classA cabal =
   Class cabal "A" [ deletable ] mempty Nothing
     [ Constructor [ ] Nothing
+    , NonVirtual void_ "method<T1>" [ cppclass (classT1 cabal) "x" ] (Just "a_methodT1")
     ]
     [ ]
     [ ]
 
 classT1 cabal =
   Class cabal "T1" [ deletable ] mempty Nothing
-    [ Constructor [ ] Nothing ]
+    [ Constructor [ ] Nothing
+    , NonVirtual void_ "print" [ ] Nothing
+    ]
     [ ]
     [ ]
 
@@ -114,7 +117,7 @@ main = do
     testH   <- readFile "test.h"
     testCpp <- readFile "test.cpp"
     pure (cabal_ testH testCpp)
-  
+
   simpleBuilder
     "TestPkg"
     headerMap
