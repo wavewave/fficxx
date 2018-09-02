@@ -56,64 +56,67 @@ genTmplInterface t =
 genTmplImplementation :: TemplateClass -> [Decl ()]
 genTmplImplementation t = concatMap gen (tclass_funcs t)
   where
-    gen f = mkFun nh sig [p "nty", p "ncty"] rhs (Just bstmts)
+    gen f = mkFun nh sig [p "typ", p "suffix"] rhs (Just bstmts)
       where nh = hsTmplFuncNameTH t f
             nc = ffiTmplFuncName f
-            sig = tycon "Name" `tyfun` (tycon "String" `tyfun` tycon "ExpQ")
+            sig = tycon "Type" `tyfun` (tycon "String" `tyfun` tycon "ExpQ")
             v = mkVar
             p = mkPVar
             tp = tclass_param t
             prefix = tclass_name t
             lit' = strE (prefix<>"_"<>nc<>"_")
             lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
-            rhs = app (v "mkTFunc") (tuple [v "nty", v "ncty", lam, v "tyf"])
+            rhs = app (v "mkTFunc") (tuple [v "typ", v "suffix", lam, v "tyf"])
             sig' = functionSignatureTT t f
             bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
-                               (letE [ pbind (p tp) (v "return" `app` (con "ConT" `app` v "n")) Nothing ]
+                               (letE [ pbind (p tp) (v "pure" `app` (v "typ")) Nothing ]
                                   (bracketExp (typeBracket sig')))
                                Nothing
                            ]
 
 
 genTmplInstance :: TemplateClass -> [TemplateFunction] -> [Decl ()]
-genTmplInstance t fs = mkFun fname sig [p "n", p "ctyp"] rhs Nothing
+genTmplInstance t fs = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
   where tname = tclass_name t
         fname = "gen" <> tname <> "InstanceFor"
         p = mkPVar
         v = mkVar
-        sig = tycon "Name" `tyfun` (tycon "String" `tyfun` (tyapp (tycon "Q") (tylist (tycon "Dec"))))
-
+        sig = (tyapp (tycon "Q") (tycon "Type")) `tyfun`
+                (tycon "String" `tyfun`
+                  (tyapp (tycon "Q") (tylist (tycon "Dec"))))
         nfs = zip ([1..] :: [Int]) fs
-        rhs = doE (map genstmt nfs <> [letStmt (lststmt nfs), qualStmt retstmt])
-
+        rhs = doE (  [qtypstmt]
+                  <> map genstmt nfs
+                  <> [letStmt (lststmt nfs), qualStmt retstmt])
+        qtypstmt = generator (p "typ") (v "qtyp")
         genstmt (n,f@TFun    {..}) = generator
                                        (p ("f"<>show n))
                                        (v "mkMember" `app` strE (hsTmplFuncName t f)
                                                      `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` v    "n"
-                                                     `app` v    "ctyp"
+                                                     `app` v    "typ"
+                                                     `app` v    "suffix"
                                        )
         genstmt (n,f@TFunNew {..}) = generator
                                        (p ("f"<>show n))
                                        (v "mkNew"    `app` strE (hsTmplFuncName t f)
                                                      `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` v    "n"
-                                                     `app` v    "ctyp"
+                                                     `app` v    "typ"
+                                                     `app` v    "suffix"
                                        )
         genstmt (n,f@TFunDelete)   = generator
                                        (p ("f"<>show n))
                                        (v "mkDelete" `app` strE (hsTmplFuncName t f)
                                                      `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` v    "n"
-                                                     `app` v    "ctyp"
+                                                     `app` v    "typ"
+                                                     `app` v    "suffix"
                                        )
         lststmt xs = [ pbind (p "lst") (list (map (v . (\n->"f"<>show n) . fst) xs)) Nothing ]
-        retstmt = v "return"
+        retstmt = v "pure"
                   `app` list [ v "mkInstance"
                                `app` list []
                                `app` (con "AppT"
                                       `app` (v "con" `app` strE (typeclassNameT t))
-                                      `app` (con "ConT" `app` (v "n"))
+                                      `app` (v "typ")
                                      )
                                `app` (v "lst")
                              ]

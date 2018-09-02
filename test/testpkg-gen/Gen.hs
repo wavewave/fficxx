@@ -18,6 +18,7 @@ import FFICXX.Generate.Type.PackageInterface
 
 -- import from stdcxx
 stdcxx_cabal = Cabal { cabal_pkgname = CabalName "stdcxx"
+                     , cabal_version = "0.5"
                      , cabal_cheaderprefix = "STD"
                      , cabal_moduleprefix = "STD"
                      , cabal_additional_c_incs = []
@@ -32,13 +33,14 @@ deletable =
   AbstractClass stdcxx_cabal "Deletable" [] mempty Nothing
   [ Destructor Nothing ]
   []
-
+  []
 
 -- import from stdcxx
 string :: Class
 string =
   Class stdcxx_cabal "string" [ ] mempty
   (Just (ClassAlias { caHaskellName = "CppString", caFFIName = "string"}))
+  []
   []
   []
 
@@ -105,6 +107,7 @@ testCpp  =
 
 
 cabal = Cabal { cabal_pkgname = CabalName "testpkg"
+              , cabal_version = "0.0"
               , cabal_cheaderprefix = "TestPkg"
               , cabal_moduleprefix = "TestPkg"
               , cabal_additional_c_incs = [
@@ -124,9 +127,21 @@ cabal = Cabal { cabal_pkgname = CabalName "testpkg"
 
 extraDep = [ ]
 
-vectorfloat_ = TemplateApp t_vector (TArg_Other "CFloat") "std::vector<float>"
+vectorfloat_ =
+  TemplateApp
+    (TemplateAppInfo {
+       tapp_hstemplate = t_vector
+     , tapp_HsTypeForParam = TArg_Other "CFloat"
+     , tapp_CppTypeForParam = "std::vector<float>"
+     })
 
-vectorfloatref_ = TemplateAppRef t_vector (TArg_Other "CFloat") "std::vector<float>"
+vectorfloatref_ =
+  TemplateAppRef
+    (TemplateAppInfo {
+       tapp_hstemplate = t_vector
+     , tapp_HsTypeForParam = TArg_Other "CFloat"
+     , tapp_CppTypeForParam = "std::vector<float>"
+     })
 
 classA =
   Class cabal "A" [ deletable ] mempty Nothing
@@ -136,6 +151,7 @@ classA =
     [ Variable cint_ "member"
     , Variable (cppclasscopy_ string) "member2"
     ]
+    []
 
 classB =
   Class cabal "B" [ deletable ] mempty Nothing
@@ -143,7 +159,8 @@ classB =
     , Virtual void_ "call" [ (vectorfloatref_, "vec") ] Nothing
     , Virtual vectorfloat_ "call2" [] Nothing
     ]
-    [ ]
+    []
+    []
 
 classes = [ classA, classB ]
 

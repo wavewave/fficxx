@@ -13,7 +13,7 @@ import           STD.CppString
 import           STD.UniquePtr.Template
 import qualified STD.UniquePtr.TH as TH
 
-$(TH.genUniquePtrInstanceFor ''CppString "string")
+$(TH.genUniquePtrInstanceFor [t|CppString|] "string")
 
 main = do
   putStrLn "test"
