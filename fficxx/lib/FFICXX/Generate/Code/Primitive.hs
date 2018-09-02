@@ -696,7 +696,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
                     Just (_,c) -> tyapp tyPtr (tycon (snd (hsClassName c)))
                     Nothing    -> error "hsFFIFuncTyp: no self for top level function"
         hsargtype :: Types -> Type ()
-        hsargtype (CT ctype _) = tycon (hsCTypeName ctype)
+        hsargtype (CT ctype _)               = convertC2HS ctype
         hsargtype (CPT (CPTClass d) _)       = tyapp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
         hsargtype (CPT (CPTClassRef d) _)    = tyapp tyPtr (tycon rawname)
@@ -731,7 +731,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
         ---------------------------------------------------------
         hsrettype Void                       = unit_tycon
         hsrettype SelfType                   = selftyp
-        hsrettype (CT ctype _)               = tycon (hsCTypeName ctype)
+        hsrettype (CT ctype _)               = convertC2HS ctype
         hsrettype (CPT (CPTClass d) _)       = tyapp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
         hsrettype (CPT (CPTClassRef d) _)    = tyapp tyPtr (tycon rawname)
