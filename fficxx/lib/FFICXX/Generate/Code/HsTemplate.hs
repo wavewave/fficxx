@@ -1,19 +1,28 @@
 {-# LANGUAGE RecordWildCards   #-}
 module FFICXX.Generate.Code.HsTemplate where
 
+import Data.Maybe                              (fromMaybe)
 import Data.Monoid                             ((<>))
-import Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt
-                                               ,name,pApp
+import Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt,name,pApp
                                                ,qualStmt,strE,tuple)
 import Language.Haskell.Exts.Syntax            (Decl(..))
 --
 import FFICXX.Generate.Code.Primitive          (ffiTmplFuncName
-                                               ,functionSignatureT,functionSignatureTT
+                                               ,functionSignatureT
+                                               ,functionSignatureTT
+                                               ,functionSignatureTMF
                                                ,hsTemplateClassName
-                                               ,hsTmplFuncName,hsTmplFuncNameTH
+                                               ,hsTemplateMemberFunctionName
+                                               ,hsTemplateMemberFunctionNameTH
+                                               ,hsTmplFuncName
+                                               ,hsTmplFuncNameTH
+                                               ,nonvirtualName
                                                ,typeclassNameT)
 import FFICXX.Generate.Code.HsCast             (castBody)
-import FFICXX.Generate.Type.Class              (TemplateClass(..),TemplateFunction(..))
+import FFICXX.Generate.Type.Class              (Class(..)
+                                               ,TemplateClass(..)
+                                               ,TemplateFunction(..)
+                                               ,TemplateMemberFunction(..))
 import FFICXX.Generate.Util.HaskellSrcExts     (bracketExp
                                                ,con,conDecl,cxEmpty
                                                ,generator
@@ -27,9 +36,60 @@ import FFICXX.Generate.Util.HaskellSrcExts     (bracketExp
                                                ,typeBracket)
 
 
---------------
--- Template --
---------------
+
+------------------------------
+-- Template member function --
+------------------------------
+
+genTemplateMemberFunctions :: Class -> [Decl ()]
+genTemplateMemberFunctions c =
+  concatMap (\f -> genTMFExp c f <> genTMFInstance c f) (class_tmpl_funcs c)
+
+
+genTMFExp :: Class -> TemplateMemberFunction -> [Decl ()]
+genTMFExp c f = mkFun nh sig [p "typ", p "suffix"] rhs (Just bstmts)
+      where nh = hsTemplateMemberFunctionNameTH c f
+            sig = tycon "Type" `tyfun` (tycon "String" `tyfun` (tyapp (tycon "Q") (tycon "Exp")))
+            v = mkVar
+            p = mkPVar
+            tp = tmf_param f
+            lit' = strE (hsTemplateMemberFunctionName c f <> "_")
+            lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
+            rhs = app (v "mkTFunc") (tuple [v "typ", v "suffix", lam, v "tyf"])
+            sig' = functionSignatureTMF c f
+            bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
+                               (letE [ pbind (p tp) (v "pure" `app` (v "typ")) Nothing ]
+                                  (bracketExp (typeBracket sig')))
+                               Nothing
+                           ]
+
+
+genTMFInstance :: Class -> TemplateMemberFunction -> [Decl ()]
+genTMFInstance c f = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
+  where fname = "genInstanceFor_" <> hsTemplateMemberFunctionName c f
+        p = mkPVar
+        v = mkVar
+        sig = (tyapp (tycon "Q") (tycon "Type")) `tyfun`
+                (tycon "String" `tyfun`
+                  (tyapp (tycon "Q") (tylist (tycon "Dec"))))
+        rhs = doE [qtypstmt, genstmt, letStmt lststmt, qualStmt retstmt]
+        qtypstmt = generator (p "typ") (v "qtyp")
+        genstmt = generator
+                    (p "f1")
+                    (v "mkMember" `app` (     strE (hsTemplateMemberFunctionName c f <> "_")
+                                        `app` v "<>"
+                                        `app` v "suffix"
+                                        )
+                                  `app` v (hsTemplateMemberFunctionNameTH c f)
+                                  `app` v "typ"
+                                  `app` v "suffix"
+                    )
+        lststmt = [ pbind (p "lst") (list ([v "f1"])) Nothing ]
+        retstmt = v "pure" `app` v "lst"
+
+--------------------
+-- Template Class --
+--------------------
 
 genTmplInterface :: TemplateClass -> [Decl ()]
 genTmplInterface t =
@@ -59,7 +119,7 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
     gen f = mkFun nh sig [p "typ", p "suffix"] rhs (Just bstmts)
       where nh = hsTmplFuncNameTH t f
             nc = ffiTmplFuncName f
-            sig = tycon "Type" `tyfun` (tycon "String" `tyfun` tycon "ExpQ")
+            sig = tycon "Type" `tyfun` (tycon "String" `tyfun` (tyapp (tycon "Q") (tycon "Exp")))
             v = mkVar
             p = mkPVar
             tp = tclass_param t

@@ -585,6 +585,15 @@ hsTmplFuncNameTH :: TemplateClass -> TemplateFunction -> String
 hsTmplFuncNameTH t f = "t_" <> hsTmplFuncName t f
 
 
+hsTemplateMemberFunctionName :: Class -> TemplateMemberFunction -> String
+hsTemplateMemberFunctionName c f = fromMaybe (nonvirtualName c (tmf_name f)) (tmf_alias f)
+  --   fst (hsClassName c) <> "_" <> tmf_name f -- TODO: alias
+
+
+hsTemplateMemberFunctionNameTH :: Class -> TemplateMemberFunction -> String
+hsTemplateMemberFunctionNameTH c f = "t_" <> hsTemplateMemberFunctionName c f
+
+
 ffiTmplFuncName :: TemplateFunction -> String
 ffiTmplFuncName f =
   case f of
@@ -729,6 +738,7 @@ functionSignatureT t TFunDelete =
 
 
 
+
 functionSignatureTT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
  where
@@ -744,6 +754,15 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
       TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_args
       TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_new_args
       TFunDelete -> [e]
+
+
+functionSignatureTMF :: Class -> TemplateMemberFunction -> Type ()
+functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
+  where
+    ctyp = convertCpp2HS4Tmpl e Nothing spl (tmf_ret f)
+    e = tycon (fst (hsClassName c))
+    spl = tySplice (parenSplice (mkVar (tmf_param f)))
+    lst = e : map (convertCpp2HS4Tmpl e Nothing spl . fst) (tmf_args f)
 
 
 accessorCFunSig :: Types -> Accessor -> CFunSig

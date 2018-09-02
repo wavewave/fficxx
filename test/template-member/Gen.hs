@@ -80,7 +80,15 @@ classA cabal =
   , class_alias = Nothing
   , class_funcs = [ Constructor [ ] Nothing ]
   , class_vars  = [ ]
-  , class_tmpl_funcs = [ ]
+  , class_tmpl_funcs =
+      [ TemplateMemberFunction {
+          tmf_param = "t"
+        , tmf_ret = void_
+        , tmf_name = "method"
+        , tmf_args = [ (TemplateParam "t", "x") ]
+        , tmf_alias = Nothing
+        }
+      ]
   }
 
 classT1 cabal =
@@ -90,9 +98,10 @@ classT1 cabal =
   , class_parents = [ deletable ]
   , class_protected = mempty
   , class_alias = Nothing
-  , class_funcs = [ Constructor [ ] Nothing
-                  , NonVirtual void_ "print" [ ] Nothing
-                  ]
+  , class_funcs =
+      [ Constructor [ ] Nothing
+      , NonVirtual void_ "print" [ ] Nothing
+      ]
   , class_vars = [ ]
   , class_tmpl_funcs = [ ]
   }
@@ -104,9 +113,10 @@ classT2 cabal =
   , class_parents = [ deletable ]
   , class_protected = mempty
   , class_alias = Nothing
-  , class_funcs = [ Constructor [ ] Nothing
-                  , NonVirtual void_ "print" [ ] Nothing
-                  ]
+  , class_funcs =
+      [ Constructor [ ] Nothing
+      , NonVirtual void_ "print" [ ] Nothing
+      ]
   , class_vars = [ ]
   , class_tmpl_funcs = [ ]
   }

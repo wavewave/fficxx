@@ -36,7 +36,11 @@ import           FFICXX.Generate.Code.HsFFI             (genHsFFI
                                                         ,genImportInFFI
                                                         ,genTopLevelFuncFFI)
 import           FFICXX.Generate.Code.HsFrontEnd
-import           FFICXX.Generate.Code.HsTemplate
+import           FFICXX.Generate.Code.HsTemplate        (genTemplateMemberFunctions
+                                                        ,genTmplInstance
+                                                        ,genTmplInterface
+                                                        ,genTmplImplementation
+                                                        )
 import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Dependency
 import           FFICXX.Generate.Type.Annotate
@@ -361,19 +365,28 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
 buildImplementationHs :: AnnotateMap -> ClassModule -> Module ()
 buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                                  [ lang [ "EmptyDataDecls"
-                                        , "FlexibleContexts", "FlexibleInstances", "ForeignFunctionInterface"
+                                        , "FlexibleContexts"
+                                        , "FlexibleInstances"
+                                        , "ForeignFunctionInterface"
                                         , "IncoherentInstances"
                                         , "MultiParamTypeClasses"
                                         , "OverlappingInstances"
-                                        , "TypeFamilies", "TypeSynonymInstances"
+                                        , "TemplateHaskell"
+                                        , "TypeFamilies"
+                                        , "TypeSynonymInstances"
                                         ] ]
                                  implImports implBody
   where classes = cmClass m
-        implImports = [ mkImport "FFICXX.Runtime.Cast"
+        implImports = [ mkImport "Data.Monoid"                -- for template member
                       , mkImport "Data.Word"
                       , mkImport "Foreign.C"
                       , mkImport "Foreign.Ptr"
-                      , mkImport "System.IO.Unsafe" ]
+                      , mkImport "Language.Haskell.TH"        -- for template member
+                      , mkImport "Language.Haskell.TH.Syntax" -- for template member
+                      , mkImport "System.IO.Unsafe"
+                      , mkImport "FFICXX.Runtime.Cast"
+                      , mkImport "FFICXX.Runtime.TH"          -- for template member
+                      ]
                       <> genImportInImplementation m
                       <> genExtraImport m
         f :: Class -> [Decl ()]
@@ -384,6 +397,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
                    <> concatMap genHsFrontInstVariables classes
+                   <> concatMap genTemplateMemberFunctions classes
 
 buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m = mkModule (tcmModule m <.> "Template")
