@@ -9,19 +9,6 @@ import Language.Haskell.TH.Syntax
 import FFICXX.Runtime.TH
 import FFICXX.Runtime.Function.Template
 
-{-
-mkTFunc' :: (Type, String, String -> String, Type -> Q Type) -> Q Exp
-mkTFunc' (typ, suffix, nf, tyf)
-  = do let fn = nf suffix
-       let fn' = "c_" <> fn
-       n <- newName fn'
-       let fn'' = "wrap_" <> fn
-       n_wrap <- newName fn''
-       d <- forImpD CCall safe fn n (tyf typ)
-       d_wrap <- forImpD CCall safe "wrapper" n_wrap (pure typ)
-       addTopDecls [d]
-       [| $( varE n ) |]
--}
 
 mkWrapper :: (Type,String) -> Q Dec
 mkWrapper (typ,suffix)
@@ -32,23 +19,6 @@ mkWrapper (typ,suffix)
        pure $
          FunD (mkNameS "wrapFunPtr") [ Clause [] (NormalB (VarE n)) [] ]
 
-{-
-mkNew' :: String -> (Type -> String -> Q Exp) -> Type -> String -> Q Dec
-mkNew' fname f typ suffix = do
-  e <- f typ suffix
-  pure $
-    FunD (mkNameS fname)
-      [ Clause [] (NormalB e) [] ]
--}
-
-{-
-mkMember' :: String -> (Type -> String -> Q Exp) -> Type -> String -> Q Dec
-mkMember' fname f typ suffix = do
-  let x = mkNameS "x"
-  e <- f typ suffix
-  pure $
-    FunD (mkNameS fname) [ Clause [VarP x] (NormalB (AppE e (VarE x))) [] ]
--}
 
 t_newFunction :: Type -> String -> ExpQ
 t_newFunction typ suffix
