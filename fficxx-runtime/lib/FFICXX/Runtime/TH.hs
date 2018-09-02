@@ -33,10 +33,7 @@ mkTFunc (typ, suffix, nf, tyf)
   = do let fn = nf suffix
        let fn' = "c_" <> fn
        n <- newName fn'
-       let fn'' = "wrap_" <> fn
-       n_wrap <- newName fn''
        d <- forImpD CCall safe fn n (tyf typ)
-       d_wrap <- forImpD CCall safe "wrapper" n_wrap (pure typ)
        addTopDecls [d]
        [| $( varE n ) |]
 
