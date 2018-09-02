@@ -130,7 +130,7 @@ extraDep = [ ]
 vectorfloat_ =
   TemplateApp
     (TemplateAppInfo {
-       tapp_hstemplate = t_vector
+       tapp_tclass = t_vector
      , tapp_HsTypeForParam = TArg_Other "CFloat"
      , tapp_CppTypeForParam = "std::vector<float>"
      })
@@ -138,7 +138,7 @@ vectorfloat_ =
 vectorfloatref_ =
   TemplateAppRef
     (TemplateAppInfo {
-       tapp_hstemplate = t_vector
+       tapp_tclass = t_vector
      , tapp_HsTypeForParam = TArg_Other "CFloat"
      , tapp_CppTypeForParam = "std::vector<float>"
      })

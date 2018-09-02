@@ -496,13 +496,13 @@ convertCpp2HS _c (CPT (CPTClassRef c') _)  = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (TemplateApp x)     = tyapp
-                                         (tycon (tclass_name (tapp_hstemplate x)))
+                                         (tycon (tclass_name (tapp_tclass x)))
                                          (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
 convertCpp2HS _c (TemplateAppRef x)  = tyapp
-                                         (tycon (tclass_name (tapp_hstemplate x)))
+                                         (tycon (tclass_name (tapp_tclass x)))
                                          (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
 convertCpp2HS _c (TemplateAppMove x) = tyapp
-                                         (tycon (tclass_name (tapp_hstemplate x)))
+                                         (tycon (tclass_name (tapp_tclass x)))
                                          (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
 convertCpp2HS _c (TemplateType t)    = tyapp
                                          (tycon (tclass_name t))
@@ -591,15 +591,15 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
            -- it is not clear whether the following is okay or not.
            (TemplateApp x)    -> pure $
                                    tyapp
-                                     (tycon (tclass_name (tapp_hstemplate x)))
+                                     (tycon (tclass_name (tapp_tclass x)))
                                      (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
            (TemplateAppRef x) -> pure $
                                    tyapp
-                                     (tycon (tclass_name (tapp_hstemplate x)))
+                                     (tycon (tclass_name (tapp_tclass x)))
                                      (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
            (TemplateAppMove x)-> pure $
                                    tyapp
-                                     (tycon (tclass_name (tapp_hstemplate x)))
+                                     (tycon (tclass_name (tapp_tclass x)))
                                      (tycon (hsClassNameForTArg (tapp_HsTypeForParam x)))
            (TemplateType t)   -> pure $
                                    tyapp
@@ -710,19 +710,19 @@ hsFFIFuncTyp msc (CFunSig args ret) =
                                         (tyapp
                                            (tycon rawname)
                                            (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
-          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
+          where rawname = snd (hsTemplateClassName (tapp_tclass x))
         hsargtype (TemplateAppRef x) = tyapp
                                          tyPtr
                                          (tyapp
                                             (tycon rawname)
                                             (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
-          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
+          where rawname = snd (hsTemplateClassName (tapp_tclass x))
         hsargtype (TemplateAppMove x)= tyapp
                                          tyPtr
                                          (tyapp
                                             (tycon rawname)
                                             (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
-          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
+          where rawname = snd (hsTemplateClassName (tapp_tclass x))
         hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateParam p)          = mkTVar p
@@ -745,19 +745,19 @@ hsFFIFuncTyp msc (CFunSig args ret) =
                                          (tyapp
                                             (tycon rawname)
                                             (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
-          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
+          where rawname = snd (hsTemplateClassName (tapp_tclass x))
         hsrettype (TemplateAppRef x) = tyapp
                                          tyPtr
                                          (tyapp
                                             (tycon rawname)
                                             (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
-          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
+          where rawname = snd (hsTemplateClassName (tapp_tclass x))
         hsrettype (TemplateAppMove x)= tyapp
                                          tyPtr
                                          (tyapp
                                             (tycon rawname)
                                             (tycon (hsClassNameForTArg (tapp_HsTypeForParam x))))
-          where rawname = snd (hsTemplateClassName (tapp_hstemplate x))
+          where rawname = snd (hsTemplateClassName (tapp_tclass x))
         hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p)          = mkTVar p
