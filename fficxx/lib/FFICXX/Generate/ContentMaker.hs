@@ -94,7 +94,7 @@ buildTypeDeclHeader :: TypeMacro -- ^ typemacro
                  -> [Class]
                  -> String
 buildTypeDeclHeader (TypMcro typemacro) classes =
-  let typeDeclBodyStr   = intercalateWith connRet2 (genCppHeaderMacroType) classes
+  let typeDeclBodyStr = intercalateWith connRet2 (genCppHeaderMacroType) classes
   in subst
        "#ifdef __cplusplus\n\
        \extern \"C\" { \n\
@@ -160,6 +160,12 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
                       intercalateWith connRet2 genCppDefMacroNonVirtual classes
                       `connRet2`
                       intercalateWith connRet2 genCppDefMacroAccessor classes
+                      `connRet2`
+                      flip (intercalateWith connRet2) classes
+                        (\c -> intercalateWith connRet2
+                                 (genCppDefMacroTemplateMemberFunction c)
+                                 (class_tmpl_funcs c)
+                        )
       classDeclsStr = -- NOTE: Deletable is treated specially.
                       -- TODO: We had better make it as a separate constructor in Class.
                       if (fst.hsClassName) aclass /= "Deletable"

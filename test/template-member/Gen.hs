@@ -85,7 +85,7 @@ classA cabal =
           tmf_param = "t"
         , tmf_ret = void_
         , tmf_name = "method"
-        , tmf_args = [ (TemplateParam "t", "x") ]
+        , tmf_args = [ (TemplateParamPointer "t", "x") ]
         , tmf_alias = Nothing
         }
       ]

@@ -123,7 +123,7 @@ genCppDefMacroNonVirtual aclass =
   in  defBodyStr
 
 
----- "Class Definition Accessor" Declaration
+---- Define Macro to provide Accessor C-C++ shim code for a class
 
 genCppDefMacroAccessor :: Class -> String
 genCppDefMacroAccessor c =
@@ -133,8 +133,25 @@ genCppDefMacroAccessor c =
       funcDefStr = accessorsToDefs (class_vars c)
   in  defBodyStr
 
+---- Define Macro to provide TemplateMemberFunction C-C++ shim code for a class
 
----- "Class Definition Virtual/NonVirtual" Instances
+genCppDefMacroTemplateMemberFunction :: Class -> TemplateMemberFunction -> String
+genCppDefMacroTemplateMemberFunction c f = subst tmpl ctxt
+  where
+    tmpl = "#define ${macroname}(Type) \\\n\
+           \  extern \"C\" { \\\n\
+           \    $decl; \\\n\
+           \  } \\\n\
+           \  inline $defn \\\n\
+           \  auto a_${macroname}_##Type = ${macroname}_##Type  ;\n"
+    ctxt = context
+             [ ("macroname", hsTemplateMemberFunctionName c f)
+             , ("decl"     , tmplMemberFunToDecl c f)
+             , ("defn"     , tmplMemberFunToDef c f)
+             ]
+
+
+---- Invoke Macro to define Virtual/NonVirtual method for a class
 
 genCppDefInstVirtual :: (Class,Class) -> String
 genCppDefInstVirtual (p,c) =
@@ -407,8 +424,7 @@ accessorsToDecls vs =
 
 accessorToDef :: Variable -> Accessor -> String
 accessorToDef v a =
-  let -- csig = accessorCFunSig (var_type v) a
-      declstr = accessorToDecl v a
+  let declstr = accessorToDecl v a
       varexp = "to_nonconst<Type,Type ## _t>(p)->" <> var_name v
       body Getter = "return (" <> castCpp2C (var_type v) varexp <> ");"
       body Setter =    varexp
@@ -422,3 +438,34 @@ accessorsToDefs :: [Variable] -> String
 accessorsToDefs vs =
   let defs = concatMap (\v -> [accessorToDef v Getter,accessorToDef v Setter]) vs
   in intercalate "; \\\n" defs
+
+
+
+-- Template Member Function Declaration and Definition
+
+-- TODO: Handle simple type
+tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> String
+tmplMemberFunToDecl c f =
+  subst "$ret ${macroname}_##Type ( $args )"
+    (context [ ("macroname", hsTemplateMemberFunctionName c f)
+             , ("args"     , intercalateWith conncomma (tmplMemFuncArgToString c) ((SelfType,"p"):tmf_args f))
+             , ("ret"      , tmplMemFuncRetTypeToString c (tmf_ret f))
+             ])
+
+
+-- TODO: Handle simple type
+tmplMemberFunToDef :: Class -> TemplateMemberFunction -> String
+tmplMemberFunToDef c f =
+    intercalateWith connBSlash id [ declstr
+                                  , "  {"
+                                  , "    " <> returnstr
+                                  , "  }"
+                                  ]
+  where
+    declstr = tmplMemberFunToDecl c f
+    callstr =    "(to_nonconst<" <> ffiClassName c  <> "," <> ffiClassName c <> "_t" <> ">(p))"
+              <> "->"
+              <> tmf_name f
+              <> "<Type>"
+              <> "(" <> tmplAllArgsToCallString False (tmf_args f) <> ")"
+    returnstr = returnCpp False (tmf_ret f) callstr

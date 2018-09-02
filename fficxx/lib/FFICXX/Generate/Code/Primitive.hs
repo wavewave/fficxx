@@ -447,6 +447,54 @@ tmplRetTypeToString b (TemplateParam _)        = if b then "Type" else "Type ## 
 tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## _p"
 
 
+
+
+
+-- ---------------------------
+-- Template Member Function --
+-- ---------------------------
+
+tmplMemFuncArgToString :: Class -> (Types,String) -> String
+tmplMemFuncArgToString _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
+tmplMemFuncArgToString c (SelfType, varname) = ffiClassName c <> "_p " <> varname
+tmplMemFuncArgToString _ (CPT (CPTClass c) isconst, varname) =
+  case isconst of
+    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
+    NoConst -> ffiClassName c <> "_p " <> varname
+tmplMemFuncArgToString _ (CPT (CPTClassRef c) isconst, varname) =
+  case isconst of
+    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
+    NoConst -> ffiClassName c <> "_p " <> varname
+tmplMemFuncArgToString _ (CPT (CPTClassMove c) isconst, varname) =
+  case isconst of
+    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
+    NoConst -> ffiClassName c <> "_p " <> varname
+tmplMemFuncArgToString _ (TemplateApp     _, _v) = error "tmplMemFunArgToString: TemplateApp"
+tmplMemFuncArgToString _ (TemplateAppRef  _, _v) = error "tmplMemFunArgToString: TemplateAppRef"
+tmplMemFuncArgToString _ (TemplateAppMove _, _v) = error "tmplMemFunArgToString: TemplateAppMove"
+tmplMemFuncArgToString _ (TemplateType   _,  v) = "void* " <> v
+tmplMemFuncArgToString _ (TemplateParam _,v) = "Type##_p " <> v
+tmplMemFuncArgToString _ (TemplateParamPointer _,v) = "Type##_p " <> v
+tmplMemFuncArgToString _ _ = error "tmplMemFuncArgToString: undefined"
+
+
+tmplMemFuncRetTypeToString :: Class -> Types -> String
+tmplMemFuncRetTypeToString _ (CT ctyp isconst)        = ctypToStr ctyp isconst
+tmplMemFuncRetTypeToString _ Void                     = "void"
+tmplMemFuncRetTypeToString c SelfType                 = ffiClassName c <> "_p"
+tmplMemFuncRetTypeToString _ (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
+tmplMemFuncRetTypeToString _ (CPT (CPTClassRef c) _)  = ffiClassName c <> "_p"
+tmplMemFuncRetTypeToString _ (CPT (CPTClassCopy c) _) = ffiClassName c <> "_p"
+tmplMemFuncRetTypeToString _ (CPT (CPTClassMove c) _) = ffiClassName c <> "_p"
+tmplMemFuncRetTypeToString _ (TemplateApp     _)      = "void*"
+tmplMemFuncRetTypeToString _ (TemplateAppRef  _)      = "void*"
+tmplMemFuncRetTypeToString _ (TemplateAppMove _)      = "void*"
+tmplMemFuncRetTypeToString _ (TemplateType _)         = "void*"
+tmplMemFuncRetTypeToString _ (TemplateParam _)        = "Type##_p"
+tmplMemFuncRetTypeToString _ (TemplateParamPointer _) = "Type##_p"
+
+
+
 -- |
 convertC2HS :: CTypes -> Type ()
 convertC2HS CTString     = tycon "CString"

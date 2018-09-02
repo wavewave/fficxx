@@ -6,12 +6,8 @@ import TestPkg.A.Implementation
 import TestPkg.T1
 import TestPkg.T2
 
-
--- import TH
-
 $(genInstanceFor_a_method [t|T1|] "T1")
 $(genInstanceFor_a_method [t|T2|] "T2")
-
 
 main :: IO ()
 main = do
