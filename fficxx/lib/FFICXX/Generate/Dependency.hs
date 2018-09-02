@@ -40,7 +40,7 @@ import           Data.Maybe
 import           Data.Monoid                ((<>))
 import           System.FilePath
 --
-import           FFICXX.Generate.Code.Primitive (ffiClassName,hsClassName,hsTemplateClassName)
+import           FFICXX.Generate.Name       (ffiClassName,hsClassName,hsTemplateClassName)
 import           FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc,CabalName(..)
                                             ,cabal_moduleprefix,cabal_pkgname
                                             ,cabal_cheaderprefix,unCabalName)

@@ -41,8 +41,9 @@ import           FFICXX.Generate.Code.HsTemplate        (genTemplateMemberFuncti
                                                         ,genTmplInterface
                                                         ,genTmplImplementation
                                                         )
-import           FFICXX.Generate.Code.Primitive
 import           FFICXX.Generate.Dependency
+import           FFICXX.Generate.Name                   (ffiClassName,hsClassName
+                                                        ,hsFrontNameForTopLevelFunction)
 import           FFICXX.Generate.Type.Annotate
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module

@@ -1,24 +1,22 @@
 {-# LANGUAGE RecordWildCards   #-}
 module FFICXX.Generate.Code.HsTemplate where
 
-import Data.Maybe                              (fromMaybe)
 import Data.Monoid                             ((<>))
 import Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt,name,pApp
                                                ,qualStmt,strE,tuple)
 import Language.Haskell.Exts.Syntax            (Decl(..))
 --
-import FFICXX.Generate.Code.Primitive          (ffiTmplFuncName
-                                               ,functionSignatureT
+import FFICXX.Generate.Code.Primitive          (functionSignatureT
                                                ,functionSignatureTT
-                                               ,functionSignatureTMF
+                                               ,functionSignatureTMF)
+import FFICXX.Generate.Code.HsCast             (castBody)
+import FFICXX.Generate.Name                    (ffiTmplFuncName
                                                ,hsTemplateClassName
                                                ,hsTemplateMemberFunctionName
                                                ,hsTemplateMemberFunctionNameTH
                                                ,hsTmplFuncName
                                                ,hsTmplFuncNameTH
-                                               ,nonvirtualName
                                                ,typeclassNameT)
-import FFICXX.Generate.Code.HsCast             (castBody)
 import FFICXX.Generate.Type.Class              (Class(..)
                                                ,TemplateClass(..)
                                                ,TemplateFunction(..)

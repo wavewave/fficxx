@@ -19,7 +19,26 @@ import Data.Char
 import Data.List                             (intercalate)
 import Data.Monoid                           ((<>))
 --
-import FFICXX.Generate.Code.Primitive
+import FFICXX.Generate.Code.Primitive        (accessorCFunSig
+                                             ,argsToCallString
+                                             ,argsToString
+                                             ,argsToStringNoSelf
+                                             ,castCpp2C
+                                             ,castC2Cpp
+                                             ,CFunSig(..)
+                                             ,genericFuncArgs
+                                             ,genericFuncRet
+                                             ,rettypeToString
+                                             ,tmplMemFuncArgToString
+                                             ,tmplMemFuncRetTypeToString
+                                             ,tmplAllArgsToCallString
+                                             ,tmplAllArgsToString
+                                             ,tmplRetTypeToString)
+import FFICXX.Generate.Name                  (aliasedFuncName
+                                             ,cppFuncName
+                                             ,ffiClassName
+                                             ,ffiTmplFuncName
+                                             ,hsTemplateMemberFunctionName)
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
