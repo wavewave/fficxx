@@ -131,7 +131,7 @@ vectorfloat_ =
   TemplateApp
     (TemplateAppInfo {
        tapp_tclass = t_vector
-     , tapp_HsTypeForParam = TArg_Other "CFloat"
+     , tapp_tparam = TArg_Other "CFloat"
      , tapp_CppTypeForParam = "std::vector<float>"
      })
 
@@ -139,7 +139,7 @@ vectorfloatref_ =
   TemplateAppRef
     (TemplateAppInfo {
        tapp_tclass = t_vector
-     , tapp_HsTypeForParam = TArg_Other "CFloat"
+     , tapp_tparam = TArg_Other "CFloat"
      , tapp_CppTypeForParam = "std::vector<float>"
      })
 

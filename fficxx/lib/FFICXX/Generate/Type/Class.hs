@@ -58,7 +58,7 @@ data TemplateArgType = TArg_Class Class
 
 data TemplateAppInfo = TemplateAppInfo {
                          tapp_tclass :: TemplateClass
-                       , tapp_HsTypeForParam :: TemplateArgType
+                       , tapp_tparam :: TemplateArgType
                        , tapp_CppTypeForParam :: String
                        }
                      deriving Show
