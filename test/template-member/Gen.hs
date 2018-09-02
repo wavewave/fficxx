@@ -73,9 +73,7 @@ extraDep = [ ]
 
 classA cabal =
   Class cabal "A" [ deletable ] mempty Nothing
-    [ Constructor [ ] Nothing
-    , NonVirtual void_ "method<T1>" [ cppclass (classT1 cabal) "x" ] (Just "a_methodT1")
-    ]
+    [ Constructor [ ] Nothing ]
     [ ]
     [ ]
 
@@ -87,7 +85,15 @@ classT1 cabal =
     [ ]
     [ ]
 
-classes cabal = [ classA cabal, classT1 cabal ]
+classT2 cabal =
+  Class cabal "T2" [ deletable ] mempty Nothing
+    [ Constructor [ ] Nothing
+    , NonVirtual void_ "print" [ ] Nothing
+    ]
+    [ ]
+    [ ]
+
+classes cabal = [ classA cabal, classT1 cabal, classT2 cabal ]
 
 toplevelfunctions = [ ]
 
@@ -108,6 +114,13 @@ headerMap =
           , muimports_headers = [HdrName "test.h"]
           }
         )
+      , ( MU_Class "T2"
+        , ModuleUnitImports {
+            muimports_namespaces = []
+          , muimports_headers = [HdrName "test.h"]
+          }
+        )
+
       ]
 
 

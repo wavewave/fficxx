@@ -1,5 +1,7 @@
 #include <MacroPatternMatch.h>
-#include "TestPkgA.h"
+//#include "TestPkgA.h"
+//#include "TestPkgB.h"
+#include "testpkgType.h"
 #include "test.h"
 
 #define A_method(Type)                                                  \
@@ -16,3 +18,5 @@
 
 
 A_method(T1)
+
+A_method(T2)

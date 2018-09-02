@@ -21,3 +21,11 @@ public:
 
     void print();
 };
+
+class T2 {
+public:
+    T2() {}
+    ~T2() {}
+
+    void print();
+};
