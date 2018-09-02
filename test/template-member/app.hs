@@ -7,10 +7,10 @@ import TestPkg.T1
 import TestPkg.T2
 
 
-import TH
+-- import TH
 
-$(instance_a_method [t|T1|] "T1")
-$(instance_a_method [t|T2|] "T2")
+$(genInstanceFor_a_method [t|T1|] "T1")
+$(genInstanceFor_a_method [t|T2|] "T2")
 
 
 main :: IO ()

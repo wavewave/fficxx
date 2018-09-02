@@ -1,6 +1,4 @@
 #include <MacroPatternMatch.h>
-//#include "TestPkgA.h"
-//#include "TestPkgB.h"
 #include "testpkgType.h"
 #include "test.h"
 

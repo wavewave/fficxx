@@ -43,8 +43,6 @@ genCppHeaderMacroType c = let tmpl = "// Opaque type definition for $classname \
                                     \typedef ${classname}_t const* const_${classname}_p; \n"
                       in subst tmpl (context [ ("classname", ffiClassName c) ])
 
-genAllCppHeaderMacroType :: [Class] -> String
-genAllCppHeaderMacroType = intercalateWith connRet2 (genCppHeaderMacroType)
 
 ---- "Class Declaration Virtual" Declaration
 
@@ -55,8 +53,6 @@ genCppHeaderMacroVirtual aclass =
   in subst tmpl (context [ ("classname", map toUpper (ffiClassName aclass) )
                          , ("funcdecl" , funcDeclStr                     ) ])
 
-genAllCppHeaderMacroVirtual :: [Class] -> String
-genAllCppHeaderMacroVirtual = intercalateWith connRet2 genCppHeaderMacroVirtual
 
 ---- "Class Declaration Non-Virtual" Declaration
 
@@ -69,9 +65,6 @@ genCppHeaderMacroNonVirtual c =
                                      . class_funcs $ c
   in  declBodyStr
 
-genAllCppHeaderMacroNonVirtual :: [Class] -> String
-genAllCppHeaderMacroNonVirtual = intercalateWith connRet genCppHeaderMacroNonVirtual
-
 
 ---- "Class Declaration Accessor" Declaration
 
@@ -82,10 +75,6 @@ genCppHeaderMacroAccessor c =
                                         , ("funcdecl" , funcDeclStr               ) ])
       funcDeclStr = accessorsToDecls (class_vars c)
   in  declBodyStr
-
-genAllCppHeaderMacroAccessor :: [Class] -> String
-genAllCppHeaderMacroAccessor = intercalateWith connRet genCppHeaderMacroAccessor
-
 
 
 ---- "Class Declaration Virtual/NonVirtual/Accessor" Instances
@@ -121,8 +110,6 @@ genCppDefMacroVirtual aclass =
       funcDefStr = (funcsToDefs aclass) . virtualFuncs . class_funcs $ aclass
   in  defBodyStr
 
-genAllCppDefMacroVirtual :: [Class] -> String
-genAllCppDefMacroVirtual = intercalateWith connRet2 genCppDefMacroVirtual
 
 ---- "Class Definition NonVirtual" Declaration
 
@@ -135,9 +122,6 @@ genCppDefMacroNonVirtual aclass =
                                         . class_funcs $ aclass
   in  defBodyStr
 
-genAllCppDefMacroNonVirtual :: [Class] -> String
-genAllCppDefMacroNonVirtual = intercalateWith connRet2 genCppDefMacroNonVirtual
-
 
 ---- "Class Definition Accessor" Declaration
 
@@ -148,9 +132,6 @@ genCppDefMacroAccessor c =
                                        , ("funcdef"  , funcDefStr                  ) ])
       funcDefStr = accessorsToDefs (class_vars c)
   in  defBodyStr
-
-genAllCppDefMacroAccessor :: [Class] -> String
-genAllCppDefMacroAccessor = intercalateWith connRet2 genCppDefMacroAccessor
 
 
 ---- "Class Definition Virtual/NonVirtual" Instances
