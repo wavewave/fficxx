@@ -25,7 +25,23 @@ import Language.Haskell.Exts.Build             (app,letE,name,pApp)
 import Language.Haskell.Exts.Syntax            (Decl(..),ExportSpec(..),ImportDecl(..))
 import System.FilePath                         ((<.>))
 --
-import FFICXX.Generate.Code.Primitive
+import FFICXX.Generate.Code.Primitive          (CFunSig(..),HsFunSig(..)
+                                               ,accessorSignature
+                                               ,classConstraints
+                                               ,convertCpp2HS
+                                               ,extractArgRetTypes
+                                               ,functionSignature
+                                               ,hsFuncXformer
+                                               )
+import FFICXX.Generate.Name                    (accessorName
+                                               ,aliasedFuncName
+                                               ,constructorName
+                                               ,hsClassName
+                                               ,hscAccessorName
+                                               ,hscFuncName
+                                               ,hsFuncName
+                                               ,hsFrontNameForTopLevelFunction
+                                               ,typeclassName)
 import FFICXX.Generate.Dependency              (class_allparents
                                                ,extractClassDepForTopLevelFunction
                                                ,getClassModuleBase,getTClassModuleBase

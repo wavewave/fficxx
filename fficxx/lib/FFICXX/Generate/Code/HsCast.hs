@@ -3,7 +3,7 @@ module FFICXX.Generate.Code.HsCast where
 import Language.Haskell.Exts.Build             (app)
 import Language.Haskell.Exts.Syntax            (Decl(..),InstDecl(..))
 --
-import FFICXX.Generate.Code.Primitive          (hsClassName,typeclassName)
+import FFICXX.Generate.Name                    (hsClassName,typeclassName)
 import FFICXX.Generate.Type.Class              (Class(..),isAbstractClass)
 import FFICXX.Generate.Util.HaskellSrcExts     (classA
                                                ,cxEmpty,cxTuple,insDecl

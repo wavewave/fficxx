@@ -51,6 +51,7 @@ Library
                    FFICXX.Generate.Code.Primitive
                    FFICXX.Generate.ContentMaker
                    FFICXX.Generate.Dependency
+                   FFICXX.Generate.Name
                    FFICXX.Generate.QQ.Verbatim
                    FFICXX.Generate.Util
                    FFICXX.Generate.Util.HaskellSrcExts

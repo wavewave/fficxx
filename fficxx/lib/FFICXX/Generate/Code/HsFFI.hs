@@ -22,16 +22,16 @@ import System.FilePath                         ((<.>))
 --
 import FFICXX.Generate.Code.Primitive          (CFunSig(..)
                                                ,accessorCFunSig
-                                               ,aliasedFuncName
-                                               ,ffiClassName
                                                ,genericFuncArgs
                                                ,genericFuncRet
-                                               ,hscAccessorName
-                                               ,hscFuncName
                                                ,hsFFIFuncTyp)
 import FFICXX.Generate.Dependency              (class_allparents
                                                ,getClassModuleBase
                                                ,getTClassModuleBase)
+import FFICXX.Generate.Name                    (aliasedFuncName
+                                               ,ffiClassName
+                                               ,hscAccessorName
+                                               ,hscFuncName)
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
