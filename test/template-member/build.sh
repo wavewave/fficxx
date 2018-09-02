@@ -1,5 +1,13 @@
-g++ -c test.cpp
+#g++ -c test.cpp
+#g++ -c main.cpp
+#g++ -o main main.o test.o
 
-g++ -c main.cpp
+rm Gen.o
+rm -rf working
+ghc Gen.hs && ./Gen && cd testpkg && cabal clean && cd ..
 
-g++ -o main main.o test.o
+cabal sandbox delete && cabal sandbox init && cabal sandbox add-source testpkg && cabal install testpkg
+
+cabal exec -- ghc -c app.hs
+cabal exec -- ghc app.hs
+
