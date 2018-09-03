@@ -53,6 +53,7 @@ data IsConst = Const | NoConst
 --   in vector<float>.
 --   For now, this distinguishes Class and non-Class.
 data TemplateArgType = TArg_Class Class
+                     | TArg_TypeParam String
                      | TArg_Other String
                      deriving Show
 

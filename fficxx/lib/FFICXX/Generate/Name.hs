@@ -36,6 +36,7 @@ hsClassName c =
 
 hsClassNameForTArg :: TemplateArgType -> String
 hsClassNameForTArg (TArg_Class c) = fst (hsClassName c)
+hsClassNameForTArg (TArg_TypeParam p) = p
 hsClassNameForTArg (TArg_Other s) = s
 
 hsTemplateClassName :: TemplateClass -> (String, String)  -- ^ High-level, 'Raw'-level
