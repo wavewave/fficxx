@@ -61,6 +61,11 @@ getparents = either (const []) (map Right . class_parents)
 -- TODO: replace tclass_name with appropriate FFI name when supported.
 getFFIName = either tclass_name ffiClassName
 
+
+getPkgName :: Either TemplateClass Class -> CabalName
+getPkgName = cabal_pkgname . getcabal
+
+
 -- |
 extractClassFromType :: Types -> [Either TemplateClass Class]
 extractClassFromType Void                     = []
@@ -184,21 +189,20 @@ mkModuleDepRaw x@(Left t) =
   (nub . filter (/= x) . concatMap (returnDependency.extractClassDepForTmplFun) . tclass_funcs) t
 
 
-getPkgName :: Either TemplateClass Class -> CabalName
-getPkgName = cabal_pkgname . getcabal
 
-filterNotInSamePackage
+isNotInSamePackageWith
   :: Either TemplateClass Class
-  -> [Either TemplateClass Class]
-  -> [Either TemplateClass Class]
-filterNotInSamePackage y = filter (\x-> (x /= y) && (getPkgName x /= getPkgName y))
+  -> Either TemplateClass Class
+  -> Bool
+isNotInSamePackageWith x y = (x /= y) && (getPkgName x /= getPkgName y)
 
-filterInSamePackage
-  :: Either TemplateClass Class
-  -> [Either TemplateClass Class]
-  -> [Either TemplateClass Class]
-filterInSamePackage y =
-  filter (\x-> x /= y && not (x `elem` getparents y) && (getPkgName x == getPkgName y))
+-- x is in the sam
+isInSamePackageButNotInheritedBy
+  :: Either TemplateClass Class -- ^ y
+  -> Either TemplateClass Class -- ^ x
+  -> Bool
+isInSamePackageButNotInheritedBy x y =
+  x /= y && not (x `elem` getparents y) && (getPkgName x == getPkgName y)
 
 
 -- TODO: Confirm the following answer
@@ -207,14 +211,13 @@ filterInSamePackage y =
 mkModuleDepHighNonSource :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepHighNonSource y@(Right c) =
   let fs = class_funcs c
-      -- pkgname = (cabal_pkgname . class_cabal) c
-      extclasses = filterNotInSamePackage y $ concatMap (argumentDependency.extractClassDep) fs
+      extclasses = filter (`isNotInSamePackageWith` y) $
+                     concatMap (argumentDependency.extractClassDep) fs
       parents = map Right (class_parents c)
   in  nub (parents <> extclasses)
 mkModuleDepHighNonSource y@(Left t) =
   let fs = tclass_funcs t
-      -- pkgname = (cabal_pkgname . tclass_cabal) t
-      extclasses = filterNotInSamePackage y $
+      extclasses = filter (`isNotInSamePackageWith` y) $
                      concatMap (argumentDependency.extractClassDepForTmplFun) fs
   in  nub extclasses
 
@@ -225,12 +228,14 @@ mkModuleDepHighNonSource y@(Left t) =
 mkModuleDepHighSource :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepHighSource y@(Right c) =
   let fs = class_funcs c
-      -- pkgname = (cabal_pkgname . class_cabal) c
-  in  nub . filterInSamePackage y . concatMap (argumentDependency.extractClassDep) $ fs
+  in nub $
+       filter (`isInSamePackageButNotInheritedBy` y) $
+         concatMap (argumentDependency.extractClassDep) fs
 mkModuleDepHighSource y@(Left t) =
   let fs = tclass_funcs t
-      -- pkgname = (cabal_pkgname . tclass_cabal) t
-  in  nub . filterInSamePackage y . concatMap (argumentDependency.extractClassDepForTmplFun) $ fs
+  in nub $
+       filter (`isInSamePackageButNotInheritedBy` y) $
+         concatMap (argumentDependency.extractClassDepForTmplFun) fs
 
 -- |
 mkModuleDepCpp :: Either TemplateClass Class -> [Either TemplateClass Class]
