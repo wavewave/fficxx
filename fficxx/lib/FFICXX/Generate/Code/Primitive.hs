@@ -384,6 +384,15 @@ tmplArgToCallString _ (CPT (CPTClassMove c) _,varname) =
   -- TODO: Rewrite this with static_cast.
   "std::move(to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>"))" where str = ffiClassName c
 tmplArgToCallString _ (CT (CRef _) _,varname) = "(*"<> varname<> ")"
+tmplArgToCallString _ (TemplateApp _,varname)     = -- TODO: Implement this.
+                                                    error "tmplArgToCallString: TemplateApp"
+tmplArgToCallString _ (TemplateAppRef _,varname)  = -- TODO: Implement this.
+                                                    error "tmplArgToCallString: TemplateAppRef"
+tmplArgToCallString _ (TemplateAppMove x,varname) =
+  case tapp_tparam x of
+    TArg_TypeParam p -> "std::move(*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")))"
+    _ -> -- TODO: Implement this.
+         error "tmplArgToCallString: TemplateAppMove"
 tmplArgToCallString b (TemplateParam _,varname) =
   case b of
     True  -> varname
