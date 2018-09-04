@@ -151,6 +151,12 @@ extractClassDepForTmplFun TFunDelete =
     Dep4Func [] []
 
 
+extractClassDep4TmplMemberFun :: TemplateMemberFunction -> Dep4Func
+extractClassDep4TmplMemberFun (TemplateMemberFunction {..}) =
+  Dep4Func (extractClassFromType tmf_ret) (concatMap (extractClassFromType.fst) tmf_args)
+
+
+
 extractClassDepForTopLevelFunction :: TopLevelFunction -> Dep4Func
 extractClassDepForTopLevelFunction f =
     Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
@@ -162,40 +168,69 @@ extractClassDepForTopLevelFunction f =
                  TopLevelVariable {..} -> []
 
 
--- |
+-- TODO: Confirm the answer below is correct.
+-- NOTE: Q: Why returnDependency only?
+--       A: Difference between argument and return:
+--          for a member function f,
+--          we have (f :: (IA a, IB b) => a -> b -> IO C
+--          return class is concrete and argument class is constraint.
 mkModuleDepRaw :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepRaw x@(Right c)
-  = (nub . filter (/= x) . concatMap (returnDependency.extractClassDep) . class_funcs) c
-mkModuleDepRaw x@(Left t)
-  = (nub . filter (/= x) . concatMap (returnDependency.extractClassDepForTmplFun) . tclass_funcs) t
+mkModuleDepRaw x@(Right c) =
+  nub $
+    filter (/= x) $
+         concatMap (returnDependency . extractClassDep) (class_funcs c)
+      ++ concatMap (returnDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
+mkModuleDepRaw x@(Left t) =
+  (nub . filter (/= x) . concatMap (returnDependency.extractClassDepForTmplFun) . tclass_funcs) t
 
 
--- |
+getPkgName :: Either TemplateClass Class -> CabalName
+getPkgName = cabal_pkgname . getcabal
+
+filterNotInSamePackage
+  :: Either TemplateClass Class
+  -> [Either TemplateClass Class]
+  -> [Either TemplateClass Class]
+filterNotInSamePackage y = filter (\x-> (x /= y) && (getPkgName x /= getPkgName y))
+
+filterInSamePackage
+  :: Either TemplateClass Class
+  -> [Either TemplateClass Class]
+  -> [Either TemplateClass Class]
+filterInSamePackage y =
+  filter (\x-> x /= y && not (x `elem` getparents y) && (getPkgName x == getPkgName y))
+
+
+-- TODO: Confirm the following answer
+-- NOTE: Q: why returnDependency is not considered?
+--       A: See explanation in mkModuleDepRaw
 mkModuleDepHighNonSource :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepHighNonSource y@(Right c) =
   let fs = class_funcs c
-      pkgname = (cabal_pkgname . class_cabal) c
-      extclasses = (filter (\x-> x /= y && ((/= pkgname) . cabal_pkgname . getcabal) x) . concatMap (argumentDependency.extractClassDep)) fs
+      -- pkgname = (cabal_pkgname . class_cabal) c
+      extclasses = filterNotInSamePackage y $ concatMap (argumentDependency.extractClassDep) fs
       parents = map Right (class_parents c)
   in  nub (parents <> extclasses)
 mkModuleDepHighNonSource y@(Left t) =
   let fs = tclass_funcs t
-      pkgname = (cabal_pkgname . tclass_cabal) t
-      extclasses = (filter (\x-> x /= y && ((/= pkgname) . cabal_pkgname . getcabal) x) . concatMap (argumentDependency.extractClassDepForTmplFun)) fs
+      -- pkgname = (cabal_pkgname . tclass_cabal) t
+      extclasses = filterNotInSamePackage y $
+                     concatMap (argumentDependency.extractClassDepForTmplFun) fs
   in  nub extclasses
 
 
--- |
+-- TODO: Confirm the following answer
+-- NOTE: Q: why returnDependency is not considered?
+--       A: See explanation in mkModuleDepRaw
 mkModuleDepHighSource :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepHighSource y@(Right c) =
   let fs = class_funcs c
-      pkgname = (cabal_pkgname . class_cabal) c
-      -- TODO: QUESTION: why returnDependency is not considered?
-  in  nub . filter (\x-> x /= y && not (x `elem` getparents y) && (((== pkgname) . cabal_pkgname . getcabal) x)) . concatMap (argumentDependency.extractClassDep) $ fs
+      -- pkgname = (cabal_pkgname . class_cabal) c
+  in  nub . filterInSamePackage y . concatMap (argumentDependency.extractClassDep) $ fs
 mkModuleDepHighSource y@(Left t) =
   let fs = tclass_funcs t
-      pkgname = (cabal_pkgname . tclass_cabal) t
-  in  nub . filter (\x-> x /= y && not (x `elem` getparents y) && (((== pkgname) . cabal_pkgname . getcabal) x)) . concatMap (argumentDependency.extractClassDepForTmplFun) $ fs
+      -- pkgname = (cabal_pkgname . tclass_cabal) t
+  in  nub . filterInSamePackage y . concatMap (argumentDependency.extractClassDepForTmplFun) $ fs
 
 -- |
 mkModuleDepCpp :: Either TemplateClass Class -> [Either TemplateClass Class]
