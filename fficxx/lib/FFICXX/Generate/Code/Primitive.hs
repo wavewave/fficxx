@@ -347,9 +347,9 @@ tmplArgToString _ _ (CPT (CPTClassMove c) isconst, varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplArgToString _ _ (TemplateApp     _, _v) = error "tmpArgToString: TemplateApp"
-tmplArgToString _ _ (TemplateAppRef  _, _v) = error "tmpArgToString: TemplateAppRef"
-tmplArgToString _ _ (TemplateAppMove _, _v) = error "tmpArgToString: TemplateAppMove"
+tmplArgToString _ _ (TemplateApp     _, v) = "void* " <> v
+tmplArgToString _ _ (TemplateAppRef  _, v) = "void* " <> v
+tmplArgToString _ _ (TemplateAppMove _, v) = "void* " <> v
 tmplArgToString _ _ (TemplateType   _,  v) = "void* " <> v
 tmplArgToString True  _ (TemplateParam _,v) = "Type " <> v
 tmplArgToString False _ (TemplateParam _,v) = "Type ## _p " <> v
@@ -384,6 +384,21 @@ tmplArgToCallString _ (CPT (CPTClassMove c) _,varname) =
   -- TODO: Rewrite this with static_cast.
   "std::move(to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>"))" where str = ffiClassName c
 tmplArgToCallString _ (CT (CRef _) _,varname) = "(*"<> varname<> ")"
+tmplArgToCallString _ (TemplateApp x,varname) =
+  case tapp_tparam x of
+    TArg_TypeParam p -> "static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")"
+    _ -> -- TODO: Implement this.
+         error "tmplArgToCallString: TemplateApp"
+tmplArgToCallString _ (TemplateAppRef x,varname) =
+  case tapp_tparam x of
+    TArg_TypeParam p -> "*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> "))"
+    _ -> -- TODO: Implement this.
+         error "tmplArgToCallString: TemplateAppRef"
+tmplArgToCallString _ (TemplateAppMove x,varname) =
+  case tapp_tparam x of
+    TArg_TypeParam p -> "std::move(*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")))"
+    _ -> -- TODO: Implement this.
+         error "tmplArgToCallString: TemplateAppMove"
 tmplArgToCallString b (TemplateParam _,varname) =
   case b of
     True  -> varname
@@ -442,9 +457,9 @@ tmplMemFuncArgToString _ (CPT (CPTClassMove c) isconst, varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplMemFuncArgToString _ (TemplateApp     _, _v) = error "tmplMemFunArgToString: TemplateApp"
-tmplMemFuncArgToString _ (TemplateAppRef  _, _v) = error "tmplMemFunArgToString: TemplateAppRef"
-tmplMemFuncArgToString _ (TemplateAppMove _, _v) = error "tmplMemFunArgToString: TemplateAppMove"
+tmplMemFuncArgToString _ (TemplateApp     _, v) = "void* " <> v
+tmplMemFuncArgToString _ (TemplateAppRef  _, v) = "void* " <> v
+tmplMemFuncArgToString _ (TemplateAppMove _, v) = "void* " <> v
 tmplMemFuncArgToString _ (TemplateType   _,  v) = "void* " <> v
 tmplMemFuncArgToString _ (TemplateParam _,v) = "Type##_p " <> v
 tmplMemFuncArgToString _ (TemplateParamPointer _,v) = "Type##_p " <> v
@@ -511,7 +526,12 @@ convertCpp2HS _c (TemplateParam p)         = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
 
 -- |
-convertCpp2HS4Tmpl :: Type () -> Maybe Class -> Type () -> Types -> Type ()
+convertCpp2HS4Tmpl
+  :: Type ()    -- ^ self
+  -> Maybe Class
+  -> Type ()    -- ^ type paramemter splice
+  -> Types
+  -> Type ()
 convertCpp2HS4Tmpl _ _c _ Void                  = unit_tycon
 convertCpp2HS4Tmpl _ (Just c) _ SelfType        = tycon ((fst.hsClassName) c)
 convertCpp2HS4Tmpl _ Nothing _ SelfType         = error "convertCpp2HS4Tmpl : SelfType but no class "
@@ -520,12 +540,27 @@ convertCpp2HS4Tmpl _ _c _ (CPT (CPTClass c') _)     = (tycon . fst . hsClassName
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassRef c') _)  = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS4Tmpl e _c _ (TemplateApp _ )          = e
-convertCpp2HS4Tmpl e _c _ (TemplateAppRef _)        = e
-convertCpp2HS4Tmpl e _c _ (TemplateAppMove _)       = e
+convertCpp2HS4Tmpl e c s x@(TemplateApp p) =
+  case tapp_tparam p of
+    TArg_TypeParam _ -> let t = tapp_tclass p
+                            (hname,_) = hsTemplateClassName t
+                        in tyapp (tycon hname) s
+    _ -> convertCpp2HS c x
+convertCpp2HS4Tmpl e c s x@(TemplateAppRef p) =
+  case tapp_tparam p of
+    TArg_TypeParam _ -> let t = tapp_tclass p
+                            (hname,_) = hsTemplateClassName t
+                        in tyapp (tycon hname) s
+    _ -> convertCpp2HS c x
+convertCpp2HS4Tmpl e c s x@(TemplateAppMove p) =
+  case tapp_tparam p of
+    TArg_TypeParam _ -> let t = tapp_tclass p
+                            (hname,_) = hsTemplateClassName t
+                        in tyapp (tycon hname) s
+    _ -> convertCpp2HS c x
 convertCpp2HS4Tmpl e _c _ (TemplateType _)          = e
-convertCpp2HS4Tmpl _ _c t (TemplateParam _)         = t
-convertCpp2HS4Tmpl _ _c t (TemplateParamPointer _)  = t
+convertCpp2HS4Tmpl _ _c s (TemplateParam _)         = s
+convertCpp2HS4Tmpl _ _c s (TemplateParamPointer _)  = s
 
 
 hsFuncXformer :: Function -> String
@@ -640,7 +675,7 @@ functionSignatureT t TFunDelete =
 
 
 
-
+-- TODO: rename this and combine this with functionSignatureTMF
 functionSignatureTT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
  where
@@ -657,7 +692,7 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
       TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_new_args
       TFunDelete -> [e]
 
-
+-- TODO: rename this and combine this with functionSignatureTT
 functionSignatureTMF :: Class -> TemplateMemberFunction -> Type ()
 functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
   where

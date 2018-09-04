@@ -13,7 +13,7 @@ cd testpkg && cabal clean && cd ..
 cabal sandbox delete && cabal sandbox init && cabal sandbox add-source testpkg && cabal install testpkg
 
 g++ -c stub.cc -I${BASEDIR}/stdcxx-0.5/include -I${BASEDIR}/fficxx-runtime-0.5/include -Itestpkg/csrc
-cabal exec -- ghc -c TH.hs
+#cabal exec -- ghc -c TH.hs
 cabal exec -- ghc -c app.hs
 cabal exec -- ghc app.hs stub.o
 
