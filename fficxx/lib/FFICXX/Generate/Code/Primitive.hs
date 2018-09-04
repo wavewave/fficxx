@@ -347,9 +347,9 @@ tmplArgToString _ _ (CPT (CPTClassMove c) isconst, varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplArgToString _ _ (TemplateApp     _, _v) = error "tmpArgToString: TemplateApp"
-tmplArgToString _ _ (TemplateAppRef  _, _v) = error "tmpArgToString: TemplateAppRef"
-tmplArgToString _ _ (TemplateAppMove _, _v) = error "tmpArgToString: TemplateAppMove"
+tmplArgToString _ _ (TemplateApp     _, v) = "void* " <> v
+tmplArgToString _ _ (TemplateAppRef  _, v) = "void* " <> v
+tmplArgToString _ _ (TemplateAppMove _, v) = "void* " <> v
 tmplArgToString _ _ (TemplateType   _,  v) = "void* " <> v
 tmplArgToString True  _ (TemplateParam _,v) = "Type " <> v
 tmplArgToString False _ (TemplateParam _,v) = "Type ## _p " <> v
@@ -442,9 +442,9 @@ tmplMemFuncArgToString _ (CPT (CPTClassMove c) isconst, varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplMemFuncArgToString _ (TemplateApp     _, _v) = error "tmplMemFunArgToString: TemplateApp"
-tmplMemFuncArgToString _ (TemplateAppRef  _, _v) = error "tmplMemFunArgToString: TemplateAppRef"
-tmplMemFuncArgToString _ (TemplateAppMove _, _v) = error "tmplMemFunArgToString: TemplateAppMove"
+tmplMemFuncArgToString _ (TemplateApp     _, v) = "void* " <> v
+tmplMemFuncArgToString _ (TemplateAppRef  _, v) = "void* " <> v
+tmplMemFuncArgToString _ (TemplateAppMove _, v) = "void* " <> v
 tmplMemFuncArgToString _ (TemplateType   _,  v) = "void* " <> v
 tmplMemFuncArgToString _ (TemplateParam _,v) = "Type##_p " <> v
 tmplMemFuncArgToString _ (TemplateParamPointer _,v) = "Type##_p " <> v

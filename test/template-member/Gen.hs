@@ -46,6 +46,7 @@ string =
 
 t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t" [ ]
 
+t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" "t" [ ]
 
 
 
@@ -86,6 +87,21 @@ classA cabal =
         , tmf_ret = void_
         , tmf_name = "method"
         , tmf_args = [ (TemplateParamPointer "t", "x") ]
+        , tmf_alias = Nothing
+        }
+      , TemplateMemberFunction {
+          tmf_param = "t"
+        , tmf_ret = void_
+        , tmf_name = "method2"
+        , tmf_args = [ (TemplateAppMove
+                          (TemplateAppInfo {
+                             tapp_tclass = t_unique_ptr
+                           , tapp_tparam = TArg_TypeParam "t"
+                           , tapp_CppTypeForParam = "std::unique_ptr<Type>"
+                           })
+                       , "x"
+                       )
+                     ]
         , tmf_alias = Nothing
         }
       ]
