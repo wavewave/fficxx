@@ -210,9 +210,9 @@ isInSamePackageButNotInheritedBy x y =
 --       A: See explanation in mkModuleDepRaw
 mkModuleDepHighNonSource :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepHighNonSource y@(Right c) =
-  let fs = class_funcs c
-      extclasses = filter (`isNotInSamePackageWith` y) $
-                     concatMap (argumentDependency.extractClassDep) fs
+  let extclasses = filter (`isNotInSamePackageWith` y) $
+                        concatMap (argumentDependency.extractClassDep) (class_funcs c)
+                     ++ concatMap (argumentDependency.extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
       parents = map Right (class_parents c)
   in  nub (parents <> extclasses)
 mkModuleDepHighNonSource y@(Left t) =
@@ -227,25 +227,28 @@ mkModuleDepHighNonSource y@(Left t) =
 --       A: See explanation in mkModuleDepRaw
 mkModuleDepHighSource :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepHighSource y@(Right c) =
-  let fs = class_funcs c
-  in nub $
-       filter (`isInSamePackageButNotInheritedBy` y) $
-         concatMap (argumentDependency.extractClassDep) fs
+  nub $
+    filter (`isInSamePackageButNotInheritedBy` y) $
+         concatMap (argumentDependency . extractClassDep) (class_funcs c)
+      ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
 mkModuleDepHighSource y@(Left t) =
   let fs = tclass_funcs t
   in nub $
        filter (`isInSamePackageButNotInheritedBy` y) $
-         concatMap (argumentDependency.extractClassDepForTmplFun) fs
+         concatMap (argumentDependency . extractClassDepForTmplFun) fs
 
 -- |
 mkModuleDepCpp :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepCpp y@(Right c) =
   let fs = class_funcs c
       vs = class_vars c
+      tmfs = class_tmpl_funcs c
   in  nub . filter (/= y)  $
            concatMap (returnDependency.extractClassDep) fs
         <> concatMap (argumentDependency.extractClassDep) fs
         <> concatMap (extractClassFromType . var_type) vs
+        <> concatMap (returnDependency.extractClassDep4TmplMemberFun) tmfs
+        <> concatMap (argumentDependency.extractClassDep4TmplMemberFun) tmfs
         <> getparents y
 mkModuleDepCpp y@(Left t) =
   let fs = tclass_funcs t
@@ -258,9 +261,12 @@ mkModuleDepCpp y@(Left t) =
 mkModuleDepFFI1 :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepFFI1 (Right c) = let fs = class_funcs c
                                 vs = class_vars c
+                                tmfs = class_tmpl_funcs c
                             in    concatMap (returnDependency.extractClassDep) fs
                                <> concatMap (argumentDependency.extractClassDep) fs
                                <> concatMap (extractClassFromType . var_type) vs
+                               <> concatMap (returnDependency.extractClassDep4TmplMemberFun) tmfs
+                               <> concatMap (argumentDependency.extractClassDep4TmplMemberFun) tmfs
 mkModuleDepFFI1 (Left t)  = let fs = tclass_funcs t
                             in    concatMap (returnDependency.extractClassDepForTmplFun) fs
                                <> concatMap (argumentDependency.extractClassDepForTmplFun) fs
@@ -360,8 +366,8 @@ mkPkgCppFileName c =
 mkPkgIncludeHeadersInH :: Class -> [HeaderName]
 mkPkgIncludeHeadersInH c =
     let pkgname = (cabal_pkgname . class_cabal) c
-        extclasses = filter ((/= pkgname) . cabal_pkgname . getcabal) . mkModuleDepCpp $ Right c
-        extheaders = nub . map ((<>"Type.h") . unCabalName . cabal_pkgname . getcabal) $ extclasses
+        extclasses = filter ((/= pkgname) . getPkgName) . mkModuleDepCpp $ Right c
+        extheaders = nub . map ((<>"Type.h") . unCabalName . getPkgName) $ extclasses
     in map mkPkgHeaderFileName (class_allparents c) <> map HdrName extheaders
 
 
@@ -407,10 +413,10 @@ mkTIH pkgname getImports cihs fs =
              let y = find (\x -> (ffiClassName . cihClass) x == getFFIName c) cihs
              in y:ys
       -- NOTE: The remaining class dependencies outside the current package
-      extclasses = filter ((/= pkgname) . cabal_pkgname . getcabal) tl_cs
+      extclasses = filter ((/= pkgname) . getPkgName) tl_cs
       extheaders = map HdrName $
                      nub $
-                       map ((<>"Type.h") . unCabalName . cabal_pkgname . getcabal)  extclasses
+                       map ((<>"Type.h") . unCabalName . getPkgName)  extclasses
 
   in
      TopLevelImportHeader {
