@@ -511,7 +511,12 @@ convertCpp2HS _c (TemplateParam p)         = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
 
 -- |
-convertCpp2HS4Tmpl :: Type () -> Maybe Class -> Type () -> Types -> Type ()
+convertCpp2HS4Tmpl
+  :: Type ()    -- ^ self
+  -> Maybe Class
+  -> Type ()    -- ^ type paramemter splice
+  -> Types
+  -> Type ()
 convertCpp2HS4Tmpl _ _c _ Void                  = unit_tycon
 convertCpp2HS4Tmpl _ (Just c) _ SelfType        = tycon ((fst.hsClassName) c)
 convertCpp2HS4Tmpl _ Nothing _ SelfType         = error "convertCpp2HS4Tmpl : SelfType but no class "
@@ -520,12 +525,27 @@ convertCpp2HS4Tmpl _ _c _ (CPT (CPTClass c') _)     = (tycon . fst . hsClassName
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassRef c') _)  = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS4Tmpl e _c _ (TemplateApp _ )          = error "convertCpp2HS4Tmpl: TemplateApp"
-convertCpp2HS4Tmpl e _c _ (TemplateAppRef _)        = error "convertCpp2HS4Tmpl: TemplateAppRef"
-convertCpp2HS4Tmpl e _c _ (TemplateAppMove _)       = error "convertCpp2HS4Tmpl: TemplateAppMove"
+convertCpp2HS4Tmpl e c s x@(TemplateApp p) =
+  case tapp_tparam p of
+    TArg_TypeParam _ -> let t = tapp_tclass p
+                            (hname,_) = hsTemplateClassName t
+                        in tyapp (tycon hname) s
+    _ -> convertCpp2HS c x
+convertCpp2HS4Tmpl e c s x@(TemplateAppRef p) =
+  case tapp_tparam p of
+    TArg_TypeParam _ -> let t = tapp_tclass p
+                            (hname,_) = hsTemplateClassName t
+                        in tyapp (tycon hname) s
+    _ -> convertCpp2HS c x
+convertCpp2HS4Tmpl e c s x@(TemplateAppMove p) =
+  case tapp_tparam p of
+    TArg_TypeParam _ -> let t = tapp_tclass p
+                            (hname,_) = hsTemplateClassName t
+                        in tyapp (tycon hname) s
+    _ -> convertCpp2HS c x
 convertCpp2HS4Tmpl e _c _ (TemplateType _)          = e
-convertCpp2HS4Tmpl _ _c t (TemplateParam _)         = t
-convertCpp2HS4Tmpl _ _c t (TemplateParamPointer _)  = t
+convertCpp2HS4Tmpl _ _c s (TemplateParam _)         = s
+convertCpp2HS4Tmpl _ _c s (TemplateParamPointer _)  = s
 
 
 hsFuncXformer :: Function -> String
@@ -640,7 +660,7 @@ functionSignatureT t TFunDelete =
 
 
 
-
+-- TODO: rename this and combine this with functionSignatureTMF
 functionSignatureTT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
  where
@@ -657,7 +677,7 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
       TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_new_args
       TFunDelete -> [e]
 
-
+-- TODO: rename this and combine this with functionSignatureTT
 functionSignatureTMF :: Class -> TemplateMemberFunction -> Type ()
 functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
   where

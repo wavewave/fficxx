@@ -6,3 +6,5 @@
 a_method(T1)
 
 a_method(T2)
+
+a_method2(T1)
