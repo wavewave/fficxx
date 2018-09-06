@@ -51,8 +51,12 @@ simpleBuilder :: String
               -> [(String,[String])] -- ^ extra module
               ->  IO ()
 simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extralibs extramods = do
+  putStrLn "----------------------------------------------------"
+  putStrLn "-- fficxx code generation for Haskell-C++ binding --"
+  putStrLn "----------------------------------------------------"
+
   let pkgname = cabal_pkgname cabal
-  putStrLn ("generating " <> unCabalName pkgname)
+  putStrLn ("Generating " <> unCabalName pkgname)
   cwd <- getCurrentDirectory
   let cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd
                           , fficxxconfig_workingDir = cwd </> "working"
@@ -166,6 +170,10 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
   for_ mods (copyModule workingDir (srcDir installDir))
   for_ tcms (copyTemplateModule workingDir (srcDir installDir))
   moduleFileCopy workingDir (srcDir installDir) $ topLevelMod <.> "hs"
+
+  putStrLn "----------------------------------------------------"
+  putStrLn "-- Code generation has been completed. Enjoy!     --"
+  putStrLn "----------------------------------------------------"
 
 
 -- | some dirty hack. later, we will do it with more proper approcah.
