@@ -14,10 +14,12 @@
 
 module FFICXX.Generate.Type.Cabal where
 
-import Data.Aeson (ToJSON(..),genericToJSON,defaultOptions)
+import Data.Aeson       (FromJSON(..),ToJSON(..)
+                        ,genericParseJSON,genericToJSON
+                        ,defaultOptions)
 import Data.Aeson.Types (fieldLabelModifier)
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Data.Text        (Text)
+import GHC.Generics     (Generic)
 
 data AddCInc = AddCInc FilePath String
 
@@ -76,3 +78,6 @@ data GeneratedCabalInfo =
 
 instance ToJSON GeneratedCabalInfo where
   toJSON = genericToJSON defaultOptions {fieldLabelModifier = drop 4}
+
+instance FromJSON GeneratedCabalInfo where
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = drop 4}
