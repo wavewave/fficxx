@@ -1,7 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Util
--- Copyright   : (c) 2011-2016 Ian-Woo Kim
+-- Copyright   : (c) 2011-2018 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -16,8 +17,9 @@ module FFICXX.Generate.Util where
 import           Data.Char 
 import           Data.List
 import           Data.List.Split
-import           Data.Monoid              ( (<>) )
-import           Data.Text                ( Text )
+import           Data.Maybe               (fromMaybe)
+import           Data.Monoid              ((<>))
+import           Data.Text                (Text)
 import qualified Data.Text          as T
 import qualified Data.Text.Lazy     as TL
 import           Data.Text.Template
@@ -81,11 +83,17 @@ intercalateWithM f mapper x
   | otherwise = return "" 
 
 
+-- TODO: deprecate this and use contextT
 context :: [(Text,String)] -> Context
 context assocs x = maybe err (T.pack) . lookup x $ assocs
   where err = error $ "Could not find key: " <> (T.unpack x)
 
-        
+-- TODO: Rename this to context.
+-- TODO: Proper error handling.
+contextT :: [(Text,Text)] -> Context
+contextT assocs x = fromMaybe err . lookup x $ assocs
+  where err = error $ T.unpack ("Could not find key: " <> x)
+
 subst :: Text -> Context -> String
 subst t c = TL.unpack (substitute t c)
 
