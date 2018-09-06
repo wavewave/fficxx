@@ -124,6 +124,7 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
 
 
   --
+  -- TODO: Template.hs-boot need to be generated as well
   putStrLn "hs-boot file generation"
   mapM_ (\m -> gen (m <.> "Interface" <.> "hs-boot") (prettyPrint (buildInterfaceHSBOOT m))) hsbootlst
   --
