@@ -15,24 +15,26 @@
 
 module FFICXX.Generate.Builder where
 
-import           Control.Monad                           ( forM_, void, when )
+import           Control.Monad                           (void,when)
 import qualified Data.ByteString.Lazy.Char8        as L
-import           Data.Char                               ( toUpper )
-import           Data.Digest.Pure.MD5                    ( md5 )
-import           Data.Monoid                             ( (<>), mempty )
-import           Language.Haskell.Exts.Pretty            ( prettyPrint )
-import           System.FilePath                         ( (</>), (<.>), splitExtension )
-import           System.Directory                        ( copyFile, doesDirectoryExist
-                                                         , doesFileExist, getCurrentDirectory )
-import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
-import           System.Process                          ( readProcess, system )
+import           Data.Char                               (toUpper)
+import           Data.Digest.Pure.MD5                    (md5)
+import           Data.Foldable                           (for_)
+import           Data.Monoid                             ((<>),mempty)
+import           Language.Haskell.Exts.Pretty            (prettyPrint)
+import           System.FilePath                         ((</>),(<.>),splitExtension)
+import           System.Directory                        (copyFile, doesDirectoryExist
+                                                         ,doesFileExist,getCurrentDirectory)
+import           System.IO                               (hPutStrLn,withFile,IOMode(..))
+import           System.Process                          (readProcess,system )
 --
 import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Dependency
 import           FFICXX.Generate.Config
 import           FFICXX.Generate.ContentMaker
-import           FFICXX.Generate.Type.Cabal (Cabal(..),AddCInc(..),AddCSrc(..),CabalName(..))
-import           FFICXX.Generate.Type.Config (ModuleUnitMap(..))
+import           FFICXX.Generate.Type.Cabal              (Cabal(..),CabalName(..)
+                                                         ,AddCInc(..),AddCSrc(..))
+import           FFICXX.Generate.Type.Config             (ModuleUnitMap(..))
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
@@ -73,10 +75,10 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
   notExistThenCreate (installDir </> "src")
   notExistThenCreate (installDir </> "csrc")
   --
-  putStrLn "cabal file generation"
+  putStrLn "Generating Cabal file"
   buildCabalFile cabal topLevelMod pkgconfig extralibs (workingDir</>cabalFileName)
   --
-  putStrLn "header file generation"
+  putStrLn "Generating Header file"
   let typmacro = TypMcro ("__"  <> macrofy (unCabalName (cabal_pkgname cabal)) <> "__")
       gen :: FilePath -> String -> IO ()
       gen file str =
@@ -84,67 +86,85 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
 
 
   gen (unCabalName pkgname <> "Type.h") (buildTypeDeclHeader typmacro (map cihClass cihs))
-  mapM_ (\hdr -> gen (unHdrName (cihSelfHeader hdr)) (buildDeclHeader typmacro (unCabalName pkgname) hdr)) cihs
-  gen (tihHeaderFileName tih <.> "h") (buildTopLevelHeader typmacro (unCabalName pkgname) tih)
-  forM_ tcms $ \m ->
+  for_ cihs $ \hdr -> gen
+                        (unHdrName (cihSelfHeader hdr))
+                        (buildDeclHeader typmacro (unCabalName pkgname) hdr)
+  gen
+    (tihHeaderFileName tih <.> "h")
+    (buildTopLevelHeader typmacro (unCabalName pkgname) tih)
+  for_ tcms $ \m ->
     let tcihs = tcmTCIH m
-    in forM_ tcihs $ \tcih ->
+    in for_ tcihs $ \tcih ->
          let t = tcihTClass tcih
              hdr = unHdrName (tcihSelfHeader tcih)
          in gen hdr (buildTemplateHeader typmacro t)
   --
-  putStrLn "cpp file generation"
-  mapM_ (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr)) cihs
+  putStrLn "Generating Cpp file"
+  for_ cihs (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr))
   gen (tihHeaderFileName tih <.> "cpp") (buildTopLevelCppDef tih)
   --
-  putStrLn "additional header/source generation"
-  mapM_ (\(AddCInc hdr txt) -> gen hdr txt) (cabal_additional_c_incs cabal)
-  mapM_ (\(AddCSrc hdr txt) -> gen hdr txt) (cabal_additional_c_srcs cabal)
+  putStrLn "Generating Additional Header/Source"
+  for_ (cabal_additional_c_incs cabal) (\(AddCInc hdr txt) -> gen hdr txt)
+  for_ (cabal_additional_c_srcs cabal) (\(AddCSrc hdr txt) -> gen hdr txt)
   --
-  putStrLn "RawType.hs file generation"
-  mapM_ (\m -> gen (cmModule m <.> "RawType" <.> "hs") (prettyPrint (buildRawTypeHs m))) mods
+  putStrLn "Generating RawType.hs"
+  for_ mods $ \m -> gen
+                      (cmModule m <.> "RawType" <.> "hs")
+                      (prettyPrint (buildRawTypeHs m))
   --
-  putStrLn "FFI.hsc file generation"
-  mapM_ (\m -> gen (cmModule m <.> "FFI" <.> "hsc") (prettyPrint (buildFFIHsc m))) mods
+  putStrLn "Generating FFI.hsc"
+  for_ mods $ \m -> gen
+                      (cmModule m <.> "FFI" <.> "hsc")
+                      (prettyPrint (buildFFIHsc m))
   --
-  putStrLn "Interface.hs file generation"
-  mapM_ (\m -> gen (cmModule m <.> "Interface" <.> "hs") (prettyPrint (buildInterfaceHs mempty m))) mods
+  putStrLn "Generating Interface.hs"
+  for_ mods $ \m -> gen
+                      (cmModule m <.> "Interface" <.> "hs")
+                      (prettyPrint (buildInterfaceHs mempty m))
   --
-  putStrLn "Cast.hs file generation"
-  mapM_ (\m -> gen (cmModule m <.> "Cast" <.> "hs") (prettyPrint (buildCastHs m))) mods
+  putStrLn "Generating Cast.hs"
+  for_ mods $ \m -> gen
+                      (cmModule m <.> "Cast" <.> "hs")
+                      (prettyPrint (buildCastHs m))
   --
-  putStrLn "Implementation.hs file generation"
-  mapM_ (\m -> gen (cmModule m <.> "Implementation" <.> "hs") (prettyPrint (buildImplementationHs mempty m))) mods
+  putStrLn "Generating Implementation.hs"
+  for_ mods $ \m -> gen
+                      (cmModule m <.> "Implementation" <.> "hs")
+                      (prettyPrint (buildImplementationHs mempty m))
   --
-  putStrLn "Template.hs file generation"
-  mapM_ (\m -> gen (tcmModule m <.> "Template" <.> "hs") (prettyPrint (buildTemplateHs m))) tcms
+  putStrLn "Generating Template.hs"
+  for_ tcms $ \m -> gen
+                      (tcmModule m <.> "Template" <.> "hs")
+                      (prettyPrint (buildTemplateHs m))
   --
-  putStrLn "TH.hs file generation"
-  mapM_ (\m -> gen (tcmModule m <.> "TH" <.> "hs") (prettyPrint (buildTHHs m))) tcms
-
+  putStrLn "Generating TH.hs"
+  for_ tcms $ \m -> gen
+                      (tcmModule m <.> "TH" <.> "hs")
+                      (prettyPrint (buildTHHs m))
 
   --
   -- TODO: Template.hs-boot need to be generated as well
-  putStrLn "hs-boot file generation"
-  mapM_ (\m -> gen (m <.> "Interface" <.> "hs-boot") (prettyPrint (buildInterfaceHSBOOT m))) hsbootlst
+  putStrLn "Generating hs-boot file"
+  for_ hsbootlst $ \m -> gen
+                           (m <.> "Interface" <.> "hs-boot")
+                           (prettyPrint (buildInterfaceHSBOOT m))
   --
-
-
-
-  putStrLn "module file generation"
-  mapM_ (\m -> gen (cmModule m <.> "hs") (prettyPrint (buildModuleHs m))) mods
+  putStrLn "Genering Module summary file"
+  for_ mods $ \m -> gen
+                      (cmModule m <.> "hs")
+                      (prettyPrint (buildModuleHs m))
   --
-  putStrLn "top level module generation generation"
+  putStrLn "Generating Top-level Module"
   gen (topLevelMod <.> "hs") (prettyPrint (buildTopLevelHs topLevelMod (mods,tcms) tih))
   --
-  putStrLn "copying"
+  putStrLn "Copying generated files to target directory"
   touch (workingDir </> "LICENSE")
   copyFileWithMD5Check (workingDir </> cabalFileName)  (installDir </> cabalFileName)
   copyFileWithMD5Check (workingDir </> "LICENSE") (installDir </> "LICENSE")
 
   copyCppFiles workingDir (csrcDir installDir) (unCabalName pkgname) pkgconfig
-  mapM_ (copyModule workingDir (srcDir installDir)) mods
-  mapM_ (copyTemplateModule workingDir (srcDir installDir)) tcms
+  for_ mods (copyModule workingDir (srcDir installDir))
+  for_ tcms (copyTemplateModule workingDir (srcDir installDir))
   moduleFileCopy workingDir (srcDir installDir) $ topLevelMod <.> "hs"
 
 
@@ -181,20 +201,20 @@ copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ tcihs acincs acsrcs) = do
     >>= flip when (copyFileWithMD5Check (wdir </> tlhfile) (ddir </> tlhfile))
   doesFileExist (wdir </> tlcppfile)
     >>= flip when (copyFileWithMD5Check (wdir </> tlcppfile) (ddir </> tlcppfile))
-  forM_ cihs $ \header-> do
+  for_ cihs $ \header-> do
     let hfile = unHdrName (cihSelfHeader header)
         cppfile = cihSelfCpp header
     copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile)
     copyFileWithMD5Check (wdir </> cppfile) (ddir </> cppfile)
 
-  forM_ tcihs $ \header-> do
+  for_ tcihs $ \header-> do
     let hfile = unHdrName (tcihSelfHeader header)
     copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile)
 
-  forM_ acincs $ \(AddCInc header _) ->
+  for_ acincs $ \(AddCInc header _) ->
     copyFileWithMD5Check (wdir </> header) (ddir </> header)
 
-  forM_ acsrcs $ \(AddCSrc csrc _) ->
+  for_ acsrcs $ \(AddCSrc csrc _) ->
     copyFileWithMD5Check (wdir </> csrc) (ddir </> csrc)
 
 
