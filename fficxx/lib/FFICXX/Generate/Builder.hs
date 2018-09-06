@@ -73,6 +73,7 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
           (cabal_additional_c_srcs cabal)
       hsbootlst = mkHSBOOTCandidateList mods
       cabalFileName = unCabalName pkgname <.> "cabal"
+      jsonFileName = unCabalName pkgname <.> "json"
   --
   notExistThenCreate workingDir
   notExistThenCreate installDir
@@ -81,6 +82,9 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
   --
   putStrLn "Generating Cabal file"
   buildCabalFile cabal topLevelMod pkgconfig extralibs (workingDir</>cabalFileName)
+  --
+  putStrLn "Generating JSON file"
+  buildJSONFile cabal topLevelMod pkgconfig extralibs (workingDir</>jsonFileName)
   --
   putStrLn "Generating Header file"
   let typmacro = TypMcro ("__"  <> macrofy (unCabalName (cabal_pkgname cabal)) <> "__")
@@ -164,6 +168,7 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
   putStrLn "Copying generated files to target directory"
   touch (workingDir </> "LICENSE")
   copyFileWithMD5Check (workingDir </> cabalFileName)  (installDir </> cabalFileName)
+  copyFileWithMD5Check (workingDir </> jsonFileName)  (installDir </> jsonFileName)
   copyFileWithMD5Check (workingDir </> "LICENSE") (installDir </> "LICENSE")
 
   copyCppFiles workingDir (csrcDir installDir) (unCabalName pkgname) pkgconfig

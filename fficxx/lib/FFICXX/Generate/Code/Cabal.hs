@@ -14,6 +14,8 @@
 
 module FFICXX.Generate.Code.Cabal where
 
+import Data.Aeson.Encode.Pretty    (encodePretty)
+import qualified Data.ByteString.Lazy as BL
 import Data.List                   (intercalate,nub)
 import Data.Monoid                 ((<>))
 import Data.Text                   (Text)
@@ -256,19 +258,24 @@ buildCabalFile
   :: Cabal
   -> String
   -> PackageConfig
-  -> [String] -- ^ extra libs
-  -> FilePath
+  -> [String]      -- ^ Extra libs
+  -> FilePath      -- ^ Cabal file path
   -> IO ()
 buildCabalFile cabal summarymodule pkgconfig extralibs cabalfile = do
   let
-   {-   tih = pcfg_topLevelImportHeader pkgconfig
-      classmodules = pcfg_classModules pkgconfig
-      cih = pcfg_classImportHeaders pkgconfig
-      tmods = pcfg_templateClassModules pkgconfig
-      tcih = pcfg_templateClassImportHeaders pkgconfig
-      acincs = pcfg_additional_c_incs pkgconfig
-      acsrcs = pcfg_additional_c_srcs pkgconfig
-      extrafiles = cabal_extrafiles cabal -}
       cinfo = genCabalInfo cabal summarymodule pkgconfig extralibs
       txt = genCabalFile cinfo
   TIO.writeFile cabalfile txt
+
+
+-- |
+buildJSONFile
+  :: Cabal
+  -> String
+  -> PackageConfig
+  -> [String]      -- ^ Extra libs
+  -> FilePath      -- ^ JSON file path
+  -> IO ()
+buildJSONFile cabal summarymodule pkgconfig extralibs jsonfile = do
+  let cinfo = genCabalInfo cabal summarymodule pkgconfig extralibs
+  BL.writeFile jsonfile (encodePretty cinfo)
