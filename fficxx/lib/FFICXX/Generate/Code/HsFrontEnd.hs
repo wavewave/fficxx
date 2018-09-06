@@ -268,9 +268,23 @@ genImportInInterface m =
       modlstparent = cmImportedModulesHighNonSource m
       modlsthigh = cmImportedModulesHighSource m
   in  [mkImport (cmModule m <.> "RawType")]
-      <> map (\case Left t -> mkImport (getTClassModuleBase t <.> "Template"); Right c -> mkImport (getClassModuleBase c <.>"RawType")) modlstraw
-      <> map (\case Left t -> mkImport (getTClassModuleBase t <.> "Template"); Right c -> mkImport (getClassModuleBase c <.>"Interface")) modlstparent
-      <> map (\case Left t -> mkImportSrc (getTClassModuleBase t <.> "Template"); Right c -> mkImportSrc (getClassModuleBase c<.>"Interface")) modlsthigh
+      <> flip map modlstraw
+           (\case
+               Left t -> mkImport (getTClassModuleBase t <.> "Template")
+               Right c -> mkImport (getClassModuleBase c <.>"RawType")
+           )
+      <> flip map modlstparent
+           (\case
+               Left t -> mkImport (getTClassModuleBase t <.> "Template")
+               Right c -> mkImport (getClassModuleBase c <.>"Interface")
+           )
+      <> flip map modlsthigh
+           (\case
+               Left t  -> -- TODO: *.Template in the same package needs to have hs-boot.
+                          --       Currently, we do not have it yet.
+                          mkImport (getTClassModuleBase t <.> "Template")
+               Right c -> mkImportSrc (getClassModuleBase c<.>"Interface")
+           )
 
 -- |
 genImportInCast :: ClassModule -> [ImportDecl ()]
