@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE RecordWildCards   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Cabal
@@ -14,28 +14,38 @@
 
 module FFICXX.Generate.Code.Cabal where
 
+import Data.Aeson.Encode.Pretty    (encodePretty)
+import qualified Data.ByteString.Lazy as BL
 import Data.List                   (intercalate,nub)
 import Data.Monoid                 ((<>))
 import Data.Text                   (Text)
+import Data.Text.Template          (substitute)
+import qualified Data.Text as T    (intercalate,pack,replicate,unlines)
+import qualified Data.Text.Lazy as TL (toStrict)
+import qualified Data.Text.IO as TIO (writeFile)
 import System.FilePath             ((<.>),(</>))
 --
-import FFICXX.Generate.Type.Cabal  (AddCInc(..),AddCSrc(..),CabalName(..),Cabal(..))
+import FFICXX.Generate.Type.Cabal  (AddCInc(..),AddCSrc(..)
+                                   ,CabalName(..),Cabal(..)
+                                   ,GeneratedCabalInfo(..))
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 import FFICXX.Generate.Util
 
 
-cabalIndentation :: String
-cabalIndentation = replicate 23 ' '
+cabalIndentation :: Text -- String
+cabalIndentation = T.replicate 23 " "
 
+
+unlinesWithIndent = T.unlines . map (cabalIndentation <>)
 
 -- for source distribution
 genCsrcFiles :: (TopLevelImportHeader,[ClassModule])
              -> [AddCInc]
              -> [AddCSrc]
-             -> String
+             -> [String]
 genCsrcFiles (tih,cmods) acincs acsrcs =
-  let indent = cabalIndentation
+  let -- indent = cabalIndentation
       selfheaders' = do
         x <- cmods
         y <- cmCIH x
@@ -48,70 +58,79 @@ genCsrcFiles (tih,cmods) acincs acsrcs =
       selfcpp = nub selfcpp'
       tlh = tihHeaderFileName tih <.> "h"
       tlcpp = tihHeaderFileName tih <.> "cpp"
-      includeFileStrsWithCsrc = map (\x->indent<>"csrc"</> x) $
+      includeFileStrsWithCsrc = map (\x->"csrc"</> x) $
                                  (if (null.tihFuncs) tih then map unHdrName selfheaders else tlh:(map unHdrName selfheaders))
                                  ++ map (\(AddCInc hdr _) -> hdr) acincs
-      cppFilesWithCsrc = map (\x->indent<>"csrc"</>x)  $
+      cppFilesWithCsrc = map (\x->"csrc"</>x)  $
                            (if (null.tihFuncs) tih then selfcpp else tlcpp:selfcpp)
                            ++ map (\(AddCSrc src _) -> src) acsrcs
 
 
-  in  unlines (includeFileStrsWithCsrc <> cppFilesWithCsrc)
-
+  in includeFileStrsWithCsrc <> cppFilesWithCsrc
 
 -- for library
 genIncludeFiles :: String        -- ^ package name
                 -> ([ClassImportHeader],[TemplateClassImportHeader])
                 -> [AddCInc]
-                -> String
+                -> [String]
 genIncludeFiles pkgname (cih,tcih) acincs =
-  let indent = cabalIndentation
+  let -- indent = cabalIndentation
       selfheaders = map cihSelfHeader cih <> map tcihSelfHeader tcih
-      includeFileStrs = map ((indent<>).unHdrName) (selfheaders ++ map (\(AddCInc hdr _) -> HdrName hdr) acincs)
-  in  unlines ((indent<>pkgname<>"Type.h") : includeFileStrs)
+      includeFileStrs = map unHdrName (selfheaders ++ map (\(AddCInc hdr _) -> HdrName hdr) acincs)
+  in (pkgname<>"Type.h") : includeFileStrs
+
+
+--     unlines ((indent<>
 
 
 -- for library
 genCppFiles :: (TopLevelImportHeader,[ClassModule])
             -> [AddCSrc]
-            -> String
+            -> [String]
 genCppFiles (tih,cmods) acsrcs =
-  let indent = cabalIndentation
+  let -- indent = cabalIndentation
       selfcpp' = do
         x <- cmods
         y <- cmCIH x
         return (cihSelfCpp y)
       selfcpp = nub selfcpp'
       tlcpp = tihHeaderFileName tih <.> "cpp"
-      cppFileStrs = map (\x->indent<> "csrc" </> x)  $
+      cppFileStrs = map (\x -> "csrc" </> x)  $
                       (if (null.tihFuncs) tih then selfcpp else tlcpp:selfcpp)
                       ++ map (\(AddCSrc src _) -> src) acsrcs
-  in  unlines cppFileStrs
+  in cppFileStrs
 
 
 
 -- | generate exposed module list in cabal file
-genExposedModules :: String -> ([ClassModule],[TemplateClassModule]) -> String
+genExposedModules :: String -> ([ClassModule],[TemplateClassModule]) -> [String]
 genExposedModules summarymod (cmods,tmods) =
-    let indentspace = cabalIndentation
-        summarystrs = indentspace <> summarymod
-        cmodstrs = map ((\x->indentspace<>x).cmModule) cmods
-        rawType = map ((\x->indentspace<>x<>".RawType").cmModule) cmods
-        ffi = map ((\x->indentspace<>x<>".FFI").cmModule) cmods
-        interface= map ((\x->indentspace<>x<>".Interface").cmModule) cmods
-        cast = map ((\x->indentspace<>x<>".Cast").cmModule) cmods
-        implementation = map ((\x->indentspace<>x<>".Implementation").cmModule) cmods
-        template = map ((\x->indentspace<>x<>".Template").tcmModule) tmods
-        th = map ((\x->indentspace<>x<>".TH").tcmModule) tmods
-    in  unlines ([summarystrs]<>cmodstrs<>rawType<>ffi<>interface<>cast<>implementation<>template<>th)
+    let -- indentspace = cabalIndentation
+        -- summarystrs = summarymod
+        cmodstrs = map cmModule cmods
+        rawType = map ((\x -> x <> ".RawType").cmModule) cmods
+        ffi = map ((\x -> x <> ".FFI").cmModule) cmods
+        interface= map ((\x-> x <> ".Interface").cmModule) cmods
+        cast = map ((\x-> x <> ".Cast").cmModule) cmods
+        implementation = map ((\x-> x <> ".Implementation").cmModule) cmods
+        template = map ((\x-> x <> ".Template").tcmModule) tmods
+        th = map ((\x-> x <> ".TH").tcmModule) tmods
+    in  -- unlines
+        [summarymod]<>cmodstrs<>rawType<>ffi<>interface<>cast<>implementation<>template<>th
 
 -- | generate other modules in cabal file
-genOtherModules :: [ClassModule] -> String
-genOtherModules _cmods = ""
+genOtherModules :: [ClassModule] -> [String]
+genOtherModules _cmods = [""]
 
 -- | generate additional package dependencies.
-genPkgDeps :: [CabalName] -> String
-genPkgDeps cs = intercalate " " (map (\(CabalName c) -> ", " <> c) cs)
+genPkgDeps :: [CabalName] -> [String]
+genPkgDeps cs =    [ "base > 4 && < 5"
+                   , "fficxx >= 0.5"
+                   , "fficxx-runtime >= 0.5"
+                   , "template-haskell"
+                   ]
+                ++ map unCabalName cs
+
 
 
 -- |
@@ -142,7 +161,7 @@ cabalTemplate =
   \  ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind -fno-warn-orphans -fno-warn-unused-imports\n\
   \  ghc-prof-options: -caf-all -auto-all\n\
   \  cc-options: $ccOptions\n\
-  \  Build-Depends:      base>4 && < 5, fficxx >= 0.3, fficxx-runtime >= 0.3, template-haskell$deps\n\
+  \  Build-Depends: $pkgdeps\n\
   \  Exposed-Modules:\n\
   \$exposedModules\n\
   \  Other-Modules:\n\
@@ -156,15 +175,16 @@ cabalTemplate =
   \  C-sources:\n\
   \$cppFiles\n"
 
--- |
-buildCabalFile
+
+
+-- TODO: remove all T.pack after we switch over to Text
+genCabalInfo
   :: Cabal
   -> String
   -> PackageConfig
   -> [String] -- ^ extra libs
-  -> FilePath
-  -> IO ()
-buildCabalFile cabal summarymodule pkgconfig extralibs cabalfile = do
+  -> GeneratedCabalInfo
+genCabalInfo cabal summarymodule pkgconfig extralibs =
   let tih = pcfg_topLevelImportHeader pkgconfig
       classmodules = pcfg_classModules pkgconfig
       cih = pcfg_classImportHeaders pkgconfig
@@ -173,33 +193,89 @@ buildCabalFile cabal summarymodule pkgconfig extralibs cabalfile = do
       acincs = pcfg_additional_c_incs pkgconfig
       acsrcs = pcfg_additional_c_srcs pkgconfig
       extrafiles = cabal_extrafiles cabal
-      txt = subst cabalTemplate
-              (context ([ ("licenseField", "license: " <> license)
-                          | Just license <- [cabal_license cabal] ] <>
-                        [ ("licenseFileField", "license-file: " <> licensefile)
-                          | Just licensefile <- [cabal_licensefile cabal] ] <>
-                        [ ("pkgname", unCabalName (cabal_pkgname cabal))
-                        , ("version",  cabal_version cabal)
-                        , ("buildtype", "Simple")
-                        , ("synopsis", "")
-                        , ("description", "")
-                        , ("homepage","")
-                        , ("author","")
-                        , ("maintainer","")
-                        , ("category","")
-                        , ("sourcerepository","")
-                        , ("ccOptions","-std=c++14")
-                        , ("deps", genPkgDeps (cabal_additional_pkgdeps cabal))
-                        , ("extraFiles", concatMap (\x -> cabalIndentation <> x <> "\n") extrafiles)
-                        , ("csrcFiles", genCsrcFiles (tih,classmodules) acincs acsrcs)
-                        , ("includeFiles", genIncludeFiles (unCabalName (cabal_pkgname cabal)) (cih,tcih) acincs)
-                        , ("cppFiles", genCppFiles (tih,classmodules) acsrcs)
-                        , ("exposedModules", genExposedModules summarymodule (classmodules,tmods))
-                        , ("otherModules", genOtherModules classmodules)
-                        , ("extralibdirs", intercalate ", " $ cabal_extralibdirs cabal)
-                        , ("extraincludedirs", intercalate ", " $ cabal_extraincludedirs cabal)
-                        , ("extraLibraries", concatMap (", " <>) extralibs)
-                        , ("cabalIndentation", cabalIndentation)
-                        , ("pkgconfigDepends", intercalate ", " (cabal_pkg_config_depends cabal))
-                        ]))
-  writeFile cabalfile txt
+  in GeneratedCabalInfo {
+       gci_pkgname          = T.pack (unCabalName (cabal_pkgname cabal))
+     , gci_version          = T.pack (cabal_version cabal)
+     , gci_synopsis         = ""
+     , gci_description      = ""
+     , gci_homepage         = ""
+     , gci_license          = maybe "" T.pack (cabal_license cabal)
+     , gci_licenseFile      = maybe "" T.pack (cabal_licensefile cabal)
+     , gci_author           = ""
+     , gci_maintainer       = ""
+     , gci_category         = ""
+     , gci_buildtype        = "Simple"
+     , gci_extraFiles       = map T.pack extrafiles
+     , gci_csrcFiles        = map T.pack $ genCsrcFiles (tih,classmodules) acincs acsrcs
+     , gci_sourcerepository = ""
+     , gci_ccOptions        = ["-std=c++14"]
+     , gci_pkgdeps          = map T.pack $ genPkgDeps (cabal_additional_pkgdeps cabal)
+     , gci_exposedModules   = map T.pack $ genExposedModules summarymodule (classmodules,tmods)
+     , gci_otherModules     = map T.pack $ genOtherModules classmodules
+     , gci_extraLibDirs     = map T.pack $ cabal_extralibdirs cabal
+     , gci_extraLibraries   = map T.pack extralibs
+     , gci_extraIncludeDirs = map T.pack $ cabal_extraincludedirs cabal
+     , gci_pkgconfigDepends = map T.pack $ cabal_pkg_config_depends cabal
+     , gci_includeFiles     = map T.pack $ genIncludeFiles (unCabalName (cabal_pkgname cabal)) (cih,tcih) acincs
+     , gci_cppFiles         = map T.pack $ genCppFiles (tih,classmodules) acsrcs
+     }
+
+
+genCabalFile :: GeneratedCabalInfo -> Text
+genCabalFile GeneratedCabalInfo {..} =
+  TL.toStrict $
+    substitute cabalTemplate $
+      contextT [ ("licenseField"    , "license: " <> gci_license)
+               , ("licenseFileField", "license-file: " <> gci_licenseFile)
+               , ("pkgname"         , gci_pkgname)
+               , ("version"         , gci_version)
+               , ("buildtype"       , gci_buildtype)
+               , ("synopsis"        , gci_synopsis)
+               , ("description"     , gci_description)
+               , ("homepage"        , gci_homepage)
+               , ("author"          , gci_author)
+               , ("maintainer"      , gci_maintainer)
+               , ("category"        , gci_category)
+               , ("sourcerepository", gci_sourcerepository)
+               , ("ccOptions"       , T.intercalate " " gci_ccOptions)
+               , ("pkgdeps"         , T.intercalate ", " gci_pkgdeps)
+               , ("extraFiles"      , unlinesWithIndent gci_extraFiles)
+               , ("csrcFiles"       , unlinesWithIndent gci_csrcFiles)
+               , ("includeFiles"    , unlinesWithIndent gci_includeFiles)
+               , ("cppFiles"        , unlinesWithIndent gci_cppFiles)
+               , ("exposedModules"  , unlinesWithIndent gci_exposedModules)
+               , ("otherModules"    , unlinesWithIndent gci_otherModules)
+               , ("extralibdirs"    , T.intercalate ", " gci_extraLibDirs)
+               , ("extraincludedirs", T.intercalate ", " gci_extraIncludeDirs)
+               , ("extraLibraries"  , T.intercalate ", " gci_extraLibraries)
+               , ("cabalIndentation", cabalIndentation)
+               , ("pkgconfigDepends", T.intercalate ", " gci_pkgconfigDepends)
+               ]
+
+
+-- |
+buildCabalFile
+  :: Cabal
+  -> String
+  -> PackageConfig
+  -> [String]      -- ^ Extra libs
+  -> FilePath      -- ^ Cabal file path
+  -> IO ()
+buildCabalFile cabal summarymodule pkgconfig extralibs cabalfile = do
+  let
+      cinfo = genCabalInfo cabal summarymodule pkgconfig extralibs
+      txt = genCabalFile cinfo
+  TIO.writeFile cabalfile txt
+
+
+-- |
+buildJSONFile
+  :: Cabal
+  -> String
+  -> PackageConfig
+  -> [String]      -- ^ Extra libs
+  -> FilePath      -- ^ JSON file path
+  -> IO ()
+buildJSONFile cabal summarymodule pkgconfig extralibs jsonfile = do
+  let cinfo = genCabalInfo cabal summarymodule pkgconfig extralibs
+  BL.writeFile jsonfile (encodePretty cinfo)
