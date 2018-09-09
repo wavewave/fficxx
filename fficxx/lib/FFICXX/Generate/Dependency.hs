@@ -41,7 +41,7 @@ import           Data.Monoid                ((<>))
 import           System.FilePath
 --
 import           FFICXX.Generate.Name       (ffiClassName,hsClassName,hsTemplateClassName)
-import           FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc,CabalName(..)
+import           FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc,CabalName(..),Cabal(..)
                                             ,cabal_moduleprefix,cabal_pkgname
                                             ,cabal_cheaderprefix,unCabalName)
 import           FFICXX.Generate.Type.Class
@@ -53,12 +53,14 @@ import           FFICXX.Generate.Type.PackageInterface
 
 
 -- utility functions
-
+getcabal :: Either TemplateClass Class -> Cabal
 getcabal = either tclass_cabal class_cabal
 
+getparents :: Either TemplateClass Class -> [Either TemplateClass Class]
 getparents = either (const []) (map Right . class_parents)
 
 -- TODO: replace tclass_name with appropriate FFI name when supported.
+getFFIName :: Either TemplateClass Class -> String
 getFFIName = either tclass_name ffiClassName
 
 

@@ -63,9 +63,8 @@ Library
                    FFICXX.Generate.Type.Class
                    FFICXX.Generate.Type.Module
                    FFICXX.Generate.Type.PackageInterface
-  ghc-options:     -Wall
+  ghc-options:     -Wall -Werror
                    -funbox-strict-fields
                    -fno-warn-unused-do-bind
-                   -fno-warn-missing-signatures
                    -O2
   ghc-prof-options: -caf-all -auto-all

@@ -383,17 +383,17 @@ tmplArgToCallString _ (CPT (CPTClassMove c) _,varname) =
 tmplArgToCallString _ (CT (CRef _) _,varname) = "(*"<> varname<> ")"
 tmplArgToCallString _ (TemplateApp x,varname) =
   case tapp_tparam x of
-    TArg_TypeParam p -> "static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")"
+    TArg_TypeParam _p -> "static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")"
     _ -> -- TODO: Implement this.
          error "tmplArgToCallString: TemplateApp"
 tmplArgToCallString _ (TemplateAppRef x,varname) =
   case tapp_tparam x of
-    TArg_TypeParam p -> "*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> "))"
+    TArg_TypeParam _p -> "*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> "))"
     _ -> -- TODO: Implement this.
          error "tmplArgToCallString: TemplateAppRef"
 tmplArgToCallString _ (TemplateAppMove x,varname) =
   case tapp_tparam x of
-    TArg_TypeParam p -> "std::move(*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")))"
+    TArg_TypeParam _p -> "std::move(*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")))"
     _ -> -- TODO: Implement this.
          error "tmplArgToCallString: TemplateAppMove"
 tmplArgToCallString b (TemplateParam _,varname) =
@@ -537,19 +537,19 @@ convertCpp2HS4Tmpl _ _c _ (CPT (CPTClass c') _)     = (tycon . fst . hsClassName
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassRef c') _)  = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS4Tmpl e c s x@(TemplateApp p) =
+convertCpp2HS4Tmpl _e c s x@(TemplateApp p) =
   case tapp_tparam p of
     TArg_TypeParam _ -> let t = tapp_tclass p
                             (hname,_) = hsTemplateClassName t
                         in tyapp (tycon hname) s
     _ -> convertCpp2HS c x
-convertCpp2HS4Tmpl e c s x@(TemplateAppRef p) =
+convertCpp2HS4Tmpl _e c s x@(TemplateAppRef p) =
   case tapp_tparam p of
     TArg_TypeParam _ -> let t = tapp_tclass p
                             (hname,_) = hsTemplateClassName t
                         in tyapp (tycon hname) s
     _ -> convertCpp2HS c x
-convertCpp2HS4Tmpl e c s x@(TemplateAppMove p) =
+convertCpp2HS4Tmpl _e c s x@(TemplateAppMove p) =
   case tapp_tparam p of
     TArg_TypeParam _ -> let t = tapp_tclass p
                             (hname,_) = hsTemplateClassName t
