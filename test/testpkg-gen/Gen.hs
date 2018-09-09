@@ -49,6 +49,7 @@ t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t" [ ]
 testH =
   "#include <iostream>\n\
   \#include <vector>\n\
+  \#include <functional>\n\
   \#include <string>\n\
   \using namespace std;\n\
   \void test( vector<float>&  vect);\n\
@@ -76,10 +77,15 @@ testH =
   \  }\n\
   \  virtual void call( vector<float>& vect );\n\
   \  virtual vector<float> call2(); \n\
+  \};\n\
+  \class T1 : public A {\n\
+  \public:\n\
+  \  void testFunc( B& b, function<void(B&)>* f );\n\
   \};\n"
 
 testCpp  =
   "#include <iostream>\n\
+  \#include <functional>\n\
   \#include <vector>\n\
   \#include \"test.h\"\n\
   \using namespace std;\n\
@@ -102,8 +108,11 @@ testCpp  =
   \  v.push_back(2.0);\n\
   \  v.push_back(3.0);\n\
   \  return v;\n\
+  \}\n\
+  \\n\
+  \void T1::testFunc( B& b, function<void(B&)>* f) {\n\
+  \  (*f)( b ); \n\
   \}\n"
-
 
 
 cabal = Cabal { cabal_pkgname = CabalName "testpkg"
@@ -162,7 +171,25 @@ classB =
     []
     []
 
-classes = [ classA, classB ]
+classT1 =
+  Class cabal "T1" [ deletable, classA ] mempty Nothing
+    [ Constructor [ ] Nothing
+    , NonVirtual void_ "testFunc" [ cppclassref classB "b"
+                                  , ( StdFunction (CFunSig {
+                                                     cArgTypes = [ cppclassref classB "b" ]
+                                                   , cRetType = void_
+                                                   })
+                                    , "f"
+                                    )
+
+                                  ]
+                                  Nothing
+    ]
+    []
+    []
+
+
+classes = [ classA, classB, classT1 ]
 
 toplevelfunctions =
   [ TopLevelFunction void_ "test" [ (vectorfloatref_, "vec") ] Nothing
@@ -187,6 +214,12 @@ headerMap =
           }
         )
       , ( MU_Class "B"
+        , ModuleUnitImports {
+            muimports_namespaces = []
+          , muimports_headers = [HdrName "test.h"]
+          }
+        )
+      , ( MU_Class "T1"
         , ModuleUnitImports {
             muimports_namespaces = []
           , muimports_headers = [HdrName "test.h"]

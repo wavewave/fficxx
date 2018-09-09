@@ -296,6 +296,9 @@ castC2Cpp t e =
     TemplateApp    p  -> "to_nonconst<" <> tapp_CppTypeForParam p <> ",void>(" <> e <> ")"
     TemplateAppRef p  -> "*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> ")"
     TemplateAppMove p -> "std::move(*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> "))"
+    StdFunction _ -> "STDFUNCTION_C2CPP(" <> e <> ")"
+    -- Void, SelfType, CT ..
+    -- TODO: make this explicit
     _                 -> e
 
 
@@ -546,7 +549,9 @@ convertCpp2HS _c (TemplateType t)          = tyapp
                                                (mkTVar (tclass_param t))
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
-convertCpp2HS _c (StdFunction _)           = tycon "STDFUNCTION_HS"
+convertCpp2HS _c (StdFunction sig)         = tyapp
+                                               (tycon "Function")
+                                               (typeFromHsFunSig (extractArgRetTypesS sig))
 
 
 -- |
@@ -585,7 +590,10 @@ convertCpp2HS4Tmpl _e c s x@(TemplateAppMove p) =
 convertCpp2HS4Tmpl e _c _ (TemplateType _)          = e
 convertCpp2HS4Tmpl _ _c s (TemplateParam _)         = s
 convertCpp2HS4Tmpl _ _c s (TemplateParamPointer _)  = s
-convertCpp2HS4Tmpl _ _c _ (StdFunction _)           = tycon "STDFUNCTION_HSTMPL"
+convertCpp2HS4Tmpl _ _c _ (StdFunction sig)           =
+  tyapp
+    (tycon "Function")
+    (typeFromHsFunSig (extractArgRetTypesS sig))
 
 
 hsFuncXformer :: Function -> String
@@ -606,11 +614,28 @@ hsFuncXformer func = let len = length (genericFuncArgs func)
 classConstraints :: Class -> Context ()
 classConstraints = cxTuple . map ((\n->classA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents
 
+
+-- | extractArgRetTypes simple version (no typeclass constraint)
+extractArgRetTypesS
+  :: CFunSig      -- ^ C type signature information for a given function
+  -> HsFunSig     -- ^ Haskell type signature information for the function
+extractArgRetTypesS (CFunSig args ret) =
+  let typs = let as = map (convertCpp2HS Nothing . fst) args
+                 r = case ret of
+                       SelfType -> error "extractArgRetTypes: SelfType return but no class"
+                       x        -> convertCpp2HS Nothing x
+             in (as ++ [tyapp (tycon "IO") r])
+  in HsFunSig { hsSigTypes = typs
+              , hsSigConstraints = []
+              }
+
+
+
 extractArgRetTypes
   :: Maybe Class  -- ^ class (Nothing for top-level function)
   -> Bool         -- ^ is virtual function?
-  -> CFunSig      -- ^ C type signature information for a given function      -- (Args,Types)           -- ^ (argument types, return type) of a given function
-  -> HsFunSig     -- ^ Haskell type signature information for the function    --   ([Type ()],[Asst ()])  -- ^ (types, class constraints)
+  -> CFunSig      -- ^ C type signature information for a given function
+  -> HsFunSig     -- ^ Haskell type signature information for the function
 extractArgRetTypes mc isvirtual (CFunSig args ret) =
   let  (typs,s) = flip runState ([],(0 :: Int)) $ do
                     as <- mapM (mktyp . fst) args
@@ -643,7 +668,8 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
          case typ of
            Void                    -> pure unit_tycon
            SelfType                -> pure (mkTVar "a")
-           CT CTString Const       -> addstring
+           CT CTString Const       -> addstring -- TODO: This special treatment should be
+                                                --       well-documented.
            CT _ _                  -> pure (convertCpp2HS Nothing typ)
            CPT (CPTClass c') _     -> addclass c'
            CPT (CPTClassRef c') _  -> addclass c'
@@ -669,8 +695,17 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
                                           (mkTVar (tclass_param t))
            TemplateParam p         -> pure (mkTVar p)
            TemplateParamPointer p  -> pure (mkTVar p)
-           StdFunction _           -> pure (tycon "STDFUNCTION_extractArgRetTypes")
-           -- _ -> error ("No such c type : " <> show typ)
+           StdFunction sig         -> pure $
+                                        tyapp
+                                          (tycon "Function")
+                                          (typeFromHsFunSig (extractArgRetTypesS sig))
+
+
+-- TODO: unify this with functionSignature
+typeFromHsFunSig :: HsFunSig -> Type ()
+typeFromHsFunSig (HsFunSig typs assts) =
+  TyForall () Nothing (Just (cxTuple assts)) (foldr1 tyfun typs)
+
 
 functionSignature :: Class -> Function -> Type ()
 functionSignature c f =
