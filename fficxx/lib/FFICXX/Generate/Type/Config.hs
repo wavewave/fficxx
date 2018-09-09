@@ -20,6 +20,7 @@ data ModuleUnitImports =
   }
   deriving (Show)
 
+emptyModuleUnitImports :: ModuleUnitImports
 emptyModuleUnitImports = ModuleUnitImports [] []
 
 newtype ModuleUnitMap = ModuleUnitMap { unModuleUnitMap :: HashMap ModuleUnit ModuleUnitImports }
