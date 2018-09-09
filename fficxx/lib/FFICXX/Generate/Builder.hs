@@ -157,7 +157,7 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
                            (m <.> "Interface" <.> "hs-boot")
                            (prettyPrint (buildInterfaceHSBOOT m))
   --
-  putStrLn "Genering Module summary file"
+  putStrLn "Generating Module summary file"
   for_ mods $ \m -> gen
                       (cmModule m <.> "hs")
                       (prettyPrint (buildModuleHs m))
