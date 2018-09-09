@@ -319,6 +319,7 @@ returnCpp b ret callstr =
       if b then "return (" <> callstr <> ");"
            else "return to_nonconst<Type ## _t, Type>("
                 <> callstr <> ") ;"
+    StdFunction _ ->"return ( STDFUNCTION_CALLSTR );"
 
 
 

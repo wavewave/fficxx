@@ -74,7 +74,7 @@ data Types = Void
            | TemplateType    TemplateClass    -- ^ template self? TODO: clarify this.
            | TemplateParam   String
            | TemplateParamPointer String      -- ^ this is A* with template<A>
-           --   | StdFunction CFunSig
+           | StdFunction CFunSig
            deriving Show
 
 -------------

@@ -92,6 +92,8 @@ extractClassFromType (TemplateAppMove (TemplateAppInfo t p _))   =
 extractClassFromType (TemplateType t)         = [Left t]
 extractClassFromType (TemplateParam _)        = []
 extractClassFromType (TemplateParamPointer _) = []
+extractClassFromType (StdFunction sig)        =    concatMap (extractClassFromType . fst) (cArgTypes sig)
+                                                ++ extractClassFromType (cRetType sig)
 
 
 class_allparents :: Class -> [Class]
