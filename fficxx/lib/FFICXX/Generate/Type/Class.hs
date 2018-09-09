@@ -167,6 +167,13 @@ nonVirtualNotNewFuncs =
 staticFuncs :: [Function] -> [Function]
 staticFuncs = filter isStaticFunc
 
+-- Function Signatures
+
+data CFunSig = CFunSig { cArgTypes :: Args
+                       , cRetType :: Types
+                       }
+
+
 --------
 
 newtype ProtectedMethod = Protected { unProtected :: [String] }

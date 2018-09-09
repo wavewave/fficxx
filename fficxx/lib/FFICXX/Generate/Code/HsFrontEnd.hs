@@ -25,7 +25,7 @@ import Language.Haskell.Exts.Build             (app,letE,name,pApp)
 import Language.Haskell.Exts.Syntax            (Decl(..),ExportSpec(..),ImportDecl(..))
 import System.FilePath                         ((<.>))
 --
-import FFICXX.Generate.Code.Primitive          (CFunSig(..),HsFunSig(..)
+import FFICXX.Generate.Code.Primitive          (HsFunSig(..)
                                                ,accessorSignature
                                                ,classConstraints
                                                ,convertCpp2HS

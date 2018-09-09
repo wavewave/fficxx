@@ -25,7 +25,6 @@ import FFICXX.Generate.Code.Primitive        (accessorCFunSig
                                              ,argsToStringNoSelf
                                              ,castCpp2C
                                              ,castC2Cpp
-                                             ,CFunSig(..)
                                              ,genericFuncArgs
                                              ,genericFuncRet
                                              ,rettypeToString

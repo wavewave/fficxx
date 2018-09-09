@@ -20,8 +20,7 @@ import Data.Monoid                             ((<>))
 import Language.Haskell.Exts.Syntax            (Decl(..),ImportDecl(..))
 import System.FilePath                         ((<.>))
 --
-import FFICXX.Generate.Code.Primitive          (CFunSig(..)
-                                               ,accessorCFunSig
+import FFICXX.Generate.Code.Primitive          (accessorCFunSig
                                                ,genericFuncArgs
                                                ,genericFuncRet
                                                ,hsFFIFuncTyp)

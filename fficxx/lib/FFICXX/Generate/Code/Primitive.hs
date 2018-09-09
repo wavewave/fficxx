@@ -10,13 +10,10 @@ import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 
-data CFunSig = CFunSig { cArgTypes :: Args
-                       , cRetType :: Types
-                       }
-
 data HsFunSig = HsFunSig { hsSigTypes :: [Type ()]
                          , hsSigConstraints :: [Asst ()]
                          }
+
 
 cvarToStr :: CTypes -> IsConst -> String -> String
 cvarToStr ctyp isconst varname = ctypToStr ctyp isconst <> " " <> varname
