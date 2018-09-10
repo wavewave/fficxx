@@ -2,6 +2,7 @@
 module FFICXX.Generate.Code.Primitive where
 
 import           Control.Monad.Trans.State         (runState,put,get)
+import           Data.List                         (intercalate)
 import           Data.Monoid                       ((<>))
 import           Language.Haskell.Exts.Syntax      (Asst(..),Context,Type(..))
 --
@@ -240,7 +241,13 @@ argToString (CPT (CPTClassMove c) isconst, varname) = case isconst of
 argToString (TemplateApp     _, varname) = "void* " <> varname
 argToString (TemplateAppRef  _, varname) = "void* " <> varname
 argToString (TemplateAppMove _, varname) = "void* " <> varname
-argToString (StdFunction _    , varname) = "STDFUNCTION_ARG " <> varname
+argToString (StdFunction sig  , varname) =    "std::function<"
+                                           <> rettypeToString (cRetType sig)
+                                           <> "("
+                                           <> intercalate ","
+                                                (map (rettypeToString . fst) (cArgTypes sig))
+                                           <> ")"
+                                           <> ">* " <> varname
 -- Void, TemplateType, TemplateParam, TemplateParam case
 -- TODO: Make explicit cases and no use of error.
 argToString t = error ("argToString: " <> show t)
