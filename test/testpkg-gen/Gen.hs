@@ -80,7 +80,7 @@ testH =
   \};\n\
   \class T1 : public A {\n\
   \public:\n\
-  \  void testFunc( B& b, function<void(B&)>* f );\n\
+  \  void testFunc( B& b, function<void(B&)> f );\n\
   \};\n"
 
 testCpp  =
@@ -110,8 +110,8 @@ testCpp  =
   \  return v;\n\
   \}\n\
   \\n\
-  \void T1::testFunc( B& b, function<void(B&)>* f) {\n\
-  \  (*f)( b ); \n\
+  \void T1::testFunc( B& b, function<void(B&)> f) {\n\
+  \  f( b ); \n\
   \}\n"
 
 
@@ -237,3 +237,15 @@ main = do
     (cabal,classes,toplevelfunctions,templates)
     [ ]
     extraDep
+
+
+-- NOTE: conversion
+{-
+
+void Type##_t1_testFunc ( Type##_p p, B_p b, void* f ) {
+    std::function<void(B_p)>* ff = static_cast<std::function<void(B_p)>*>(f);
+    auto fff = [&](B& b)->void { (*ff)(to_nonconst<B_t,B>(&b)); };
+    to_nonconst<Type,Type##_t>(p)->testFunc(to_nonconstref<B,B_t>(*b), std::function<void(B&)>(fff));
+}
+
+-}
