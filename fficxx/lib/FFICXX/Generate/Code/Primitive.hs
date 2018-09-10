@@ -800,32 +800,37 @@ hsFFIFuncTyp msc (CFunSig args ret) =
           where rawname = snd (hsClassName d)
         hsargtype (CPT (CPTClassRef d) _)    = tyapp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
-        hsargtype (CPT (CPTClassMove d) _)    = tyapp tyPtr (tycon rawname)
+        hsargtype (CPT (CPTClassMove d) _)   = tyapp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
-        hsargtype (CPT (CPTClassCopy d) _)    = tyapp tyPtr (tycon rawname)
+        hsargtype (CPT (CPTClassCopy d) _)   = tyapp tyPtr (tycon rawname)
           where rawname = snd (hsClassName d)
-        hsargtype (TemplateApp x)   = tyapp
-                                        tyPtr
-                                        (tyapp
-                                           (tycon rawname)
-                                           (tycon (hsClassNameForTArg (tapp_tparam x))))
+        hsargtype (TemplateApp x)            = tyapp
+                                                 tyPtr
+                                                 (tyapp
+                                                    (tycon rawname)
+                                                    (tycon (hsClassNameForTArg (tapp_tparam x))))
           where rawname = snd (hsTemplateClassName (tapp_tclass x))
-        hsargtype (TemplateAppRef x) = tyapp
-                                         tyPtr
-                                         (tyapp
-                                            (tycon rawname)
-                                            (tycon (hsClassNameForTArg (tapp_tparam x))))
+        hsargtype (TemplateAppRef x)         = tyapp
+                                                 tyPtr
+                                                 (tyapp
+                                                    (tycon rawname)
+                                                    (tycon (hsClassNameForTArg (tapp_tparam x))))
           where rawname = snd (hsTemplateClassName (tapp_tclass x))
-        hsargtype (TemplateAppMove x)= tyapp
-                                         tyPtr
-                                         (tyapp
-                                            (tycon rawname)
-                                            (tycon (hsClassNameForTArg (tapp_tparam x))))
+        hsargtype (TemplateAppMove x)        = tyapp
+                                                 tyPtr
+                                                 (tyapp
+                                                    (tycon rawname)
+                                                    (tycon (hsClassNameForTArg (tapp_tparam x))))
           where rawname = snd (hsTemplateClassName (tapp_tclass x))
         hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
           where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateParam p)          = mkTVar p
-        hsargtype (StdFunction _)            = tycon "STDFUNCTION_hsFFIFuncTyp_arg"
+        hsargtype (StdFunction sig)          = tyapp
+                                                 tyPtr
+                                                 (tyapp
+                                                   (tycon "RawFunction")
+                                                   (typeFromHsFunSig (extractArgRetTypesS sig)))
+
         -- Void
         hsargtype _ = error "hsFuncTyp: undefined hsargtype"
         ---------------------------------------------------------
@@ -862,7 +867,12 @@ hsFFIFuncTyp msc (CFunSig args ret) =
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p)          = mkTVar p
         hsrettype (TemplateParamPointer p)   = mkTVar p
-        hsrettype (StdFunction _)            = tycon "STDFUNCTION_hsFFIFuncTyp_ret"
+        hsrettype (StdFunction sig)          = tyapp
+                                                 tyPtr
+                                                 (tyapp
+                                                   (tycon "RawFunction")
+                                                   (typeFromHsFunSig (extractArgRetTypesS sig)))
+
 
 
 

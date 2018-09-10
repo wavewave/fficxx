@@ -314,7 +314,11 @@ buildFFIHsc :: ClassModule -> Module ()
 buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody
   where mname = cmModule m
         headers = cmCIH m
-        ffiImports = [ mkImport "Foreign.C", mkImport "Foreign.Ptr", mkImport (mname <.> "RawType") ]
+        ffiImports = [ mkImport "Foreign.C"
+                     , mkImport "Foreign.Ptr"
+                     , mkImport (mname <.> "RawType")
+                     , mkImport "FFICXX.Runtime.Function.Template"
+                     ]
                      <> genImportInFFI m
                      <> genExtraImport m
         hscBody = concatMap genHsFFI headers
@@ -393,6 +397,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                       , mkImport "System.IO.Unsafe"
                       , mkImport "FFICXX.Runtime.Cast"
                       , mkImport "FFICXX.Runtime.TH"          -- for template member
+                      , mkImport "FFICXX.Runtime.Function.Template" -- for std::function
                       ]
                       <> genImportInImplementation m
                       <> genExtraImport m

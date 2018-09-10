@@ -157,6 +157,9 @@ tyParen = TyParen ()
 tyPtr :: Type ()
 tyPtr = tycon "Ptr"
 
+tyFunPtr :: Type ()
+tyFunPtr = tycon "FunPtr"
+
 tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
 
