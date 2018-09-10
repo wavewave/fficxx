@@ -250,7 +250,7 @@ genTmplFunCpp b t@TmplCls {..} f = subst tmpl ctxt
          \    $decl; \\\n\
          \  } \\\n\
          \  inline $defn \\\n\
-         \  auto a_${tname}_${fname}_ ## Type = ${tname}_${fname}_ ## Type  ;\n"
+         \  auto a_${tname}_${fname}_##Type = ${tname}_${fname}_##Type  ;\n"
   ctxt = context $
            (("suffix",if b then "_s" else ""):) $
              [ ("tname"  , tclass_name )
@@ -284,7 +284,7 @@ returnCpp :: Bool  -- ^ for simple type
 returnCpp b ret callstr =
   case ret of
     Void                    -> callstr <> ";"
-    SelfType                -> "return to_nonconst<Type ## _t, Type>((Type *)"
+    SelfType                -> "return to_nonconst<Type##_t, Type>((Type *)"
                                 <> callstr <> ") ;"
     CT (CRef _) _           -> "return (&("<>callstr<>"));"
     CT _ _                  -> "return "<>callstr<>";"
@@ -313,11 +313,11 @@ returnCpp b ret callstr =
     TemplateType _          -> error "returnCpp: TemplateType"
     TemplateParam _         ->
       if b then "return (" <> callstr <> ");"
-           else "return to_nonconst<Type ## _t, Type>((Type *)&("
+           else "return to_nonconst<Type##_t, Type>((Type *)&("
                 <> callstr <> ")) ;"
     TemplateParamPointer _  ->
       if b then "return (" <> callstr <> ");"
-           else "return to_nonconst<Type ## _t, Type>("
+           else "return to_nonconst<Type##_t, Type>("
                 <> callstr <> ") ;"
     StdFunction _ ->"return ( STDFUNCTION_CALLSTR );"
 
@@ -328,13 +328,13 @@ returnCpp b ret callstr =
 funcToDecl :: Class -> Function -> String
 funcToDecl c func
   | isNewFunc func || isStaticFunc func =
-    let tmpl = "$returntype Type ## _$funcname ( $args )"
+    let tmpl = "$returntype Type##_$funcname ( $args )"
     in subst tmpl (context [ ("returntype", rettypeToString (genericFuncRet func))
                            , ("funcname",  aliasedFuncName c func)
                            , ("args", argsToStringNoSelf (genericFuncArgs func))
                            ])
   | otherwise =
-    let tmpl = "$returntype Type ## _$funcname ( $args )"
+    let tmpl = "$returntype Type##_$funcname ( $args )"
     in subst tmpl (context [ ("returntype", rettypeToString (genericFuncRet func))
                            , ("funcname", aliasedFuncName c func)
                            , ("args", argsToString (genericFuncArgs func))
@@ -351,11 +351,11 @@ funcToDef c func
   | isNewFunc func =
     let declstr = funcToDecl c func
         callstr = "(" <> argsToCallString (genericFuncArgs func) <> ")"
-        returnstr = "Type * newp = new Type " <> callstr <> "; \\\nreturn to_nonconst<Type ## _t, Type >(newp);"
+        returnstr = "Type * newp = new Type " <> callstr <> "; \\\nreturn to_nonconst<Type##_t,Type>(newp);"
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"]
   | isDeleteFunc func =
     let declstr = funcToDecl c func
-        returnstr = "delete (to_nonconst<Type,Type ## _t>(p)) ; "
+        returnstr = "delete (to_nonconst<Type,Type##_t>(p)) ; "
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"]
   | isStaticFunc func =
     let declstr = funcToDecl c func
@@ -366,7 +366,7 @@ funcToDef c func
     in intercalateWith connBSlash id [declstr, "{", returnstr, "}"]
   | otherwise =
     let declstr = funcToDecl c func
-        callstr = "to_nonconst<Type,Type ## _t>(p)->"
+        callstr = "to_nonconst<Type,Type##_t>(p)->"
                   <> cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
@@ -381,19 +381,19 @@ funcsToDefs c = intercalateWith connBSlash (funcToDef c)
 
 tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> String
 tmplFunToDecl b t@TmplCls {..} f@TFun {..} =
-  subst "$ret ${tname}_${fname}_ ## Type ( $args )"
+  subst "$ret ${tname}_${fname}_##Type ( $args )"
     (context [ ("tname", tclass_name)
              , ("fname", ffiTmplFuncName f)
              , ("args" , tmplAllArgsToString b Self t tfun_args)
              , ("ret"  , tmplRetTypeToString b tfun_ret) ])
 tmplFunToDecl b t@TmplCls {..} f@TFunNew {..} =
-  subst "$ret ${tname}_${fname}_ ## Type ( $args )"
+  subst "$ret ${tname}_${fname}_##Type ( $args )"
     (context [ ("tname", tclass_name)
              , ("fname", ffiTmplFuncName f)
              , ("args" , tmplAllArgsToString b NoSelf t tfun_new_args)
              , ("ret"  , tmplRetTypeToString b (TemplateType t)) ])
 tmplFunToDecl b t@TmplCls {..} TFunDelete =
-  subst "$ret ${tname}_delete_ ## Type ( $args )"
+  subst "$ret ${tname}_delete_##Type ( $args )"
     (context [ ("tname", tclass_name                     )
              , ("args" , tmplAllArgsToString b Self t [] )
              , ("ret"  , "void" ) ])
@@ -428,7 +428,7 @@ tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {",
 
 accessorToDecl :: Variable -> Accessor -> String
 accessorToDecl v a =
-  let tmpl = "$returntype Type ## _$funcname ( $args )"
+  let tmpl = "$returntype Type##_$funcname ( $args )"
       csig = accessorCFunSig (var_type v) a
   in subst tmpl (context [ ("returntype", rettypeToString (cRetType csig))
                          , ("funcname"  , var_name v <> "_" <> case a of Getter -> "get"; Setter -> "set")
@@ -444,7 +444,7 @@ accessorsToDecls vs =
 accessorToDef :: Variable -> Accessor -> String
 accessorToDef v a =
   let declstr = accessorToDecl v a
-      varexp = "to_nonconst<Type,Type ## _t>(p)->" <> var_name v
+      varexp = "to_nonconst<Type,Type##_t>(p)->" <> var_name v
       body Getter = "return (" <> castCpp2C (var_type v) varexp <> ");"
       body Setter =    varexp
                     <> " = "

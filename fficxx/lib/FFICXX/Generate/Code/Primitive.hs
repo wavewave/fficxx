@@ -221,7 +221,7 @@ cppclassmove c vname = (cppclassmove_ c, vname)
 
 argToString :: (Types,String) -> String
 argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
-argToString (SelfType, varname) = "Type ## _p " <> varname
+argToString (SelfType, varname) = "Type##_p " <> varname
 argToString (CPT (CPTClass c) isconst, varname) = case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
@@ -273,7 +273,7 @@ argsToCallString = intercalateWith conncomma argToCallString
 rettypeToString :: Types -> String
 rettypeToString (CT ctyp isconst)        = ctypToStr ctyp isconst
 rettypeToString Void                     = "void"
-rettypeToString SelfType                 = "Type ## _p"
+rettypeToString SelfType                 = "Type##_p"
 rettypeToString (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
 rettypeToString (CPT (CPTClassRef c) _)  = ffiClassName c <> "_p"
 rettypeToString (CPT (CPTClassCopy c) _) = ffiClassName c <> "_p"
@@ -282,8 +282,8 @@ rettypeToString (TemplateApp     _)      = "void*"
 rettypeToString (TemplateAppRef  _)      = "void*"
 rettypeToString (TemplateAppMove _)      = "void*"
 rettypeToString (TemplateType _)         = "void*"
-rettypeToString (TemplateParam _)        = "Type ## _p"
-rettypeToString (TemplateParamPointer _) = "Type ## _p"
+rettypeToString (TemplateParam _)        = "Type##_p"
+rettypeToString (TemplateParamPointer _) = "Type##_p"
 rettypeToString (StdFunction _sig)       = "STDFUNCTION_RET"
 
 
@@ -315,7 +315,7 @@ castCpp2C :: Types -> String -> String
 castCpp2C t e =
   case t of
     Void                   -> ""
-    SelfType               -> "to_nonconst<Type ## _t, Type>((Type *)" <> e <> ")"
+    SelfType               -> "to_nonconst<Type##_t, Type>((Type *)" <> e <> ")"
     CT (CRef _) _          -> "&(" <> e <> ")"
     CT _ _                 -> e
     CPT (CPTClass c) _     -> "to_nonconst<" <> f <> "_t," <> f <> ">((" <> f <> "*)" <> e <> ")"
@@ -336,10 +336,10 @@ castCpp2C t e =
     TemplateType _         -> error "castCpp2C: TemplateType"
     TemplateParam _        -> error "castCpp2C: TemplateParam"
                               -- if b then e
-                              --      else "to_nonconst<Type ## _t, Type>((Type *)&(" <> e <> "))"
+                              --      else "to_nonconst<Type##_t, Type>((Type *)&(" <> e <> "))"
     TemplateParamPointer _ -> error "castCpp2C: TemplateParamPointer"
                               -- if b then "(" <> callstr <> ");"
-                              --      else "to_nonconst<Type ## _t, Type>(" <> e <> ") ;"
+                              --      else "to_nonconst<Type##_t, Type>(" <> e <> ") ;"
     StdFunction _          -> error "castCpp2C: StdFunction"
 
 
@@ -367,9 +367,9 @@ tmplArgToString _ _ (TemplateAppRef  _, v) = "void* " <> v
 tmplArgToString _ _ (TemplateAppMove _, v) = "void* " <> v
 tmplArgToString _ _ (TemplateType   _,  v) = "void* " <> v
 tmplArgToString True  _ (TemplateParam _,v) = "Type " <> v
-tmplArgToString False _ (TemplateParam _,v) = "Type ## _p " <> v
+tmplArgToString False _ (TemplateParam _,v) = "Type##_p " <> v
 tmplArgToString True  _ (TemplateParamPointer _,v) = "Type " <> v
-tmplArgToString False _ (TemplateParamPointer _,v) = "Type ## _p " <> v
+tmplArgToString False _ (TemplateParamPointer _,v) = "Type##_p " <> v
 tmplArgToString _ _ (StdFunction _,v) = "STDFUNCTION_TMPLARG " <> v
 -- Void
 -- TODO: separate out Void case.
@@ -421,11 +421,11 @@ tmplArgToCallString _ (TemplateAppMove x,varname) =
 tmplArgToCallString b (TemplateParam _,varname) =
   case b of
     True  -> varname
-    False -> "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
+    False -> "*(to_nonconst<Type,Type##_t>(" <> varname <> "))"
 tmplArgToCallString b (TemplateParamPointer _,varname) =
   case b of
     True  -> varname
-    False -> "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
+    False -> "to_nonconst<Type,Type##_t>(" <> varname <> ")"
 tmplArgToCallString _ (StdFunction _,varname) = varname
 -- Void, SelfType, CT CTString, CT CTChar ...
 -- TODO: make this explicit.
@@ -455,8 +455,8 @@ tmplRetTypeToString _ (TemplateApp     _)      = "void*"
 tmplRetTypeToString _ (TemplateAppRef  _)      = "void*"
 tmplRetTypeToString _ (TemplateAppMove _)      = "void*"
 tmplRetTypeToString _ (TemplateType _)         = "void*"
-tmplRetTypeToString b (TemplateParam _)        = if b then "Type" else "Type ## _p"
-tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## _p"
+tmplRetTypeToString b (TemplateParam _)        = if b then "Type" else "Type##_p"
+tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type##_p"
 tmplRetTypeToString _ (StdFunction _)          = "STDFUNCTION_TMPLRET"
 
 
