@@ -241,13 +241,7 @@ argToString (CPT (CPTClassMove c) isconst, varname) = case isconst of
 argToString (TemplateApp     _, varname) = "void* " <> varname
 argToString (TemplateAppRef  _, varname) = "void* " <> varname
 argToString (TemplateAppMove _, varname) = "void* " <> varname
-argToString (StdFunction sig  , varname) =    "std::function<"
-                                           <> rettypeToString (cRetType sig)
-                                           <> "("
-                                           <> intercalate ","
-                                                (map (rettypeToString . fst) (cArgTypes sig))
-                                           <> ")"
-                                           <> ">* " <> varname
+argToString (StdFunction _    , varname) = "void* " <> varname
 -- Void, TemplateType, TemplateParam, TemplateParam case
 -- TODO: Make explicit cases and no use of error.
 argToString t = error ("argToString: " <> show t)
@@ -303,7 +297,10 @@ castC2Cpp t e =
     TemplateApp    p  -> "to_nonconst<" <> tapp_CppTypeForParam p <> ",void>(" <> e <> ")"
     TemplateAppRef p  -> "*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> ")"
     TemplateAppMove p -> "std::move(*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> "))"
-    StdFunction _ -> "STDFUNCTION_C2CPP(" <> e <> ")"
+    StdFunction sig ->    "static_cast<std::function<"
+                       <> rettypeToString (cRetType sig)
+                       <> "(" <> intercalate "," (map (rettypeToString . fst) (cArgTypes sig)) <> ")"
+                       <> ">*>(" <> e <> ")"
     -- Void, SelfType, CT ..
     -- TODO: make this explicit
     _                 -> e
