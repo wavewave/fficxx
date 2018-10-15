@@ -18,6 +18,7 @@ module FFICXX.Generate.Type.Class where
 
 import           Data.Default                      ( Default(def) )
 import qualified Data.Map                     as M
+import           Data.Semigroup                    ( Semigroup )
 import           Data.Monoid                       ( (<>) )
 --
 
@@ -143,7 +144,7 @@ staticFuncs = filter isStaticFunc
 --------
 
 newtype ProtectedMethod = Protected { unProtected :: [String] }
-                        deriving (Monoid)
+                        deriving (Semigroup,Monoid)
 
 data AddCInc = AddCInc FilePath String
 
