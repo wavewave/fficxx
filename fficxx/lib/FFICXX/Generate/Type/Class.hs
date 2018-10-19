@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -15,9 +16,9 @@
 -----------------------------------------------------------------------------
 
 module FFICXX.Generate.Type.Class where
-
 import qualified Data.Map                     as M
-import           Data.Monoid                       ( (<>) )
+import           Data.Monoid                       (Monoid(..))
+import           Data.Semigroup                    (Semigroup(..),(<>))
 --
 import           FFICXX.Generate.Type.Cabal
 
@@ -170,8 +171,7 @@ staticFuncs = filter isStaticFunc
 --------
 
 newtype ProtectedMethod = Protected { unProtected :: [String] }
-                        deriving (Monoid)
-
+                        deriving (Semigroup, Monoid)
 
 data ClassAlias = ClassAlias { caHaskellName :: String
                              , caFFIName :: String

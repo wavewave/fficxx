@@ -14,6 +14,7 @@
 
 module FFICXX.Generate.Util.HaskellSrcExts where
 
+import           Data.Maybe                          (maybeToList)
 import           Data.List                           (foldl')
 import           Language.Haskell.Exts        hiding (unit_tycon)
 import qualified Language.Haskell.Exts               (unit_tycon)
