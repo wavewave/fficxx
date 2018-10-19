@@ -4,7 +4,7 @@ with pkgs;
 
 let
 
-  fficxx = haskellPackages.callCabal2nix "fficxx" ./. {};
+  fficxx = pkgs.haskell.packages.ghc822.callCabal2nix "fficxx" ./. {};
 
 in
 

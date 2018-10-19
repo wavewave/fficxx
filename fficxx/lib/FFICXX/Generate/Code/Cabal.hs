@@ -16,7 +16,7 @@ module FFICXX.Generate.Code.Cabal where
 
 import Data.Aeson.Encode.Pretty    (encodePretty)
 import qualified Data.ByteString.Lazy as BL
-import Data.List                   (intercalate,nub)
+import Data.List                   (nub)
 import Data.Monoid                 ((<>))
 import Data.Text                   (Text)
 import Data.Text.Template          (substitute)
