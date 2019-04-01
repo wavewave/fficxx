@@ -69,6 +69,10 @@ instance Castable () () where
   cast x f = f x
   uncast x f = f x
 
+instance Castable CChar CChar where
+  cast x f = f x
+  uncast x f = f x
+
 instance Castable CDouble CDouble where
   cast x f = f x
   uncast x f = f x
