@@ -59,6 +59,7 @@ class FunPtrWrappable a where
 class IsCType a where 
 
 instance IsCType CChar
+instance IsCType CShort
 instance IsCType CInt
 instance IsCType CUInt 
 instance IsCType CString 
@@ -70,6 +71,10 @@ instance Castable () () where
   uncast x f = f x
 
 instance Castable CChar CChar where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CShort CShort where
   cast x f = f x
   uncast x f = f x
 

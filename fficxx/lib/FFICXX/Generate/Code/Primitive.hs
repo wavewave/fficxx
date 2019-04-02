@@ -26,10 +26,12 @@ ctypToStr ctyp isconst =
   let typword = case ctyp of
         CTString -> "char*"
         CTChar   -> "char"
+        CTShort  -> "short"
         CTInt    -> "int"
         CTUInt   -> "unsigned int"
         CTLong   -> "signed long"
         CTULong  -> "long unsigned int"
+        CTFloat  -> "float"
         CTDouble -> "double"
         CTBool   -> "int"              -- Currently available solution
         CTDoubleStar -> "double *"
@@ -75,8 +77,11 @@ cchar_ = CT CTChar Const
 char_ :: Types
 char_ = CT CTChar NoConst
 
+cshort_ :: Types
+cshort_ = CT CTShort NoConst
+
 short_ :: Types
-short_ = int_
+short_ = CT CTShort NoConst
 
 cdouble_ :: Types
 cdouble_ = CT CTDouble Const
@@ -87,8 +92,11 @@ double_  = CT CTDouble NoConst
 doublep_ :: Types
 doublep_ = CT CTDoubleStar NoConst
 
+cfloat_ :: Types
+cfloat_ = CT CTFloat NoConst
+
 float_ :: Types
-float_ = double_
+float_ = CT CTFloat NoConst
 
 bool_ :: Types
 bool_    = CT CTBool   NoConst
@@ -154,8 +162,11 @@ cchar var = (cchar_ , var)
 char :: String -> (Types,String)
 char var = (char_ , var)
 
+cshort :: String -> (Types,String)
+cshort var = (cshort_ , var)
+
 short :: String -> (Types,String)
-short = int
+short var = (short_ , var)
 
 cdouble :: String -> (Types,String)
 cdouble var = (cdouble_ , var)
@@ -166,8 +177,11 @@ double  var = (double_  , var)
 doublep :: String -> (Types,String)
 doublep var = (doublep_ , var)
 
+cfloat :: String -> (Types,String)
+cfloat var = (float_ , var)
+
 float :: String -> (Types,String)
-float = double
+float var = (float_ , var)
 
 bool :: String -> (Types,String)
 bool    var = (bool_    , var)
@@ -487,10 +501,12 @@ tmplMemFuncRetTypeToString _ (TemplateParamPointer _) = "Type##_p"
 convertC2HS :: CTypes -> Type ()
 convertC2HS CTString     = tycon "CString"
 convertC2HS CTChar       = tycon "CChar"
+convertC2HS CTShort      = tycon "CShort"
 convertC2HS CTInt        = tycon "CInt"
 convertC2HS CTUInt       = tycon "CUInt"
 convertC2HS CTLong       = tycon "CLong"
 convertC2HS CTULong      = tycon "CULong"
+convertC2HS CTFloat      = tycon "CFloat"
 convertC2HS CTDouble     = tycon "CDouble"
 convertC2HS CTDoubleStar = tyapp (tycon "Ptr") (tycon "CDouble")
 convertC2HS CTBool       = tycon "CInt"

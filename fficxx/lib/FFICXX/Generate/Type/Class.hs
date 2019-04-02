@@ -25,10 +25,12 @@ import           FFICXX.Generate.Type.Cabal
 -- | C types
 data CTypes = CTString
             | CTChar
+            | CTShort
             | CTInt
             | CTUInt
             | CTLong
             | CTULong
+            | CTFloat
             | CTDouble
             | CTBool
             | CTDoubleStar
