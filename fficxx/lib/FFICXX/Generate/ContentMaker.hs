@@ -314,7 +314,11 @@ buildFFIHsc :: ClassModule -> Module ()
 buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody
   where mname = cmModule m
         headers = cmCIH m
-        ffiImports = [ mkImport "Foreign.C", mkImport "Foreign.Ptr", mkImport (mname <.> "RawType") ]
+        ffiImports = [ mkImport "Data.Word"
+                     , mkImport "Data.Int"
+                     , mkImport "Foreign.C"
+                     , mkImport "Foreign.Ptr"
+                     , mkImport (mname <.> "RawType") ]
                      <> genImportInFFI m
                      <> genExtraImport m
         hscBody = concatMap genHsFFI headers
@@ -344,6 +348,7 @@ buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
                             ifaceImports ifaceBody
   where classes = cmClass m
         ifaceImports = [ mkImport "Data.Word"
+                       , mkImport "Data.Int"
                        , mkImport "Foreign.C"
                        , mkImport "Foreign.Ptr"
                        , mkImport "FFICXX.Runtime.Cast" ]
@@ -386,6 +391,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
   where classes = cmClass m
         implImports = [ mkImport "Data.Monoid"                -- for template member
                       , mkImport "Data.Word"
+                      , mkImport "Data.Int"
                       , mkImport "Foreign.C"
                       , mkImport "Foreign.Ptr"
                       , mkImport "Language.Haskell.TH"        -- for template member
