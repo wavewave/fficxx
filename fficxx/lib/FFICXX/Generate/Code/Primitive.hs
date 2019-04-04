@@ -63,6 +63,7 @@ ctypToStr ctyp isconst =
         CTUInt64 -> "uint64_t"
         CTString -> "char*"
         CTVoidStar -> "void*"
+        CEnum _ type_str -> type_str
         CPointer s -> ctypToStr s NoConst <> "*"
         CRef s -> ctypToStr s NoConst <> "*"
   in case isconst of
@@ -563,6 +564,7 @@ convertC2HS CTUInt32      = tycon "Word32"
 convertC2HS CTUInt64      = tycon "Word64"
 convertC2HS CTString    = tycon "CString"
 convertC2HS CTVoidStar   = tyapp (tycon "Ptr") unit_tycon
+convertC2HS (CEnum t _)  = convertC2HS t
 convertC2HS (CPointer t) = tyapp (tycon "Ptr") (convertC2HS t)
 convertC2HS (CRef t)     = tyapp (tycon "Ptr") (convertC2HS t)
 
