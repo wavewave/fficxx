@@ -119,7 +119,7 @@ doublep_ :: Types
 doublep_ = CT (CPointer CTDouble) NoConst
 
 cfloat_ :: Types
-cfloat_ = CT CTFloat NoConst
+cfloat_ = CT CTFloat Const
 
 float_ :: Types
 float_ = CT CTFloat NoConst
