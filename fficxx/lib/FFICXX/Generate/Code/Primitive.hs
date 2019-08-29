@@ -24,18 +24,46 @@ cvarToStr ctyp isconst varname = ctypToStr ctyp isconst <> " " <> varname
 ctypToStr :: CTypes -> IsConst -> String
 ctypToStr ctyp isconst =
   let typword = case ctyp of
-        CTString -> "char*"
-        CTChar   -> "char"
-        CTInt    -> "int"
-        CTUInt   -> "unsigned int"
-        CTLong   -> "signed long"
-        CTULong  -> "long unsigned int"
+        CTBool -> "bool"
+        CTChar -> "char"
+        CTClock -> "clock_t"
         CTDouble -> "double"
-        CTBool   -> "int"              -- Currently available solution
-        CTDoubleStar -> "double *"
+        CTFile -> "FILE"
+        CTFloat -> "float"
+        CTFpos -> "fpos_t"
+        CTInt -> "int"
+        CTIntMax -> "intmax_t"
+        CTIntPtr -> "intptr_t"
+        CTJmpBuf -> "jmp_buf"
+        CTLLong -> "long long"
+        CTLong -> "long"
+        CTPtrdiff -> "ptrdiff_t"
+        CTSChar -> "sized char"
+        CTSUSeconds -> "suseconds_t"
+        CTShort -> "short"
+        CTSigAtomic -> "sig_atomic_t"
+        CTSize -> "size_t"
+        CTTime -> "time_t"
+        CTUChar -> "unsized char"
+        CTUInt -> "unsized int"
+        CTUIntMax -> "uintmax_t"
+        CTUIntPtr -> "uintptr_t"
+        CTULLong -> "unsigned long long"
+        CTULong -> "unsigned long"
+        CTUSeconds -> "useconds_t"
+        CTUShort -> "unsigned short"
+        CTWchar -> "wchar_t"
+        CTInt8 -> "int8_t"
+        CTInt16 -> "int16_t"
+        CTInt32 -> "int32_t"
+        CTInt64 -> "int64_t"
+        CTUInt8 -> "uint8_t"
+        CTUInt16 -> "uint16_t"
+        CTUInt32 -> "uint32_t"
+        CTUInt64 -> "uint64_t"
+        CTString -> "char*"
         CTVoidStar -> "void*"
-        CTIntStar -> "int*"
-        CTCharStarStar -> "char**"
+        CEnum _ type_str -> type_str
         CPointer s -> ctypToStr s NoConst <> "*"
         CRef s -> ctypToStr s NoConst <> "*"
   in case isconst of
@@ -75,8 +103,11 @@ cchar_ = CT CTChar Const
 char_ :: Types
 char_ = CT CTChar NoConst
 
+cshort_ :: Types
+cshort_ = CT CTShort Const
+
 short_ :: Types
-short_ = int_
+short_ = CT CTShort NoConst
 
 cdouble_ :: Types
 cdouble_ = CT CTDouble Const
@@ -85,10 +116,13 @@ double_ :: Types
 double_  = CT CTDouble NoConst
 
 doublep_ :: Types
-doublep_ = CT CTDoubleStar NoConst
+doublep_ = CT (CPointer CTDouble) NoConst
+
+cfloat_ :: Types
+cfloat_ = CT CTFloat Const
 
 float_ :: Types
-float_ = double_
+float_ = CT CTFloat NoConst
 
 bool_ :: Types
 bool_    = CT CTBool   NoConst
@@ -100,14 +134,14 @@ voidp_ :: Types
 voidp_ = CT CTVoidStar NoConst
 
 intp_ :: Types
-intp_ = CT CTIntStar NoConst
+intp_ = CT (CPointer CTInt) NoConst
 
 intref_ :: Types
 intref_ = CT (CRef CTInt) NoConst
 
 
 charpp_ :: Types
-charpp_ = CT CTCharStarStar NoConst
+charpp_ = CT (CPointer CTString) NoConst
 
 ref_ :: CTypes -> Types
 ref_ t = CT (CRef t) NoConst
@@ -154,8 +188,11 @@ cchar var = (cchar_ , var)
 char :: String -> (Types,String)
 char var = (char_ , var)
 
+cshort :: String -> (Types,String)
+cshort var = (cshort_ , var)
+
 short :: String -> (Types,String)
-short = int
+short var = (short_ , var)
 
 cdouble :: String -> (Types,String)
 cdouble var = (cdouble_ , var)
@@ -166,8 +203,11 @@ double  var = (double_  , var)
 doublep :: String -> (Types,String)
 doublep var = (doublep_ , var)
 
+cfloat :: String -> (Types,String)
+cfloat var = (float_ , var)
+
 float :: String -> (Types,String)
-float = double
+float var = (float_ , var)
 
 bool :: String -> (Types,String)
 bool    var = (bool_    , var)
@@ -485,18 +525,46 @@ tmplMemFuncRetTypeToString _ (TemplateParamPointer _) = "Type##_p"
 
 -- |
 convertC2HS :: CTypes -> Type ()
-convertC2HS CTString     = tycon "CString"
-convertC2HS CTChar       = tycon "CChar"
-convertC2HS CTInt        = tycon "CInt"
-convertC2HS CTUInt       = tycon "CUInt"
-convertC2HS CTLong       = tycon "CLong"
-convertC2HS CTULong      = tycon "CULong"
-convertC2HS CTDouble     = tycon "CDouble"
-convertC2HS CTDoubleStar = tyapp (tycon "Ptr") (tycon "CDouble")
-convertC2HS CTBool       = tycon "CInt"
+convertC2HS CTBool      = tycon "CBool"
+convertC2HS CTChar      = tycon "CChar"
+convertC2HS CTClock     = tycon "CClock"
+convertC2HS CTDouble    = tycon "CDouble"
+convertC2HS CTFile      = tycon "CFile"
+convertC2HS CTFloat     = tycon "CFloat"
+convertC2HS CTFpos      = tycon "CFpos"
+convertC2HS CTInt       = tycon "CInt"
+convertC2HS CTIntMax    = tycon "CIntMax"
+convertC2HS CTIntPtr    = tycon "CIntPtr"
+convertC2HS CTJmpBuf    = tycon "CJmpBuf"
+convertC2HS CTLLong     = tycon "CLLong"
+convertC2HS CTLong      = tycon "CLong"
+convertC2HS CTPtrdiff   = tycon "CPtrdiff"
+convertC2HS CTSChar     = tycon "CSChar"
+convertC2HS CTSUSeconds = tycon "CSUSeconds"
+convertC2HS CTShort     = tycon "CShort"
+convertC2HS CTSigAtomic = tycon "CSigAtomic"
+convertC2HS CTSize      = tycon "CSize"
+convertC2HS CTTime      = tycon "CTime"
+convertC2HS CTUChar     = tycon "CUChar"
+convertC2HS CTUInt      = tycon "CUInt"
+convertC2HS CTUIntMax   = tycon "CUIntMax"
+convertC2HS CTUIntPtr   = tycon "CUIntPtr"
+convertC2HS CTULLong    = tycon "CULLong"
+convertC2HS CTULong     = tycon "CULong"
+convertC2HS CTUSeconds  = tycon "CUSeconds"
+convertC2HS CTUShort    = tycon "CUShort"
+convertC2HS CTWchar     = tycon "CWchar"
+convertC2HS CTInt8      = tycon "Int8"
+convertC2HS CTInt16      = tycon "Int16"
+convertC2HS CTInt32      = tycon "Int32"
+convertC2HS CTInt64      = tycon "Int64"
+convertC2HS CTUInt8      = tycon "Word8"
+convertC2HS CTUInt16      = tycon "Word16"
+convertC2HS CTUInt32      = tycon "Word32"
+convertC2HS CTUInt64      = tycon "Word64"
+convertC2HS CTString    = tycon "CString"
 convertC2HS CTVoidStar   = tyapp (tycon "Ptr") unit_tycon
-convertC2HS CTIntStar    = tyapp (tycon "Ptr") (tycon "CInt")
-convertC2HS CTCharStarStar = tyapp (tycon "Ptr") (tycon "CString")
+convertC2HS (CEnum t _)  = convertC2HS t
 convertC2HS (CPointer t) = tyapp (tycon "Ptr") (convertC2HS t)
 convertC2HS (CRef t)     = tyapp (tycon "Ptr") (convertC2HS t)
 

@@ -27,6 +27,7 @@ import Control.Monad         ((>=>))
 import Data.ByteString.Char8 (ByteString,packCString, useAsCString)
 import Data.String
 import Data.Word
+import Data.Int
 import Foreign.C
 import Foreign.C.String
 import Foreign.ForeignPtr
@@ -58,14 +59,59 @@ class FunPtrWrappable a where
 
 class IsCType a where 
 
+instance IsCType CBool
 instance IsCType CChar
+instance IsCType CClock
+instance IsCType CDouble
+instance IsCType CFile
+instance IsCType CFloat
+instance IsCType CFpos
 instance IsCType CInt
-instance IsCType CUInt 
-instance IsCType CString 
-instance IsCType CULong 
+instance IsCType CIntMax
+instance IsCType CIntPtr
+instance IsCType CJmpBuf
+instance IsCType CLLong
 instance IsCType CLong
+instance IsCType CPtrdiff
+instance IsCType CSChar
+instance IsCType CSUSeconds
+instance IsCType CShort
+instance IsCType CSigAtomic
+instance IsCType CSize
+instance IsCType CTime
+instance IsCType CUChar
+instance IsCType CUInt
+instance IsCType CUIntMax
+instance IsCType CUIntPtr
+instance IsCType CULLong
+instance IsCType CULong
+instance IsCType CUSeconds
+instance IsCType CUShort
+instance IsCType CWchar
+instance IsCType CString
+instance IsCType Int8
+instance IsCType Int16
+instance IsCType Int32
+instance IsCType Int64
+instance IsCType Word8
+instance IsCType Word16
+instance IsCType Word32
+instance IsCType Word64
+
 
 instance Castable () () where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CBool CBool where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CChar CChar where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CClock CClock where
   cast x f = f x
   uncast x f = f x
 
@@ -73,23 +119,138 @@ instance Castable CDouble CDouble where
   cast x f = f x
   uncast x f = f x
 
-instance Castable CUInt CUInt where
-  cast x f = f x 
-  uncast x f = f x  
-
-instance Castable CInt CInt where 
-  cast x f = f x 
-  uncast x f = f x 
-
-instance Castable CLong CLong where
-  cast x f = f x 
+instance Castable CFile CFile where
+  cast x f = f x
   uncast x f = f x
 
-instance Castable CULong CULong where 
-  cast x f = f x 
-  uncast x f = f x 
+instance Castable CFloat CFloat where
+  cast x f = f x
+  uncast x f = f x
 
- 
+instance Castable CFpos CFpos where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CInt CInt where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CIntMax CIntMax where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CIntPtr CIntPtr where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CJmpBuf CJmpBuf where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CLLong CLLong where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CLong CLong where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CPtrdiff CPtrdiff where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CSChar CSChar where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CSUSeconds CSUSeconds where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CShort CShort where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CSigAtomic CSigAtomic where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CSize CSize where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CTime CTime where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CUChar CUChar where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CUInt CUInt where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CUIntMax CUIntMax where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CUIntPtr CUIntPtr where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CULLong CULLong where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CULong CULong where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CUSeconds CUSeconds where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CUShort CUShort where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable CWchar CWchar where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable Int8 Int8 where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable Int16 Int16 where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable Int32 Int32 where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable Int64 Int64 where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable Word8 Word8 where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable Word16 Word16 where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable Word32 Word32 where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable Word64 Word64 where
+  cast x f = f x
+  uncast x f = f x
+
 instance Castable (Ptr CInt) (Ptr CInt) where 
   cast x f = f x
   uncast x f = f x 
@@ -124,6 +285,14 @@ instance Castable (Ptr ()) (Ptr ()) where
 
 
 instance Castable Int CInt where
+  cast x f = f (fromIntegral x)
+  uncast x f = f (fromIntegral x)
+
+instance Castable Int16 CShort where
+  cast x f = f (fromIntegral x)
+  uncast x f = f (fromIntegral x)
+
+instance Castable Int8 CChar where
   cast x f = f (fromIntegral x)
   uncast x f = f (fromIntegral x)
 

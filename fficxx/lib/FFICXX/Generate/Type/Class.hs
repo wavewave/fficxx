@@ -22,19 +22,48 @@ import           Data.Semigroup                    (Semigroup(..),(<>))
 --
 import           FFICXX.Generate.Type.Cabal
 
+
 -- | C types
-data CTypes = CTString
+data CTypes = CTBool
             | CTChar
-            | CTInt
-            | CTUInt
-            | CTLong
-            | CTULong
+            | CTClock
             | CTDouble
-            | CTBool
-            | CTDoubleStar
+            | CTFile
+            | CTFloat
+            | CTFpos
+            | CTInt
+            | CTIntMax
+            | CTIntPtr
+            | CTJmpBuf
+            | CTLLong
+            | CTLong
+            | CTPtrdiff
+            | CTSChar
+            | CTSUSeconds
+            | CTShort
+            | CTSigAtomic
+            | CTSize
+            | CTTime
+            | CTUChar
+            | CTUInt
+            | CTUIntMax
+            | CTUIntPtr
+            | CTULLong
+            | CTULong
+            | CTUSeconds
+            | CTUShort
+            | CTWchar
+            | CTInt8
+            | CTInt16
+            | CTInt32
+            | CTInt64
+            | CTUInt8
+            | CTUInt16
+            | CTUInt32
+            | CTUInt64
             | CTVoidStar
-            | CTIntStar
-            | CTCharStarStar
+            | CTString
+            | CEnum CTypes String
             | CPointer CTypes
             | CRef CTypes
             deriving Show
