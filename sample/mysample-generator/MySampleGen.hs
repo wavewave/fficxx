@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 import Data.Monoid
+import System.Directory (getCurrentDirectory)
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Config ( SimpleBuilderConfig(..) )
 import FFICXX.Generate.Type.Class
@@ -50,14 +51,20 @@ toplevelfunctions = [ ]
 
 main :: IO ()
 main =
-  simpleBuilder
-    SimpleBuilderConfig {
-        sbcTopModule  = "MySample"
-      , sbcModUnitMap = mempty
-      , sbcCabal      = mycabal
-      , sbcClasses    = myclasses
-      , sbcTopLevels  = toplevelfunctions
-      , sbcTemplates  = []
-      , sbcExtraLibs  = []
-      , sbcExtraDeps  = []
-    }
+  cwd <- getCurrentDirectory
+  let cfg = FFICXXConfig {
+              fficxxconfig_scriptBaseDir = cwd
+            , fficxxconfig_workingDir = cwd </> "working"
+            , fficxxconfig_installBaseDir = dir </> unCabalName pkgname
+            }
+      sbc = SimpleBuilderConfig {
+              sbcTopModule  = "MySample"
+            , sbcModUnitMap = mempty
+            , sbcCabal      = mycabal
+            , sbcClasses    = myclasses
+            , sbcTopLevels  = toplevelfunctions
+            , sbcTemplates  = []
+            , sbcExtraLibs  = []
+            , sbcExtraDeps  = []
+            }
+  simpleBuilder cfg sbc

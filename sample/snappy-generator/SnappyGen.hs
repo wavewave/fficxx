@@ -1,4 +1,4 @@
-import Data.Monoid (mempty)
+import System.Directory ( getCurrentDirectory )
 --
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Config ( SimpleBuilderConfig(..) )
@@ -87,14 +87,20 @@ mycabalattr =
 
 main :: IO ()
 main = do
-  simpleBuilder
-    SimpleBuilderConfig {
-        sbcTopModule  = "Snappy"
-      , sbcModUnitMap = headerMap
-      , sbcCabal      = mycabal
-      , sbcClasses    = myclasses
-      , sbcTopLevels  = toplevelfunctions
-      , sbcTemplates  = []
-      , sbcExtraLibs  = ["snappy"]
-      , sbcExtraDeps  = []
-      }
+  cwd <- getCurrentDirectory
+  let cfg = FFICXXConfig {
+              fficxxconfig_scriptBaseDir = cwd
+            , fficxxconfig_workingDir = cwd </> "working"
+            , fficxxconfig_installBaseDir = dir </> unCabalName pkgname
+            }
+      sbc = SimpleBuilderConfig {
+              sbcTopModule  = "Snappy"
+            , sbcModUnitMap = headerMap
+            , sbcCabal      = mycabal
+            , sbcClasses    = myclasses
+            , sbcTopLevels  = toplevelfunctions
+            , sbcTemplates  = []
+            , sbcExtraLibs  = ["snappy"]
+            , sbcExtraDeps  = []
+            }
+  simpleBuilder cfg sbc

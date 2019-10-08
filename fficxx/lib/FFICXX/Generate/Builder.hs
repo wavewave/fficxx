@@ -26,7 +26,7 @@ import           System.FilePath                         ( (</>), (<.>), splitEx
 import           System.Directory                        ( copyFile
                                                          , createDirectoryIfMissing
                                                          , doesFileExist
-                                                         , getCurrentDirectory)
+                                                         )
 import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
 import           System.Process                          ( readProcess )
 --
@@ -52,8 +52,9 @@ macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
 
 
-simpleBuilder :: SimpleBuilderConfig -> IO ()
-simpleBuilder sbc = do
+
+simpleBuilder :: FFICXXConfig -> SimpleBuilderConfig -> IO ()
+simpleBuilder cfg sbc = do
   putStrLn "----------------------------------------------------"
   putStrLn "-- fficxx code generation for Haskell-C++ binding --"
   putStrLn "----------------------------------------------------"
@@ -69,12 +70,7 @@ simpleBuilder sbc = do
         = sbc
       pkgname = cabal_pkgname cabal
   putStrLn ("Generating " <> unCabalName pkgname)
-  cwd <- getCurrentDirectory
-  let cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd
-                          , fficxxconfig_workingDir = cwd </> "working"
-                          , fficxxconfig_installBaseDir = cwd </> unCabalName pkgname
-                          }
-      workingDir = fficxxconfig_workingDir cfg
+  let workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg
 
       pkgconfig@(PkgConfig mods cihs tih tcms _tcihs _ _) =
