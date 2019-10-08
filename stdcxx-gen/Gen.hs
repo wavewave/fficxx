@@ -2,11 +2,13 @@ module Main where
 
 import qualified Data.HashMap.Strict as HM
 import Data.Monoid (mempty)
+import System.Directory (getCurrentDirectory)
 --
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Code.Primitive
-import FFICXX.Generate.Type.Cabal (Cabal(..),CabalName(..))
-import FFICXX.Generate.Type.Config (ModuleUnitImports(..),ModuleUnitMap(..),ModuleUnit(..))
+import FFICXX.Generate.Config      ( SimpleBuilderConfig(..) )
+import FFICXX.Generate.Type.Cabal  ( Cabal(..), CabalName(..) )
+import FFICXX.Generate.Type.Config ( ModuleUnitImports(..), ModuleUnitMap(..), ModuleUnit(..) )
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
@@ -92,14 +94,10 @@ t_shared_ptr = TmplCls cabal "SharedPtr" "std::shared_ptr" "t"
              , TFunDelete
              ]
 
-
-
 templates = [ (t_vector, HdrName "Vector.h")
             , (t_unique_ptr, HdrName "UniquePtr.h")
             , (t_shared_ptr, HdrName "SharedPtr.h")
             ]
-
-
 
 headerMap =
   ModuleUnitMap $
@@ -112,9 +110,20 @@ headerMap =
 
 main :: IO ()
 main = do
-  simpleBuilder
-    "STD"
-    headerMap
-    (cabal,classes,toplevelfunctions,templates)
-    [ ]
-    extraDep
+  cwd <- getCurrentDirectory
+  let cfg = FFICXXConfig {
+              fficxxconfig_scriptBaseDir = cwd
+            , fficxxconfig_workingDir = cwd </> "working"
+            , fficxxconfig_installBaseDir = dir </> unCabalName pkgname
+            }
+      sbc = SimpleBuilderConfig
+              sbcTopModule  = "STD"
+            , sbcModUnitMap = headerMap
+            , sbcCabal      = cabal
+            , sbcClasses    = classes
+            , sbcTopLevels  = toplevelfunctions
+            , sbcTemplates  = templates
+            , sbcExtraLibs  = []
+            , sbcExtraDeps  = extraDep
+            }
+  simpleBuilder cfg sbc

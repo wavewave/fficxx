@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Builder
--- Copyright   : (c) 2011-2018 Ian-Woo Kim
+-- Copyright   : (c) 2011-2019 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -15,54 +15,62 @@
 
 module FFICXX.Generate.Builder where
 
-import           Control.Monad                           (void,when)
+import           Control.Monad                           ( void, when )
 import qualified Data.ByteString.Lazy.Char8        as L
-import           Data.Char                               (toUpper)
-import           Data.Digest.Pure.MD5                    (md5)
-import           Data.Foldable                           (for_)
-import           Data.Monoid                             ((<>),mempty)
-import           Language.Haskell.Exts.Pretty            (prettyPrint)
-import           System.FilePath                         ((</>),(<.>),splitExtension)
-import           System.Directory                        (copyFile, doesDirectoryExist
-                                                         ,doesFileExist,getCurrentDirectory)
-import           System.IO                               (hPutStrLn,withFile,IOMode(..))
-import           System.Process                          (readProcess,system )
+import           Data.Char                               ( toUpper )
+import           Data.Digest.Pure.MD5                    ( md5 )
+import           Data.Foldable                           ( for_ )
+import           Data.Monoid                             ( (<>), mempty )
+import           Language.Haskell.Exts.Pretty            ( prettyPrint )
+import           System.FilePath                         ( (</>), (<.>), splitExtension )
+import           System.Directory                        ( copyFile
+                                                         , createDirectoryIfMissing
+                                                         , doesFileExist
+                                                         )
+import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
+import           System.Process                          ( readProcess )
 --
 import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Dependency
-import           FFICXX.Generate.Config
+import           FFICXX.Generate.Config                  ( FFICXXConfig(..)
+                                                         , SimpleBuilderConfig(..)
+                                                         )
 import           FFICXX.Generate.ContentMaker
-import           FFICXX.Generate.Type.Cabal              (Cabal(..),CabalName(..)
-                                                         ,AddCInc(..),AddCSrc(..))
-import           FFICXX.Generate.Type.Config             (ModuleUnitMap(..))
-import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.Cabal              ( Cabal(..)
+                                                         , CabalName(..)
+                                                         , AddCInc(..)
+                                                         , AddCSrc(..)
+                                                         )
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 import           FFICXX.Generate.Util
 --
 
+
 macrofy :: String -> String
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
-simpleBuilder :: String
-              -> ModuleUnitMap
-              -> (Cabal, [Class], [TopLevelFunction], [(TemplateClass,HeaderName)])
-              -> [String] -- ^ extra libs
-              -> [(String,[String])] -- ^ extra module
-              ->  IO ()
-simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extralibs extramods = do
+
+
+
+simpleBuilder :: FFICXXConfig -> SimpleBuilderConfig -> IO ()
+simpleBuilder cfg sbc = do
   putStrLn "----------------------------------------------------"
   putStrLn "-- fficxx code generation for Haskell-C++ binding --"
   putStrLn "----------------------------------------------------"
-
-  let pkgname = cabal_pkgname cabal
+  let SimpleBuilderConfig
+        topLevelMod
+        mumap
+        cabal
+        classes
+        toplevelfunctions
+        templates
+        extralibs
+        extramods
+        = sbc
+      pkgname = cabal_pkgname cabal
   putStrLn ("Generating " <> unCabalName pkgname)
-  cwd <- getCurrentDirectory
-  let cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd
-                          , fficxxconfig_workingDir = cwd </> "working"
-                          , fficxxconfig_installBaseDir = cwd </> unCabalName pkgname
-                          }
-      workingDir = fficxxconfig_workingDir cfg
+  let workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg
 
       pkgconfig@(PkgConfig mods cihs tih tcms _tcihs _ _) =
@@ -75,10 +83,10 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
       cabalFileName = unCabalName pkgname <.> "cabal"
       jsonFileName = unCabalName pkgname <.> "json"
   --
-  notExistThenCreate workingDir
-  notExistThenCreate installDir
-  notExistThenCreate (installDir </> "src")
-  notExistThenCreate (installDir </> "csrc")
+  createDirectoryIfMissing True workingDir
+  createDirectoryIfMissing True installDir
+  createDirectoryIfMissing True (installDir </> "src")
+  createDirectoryIfMissing True (installDir </> "csrc")
   --
   putStrLn "Generating Cabal file"
   buildCabalFile cabal topLevelMod pkgconfig extralibs (workingDir</>cabalFileName)
@@ -187,12 +195,6 @@ touch :: FilePath -> IO ()
 touch fp = void (readProcess "touch" [fp] "")
 
 
-notExistThenCreate :: FilePath -> IO ()
-notExistThenCreate dir = do
-    b <- doesDirectoryExist dir
-    if b then return () else system ("mkdir -p " <> dir) >> return ()
-
-
 copyFileWithMD5Check :: FilePath -> FilePath -> IO ()
 copyFileWithMD5Check src tgt = do
   b <- doesFileExist tgt
@@ -240,7 +242,7 @@ moduleFileCopy wdir ddir fname = do
       newfpath = ddir </> mdir </> mfile' <> fnameext
   b <- doesFileExist origfpath
   when b $ do
-    notExistThenCreate (ddir </> mdir)
+    createDirectoryIfMissing True (ddir </> mdir)
     copyFileWithMD5Check origfpath newfpath
 
 

@@ -1,9 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-import           FFICXX.Generate.Builder
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface
+import Data.Monoid
+import System.Directory (getCurrentDirectory)
+import FFICXX.Generate.Builder
+import FFICXX.Generate.Config ( SimpleBuilderConfig(..) )
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Module
+import FFICXX.Generate.Type.PackageInterface
 
 incs = [ AddCInc "test.h" "//test ok?" ]
 
@@ -17,8 +20,8 @@ mycabal = Cabal { cabal_pkgname = "MySample"
                 , cabal_additional_c_srcs = srcs
                 }
 
-mycabalattr = 
-    CabalAttr 
+mycabalattr =
+    CabalAttr
     { cabalattr_license = Just "BSD3"
     , cabalattr_licensefile = Just "LICENSE"
     , cabalattr_extraincludedirs = []
@@ -47,6 +50,21 @@ toplevelfunctions = [ ]
 
 
 main :: IO ()
-main = do 
-  simpleBuilder "MySample" [] (mycabal,mycabalattr,myclasses,toplevelfunctions,[]) [ ] []
-
+main =
+  cwd <- getCurrentDirectory
+  let cfg = FFICXXConfig {
+              fficxxconfig_scriptBaseDir = cwd
+            , fficxxconfig_workingDir = cwd </> "working"
+            , fficxxconfig_installBaseDir = dir </> unCabalName pkgname
+            }
+      sbc = SimpleBuilderConfig {
+              sbcTopModule  = "MySample"
+            , sbcModUnitMap = mempty
+            , sbcCabal      = mycabal
+            , sbcClasses    = myclasses
+            , sbcTopLevels  = toplevelfunctions
+            , sbcTemplates  = []
+            , sbcExtraLibs  = []
+            , sbcExtraDeps  = []
+            }
+  simpleBuilder cfg sbc
