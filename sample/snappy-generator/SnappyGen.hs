@@ -91,7 +91,7 @@ main = do
   let cfg = FFICXXConfig {
               fficxxconfig_scriptBaseDir = cwd
             , fficxxconfig_workingDir = cwd </> "working"
-            , fficxxconfig_installBaseDir = dir </> unCabalName pkgname
+            , fficxxconfig_installBaseDir = cwd </> "Snappy"
             }
       sbc = SimpleBuilderConfig {
               sbcTopModule  = "Snappy"

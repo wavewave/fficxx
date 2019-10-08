@@ -55,7 +55,7 @@ main =
   let cfg = FFICXXConfig {
               fficxxconfig_scriptBaseDir = cwd
             , fficxxconfig_workingDir = cwd </> "working"
-            , fficxxconfig_installBaseDir = dir </> unCabalName pkgname
+            , fficxxconfig_installBaseDir = cwd </> "MySample"
             }
       sbc = SimpleBuilderConfig {
               sbcTopModule  = "MySample"
