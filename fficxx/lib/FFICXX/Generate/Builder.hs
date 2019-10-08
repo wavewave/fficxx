@@ -23,8 +23,11 @@ import           Data.Foldable                           (for_)
 import           Data.Monoid                             ((<>),mempty)
 import           Language.Haskell.Exts.Pretty            (prettyPrint)
 import           System.FilePath                         ((</>),(<.>),splitExtension)
-import           System.Directory                        (copyFile, doesDirectoryExist
-                                                         ,doesFileExist,getCurrentDirectory)
+import           System.Directory                        ( copyFile
+                                                         , createDirectoryIfMissing
+                                                         , doesDirectoryExist
+                                                         , doesFileExist
+                                                         , getCurrentDirectory)
 import           System.IO                               (hPutStrLn,withFile,IOMode(..))
 import           System.Process                          (readProcess,system )
 --
@@ -75,10 +78,10 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
       cabalFileName = unCabalName pkgname <.> "cabal"
       jsonFileName = unCabalName pkgname <.> "json"
   --
-  notExistThenCreate workingDir
-  notExistThenCreate installDir
-  notExistThenCreate (installDir </> "src")
-  notExistThenCreate (installDir </> "csrc")
+  createDirectoryIfMissing workingDir
+  createDirectoryIfMissing installDir
+  createDirectoryIfMissing (installDir </> "src")
+  createDirectoryIfMissing (installDir </> "csrc")
   --
   putStrLn "Generating Cabal file"
   buildCabalFile cabal topLevelMod pkgconfig extralibs (workingDir</>cabalFileName)
@@ -187,12 +190,6 @@ touch :: FilePath -> IO ()
 touch fp = void (readProcess "touch" [fp] "")
 
 
-notExistThenCreate :: FilePath -> IO ()
-notExistThenCreate dir = do
-    b <- doesDirectoryExist dir
-    if b then return () else system ("mkdir -p " <> dir) >> return ()
-
-
 copyFileWithMD5Check :: FilePath -> FilePath -> IO ()
 copyFileWithMD5Check src tgt = do
   b <- doesFileExist tgt
@@ -240,7 +237,7 @@ moduleFileCopy wdir ddir fname = do
       newfpath = ddir </> mdir </> mfile' <> fnameext
   b <- doesFileExist origfpath
   when b $ do
-    notExistThenCreate (ddir </> mdir)
+    createDirectoryIfMissing (ddir </> mdir)
     copyFileWithMD5Check origfpath newfpath
 
 
