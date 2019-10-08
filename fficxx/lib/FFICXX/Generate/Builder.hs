@@ -15,21 +15,20 @@
 
 module FFICXX.Generate.Builder where
 
-import           Control.Monad                           (void,when)
+import           Control.Monad                           ( void, when )
 import qualified Data.ByteString.Lazy.Char8        as L
-import           Data.Char                               (toUpper)
-import           Data.Digest.Pure.MD5                    (md5)
-import           Data.Foldable                           (for_)
-import           Data.Monoid                             ((<>),mempty)
-import           Language.Haskell.Exts.Pretty            (prettyPrint)
-import           System.FilePath                         ((</>),(<.>),splitExtension)
+import           Data.Char                               ( toUpper )
+import           Data.Digest.Pure.MD5                    ( md5 )
+import           Data.Foldable                           ( for_ )
+import           Data.Monoid                             ( (<>), mempty )
+import           Language.Haskell.Exts.Pretty            ( prettyPrint )
+import           System.FilePath                         ( (</>), (<.>), splitExtension )
 import           System.Directory                        ( copyFile
                                                          , createDirectoryIfMissing
-                                                         , doesDirectoryExist
                                                          , doesFileExist
                                                          , getCurrentDirectory)
-import           System.IO                               (hPutStrLn,withFile,IOMode(..))
-import           System.Process                          (readProcess,system )
+import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
+import           System.Process                          ( readProcess )
 --
 import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Dependency
@@ -78,10 +77,10 @@ simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extr
       cabalFileName = unCabalName pkgname <.> "cabal"
       jsonFileName = unCabalName pkgname <.> "json"
   --
-  createDirectoryIfMissing workingDir
-  createDirectoryIfMissing installDir
-  createDirectoryIfMissing (installDir </> "src")
-  createDirectoryIfMissing (installDir </> "csrc")
+  createDirectoryIfMissing True workingDir
+  createDirectoryIfMissing True installDir
+  createDirectoryIfMissing True (installDir </> "src")
+  createDirectoryIfMissing True (installDir </> "csrc")
   --
   putStrLn "Generating Cabal file"
   buildCabalFile cabal topLevelMod pkgconfig extralibs (workingDir</>cabalFileName)
@@ -237,7 +236,7 @@ moduleFileCopy wdir ddir fname = do
       newfpath = ddir </> mdir </> mfile' <> fnameext
   b <- doesFileExist origfpath
   when b $ do
-    createDirectoryIfMissing (ddir </> mdir)
+    createDirectoryIfMissing True (ddir </> mdir)
     copyFileWithMD5Check origfpath newfpath
 
 
