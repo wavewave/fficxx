@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Builder
--- Copyright   : (c) 2011-2018 Ian-Woo Kim
+-- Copyright   : (c) 2011-2019 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -32,32 +32,42 @@ import           System.Process                          ( readProcess )
 --
 import           FFICXX.Generate.Code.Cabal
 import           FFICXX.Generate.Dependency
-import           FFICXX.Generate.Config
+import           FFICXX.Generate.Config                  ( FFICXXConfig(..)
+                                                         , SimpleBuilderConfig(..)
+                                                         )
 import           FFICXX.Generate.ContentMaker
-import           FFICXX.Generate.Type.Cabal              (Cabal(..),CabalName(..)
-                                                         ,AddCInc(..),AddCSrc(..))
-import           FFICXX.Generate.Type.Config             (ModuleUnitMap(..))
-import           FFICXX.Generate.Type.Class
+import           FFICXX.Generate.Type.Cabal              ( Cabal(..)
+                                                         , CabalName(..)
+                                                         , AddCInc(..)
+                                                         , AddCSrc(..)
+                                                         )
 import           FFICXX.Generate.Type.Module
 import           FFICXX.Generate.Type.PackageInterface
 import           FFICXX.Generate.Util
 --
 
+
 macrofy :: String -> String
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
-simpleBuilder :: String
-              -> ModuleUnitMap
-              -> (Cabal, [Class], [TopLevelFunction], [(TemplateClass,HeaderName)])
-              -> [String] -- ^ extra libs
-              -> [(String,[String])] -- ^ extra module
-              ->  IO ()
-simpleBuilder topLevelMod mumap (cabal,classes,toplevelfunctions,templates) extralibs extramods = do
+
+
+simpleBuilder :: SimpleBuilderConfig -> IO ()
+simpleBuilder sbc = do
   putStrLn "----------------------------------------------------"
   putStrLn "-- fficxx code generation for Haskell-C++ binding --"
   putStrLn "----------------------------------------------------"
-
-  let pkgname = cabal_pkgname cabal
+  let SimpleBuilderConfig
+        topLevelMod
+        mumap
+        cabal
+        classes
+        toplevelfunctions
+        templates
+        extralibs
+        extramods
+        = sbc
+      pkgname = cabal_pkgname cabal
   putStrLn ("Generating " <> unCabalName pkgname)
   cwd <- getCurrentDirectory
   let cfg =  FFICXXConfig { fficxxconfig_scriptBaseDir = cwd

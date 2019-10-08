@@ -5,8 +5,9 @@ import Data.Monoid (mempty)
 --
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Code.Primitive
-import FFICXX.Generate.Type.Cabal (Cabal(..),CabalName(..))
-import FFICXX.Generate.Type.Config (ModuleUnitImports(..),ModuleUnitMap(..),ModuleUnit(..))
+import FFICXX.Generate.Config      ( SimpleBuilderConfig(..) )
+import FFICXX.Generate.Type.Cabal  ( Cabal(..), CabalName(..) )
+import FFICXX.Generate.Type.Config ( ModuleUnitImports(..), ModuleUnitMap(..), ModuleUnit(..) )
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
@@ -113,8 +114,13 @@ headerMap =
 main :: IO ()
 main = do
   simpleBuilder
-    "STD"
-    headerMap
-    (cabal,classes,toplevelfunctions,templates)
-    [ ]
-    extraDep
+    SimpleBuilderConfig {
+        sbcTopModule  = "STD"
+      , sbcModUnitMap = headerMap
+      , sbcCabal      = cabal
+      , sbcClasses    = classes
+      , sbcTopLevels  = toplevelfunctions
+      , sbcTemplates  = templates
+      , sbcExtraLibs  = []
+      , sbcExtraDeps  = extraDep
+      }
