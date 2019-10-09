@@ -91,6 +91,7 @@ main = do
   let cfg = FFICXXConfig {
               fficxxconfig_workingDir = cwd </> "working"
             , fficxxconfig_installBaseDir = cwd </> "Snappy"
+            , fficxxconfig_staticDir = ""
             }
       sbc = SimpleBuilderConfig {
               sbcTopModule  = "Snappy"
@@ -101,5 +102,6 @@ main = do
             , sbcTemplates  = []
             , sbcExtraLibs  = ["snappy"]
             , sbcExtraDeps  = []
+            , sbcStaticFiles = []
             }
   simpleBuilder cfg sbc

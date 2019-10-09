@@ -114,6 +114,7 @@ main = do
   let cfg = FFICXXConfig {
               fficxxconfig_workingDir = cwd </> "working"
             , fficxxconfig_installBaseDir = cwd </> "stdcxx"
+            , fficxxconfig_staticDir = ""
             }
       sbc = SimpleBuilderConfig
               sbcTopModule  = "STD"
@@ -124,5 +125,6 @@ main = do
             , sbcTemplates  = templates
             , sbcExtraLibs  = []
             , sbcExtraDeps  = extraDep
+            , sbcStaticFiles = []
             }
   simpleBuilder cfg sbc
