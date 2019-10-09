@@ -152,7 +152,7 @@ cabalTemplate =
   \Category:       $category\n\
   \Tested-with:    GHC >= 7.6\n\
   \Build-Type:  $buildtype\n\
-  \cabal-version:  >=1.10\n\
+  \cabal-version:  >= 2\n\
   \Extra-source-files:\n\
   \$extraFiles\n\
   \$csrcFiles\n\
