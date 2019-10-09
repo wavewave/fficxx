@@ -53,8 +53,7 @@ main :: IO ()
 main =
   cwd <- getCurrentDirectory
   let cfg = FFICXXConfig {
-              fficxxconfig_scriptBaseDir = cwd
-            , fficxxconfig_workingDir = cwd </> "working"
+              fficxxconfig_workingDir = cwd </> "working"
             , fficxxconfig_installBaseDir = cwd </> "MySample"
             }
       sbc = SimpleBuilderConfig {

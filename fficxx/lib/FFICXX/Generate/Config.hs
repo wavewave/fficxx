@@ -19,11 +19,10 @@ import FFICXX.Generate.Type.Config           ( ModuleUnitMap(..) )
 import FFICXX.Generate.Type.PackageInterface ( HeaderName )
 
 
-data FFICXXConfig = FFICXXConfig { 
-  fficxxconfig_scriptBaseDir :: FilePath, 
-  fficxxconfig_workingDir :: FilePath, 
-  fficxxconfig_installBaseDir :: FilePath
-} deriving Show
+data FFICXXConfig = FFICXXConfig {
+    fficxxconfig_workingDir :: FilePath
+  , fficxxconfig_installBaseDir :: FilePath
+  } deriving Show
 
 data SimpleBuilderConfig =
   SimpleBuilderConfig {
@@ -36,4 +35,3 @@ data SimpleBuilderConfig =
   , sbcExtraLibs  :: [String]
   , sbcExtraDeps  :: [(String,[String])]
   }
-

@@ -46,12 +46,8 @@ import           FFICXX.Generate.Type.PackageInterface
 import           FFICXX.Generate.Util
 --
 
-
 macrofy :: String -> String
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
-
-
-
 
 simpleBuilder :: FFICXXConfig -> SimpleBuilderConfig -> IO ()
 simpleBuilder cfg sbc = do
