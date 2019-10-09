@@ -49,6 +49,7 @@ import           FFICXX.Generate.Util
 macrofy :: String -> String
 macrofy = map ((\x->if x=='-' then '_' else x) . toUpper)
 
+
 simpleBuilder :: FFICXXConfig -> SimpleBuilderConfig -> IO ()
 simpleBuilder cfg sbc = do
   putStrLn "----------------------------------------------------"
@@ -63,11 +64,13 @@ simpleBuilder cfg sbc = do
         templates
         extralibs
         extramods
+        staticFiles
         = sbc
       pkgname = cabal_pkgname cabal
   putStrLn ("Generating " <> unCabalName pkgname)
   let workingDir = fficxxconfig_workingDir cfg
       installDir = fficxxconfig_installBaseDir cfg
+      staticDir  = fficxxconfig_staticFileDir cfg
 
       pkgconfig@(PkgConfig mods cihs tih tcms _tcihs _ _) =
         mkPackageConfig
@@ -83,6 +86,9 @@ simpleBuilder cfg sbc = do
   createDirectoryIfMissing True installDir
   createDirectoryIfMissing True (installDir </> "src")
   createDirectoryIfMissing True (installDir </> "csrc")
+  --
+  putStrLn "Copying static files"
+  mapM_ (\x->copyFileWithMD5Check (staticDir </> x) (installDir </> x)) staticFiles
   --
   putStrLn "Generating Cabal file"
   buildCabalFile cabal topLevelMod pkgconfig extralibs (workingDir</>cabalFileName)
