@@ -27,6 +27,7 @@ cabal = Cabal { cabal_pkgname = CabalName "stdcxx"
               , cabal_extralibdirs = []
               , cabal_extrafiles = []
               , cabal_pkg_config_depends = []
+              , cabal_buildType = Simple
               }
 
 extraDep = [ ]

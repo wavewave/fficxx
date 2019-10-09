@@ -18,6 +18,7 @@ mycabal = Cabal { cabal_pkgname = "MySample"
                 , cabal_moduleprefix = "MySample"
                 , cabal_additional_c_incs = incs
                 , cabal_additional_c_srcs = srcs
+                , cabal_buildType = Simple
                 }
 
 mycabalattr =
