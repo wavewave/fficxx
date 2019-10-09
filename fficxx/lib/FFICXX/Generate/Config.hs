@@ -19,21 +19,21 @@ import FFICXX.Generate.Type.Config           ( ModuleUnitMap(..) )
 import FFICXX.Generate.Type.PackageInterface ( HeaderName )
 
 
-data FFICXXConfig = FFICXXConfig { 
-  fficxxconfig_scriptBaseDir :: FilePath, 
-  fficxxconfig_workingDir :: FilePath, 
-  fficxxconfig_installBaseDir :: FilePath
-} deriving Show
+data FFICXXConfig = FFICXXConfig {
+    fficxxconfig_workingDir     :: FilePath
+  , fficxxconfig_installBaseDir :: FilePath
+  , fficxxconfig_staticFileDir  :: FilePath
+  } deriving Show
 
 data SimpleBuilderConfig =
   SimpleBuilderConfig {
-    sbcTopModule  :: String
-  , sbcModUnitMap :: ModuleUnitMap
-  , sbcCabal      :: Cabal
-  , sbcClasses    :: [Class]
-  , sbcTopLevels  :: [TopLevelFunction]
-  , sbcTemplates  :: [(TemplateClass,HeaderName)]
-  , sbcExtraLibs  :: [String]
-  , sbcExtraDeps  :: [(String,[String])]
+    sbcTopModule     :: String
+  , sbcModUnitMap    :: ModuleUnitMap
+  , sbcCabal         :: Cabal
+  , sbcClasses       :: [Class]
+  , sbcTopLevels     :: [TopLevelFunction]
+  , sbcTemplates     :: [(TemplateClass,HeaderName)]
+  , sbcExtraLibs     :: [String]
+  , sbcExtraDeps     :: [(String,[String])]
+  , sbcStaticFiles   :: [String]
   }
-

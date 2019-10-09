@@ -53,9 +53,9 @@ main :: IO ()
 main =
   cwd <- getCurrentDirectory
   let cfg = FFICXXConfig {
-              fficxxconfig_scriptBaseDir = cwd
-            , fficxxconfig_workingDir = cwd </> "working"
+              fficxxconfig_workingDir = cwd </> "working"
             , fficxxconfig_installBaseDir = cwd </> "MySample"
+            , fficxxconfig_staticDir = ""
             }
       sbc = SimpleBuilderConfig {
               sbcTopModule  = "MySample"
@@ -66,5 +66,6 @@ main =
             , sbcTemplates  = []
             , sbcExtraLibs  = []
             , sbcExtraDeps  = []
+            , sbcStaticFiles = []
             }
   simpleBuilder cfg sbc
