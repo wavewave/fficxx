@@ -10,7 +10,9 @@ snappyclasses = [ ]
 
 mycabal = Cabal { cabal_pkgname = "Snappy"
                 , cabal_cheaderprefix = "Snappy"
-                , cabal_moduleprefix = "Snappy" }
+                , cabal_moduleprefix = "Snappy"
+                , cabal_buildType = Simple
+                }
 
 -- myclass = Class mycabal
 
