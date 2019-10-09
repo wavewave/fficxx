@@ -25,15 +25,19 @@ import qualified Data.Text.Lazy as TL (toStrict)
 import qualified Data.Text.IO as TIO (writeFile)
 import System.FilePath             ((<.>),(</>))
 --
-import FFICXX.Generate.Type.Cabal  (AddCInc(..),AddCSrc(..)
-                                   ,CabalName(..),Cabal(..)
-                                   ,GeneratedCabalInfo(..))
+import FFICXX.Generate.Type.Cabal  ( AddCInc(..)
+                                   , AddCSrc(..)
+                                   , BuildType(..)
+                                   , CabalName(..)
+                                   , Cabal(..)
+                                   , GeneratedCabalInfo(..)
+                                   )
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 import FFICXX.Generate.Util
 
 
-cabalIndentation :: Text -- String
+cabalIndentation :: Text
 cabalIndentation = T.replicate 23 " "
 
 
@@ -204,7 +208,9 @@ genCabalInfo cabal summarymodule pkgconfig extralibs =
      , gci_author           = ""
      , gci_maintainer       = ""
      , gci_category         = ""
-     , gci_buildtype        = "Simple"
+     , gci_buildtype        = case cabal_buildType cabal of
+                                Simple -> "Simple"
+                                Custom -> "Custom"
      , gci_extraFiles       = map T.pack extrafiles
      , gci_csrcFiles        = map T.pack $ genCsrcFiles (tih,classmodules) acincs acsrcs
      , gci_sourcerepository = ""
