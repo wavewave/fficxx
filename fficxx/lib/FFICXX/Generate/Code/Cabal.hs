@@ -151,7 +151,7 @@ cabalTemplate =
   \Maintainer:  $maintainer\n\
   \Category:       $category\n\
   \Tested-with:    GHC >= 7.6\n\
-  \Build-Type:  $buildtype\n\
+  \$buildtype\n\
   \cabal-version:  >= 2\n\
   \Extra-source-files:\n\
   \$extraFiles\n\
@@ -209,8 +209,8 @@ genCabalInfo cabal summarymodule pkgconfig extralibs =
      , gci_maintainer       = ""
      , gci_category         = ""
      , gci_buildtype        = case cabal_buildType cabal of
-                                Simple -> "Simple"
-                                Custom -> "Custom"
+                                Simple -> "Build-Type: Simple"
+                                Custom -> "Build-Type: Custom\ncustom-setup\n  setup-depends: Cabal, base\n"
      , gci_extraFiles       = map T.pack extrafiles
      , gci_csrcFiles        = map T.pack $ genCsrcFiles (tih,classmodules) acincs acsrcs
      , gci_sourcerepository = ""
