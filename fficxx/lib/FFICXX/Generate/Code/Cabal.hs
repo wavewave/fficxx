@@ -16,7 +16,7 @@ module FFICXX.Generate.Code.Cabal where
 
 import Data.Aeson.Encode.Pretty    (encodePretty)
 import qualified Data.ByteString.Lazy as BL
-import Data.List                   (nub)
+import Data.List                   (intercalate, nub)
 import Data.Monoid                 ((<>))
 import Data.Text                   (Text)
 import Data.Text.Template          (substitute)
@@ -209,8 +209,12 @@ genCabalInfo cabal summarymodule pkgconfig extralibs =
      , gci_maintainer       = ""
      , gci_category         = ""
      , gci_buildtype        = case cabal_buildType cabal of
-                                Simple -> "Build-Type: Simple"
-                                Custom -> "Build-Type: Custom\ncustom-setup\n  setup-depends: Cabal, base\n"
+                                Simple ->
+                                  "Build-Type: Simple"
+                                Custom deps ->
+                                     "Build-Type: Custom\ncustom-setup\n  setup-depends: "
+                                  <> T.pack (intercalate ", " (map unCabalName deps))
+                                  <> "\n"
      , gci_extraFiles       = map T.pack extrafiles
      , gci_csrcFiles        = map T.pack $ genCsrcFiles (tih,classmodules) acincs acsrcs
      , gci_sourcerepository = ""

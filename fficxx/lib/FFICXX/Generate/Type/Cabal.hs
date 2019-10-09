@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Type.Cabal
--- Copyright   : (c) 2011-2018 Ian-Woo Kim
+-- Copyright   : (c) 2011-2019 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -30,7 +30,8 @@ newtype CabalName = CabalName { unCabalName :: String }
                   deriving (Show,Eq,Ord)
 
 
-data BuildType = Simple | Custom
+data BuildType = Simple
+               | Custom [CabalName] -- ^ dependencies
 
 -- TODO: change String to Text
 data Cabal =
