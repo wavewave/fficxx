@@ -68,7 +68,7 @@ data GeneratedCabalInfo =
        , gci_extraFiles       :: [Text]
        , gci_csrcFiles        :: [Text]
        , gci_sourcerepository :: Text
-       , gci_ccOptions        :: [Text]
+       , gci_cxxOptions       :: [Text]
        , gci_pkgdeps          :: [Text]
        , gci_exposedModules   :: [Text]
        , gci_otherModules     :: [Text]

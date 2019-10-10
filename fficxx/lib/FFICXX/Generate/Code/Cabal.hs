@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : FFICXX.Generate.Code.Cabal
--- Copyright   : (c) 2011-2018 Ian-Woo Kim
+-- Copyright   : (c) 2011-2019 Ian-Woo Kim
 --
 -- License     : BSD3
 -- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
@@ -164,14 +164,14 @@ cabalTemplate =
   \  hs-source-dirs: src\n\
   \  ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind -fno-warn-orphans -fno-warn-unused-imports\n\
   \  ghc-prof-options: -caf-all -auto-all\n\
-  \  cc-options: $ccOptions\n\
+  \  cxx-options: $cxxOptions\n\
   \  Build-Depends: $pkgdeps\n\
   \  Exposed-Modules:\n\
   \$exposedModules\n\
   \  Other-Modules:\n\
   \$otherModules\n\
   \  extra-lib-dirs: $extralibdirs\n\
-  \  extra-libraries:    stdc++ $extraLibraries\n\
+  \  extra-libraries:    $extraLibraries\n\
   \  Include-dirs:       csrc $extraincludedirs\n\
   \  pkgconfig-depends: $pkgconfigDepends\n\
   \  Install-includes:\n\
@@ -218,7 +218,7 @@ genCabalInfo cabal summarymodule pkgconfig extralibs =
      , gci_extraFiles       = map T.pack extrafiles
      , gci_csrcFiles        = map T.pack $ genCsrcFiles (tih,classmodules) acincs acsrcs
      , gci_sourcerepository = ""
-     , gci_ccOptions        = ["-std=c++14"]
+     , gci_cxxOptions       = ["-std=c++14"]
      , gci_pkgdeps          = map T.pack $ genPkgDeps (cabal_additional_pkgdeps cabal)
      , gci_exposedModules   = map T.pack $ genExposedModules summarymodule (classmodules,tmods)
      , gci_otherModules     = map T.pack $ genOtherModules classmodules
@@ -247,7 +247,7 @@ genCabalFile GeneratedCabalInfo {..} =
                , ("maintainer"      , gci_maintainer)
                , ("category"        , gci_category)
                , ("sourcerepository", gci_sourcerepository)
-               , ("ccOptions"       , T.intercalate " " gci_ccOptions)
+               , ("cxxOptions"       , T.intercalate " " gci_cxxOptions)
                , ("pkgdeps"         , T.intercalate ", " gci_pkgdeps)
                , ("extraFiles"      , unlinesWithIndent gci_extraFiles)
                , ("csrcFiles"       , unlinesWithIndent gci_csrcFiles)
