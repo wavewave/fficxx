@@ -35,7 +35,6 @@ import FFICXX.Generate.Code.Primitive          (CFunSig(..),HsFunSig(..)
                                                )
 import FFICXX.Generate.Name                    (accessorName
                                                ,aliasedFuncName
-                                               ,constructorName
                                                ,hsClassName
                                                ,hscAccessorName
                                                ,hscFuncName
@@ -93,7 +92,7 @@ genHsFrontInstNew c = do
         -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
         -- newfuncann = mkComment 0 cann
         rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-    in mkFun (constructorName c) (functionSignature c f) [] rhs Nothing
+    in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
 
 genHsFrontInstNonVirtual :: Class -> [Decl ()]
 genHsFrontInstNonVirtual c =
