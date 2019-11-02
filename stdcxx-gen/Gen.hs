@@ -130,7 +130,7 @@ main = do
             , sbcClasses    = classes
             , sbcTopLevels  = toplevelfunctions
             , sbcTemplates  = templates
-            , sbcExtraLibs  = []
+            , sbcExtraLibs  = ["stdc++"]
             , sbcExtraDeps  = extraDep
             , sbcStaticFiles = []
             }
