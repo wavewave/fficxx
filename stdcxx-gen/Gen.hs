@@ -1,13 +1,19 @@
 module Main where
 
 import qualified Data.HashMap.Strict as HM
-import Data.Monoid (mempty)
-import System.Directory (getCurrentDirectory)
+import Data.Monoid                 ( mempty )
+import System.Directory            ( getCurrentDirectory )
+import System.FilePath             ( (</>) )
 --
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Code.Primitive
-import FFICXX.Generate.Config      ( SimpleBuilderConfig(..) )
-import FFICXX.Generate.Type.Cabal  ( Cabal(..), CabalName(..) )
+import FFICXX.Generate.Config      ( FFICXXConfig(..)
+                                   , SimpleBuilderConfig(..)
+                                   )
+import FFICXX.Generate.Type.Cabal  ( BuildType(Simple)
+                                   , Cabal(..)
+                                   , CabalName(..)
+                                   )
 import FFICXX.Generate.Type.Config ( ModuleUnitImports(..), ModuleUnitMap(..), ModuleUnit(..) )
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
@@ -115,9 +121,9 @@ main = do
   let cfg = FFICXXConfig {
               fficxxconfig_workingDir = cwd </> "working"
             , fficxxconfig_installBaseDir = cwd </> "stdcxx"
-            , fficxxconfig_staticDir = ""
+            , fficxxconfig_staticFileDir = ""
             }
-      sbc = SimpleBuilderConfig
+      sbc = SimpleBuilderConfig {
               sbcTopModule  = "STD"
             , sbcModUnitMap = headerMap
             , sbcCabal      = cabal
