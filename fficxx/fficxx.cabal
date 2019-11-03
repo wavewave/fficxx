@@ -27,6 +27,7 @@ Library
                , either
                , errors
                , filepath>1
+               , ghc-source-gen
                , hashable
                , haskell-src-exts >= 1.18
                , lens > 3
