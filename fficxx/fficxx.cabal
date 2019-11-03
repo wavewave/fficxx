@@ -1,5 +1,5 @@
 Name:           fficxx
-Version:        0.5.1
+Version:        0.6.0.0
 Synopsis:       automatic C++ binding generation
 Description:    automatic C++ binding generation
 License:        BSD3
@@ -15,7 +15,7 @@ Source-repository head
   location: http://www.github.com/wavewave/fficxx
 
 Library
-  hs-source-dirs: lib
+  hs-source-dirs: src
   Build-Depends: base == 4.*
                , aeson
                , aeson-pretty
@@ -70,3 +70,14 @@ Library
                    -fno-warn-missing-signatures
                    -O2
   ghc-prof-options: -caf-all -auto-all
+
+executable ghc-source-gen-test
+  main-is:             Main.hs
+  other-modules:
+  ghc-options:         -Wall -Werror -O2
+  build-depends:       base >=4.8,
+                       ghc,
+                       ghc-paths,
+                       ghc-source-gen
+  hs-source-dirs:      app/ghc-source-gen-test
+  default-language:    Haskell2010
