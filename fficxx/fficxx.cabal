@@ -1,5 +1,5 @@
 Name:           fficxx
-Version:        0.5.1
+Version:        0.6
 Synopsis:       automatic C++ binding generation
 Description:    automatic C++ binding generation
 License:        BSD3
@@ -15,7 +15,7 @@ Source-repository head
   location: http://www.github.com/wavewave/fficxx
 
 Library
-  hs-source-dirs: lib
+  hs-source-dirs: src
   Build-Depends: base == 4.*
                , aeson
                , aeson-pretty
