@@ -16,7 +16,7 @@ import           STD.CppString
 import           STD.SharedPtr.Template
 import qualified STD.SharedPtr.TH as TH
 
-$(TH.genSharedPtrInstanceFor ''CppString "string")
+$(TH.genSharedPtrInstanceFor [t|CppString|] "string")
 
 printString :: CppString -> IO ()
 printString cppstr = do
