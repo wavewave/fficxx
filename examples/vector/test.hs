@@ -17,7 +17,7 @@ import qualified STD.Vector.TH as TH
 
 
 $(TH.genVectorInstanceFor [t|CInt|] "int")
-$(TH.genVectorInstanceFor [t|CppString|] "string")
+-- $(TH.genVectorInstanceFor [t|CppString|] "string")
 --  $(TestTH.test)
 
 test1 = do
@@ -35,7 +35,7 @@ test1 = do
   print =<< at v 5
   deleteVector v
 
-
+{-
 test2 = do
   withCString "hello" $ \cstr -> do
     v :: Vector CppString <- newVector
@@ -50,8 +50,9 @@ test2 = do
     pop_back v
     print =<< size v
     deleteVector v
+-}
 
 main :: IO ()
 main = do
   test1
-  test2
+--  test2

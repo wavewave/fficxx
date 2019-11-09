@@ -4,7 +4,7 @@ module FFICXX.Generate.Code.HsTemplate where
 import Data.Monoid                             ( (<>) )
 import qualified Data.List as L                ( foldr1, intercalate )
 import Language.Haskell.Exts.Build             ( app, binds, doE
-                                               , letE, letStmt, name, pApp
+                                               , letE, letStmt, name, pApp, paren
                                                , qualStmt, strE, tuple
                                                )
 import Language.Haskell.Exts.Syntax            ( Decl(..) )
@@ -208,11 +208,12 @@ genTmplInstance t fs = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
                    `app` con "LangCxx"
                    `app` (L.foldr1 (\x y -> inapp x (op "++") y)
                             [ includeLit
-                            , lit (TH.String () "Vector_instance" "Vector_instance")
-                            , if_
-                                (inapp (v "suffix") (op "==") (strE "int"))
-                                (strE "_2")
-                                (strE "")
+                            , strE "Vector_instance"
+                            , paren $
+                                if_
+                                  (inapp (v "suffix") (op "==") (strE "int"))
+                                  (strE "_s")
+                                  (strE "")
                             , strE "("
                             , v "suffix"
                             , strE ")\n"
@@ -229,25 +230,8 @@ genTmplInstance t fs = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
                             , "#include \"Vector.h\""
                             , "#include \"stdcxxType.h\""
                             , "using namespace std;"
-                            -- , "Vector_instance" ++ (if suffix == "int" then "_s" else "") ++ "(" ++ suffix ++ ")"
-                            -- , ""
+                            , ""
                             ]
-
-            includeStr2 = L.intercalate "\\n"
-                            [ "#include <MacroPatternMatch.h>"
-                            , "#include <vector>"
-                            , "#include <string>"
-                            , "#include \\\"Vector.h\\\""
-                            , "#include \\\"stdcxxType.h\\\""
-                            , "using namespace std;"
-                            -- , "Vector_instance" ++ (if suffix == "int" then "_s" else "") ++ "(" ++ suffix ++ ")"
-                            -- , ""
-                            ]
-          -- \Vector_instance"
-          -- ++ (if suffix == "int" then "_s" else "")
-          -- ++ "(" ++ suffix ++ ")\n"
-
-
 
         retstmt = v "pure"
                   `app` list [ v "mkInstance"
