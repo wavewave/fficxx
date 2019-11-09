@@ -1,38 +1,46 @@
 {-# LANGUAGE RecordWildCards   #-}
 module FFICXX.Generate.Code.HsTemplate where
 
-import Data.Monoid                             ((<>))
-import Language.Haskell.Exts.Build             (app,binds,doE,letE,letStmt,name,pApp
-                                               ,qualStmt,strE,tuple)
-import Language.Haskell.Exts.Syntax            (Decl(..))
+import Data.Monoid                             ( (<>) )
+import qualified Data.List as L                ( intercalate )
+import Language.Haskell.Exts.Build             ( app, binds, doE
+                                               , letE, letStmt, name, pApp
+                                               , qualStmt, strE, tuple
+                                               )
+import Language.Haskell.Exts.Syntax            ( Decl(..) )
+import qualified Language.Haskell.Exts.Syntax as TH (Literal(..))
 --
-import FFICXX.Generate.Code.Primitive          (functionSignatureT
-                                               ,functionSignatureTT
-                                               ,functionSignatureTMF)
-import FFICXX.Generate.Code.HsCast             (castBody)
-import FFICXX.Generate.Name                    (ffiTmplFuncName
-                                               ,hsTemplateClassName
-                                               ,hsTemplateMemberFunctionName
-                                               ,hsTemplateMemberFunctionNameTH
-                                               ,hsTmplFuncName
-                                               ,hsTmplFuncNameTH
-                                               ,typeclassNameT)
-import FFICXX.Generate.Type.Class              (Class(..)
-                                               ,TemplateClass(..)
-                                               ,TemplateFunction(..)
-                                               ,TemplateMemberFunction(..))
-import FFICXX.Generate.Util.HaskellSrcExts     (bracketExp
-                                               ,con,conDecl,cxEmpty
-                                               ,generator
-                                               ,clsDecl,insDecl,insType
-                                               ,lambda,list
-                                               ,mkBind1,mkTBind,mkData,mkNewtype
-                                               ,mkFun,mkFunSig,mkClass,mkInstance
-                                               ,mkPVar,mkTVar,mkVar
-                                               ,pbind,qualConDecl
-                                               ,tyapp,tycon,tyfun,tylist,tyPtr
-                                               ,typeBracket)
-
+import FFICXX.Generate.Code.Primitive          ( functionSignatureT
+                                               , functionSignatureTT
+                                               , functionSignatureTMF
+                                               )
+import FFICXX.Generate.Code.HsCast             ( castBody )
+import FFICXX.Generate.Name                    ( ffiTmplFuncName
+                                               , hsTemplateClassName
+                                               , hsTemplateMemberFunctionName
+                                               , hsTemplateMemberFunctionNameTH
+                                               , hsTmplFuncName
+                                               , hsTmplFuncNameTH
+                                               , typeclassNameT)
+import FFICXX.Generate.Type.Class              ( Class(..)
+                                               , TemplateClass(..)
+                                               , TemplateFunction(..)
+                                               , TemplateMemberFunction(..)
+                                               )
+import FFICXX.Generate.Util.HaskellSrcExts     ( bracketExp
+                                               , con, conDecl, cxEmpty
+                                               , clsDecl
+                                               , generator
+                                               , insDecl, insType
+                                               , lambda, list, lit
+                                               , mkBind1, mkTBind, mkData, mkNewtype
+                                               , mkFun, mkFunSig, mkClass, mkInstance
+                                               , mkPVar, mkTVar, mkVar
+                                               , pbind
+                                               , qualConDecl, qualifier
+                                               , tyapp, tycon, tyfun, tylist, tyPtr
+                                               , typeBracket
+                                               )
 
 
 ------------------------------
@@ -145,6 +153,11 @@ genTmplInstance t fs = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
         nfs = zip ([1..] :: [Int]) fs
         rhs = doE (  [qtypstmt]
                   <> map genstmt nfs
+                  -- temporary guard
+                  <> (if (tname == "Vector")
+                      then [foreignSrcStmt]
+                      else mempty
+                     )
                   <> [letStmt (lststmt nfs), qualStmt retstmt])
         qtypstmt = generator (p "typ") (v "qtyp")
         genstmt (n,f@TFun    {..}) = generator
@@ -169,6 +182,61 @@ genTmplInstance t fs = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
                                                      `app` v    "suffix"
                                        )
         lststmt xs = [ pbind (p "lst") (list (map (v . (\n->"f"<>show n) . fst) xs)) Nothing ]
+
+        {-
+
+            We want to generate code like the following.
+
+            addModFinalizer $ addForeignSource LangCxx
+             ("#include <MacroPatternMatch.h>\n\
+              \#include <vector>\n\
+              \#include <string>\n\
+              \#include \"Vector.h\"\n\
+              \#include \"stdcxxType.h\"\n\
+              \using namespace std;\n\
+              \Vector_instance"
+              ++ (if suffix == "int" then "_s" else "")
+              ++ "(" ++ suffix ++ ")\n"
+             )
+
+        -}
+
+        foreignSrcStmt =
+          qualifier $
+                  (v "addModFinalizer")
+            `app` (      v "addForeignSource"
+                   `app` con "LangCxx"
+                   `app` includeLit)
+
+          where
+            includeLit = lit (TH.String () includeStr1 includeStr2)
+            includeStr1 = L.intercalate "\n"
+                            [ "#include <MacroPatternMatch.h>"
+                            , "#include <vector>"
+                            , "#include <string>"
+                            , "#include \"Vector.h\""
+                            , "#include \"stdcxxType.h\""
+                            , "using namespace std;"
+                            -- , "Vector_instance" ++ (if suffix == "int" then "_s" else "") ++ "(" ++ suffix ++ ")"
+                            -- , ""
+                            ]
+
+            includeStr2 = L.intercalate "\\n"
+                            [ "#include <MacroPatternMatch.h>"
+                            , "#include <vector>"
+                            , "#include <string>"
+                            , "#include \\\"Vector.h\\\""
+                            , "#include \\\"stdcxxType.h\\\""
+                            , "using namespace std;"
+                            -- , "Vector_instance" ++ (if suffix == "int" then "_s" else "") ++ "(" ++ suffix ++ ")"
+                            -- , ""
+                            ]
+          -- \Vector_instance"
+          -- ++ (if suffix == "int" then "_s" else "")
+          -- ++ "(" ++ suffix ++ ")\n"
+
+
+
         retstmt = v "pure"
                   `app` list [ v "mkInstance"
                                `app` list []

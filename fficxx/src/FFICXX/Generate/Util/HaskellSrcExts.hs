@@ -207,6 +207,8 @@ insDecl = InsDecl ()
 
 generator = Generator ()
 
+qualifier = Qualifier ()
+
 clsDecl = ClsDecl ()
 
 

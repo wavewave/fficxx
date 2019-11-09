@@ -12,13 +12,13 @@ import           STD.CppString
 import           STD.Vector.Template
 import qualified STD.Vector.TH as TH
 
-import qualified TestTH (test)
+-- import qualified TestTH (test)
 
 
 
 $(TH.genVectorInstanceFor [t|CInt|] "int")
 $(TH.genVectorInstanceFor [t|CppString|] "string")
-$(TestTH.test)
+--  $(TestTH.test)
 
 test1 = do
   v :: Vector CInt <- newVector
