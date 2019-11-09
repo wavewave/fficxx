@@ -1,0 +1,4 @@
+packages: ../fficxx/
+          ../fficxx-runtime/
+          ./stdcxx/
+

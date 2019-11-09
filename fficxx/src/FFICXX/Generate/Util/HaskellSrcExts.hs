@@ -213,3 +213,11 @@ clsDecl = ClsDecl ()
 
 
 unkindedVar = UnkindedVar ()
+
+op = QVarOp () . UnQual () . Symbol ()
+
+inapp = InfixApp ()
+
+if_ = If ()
+
+litString x x' = lit (String () x x')

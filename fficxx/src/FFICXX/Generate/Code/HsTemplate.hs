@@ -2,7 +2,7 @@
 module FFICXX.Generate.Code.HsTemplate where
 
 import Data.Monoid                             ( (<>) )
-import qualified Data.List as L                ( intercalate )
+import qualified Data.List as L                ( foldr1, intercalate )
 import Language.Haskell.Exts.Build             ( app, binds, doE
                                                , letE, letStmt, name, pApp
                                                , qualStmt, strE, tuple
@@ -31,12 +31,12 @@ import FFICXX.Generate.Util.HaskellSrcExts     ( bracketExp
                                                , con, conDecl, cxEmpty
                                                , clsDecl
                                                , generator
-                                               , insDecl, insType
-                                               , lambda, list, lit
+                                               , if_, inapp, insDecl, insType
+                                               , lambda, list, lit, litString
                                                , mkBind1, mkTBind, mkData, mkNewtype
                                                , mkFun, mkFunSig, mkClass, mkInstance
                                                , mkPVar, mkTVar, mkVar
-                                               , pbind
+                                               , op, pbind
                                                , qualConDecl, qualifier
                                                , tyapp, tycon, tyfun, tylist, tyPtr
                                                , typeBracket
@@ -206,10 +206,22 @@ genTmplInstance t fs = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
                   (v "addModFinalizer")
             `app` (      v "addForeignSource"
                    `app` con "LangCxx"
-                   `app` includeLit)
+                   `app` (L.foldr1 (\x y -> inapp x (op "++") y)
+                            [ includeLit
+                            , lit (TH.String () "Vector_instance" "Vector_instance")
+                            , if_
+                                (inapp (v "suffix") (op "==") (strE "int"))
+                                (strE "_2")
+                                (strE "")
+                            , strE "("
+                            , v "suffix"
+                            , strE ")\n"
+                            ]
+                         )
+                  )
 
           where
-            includeLit = lit (TH.String () includeStr1 includeStr2)
+            includeLit = strE includeStr1 -- lit (TH.String () includeStr1 includeStr2)
             includeStr1 = L.intercalate "\n"
                             [ "#include <MacroPatternMatch.h>"
                             , "#include <vector>"
