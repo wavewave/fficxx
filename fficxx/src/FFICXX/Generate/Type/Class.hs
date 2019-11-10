@@ -97,9 +97,12 @@ data Types = Void
 
 -------------
 
--- type Args = [(Types,String)]
-
-type Arg = (Types,String)
+data Arg =
+  Arg {
+    arg_type :: Types
+  , arg_name :: String
+  }
+  deriving Show
 
 data Function = Constructor { func_args :: [Arg]
                             , func_alias :: Maybe String

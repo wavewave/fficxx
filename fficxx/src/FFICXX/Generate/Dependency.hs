@@ -80,6 +80,9 @@ extractClassFromType (TemplateType t)         = [Left t]
 extractClassFromType (TemplateParam _)        = []
 extractClassFromType (TemplateParamPointer _) = []
 
+classFromArg :: Arg -> [Either TemplateClass Class]
+classFromArg = extractClassFromType . arg_type
+
 
 class_allparents :: Class -> [Class]
 class_allparents c = let ps = class_parents c
@@ -125,35 +128,35 @@ data Dep4Func = Dep4Func { returnDependency :: [Either TemplateClass Class]
 -- |
 extractClassDep :: Function -> Dep4Func
 extractClassDep (Constructor args _)  =
-    Dep4Func [] (concatMap (extractClassFromType.fst) args)
+    Dep4Func [] (concatMap classFromArg args)
 extractClassDep (Virtual ret _ args _) =
-    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (concatMap classFromArg args)
 extractClassDep (NonVirtual ret _ args _) =
-    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (concatMap classFromArg args)
 extractClassDep (Static ret _ args _) =
-    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (concatMap classFromArg args)
 extractClassDep (Destructor _) =
     Dep4Func [] []
 
 
 extractClassDepForTmplFun :: TemplateFunction -> Dep4Func
 extractClassDepForTmplFun (TFun ret  _ _ args _) =
-    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (concatMap classFromArg args)
 extractClassDepForTmplFun (TFunNew args _) =
-    Dep4Func [] (concatMap (extractClassFromType.fst) args)
+    Dep4Func [] (concatMap classFromArg args)
 extractClassDepForTmplFun TFunDelete =
     Dep4Func [] []
 
 
 extractClassDep4TmplMemberFun :: TemplateMemberFunction -> Dep4Func
 extractClassDep4TmplMemberFun (TemplateMemberFunction {..}) =
-  Dep4Func (extractClassFromType tmf_ret) (concatMap (extractClassFromType.fst) tmf_args)
+  Dep4Func (extractClassFromType tmf_ret) (concatMap classFromArg tmf_args)
 
 
 
 extractClassDepForTopLevelFunction :: TopLevelFunction -> Dep4Func
 extractClassDepForTopLevelFunction f =
-    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType.fst) args)
+    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType . arg_type) args)
   where ret = case f of
                 TopLevelFunction {..} -> toplevelfunc_ret
                 TopLevelVariable {..} -> toplevelvar_ret

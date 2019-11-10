@@ -455,7 +455,7 @@ tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> String
 tmplMemberFunToDecl c f =
   subst "$ret ${macroname}_##Type ( $args )"
     (context [ ("macroname", hsTemplateMemberFunctionName c f)
-             , ("args"     , intercalateWith conncomma (tmplMemFuncArgToString c) ((SelfType,"p"):tmf_args f))
+             , ("args"     , intercalateWith conncomma (tmplMemFuncArgToString c) ((Arg SelfType "p"):tmf_args f))
              , ("ret"      , tmplMemFuncRetTypeToString c (tmf_ret f))
              ])
 

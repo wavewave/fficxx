@@ -262,41 +262,47 @@ cppclassmove :: Class -> String -> (Types, String)
 cppclassmove c vname = (cppclassmove_ c, vname)
 
 
-argToString :: (Types,String) -> String
-argToString (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
-argToString (SelfType, varname) = "Type ## _p " <> varname
-argToString (CPT (CPTClass c) isconst, varname) = case isconst of
+argToString :: Arg -> String
+argToString (Arg (CT ctyp isconst) varname) =
+  cvarToStr ctyp isconst varname
+argToString (Arg SelfType varname) =
+  "Type ## _p " <> varname
+argToString (Arg (CPT (CPTClass c) isconst) varname) =
+  case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
   where cname = ffiClassName c
-argToString (CPT (CPTClassRef c) isconst, varname) = case isconst of
+argToString (Arg (CPT (CPTClassRef c) isconst) varname) =
+  case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
   where cname = ffiClassName c
-argToString (CPT (CPTClassCopy c) isconst, varname) = case isconst of
+argToString (Arg (CPT (CPTClassCopy c) isconst) varname) =
+  case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
   where cname = ffiClassName c
-argToString (CPT (CPTClassMove c) isconst, varname) = case isconst of
+argToString (Arg (CPT (CPTClassMove c) isconst) varname) =
+  case isconst of
     Const   -> "const_" <> cname <> "_p " <> varname
     NoConst -> cname <> "_p " <> varname
   where cname = ffiClassName c
-argToString (TemplateApp     _, varname) = "void* " <> varname
-argToString (TemplateAppRef  _, varname) = "void* " <> varname
-argToString (TemplateAppMove _, varname) = "void* " <> varname
+argToString (Arg (TemplateApp     _) varname) = "void* " <> varname
+argToString (Arg (TemplateAppRef  _) varname) = "void* " <> varname
+argToString (Arg (TemplateAppMove _) varname) = "void* " <> varname
 argToString t = error ("argToString: " <> show t)
 
 argsToString :: [Arg] -> String
 argsToString args =
-  let args' = (SelfType, "p") : args
+  let args' = (Arg SelfType "p") : args
   in  intercalateWith conncomma argToString args'
 
 argsToStringNoSelf :: [Arg] -> String
 argsToStringNoSelf = intercalateWith conncomma argToString
 
 -- TODO: remove this function
-argToCallString :: (Types,String) -> String
-argToCallString = uncurry castC2Cpp
+argToCallString :: Arg -> String
+argToCallString (Arg t e) = castC2Cpp t e
 
 
 argsToCallString :: [Arg] -> String
@@ -373,29 +379,31 @@ castCpp2C t e =
 
 
 
-tmplArgToString :: Bool -> TemplateClass -> (Types,String) -> String
-tmplArgToString _ _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
-tmplArgToString _ t (SelfType, varname) = tclass_oname t <> "* " <> varname
-tmplArgToString _ _ (CPT (CPTClass c) isconst, varname) =
+tmplArgToString :: Bool -> TemplateClass -> Arg -> String
+tmplArgToString _ _  (Arg (CT ctyp isconst) varname) =
+  cvarToStr ctyp isconst varname
+tmplArgToString _ t (Arg SelfType varname) =
+  tclass_oname t <> "* " <> varname
+tmplArgToString _ _ (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplArgToString _ _ (CPT (CPTClassRef c) isconst, varname) =
+tmplArgToString _ _ (Arg (CPT (CPTClassRef c) isconst) varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplArgToString _ _ (CPT (CPTClassMove c) isconst, varname) =
+tmplArgToString _ _ (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplArgToString _ _ (TemplateApp     _, v) = "void* " <> v
-tmplArgToString _ _ (TemplateAppRef  _, v) = "void* " <> v
-tmplArgToString _ _ (TemplateAppMove _, v) = "void* " <> v
-tmplArgToString _ _ (TemplateType   _,  v) = "void* " <> v
-tmplArgToString True  _ (TemplateParam _,v) = "Type " <> v
-tmplArgToString False _ (TemplateParam _,v) = "Type ## _p " <> v
-tmplArgToString True  _ (TemplateParamPointer _,v) = "Type " <> v
-tmplArgToString False _ (TemplateParamPointer _,v) = "Type ## _p " <> v
+tmplArgToString _ _ (Arg (TemplateApp     _) v) = "void* " <> v
+tmplArgToString _ _ (Arg (TemplateAppRef  _) v) = "void* " <> v
+tmplArgToString _ _ (Arg (TemplateAppMove _) v) = "void* " <> v
+tmplArgToString _ _ (Arg (TemplateType    _) v) = "void* " <> v
+tmplArgToString True  _ (Arg (TemplateParam _) v) = "Type " <> v
+tmplArgToString False _ (Arg (TemplateParam _) v) = "Type ## _p " <> v
+tmplArgToString True  _ (Arg (TemplateParamPointer _) v) = "Type " <> v
+tmplArgToString False _ (Arg (TemplateParamPointer _) v) = "Type ## _p " <> v
 tmplArgToString _ _ _ = error "tmplArgToString: undefined"
 
 tmplAllArgsToString :: Bool
@@ -405,7 +413,7 @@ tmplAllArgsToString :: Bool
                     -> String
 tmplAllArgsToString b s t args =
   let args' = case s of
-                Self -> (TemplateType t, "p") : args
+                Self   -> (Arg (TemplateType t) "p") : args
                 NoSelf -> args
   in  intercalateWith conncomma (tmplArgToString b t) args'
 
@@ -413,42 +421,42 @@ tmplAllArgsToString b s t args =
 
 tmplArgToCallString
   :: Bool  -- ^ is primitive type?
-  -> (Types,String)
+  -> Arg
   -> String
-tmplArgToCallString _ (CPT (CPTClass c) _,varname) =
+tmplArgToCallString _ (Arg (CPT (CPTClass c) _) varname) =
   -- TODO: Rewrite this with static_cast.
   "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")" where str = ffiClassName c
-tmplArgToCallString _ (CPT (CPTClassRef c) _,varname) =
+tmplArgToCallString _ (Arg (CPT (CPTClassRef c) _) varname) =
   -- TODO: Rewrite this with static_cast.
   "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")" where str = ffiClassName c
-tmplArgToCallString _ (CPT (CPTClassMove c) _,varname) =
+tmplArgToCallString _ (Arg (CPT (CPTClassMove c) _) varname) =
   -- TODO: Rewrite this with static_cast.
   "std::move(to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>"))" where str = ffiClassName c
-tmplArgToCallString _ (CT (CRef _) _,varname) = "(*"<> varname<> ")"
-tmplArgToCallString _ (TemplateApp x,varname) =
+tmplArgToCallString _ (Arg (CT (CRef _) _) varname) = "(*"<> varname<> ")"
+tmplArgToCallString _ (Arg (TemplateApp x) varname) =
   case tapp_tparam x of
     TArg_TypeParam p -> "static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")"
     _ -> -- TODO: Implement this.
          error "tmplArgToCallString: TemplateApp"
-tmplArgToCallString _ (TemplateAppRef x,varname) =
+tmplArgToCallString _ (Arg (TemplateAppRef x) varname) =
   case tapp_tparam x of
     TArg_TypeParam p -> "*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> "))"
     _ -> -- TODO: Implement this.
          error "tmplArgToCallString: TemplateAppRef"
-tmplArgToCallString _ (TemplateAppMove x,varname) =
+tmplArgToCallString _ (Arg (TemplateAppMove x) varname) =
   case tapp_tparam x of
     TArg_TypeParam p -> "std::move(*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")))"
     _ -> -- TODO: Implement this.
          error "tmplArgToCallString: TemplateAppMove"
-tmplArgToCallString b (TemplateParam _,varname) =
+tmplArgToCallString b (Arg (TemplateParam _) varname) =
   case b of
     True  -> varname
     False -> "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
-tmplArgToCallString b (TemplateParamPointer _,varname) =
+tmplArgToCallString b (Arg (TemplateParamPointer _) varname) =
   case b of
     True  -> varname
     False -> "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
-tmplArgToCallString _ (_,varname) = varname
+tmplArgToCallString _ (Arg _ varname) = varname
 
 tmplAllArgsToCallString
   :: Bool  -- ^ is primitive type?
@@ -483,27 +491,27 @@ tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## 
 -- Template Member Function --
 -- ---------------------------
 
-tmplMemFuncArgToString :: Class -> (Types,String) -> String
-tmplMemFuncArgToString _  (CT ctyp isconst, varname) = cvarToStr ctyp isconst varname
-tmplMemFuncArgToString c (SelfType, varname) = ffiClassName c <> "_p " <> varname
-tmplMemFuncArgToString _ (CPT (CPTClass c) isconst, varname) =
+tmplMemFuncArgToString :: Class -> Arg -> String
+tmplMemFuncArgToString _ (Arg (CT ctyp isconst) varname) = cvarToStr ctyp isconst varname
+tmplMemFuncArgToString c (Arg SelfType varname) = ffiClassName c <> "_p " <> varname
+tmplMemFuncArgToString _ (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplMemFuncArgToString _ (CPT (CPTClassRef c) isconst, varname) =
+tmplMemFuncArgToString _ (Arg (CPT (CPTClassRef c) isconst) varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplMemFuncArgToString _ (CPT (CPTClassMove c) isconst, varname) =
+tmplMemFuncArgToString _ (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
     Const   -> "const_" <> ffiClassName c <> "_p " <> varname
     NoConst -> ffiClassName c <> "_p " <> varname
-tmplMemFuncArgToString _ (TemplateApp     _, v) = "void* " <> v
-tmplMemFuncArgToString _ (TemplateAppRef  _, v) = "void* " <> v
-tmplMemFuncArgToString _ (TemplateAppMove _, v) = "void* " <> v
-tmplMemFuncArgToString _ (TemplateType   _,  v) = "void* " <> v
-tmplMemFuncArgToString _ (TemplateParam _,v) = "Type##_p " <> v
-tmplMemFuncArgToString _ (TemplateParamPointer _,v) = "Type##_p " <> v
+tmplMemFuncArgToString _ (Arg (TemplateApp     _) v) = "void* " <> v
+tmplMemFuncArgToString _ (Arg (TemplateAppRef  _) v) = "void* " <> v
+tmplMemFuncArgToString _ (Arg (TemplateAppMove _) v) = "void* " <> v
+tmplMemFuncArgToString _ (Arg (TemplateType   _)  v) = "void* " <> v
+tmplMemFuncArgToString _ (Arg (TemplateParam _) v) = "Type##_p " <> v
+tmplMemFuncArgToString _ (Arg (TemplateParamPointer _) v) = "Type##_p " <> v
 tmplMemFuncArgToString _ _ = error "tmplMemFuncArgToString: undefined"
 
 
@@ -657,7 +665,7 @@ extractArgRetTypes
   -> HsFunSig     -- ^ Haskell type signature information for the function    --   ([Type ()],[Asst ()])  -- ^ (types, class constraints)
 extractArgRetTypes mc isvirtual (CFunSig args ret) =
   let  (typs,s) = flip runState ([],(0 :: Int)) $ do
-                    as <- mapM (mktyp . fst) args
+                    as <- mapM (mktyp . arg_type) args
                     r <- case ret of
                            SelfType -> case mc of
                                          Nothing -> error "extractArgRetTypes: SelfType return but no class"
@@ -732,11 +740,11 @@ functionSignatureT t TFun {..} =
       tp = tclass_param t
       ctyp = convertCpp2HS Nothing tfun_ret
       arg0 =  (tyapp (tycon hname) (mkTVar tp) :)
-      lst = arg0 (map (convertCpp2HS Nothing . fst) tfun_args)
+      lst = arg0 (map (convertCpp2HS Nothing . arg_type) tfun_args)
   in foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
 functionSignatureT t TFunNew {..} =
   let ctyp = convertCpp2HS Nothing (TemplateType t)
-      lst = map (convertCpp2HS Nothing . fst) tfun_new_args
+      lst = map (convertCpp2HS Nothing . arg_type) tfun_new_args
   in foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
 functionSignatureT t TFunDelete =
   let ctyp = convertCpp2HS Nothing (TemplateType t)
@@ -757,8 +765,8 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
   spl = tySplice (parenSplice (mkVar (tclass_param t)))
   lst =
     case f of
-      TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_args
-      TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spl . fst) tfun_new_args
+      TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spl . arg_type) tfun_args
+      TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spl . arg_type) tfun_new_args
       TFunDelete -> [e]
 
 -- TODO: rename this and combine this with functionSignatureTT
@@ -768,12 +776,12 @@ functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
     ctyp = convertCpp2HS4Tmpl e Nothing spl (tmf_ret f)
     e = tycon (fst (hsClassName c))
     spl = tySplice (parenSplice (mkVar (tmf_param f)))
-    lst = e : map (convertCpp2HS4Tmpl e Nothing spl . fst) (tmf_args f)
+    lst = e : map (convertCpp2HS4Tmpl e Nothing spl . arg_type) (tmf_args f)
 
 
 accessorCFunSig :: Types -> Accessor -> CFunSig
 accessorCFunSig typ Getter = CFunSig [] typ
-accessorCFunSig typ Setter = CFunSig [(typ,"x")] Void
+accessorCFunSig typ Setter = CFunSig [Arg typ "x"] Void
 
 
 accessorSignature :: Class -> Variable -> Accessor -> Type ()
@@ -793,7 +801,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
                    Just (Self,_)   -> selftyp: argtyps <> [tyapp (tycon "IO") rettyp]
                    Just (NoSelf,_) -> argtyps <> [tyapp (tycon "IO") rettyp]
   where argtyps :: [Type ()]
-        argtyps = map (hsargtype . fst) args
+        argtyps = map (hsargtype . arg_type) args
         rettyp :: Type ()
         rettyp  = hsrettype ret
         selftyp = case msc of
