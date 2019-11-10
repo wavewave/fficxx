@@ -109,10 +109,30 @@ templates = [ (t_vector, HdrName "Vector.h")
 headerMap =
   ModuleUnitMap $
     HM.fromList [
-      (MU_Class "string", ModuleUnitImports {
-                            muimports_namespaces = [NS "std"]
-                          , muimports_headers = [ HdrName "string" ]
-                          })
+      (MU_Class "string",
+       ModuleUnitImports {
+         muimports_namespaces = [NS "std"]
+       , muimports_headers = [ HdrName "string" ]
+       }
+      )
+    , (MU_Class "vector",
+       ModuleUnitImports {
+         muimports_namespaces = [NS "std"]
+       , muimports_headers = [ HdrName "vector" ]
+       }
+      )
+    , (MU_Class "unique_ptr",
+       ModuleUnitImports {
+         muimports_namespaces = [NS "std"]
+       , muimports_headers = [ HdrName "memory" ]
+       }
+      )
+    , (MU_Class "shared_ptr",
+       ModuleUnitImports {
+         muimports_namespaces = [NS "std"]
+       , muimports_headers = [ HdrName "memory" ]
+       }
+      )
     ]
 
 main :: IO ()
