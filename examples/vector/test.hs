@@ -8,17 +8,14 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.C.String
 
+import FFICXX.Runtime.TH (IsCPrimitive(..))
 import           STD.CppString
 import           STD.Vector.Template
 import qualified STD.Vector.TH as TH
 
--- import qualified TestTH (test)
 
-
-
-$(TH.genVectorInstanceFor [t|CInt|] "int")
-$(TH.genVectorInstanceFor [t|CppString|] "string")
---  $(TestTH.test)
+$(TH.genVectorInstanceFor CPrim    [t|CInt|]      "int")
+$(TH.genVectorInstanceFor NonCPrim [t|CppString|] "string")
 
 test1 = do
   v :: Vector CInt <- newVector

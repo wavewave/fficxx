@@ -1,16 +1,13 @@
 rm -rf dist-newstyle
-rm ../stdcxx-gen/Gen.o
-rm ../stdcxx-gen/Gen
 cabal new-build fficxx
 cabal new-build fficxx-runtime
 cabal new-exec runhaskell ../stdcxx-gen/Gen.hs
-#cd ../stdcxx-gen; ghc Gen.hs; cd ../workspace
-#../stdcxx-gen/Gen
 cabal new-build stdcxx
 
 # vector
-#-keep-tmp-files
-cabal new-exec -- ghc  vector/test.hs #vector/TestTH.hs
+# for checking temporarily generated cpp file, use -keep-tmp-files
+rm vector/test.o
+cabal new-exec -- ghc  vector/test.hs
 #cabal new-exec -- g++ -c vector/stub.cc -o vector/stub.o -I stdcxx/csrc  -I../fficxx-runtime/csrc/
 #cabal new-exec -- ghc -c vector/test.hs
 #cabal new-exec -- ghc vector/test.hs vector/stub.o

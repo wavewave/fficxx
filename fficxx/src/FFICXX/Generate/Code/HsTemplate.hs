@@ -3,12 +3,11 @@ module FFICXX.Generate.Code.HsTemplate where
 
 import Data.Monoid                             ( (<>) )
 import qualified Data.List as L                ( foldr1, intercalate )
-import Language.Haskell.Exts.Build             ( app, binds, doE
+import Language.Haskell.Exts.Build             ( app, binds, caseE, doE
                                                , letE, letStmt, name, pApp, paren
                                                , qualStmt, strE, tuple
                                                )
 import Language.Haskell.Exts.Syntax            ( Decl(..) )
-import qualified Language.Haskell.Exts.Syntax as TH (Literal(..))
 --
 import FFICXX.Generate.Code.Primitive          ( functionSignatureT
                                                , functionSignatureTT
@@ -31,9 +30,9 @@ import FFICXX.Generate.Util.HaskellSrcExts     ( bracketExp
                                                , con, conDecl, cxEmpty
                                                , clsDecl
                                                , generator
-                                               , if_, inapp, insDecl, insType
-                                               , lambda, list, lit, litString
-                                               , mkBind1, mkTBind, mkData, mkNewtype
+                                               , inapp, insDecl, insType
+                                               , lambda, list
+                                               , match, mkBind1, mkTBind, mkData, mkNewtype
                                                , mkFun, mkFunSig, mkClass, mkInstance
                                                , mkPVar, mkTVar, mkVar
                                                , op, pbind
@@ -142,14 +141,15 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
 
 
 genTmplInstance :: TemplateClass -> [TemplateFunction] -> [Decl ()]
-genTmplInstance t fs = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
+genTmplInstance t fs = mkFun fname sig [p "isCprim", p "qtyp", p "suffix"] rhs Nothing
   where tname = tclass_name t
         fname = "gen" <> tname <> "InstanceFor"
         p = mkPVar
         v = mkVar
-        sig = (tyapp (tycon "Q") (tycon "Type")) `tyfun`
-                (tycon "String" `tyfun`
-                  (tyapp (tycon "Q") (tylist (tycon "Dec"))))
+        sig =         tycon "IsCPrimitive"
+              `tyfun` (tycon "Q" `tyapp` tycon "Type")
+              `tyfun` tycon "String"
+              `tyfun` (tycon "Q" `tyapp` tylist (tycon "Dec"))
         nfs = zip ([1..] :: [Int]) fs
         rhs = doE (  [qtypstmt]
                   <> map genstmt nfs
@@ -210,10 +210,11 @@ genTmplInstance t fs = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
                             [ includeLit
                             , strE "Vector_instance"
                             , paren $
-                                if_
-                                  (inapp (v "suffix") (op "==") (strE "int"))
-                                  (strE "_s")
-                                  (strE "")
+                                caseE
+                                  (v "isCprim")
+                                  [ match (p "CPrim")    (strE "_s")
+                                  , match (p "NonCPrim") (strE "")
+                                  ]
                             , strE "("
                             , v "suffix"
                             , strE ")\n"
@@ -222,7 +223,7 @@ genTmplInstance t fs = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
                   )
 
           where
-            includeLit = strE includeStr1 -- lit (TH.String () includeStr1 includeStr2)
+            includeLit = strE includeStr1
             includeStr1 = L.intercalate "\n"
                             [ "#include <MacroPatternMatch.h>"
                             , "#include <vector>"

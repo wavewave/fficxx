@@ -29,8 +29,12 @@ tycon = TyCon () . unqual
 tyapp :: Type () -> Type () -> Type ()
 tyapp = TyApp ()
 
+infixl 2 `tyapp`
+
 tyfun :: Type () -> Type () -> Type ()
 tyfun = TyFun ()
+
+infixr 2 `tyfun`
 
 tylist :: Type () -> Type ()
 tylist = TyList ()
@@ -220,4 +224,7 @@ inapp = InfixApp ()
 
 if_ = If ()
 
-litString x x' = lit (String () x x')
+urhs = UnGuardedRhs ()
+
+-- case pattern match p -> e
+match p e = Alt () p (urhs e) Nothing
