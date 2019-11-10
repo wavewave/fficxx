@@ -9,8 +9,8 @@ import Foreign.Ptr
 import Foreign.C.String
 
 import FFICXX.Runtime.TH (IsCPrimitive(..), TemplateParamInfo(..))
-import           STD.CppString
-import           STD.Vector.Template
+import STD.CppString
+import STD.Vector.Template
 import qualified STD.Vector.TH as TH
 
 
@@ -34,6 +34,7 @@ TH.genVectorInstanceFor
           }
   )
 
+test1 :: IO ()
 test1 = do
   v :: Vector CInt <- newVector
   n <- size v

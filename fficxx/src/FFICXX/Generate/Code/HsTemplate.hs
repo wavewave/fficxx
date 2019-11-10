@@ -164,11 +164,7 @@ genTmplInstance t tcih fs =
                      , qtypstmt
                      ]
                   <> map genstmt nfs
-                  -- temporary guard
-                  <> (if (tname == "Vector")
-                      then [foreignSrcStmt]
-                      else mempty
-                     )
+                  <> [foreignSrcStmt]
                   <> [letStmt (lststmt nfs), qualStmt retstmt])
         suffixstmt = letStmt [ pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param" ) ]
         qtypstmt = generator (p "typ") (v "qtyp")
