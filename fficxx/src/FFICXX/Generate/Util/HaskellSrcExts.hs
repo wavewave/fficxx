@@ -29,8 +29,12 @@ tycon = TyCon () . unqual
 tyapp :: Type () -> Type () -> Type ()
 tyapp = TyApp ()
 
+infixl 2 `tyapp`
+
 tyfun :: Type () -> Type () -> Type ()
 tyfun = TyFun ()
+
+infixr 2 `tyfun`
 
 tylist :: Type () -> Type ()
 tylist = TyList ()
@@ -74,6 +78,9 @@ mkPVarSig n typ = PatTypeSig () (mkPVar n) typ
 
 pbind :: Pat () -> Exp () -> Maybe (Binds ()) -> Decl ()
 pbind pat e = PatBind () pat (UnGuardedRhs () e)
+
+pbind_ :: Pat () -> Exp () -> Decl ()
+pbind_ p e = pbind p e Nothing
 
 mkTBind :: String -> TyVarBind ()
 mkTBind = UnkindedVar () . Ident ()
@@ -207,7 +214,20 @@ insDecl = InsDecl ()
 
 generator = Generator ()
 
+qualifier = Qualifier ()
+
 clsDecl = ClsDecl ()
 
 
 unkindedVar = UnkindedVar ()
+
+op = QVarOp () . UnQual () . Symbol ()
+
+inapp = InfixApp ()
+
+if_ = If ()
+
+urhs = UnGuardedRhs ()
+
+-- case pattern match p -> e
+match p e = Alt () p (urhs e) Nothing

@@ -1,1 +1,6 @@
-packages: stdcxx/
+packages:
+  ../fficxx/
+  ../fficxx-runtime/
+optional-packages:
+  ./stdcxx/
+

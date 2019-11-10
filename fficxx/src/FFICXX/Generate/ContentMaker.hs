@@ -1,59 +1,47 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
------------------------------------------------------------------------------
--- |
--- Module      : FFICXX.Generate.ContentMaker
--- Copyright   : (c) 2011-2018 Ian-Woo Kim
---
--- License     : BSD3
--- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
--- Stability   : experimental
--- Portability : GHC
---
------------------------------------------------------------------------------
-
 module FFICXX.Generate.ContentMaker where
 
-import           Control.Lens                           ((&),(.~),at)
-import           Control.Monad.Trans.Reader
-import           Data.Char                              (toUpper)
-import           Data.Either                            (rights)
-import           Data.Function                          (on)
-import qualified Data.Map                          as M
-import           Data.Monoid                            ((<>))
-import           Data.List                              (intercalate,nub,nubBy)
-import           Data.List.Split                        (splitOn)
-import           Data.Maybe
-import           Data.Text                              (Text)
-import           Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
-import           System.FilePath
+import Control.Lens                           ((&),(.~),at)
+import Control.Monad.Trans.Reader
+import Data.Char                              (toUpper)
+import Data.Either                            (rights)
+import Data.Function                          (on)
+import qualified Data.Map as M
+import Data.Maybe                             (mapMaybe,maybeToList)
+import Data.Monoid                            ((<>))
+import Data.List                              (find,intercalate,nub,nubBy)
+import Data.List.Split                        (splitOn)
+import Data.Text                              (Text)
+import Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
+import System.FilePath
 --
-import           FFICXX.Generate.Code.Cpp
-import           FFICXX.Generate.Code.HsCast            (genHsFrontInstCastable
-                                                        ,genHsFrontInstCastableSelf)
-import           FFICXX.Generate.Code.HsFFI             (genHsFFI
-                                                        ,genImportInFFI
-                                                        ,genTopLevelFuncFFI)
-import           FFICXX.Generate.Code.HsFrontEnd
-import           FFICXX.Generate.Code.HsTemplate        (genTemplateMemberFunctions
-                                                        ,genTmplInstance
-                                                        ,genTmplInterface
-                                                        ,genTmplImplementation
-                                                        )
-import           FFICXX.Generate.Dependency
-import           FFICXX.Generate.Name                   (ffiClassName,hsClassName
-                                                        ,hsFrontNameForTopLevelFunction)
-import           FFICXX.Generate.Type.Annotate
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface  (ClassName(..),HeaderName(..)
-                                                        ,Namespace(..)
-                                                        ,PackageInterface,PackageName(..)
-                                                        ,TypeMacro(..))
-import           FFICXX.Generate.Util
-import           FFICXX.Generate.Util.HaskellSrcExts
---
+import FFICXX.Generate.Code.Cpp
+import FFICXX.Generate.Code.HsCast            (genHsFrontInstCastable
+                                              ,genHsFrontInstCastableSelf)
+import FFICXX.Generate.Code.HsFFI             (genHsFFI
+                                              ,genImportInFFI
+                                              ,genTopLevelFuncFFI)
+import FFICXX.Generate.Code.HsFrontEnd
+import FFICXX.Generate.Code.HsTemplate        (genTemplateMemberFunctions
+                                              ,genTmplInstance
+                                              ,genTmplInterface
+                                              ,genTmplImplementation
+                                              )
+import FFICXX.Generate.Dependency
+import FFICXX.Generate.Name                   (ffiClassName,hsClassName
+                                              ,hsFrontNameForTopLevelFunction)
+import FFICXX.Generate.Type.Annotate
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Module
+import FFICXX.Generate.Type.PackageInterface  (ClassName(..),HeaderName(..)
+                                              ,Namespace(..)
+                                              ,PackageInterface,PackageName(..)
+                                              ,TypeMacro(..))
+import FFICXX.Generate.Util
+import qualified FFICXX.Generate.Util.C as C
+import FFICXX.Generate.Util.HaskellSrcExts
 
 
 srcDir :: FilePath -> FilePath
@@ -70,9 +58,10 @@ mkGlobal = ClassGlobal <$> mkDaughterSelfMap <*> mkDaughterMap
 
 
 -- |
-buildDaughterDef :: ((String,[Class]) -> String)
-              -> DaughterMap
-              -> String
+buildDaughterDef ::
+     ((String,[Class]) -> String)
+  -> DaughterMap
+  -> String
 buildDaughterDef f m =
     let lst = M.toList m
         f' (x,xs) =  f (x,filter (not.isAbstractClass) xs)
@@ -294,11 +283,16 @@ buildTopLevelCppDef tih =
 
 -- |
 buildTemplateHeader :: TypeMacro  -- ^ typemacro prefix
-                    -> TemplateClass
+                    -> TemplateClassImportHeader
                     -> String
-buildTemplateHeader (TypMcro typemacroprefix) t =
-  let typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
+buildTemplateHeader (TypMcro typemacroprefix) tcih =
+  let
+      t = tcihTClass tcih
+      typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
       fs = tclass_funcs t
+
+      headerStr = concatMap (\h -> C.include h <> "\n") (tcihCxxHeaders tcih)  -- "/* HEADER */"
+
       deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
                 ++ "\n\n"
                 ++ intercalateWith connRet (genTmplFunCpp True t) fs
@@ -307,12 +301,15 @@ buildTemplateHeader (TypMcro typemacroprefix) t =
        "#ifndef $typemacro\n\
        \#define $typemacro\n\
        \\n\
+       \$headers\n\
+       \\n\
        \$deffunc\n\
        \$classlevel\n\
        \#endif\n"
-       (context [ ("typemacro", typemacrostr )
-                , ("deffunc"  , deffunc      )
-                , ("classlevel" , classlevel )
+       (context [ ("typemacro"  , typemacrostr )
+                , ("headers"    , headerStr    )
+                , ("deffunc"    , deffunc      )
+                , ("classlevel" , classlevel   )
                 ])
 
 
@@ -445,8 +442,16 @@ buildTHHs m = mkModule (tcmModule m <.> "TH")
              body
   where ts = tcmTemplateClasses m
         imports = [ mkImport (tcmModule m <.> "Template") ]
-        body = concatMap genTmplImplementation ts
-               <> concatMap (\t -> genTmplInstance t (tclass_funcs t)) ts
+        body = tmplImpls <> tmplInsts
+        tmplImpls = concatMap genTmplImplementation ts
+        tmplInsts = concatMap gen ts
+          where
+            gen t = do
+              let tcihs = tcmTCIH m
+              tcih <-
+                maybeToList $
+                  find (\tcih -> tclass_name (tcihTClass tcih) == tclass_name t) tcihs
+              genTmplInstance t tcih (tclass_funcs t)
 
 -- |
 buildInterfaceHSBOOT :: String -> Module ()

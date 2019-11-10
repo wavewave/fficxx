@@ -8,13 +8,22 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.C.String
 
-
-import           STD.CppString
-import           STD.UniquePtr.Template
+import FFICXX.Runtime.TH (IsCPrimitive(..), TemplateParamInfo(..))
+import STD.CppString
+import STD.UniquePtr.Template
 import qualified STD.UniquePtr.TH as TH
 
-$(TH.genUniquePtrInstanceFor [t|CppString|] "string")
+TH.genUniquePtrInstanceFor
+  NonCPrim
+  [t|CppString|]
+  (TPInfo { tpinfoCxxType       = "std::string"
+          , tpinfoCxxHeaders    = ["string","stdcxxType.h"]
+          , tpinfoCxxNamespaces = ["std"]
+          , tpinfoSuffix        = "string"
+          }
+  )
 
+main :: IO ()
 main = do
   putStrLn "test"
   withCString "hello" $ \cstr -> do

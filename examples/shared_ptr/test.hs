@@ -11,12 +11,21 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.C.String
 
-
-import           STD.CppString
-import           STD.SharedPtr.Template
+import FFICXX.Runtime.TH (IsCPrimitive(..), TemplateParamInfo(..))
+import STD.CppString
+import STD.SharedPtr.Template
 import qualified STD.SharedPtr.TH as TH
 
-$(TH.genSharedPtrInstanceFor [t|CppString|] "string")
+TH.genSharedPtrInstanceFor
+  NonCPrim
+  [t|CppString|]
+  (TPInfo { tpinfoCxxType       = "std::string"
+          , tpinfoCxxHeaders    = ["string","stdcxxType.h"]
+          , tpinfoCxxNamespaces = ["std"]
+          , tpinfoSuffix        = "string"
+          }
+  )
+
 
 printString :: CppString -> IO ()
 printString cppstr = do

@@ -101,18 +101,20 @@ t_shared_ptr = TmplCls cabal "SharedPtr" "std::shared_ptr" "t"
              , TFunDelete
              ]
 
-templates = [ (t_vector, HdrName "Vector.h")
-            , (t_unique_ptr, HdrName "UniquePtr.h")
-            , (t_shared_ptr, HdrName "SharedPtr.h")
+templates = [ TCIH t_vector     (HdrName "Vector.h")    [HdrName "vector"]
+            , TCIH t_unique_ptr (HdrName "UniquePtr.h") [HdrName "memory"]
+            , TCIH t_shared_ptr (HdrName "SharedPtr.h") [HdrName "memory"]
             ]
 
 headerMap =
   ModuleUnitMap $
     HM.fromList [
-      (MU_Class "string", ModuleUnitImports {
-                            muimports_namespaces = [NS "std"]
-                          , muimports_headers = [ HdrName "string" ]
-                          })
+      (MU_Class "string",
+       ModuleUnitImports {
+         muimports_namespaces = [NS "std"]
+       , muimports_headers = [ HdrName "string" ]
+       }
+      )
     ]
 
 main :: IO ()

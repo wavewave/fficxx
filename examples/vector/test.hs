@@ -8,14 +8,33 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.C.String
 
-import           STD.CppString
-import           STD.Vector.Template
+import FFICXX.Runtime.TH (IsCPrimitive(..), TemplateParamInfo(..))
+import STD.CppString
+import STD.Vector.Template
 import qualified STD.Vector.TH as TH
 
-$(TH.genVectorInstanceFor [t|CInt|] "int")
-$(TH.genVectorInstanceFor [t|CppString|] "string")
 
+TH.genVectorInstanceFor
+  CPrim
+  [t|CInt|]
+  (TPInfo { tpinfoCxxType       = "int"
+          , tpinfoCxxHeaders    = []
+          , tpinfoCxxNamespaces = []
+          , tpinfoSuffix        = "int"
+          }
+  )
 
+TH.genVectorInstanceFor
+  NonCPrim
+  [t|CppString|]
+  (TPInfo { tpinfoCxxType       = "std::string"
+          , tpinfoCxxHeaders    = ["string","stdcxxType.h"]
+          , tpinfoCxxNamespaces = ["std"]
+          , tpinfoSuffix        = "string"
+          }
+  )
+
+test1 :: IO ()
 test1 = do
   v :: Vector CInt <- newVector
   n <- size v
@@ -46,6 +65,7 @@ test2 = do
     pop_back v
     print =<< size v
     deleteVector v
+
 
 main :: IO ()
 main = do

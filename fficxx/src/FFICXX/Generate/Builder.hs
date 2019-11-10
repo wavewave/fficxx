@@ -30,8 +30,13 @@ import           System.Directory                        ( copyFile
 import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
 import           System.Process                          ( readProcess )
 --
-import           FFICXX.Generate.Code.Cabal
-import           FFICXX.Generate.Dependency
+import           FFICXX.Generate.Code.Cabal              ( buildCabalFile
+                                                         , buildJSONFile
+                                                         )
+import           FFICXX.Generate.Dependency              ( findModuleUnitImports
+                                                         , mkHSBOOTCandidateList
+                                                         , mkPackageConfig
+                                                         )
 import           FFICXX.Generate.Config                  ( FFICXXConfig(..)
                                                          , SimpleBuilderConfig(..)
                                                          )
@@ -113,9 +118,8 @@ simpleBuilder cfg sbc = do
   for_ tcms $ \m ->
     let tcihs = tcmTCIH m
     in for_ tcihs $ \tcih ->
-         let t = tcihTClass tcih
-             hdr = unHdrName (tcihSelfHeader tcih)
-         in gen hdr (buildTemplateHeader typmacro t)
+         let hdr = unHdrName (tcihSelfHeader tcih)
+         in gen hdr (buildTemplateHeader typmacro tcih)
   --
   putStrLn "Generating Cpp file"
   for_ cihs (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr))

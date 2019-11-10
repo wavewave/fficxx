@@ -307,13 +307,17 @@ findModuleUnitImports m u =
   fromMaybe emptyModuleUnitImports (HM.lookup u (unModuleUnitMap m))
 
 
-mkTCM :: (TemplateClass,HeaderName) -> TemplateClassModule
-mkTCM (t,hdr) = TCM  (getTClassModuleBase t) [t] [TCIH t hdr]
+mkTCM ::
+     TemplateClassImportHeader
+  -> TemplateClassModule
+mkTCM tcih =
+  let t = tcihTClass tcih
+  in TCM (getTClassModuleBase t) [t] [tcih]
 
 
 mkPackageConfig
   :: (CabalName, ModuleUnit -> ModuleUnitImports) -- ^ (package name,getImports)
-  -> ([Class],[TopLevelFunction],[(TemplateClass,HeaderName)],[(String,[String])])
+  -> ([Class],[TopLevelFunction],[TemplateClassImportHeader],[(String,[String])])
   -> [AddCInc]
   -> [AddCSrc]
   -> PackageConfig
