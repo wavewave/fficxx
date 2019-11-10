@@ -1,11 +1,11 @@
 rm -rf dist-newstyle
 rm ../stdcxx-gen/Gen.o
 rm ../stdcxx-gen/Gen
-#cabal new-build fficxx
-#cabal new-build fficxx-runtime
-#cabal new-exec runhaskell ../stdcxx-gen/Gen.hs
-cd ../stdcxx-gen; ghc Gen.hs; cd ../workspace
-../stdcxx-gen/Gen
+cabal new-build fficxx
+cabal new-build fficxx-runtime
+cabal new-exec runhaskell ../stdcxx-gen/Gen.hs
+#cd ../stdcxx-gen; ghc Gen.hs; cd ../workspace
+#../stdcxx-gen/Gen
 cabal new-build stdcxx
 
 # vector
