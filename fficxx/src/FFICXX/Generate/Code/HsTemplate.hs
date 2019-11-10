@@ -9,8 +9,10 @@ import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       )
 import Language.Haskell.Exts.Syntax   ( Decl(..) )
 --
-import FFICXX.Runtime.CodeGen.C       ( CStatement(..), HeaderName(..) )
-import qualified FFICXX.Runtime.CodeGen.C as CGen
+import FFICXX.Runtime.CodeGen.C       ( CStatement(..)
+                                      , HeaderName(..)
+                                      , render
+                                      )
 --
 import FFICXX.Generate.Code.Primitive ( functionSignatureT
                                       , functionSignatureTT
@@ -217,8 +219,8 @@ genTmplInstance t tcih fs =
           where
             includeStatic =
               strE $ concatMap (<> "\n")
-                [ CGen.render (Include (HdrName "MacroPatternMatch.h"))
-                , CGen.render (Include (tcihSelfHeader tcih))
+                [ render (Include (HdrName "MacroPatternMatch.h"))
+                , render (Include (tcihSelfHeader tcih))
                 ]
             includeDynamic =
               letE

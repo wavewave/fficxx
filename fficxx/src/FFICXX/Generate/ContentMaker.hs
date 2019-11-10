@@ -20,6 +20,7 @@ import System.FilePath
 import FFICXX.Runtime.CodeGen.C               ( CStatement(..)
                                               , HeaderName(..)
                                               , Namespace(..)
+                                              , render
                                               )
 import qualified FFICXX.Runtime.CodeGen.C as CGen
 --
@@ -141,10 +142,8 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       typemacrostr = typemacroprefix <> ffiClassName aclass <> "__"
-      declHeaderStr = intercalateWith
-                        connRet
-                        (\x->"#include \""<>x<>"\"")
-                        (map unHdrName (cihIncludedHPkgHeadersInH header))
+      declHeaderStr =
+        intercalate "\n" $ map (render . Include) $ cihIncludedHPkgHeadersInH header
       declDefStr    = intercalateWith connRet2 genCppHeaderMacroVirtual classes
                       `connRet2`
                       intercalateWith connRet genCppHeaderMacroNonVirtual classes

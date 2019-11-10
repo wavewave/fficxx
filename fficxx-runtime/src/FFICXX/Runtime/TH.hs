@@ -2,7 +2,6 @@
 
 module FFICXX.Runtime.TH where
 
-import Data.Monoid                ( (<>) )
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 --

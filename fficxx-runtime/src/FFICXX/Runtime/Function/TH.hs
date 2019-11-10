@@ -1,8 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
 module FFICXX.Runtime.Function.TH where
-import Data.Char
-import Data.Monoid
-import Foreign.C.Types
 import Foreign.Ptr
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
@@ -23,21 +20,21 @@ mkWrapper (typ,suffix)
 t_newFunction :: Type -> String -> ExpQ
 t_newFunction typ suffix
   = mkTFunc (typ, suffix, \ n -> "Function_new_" <> n, tyf)
-  where tyf n =
+  where tyf _n =
           let t = pure typ
           in [t| FunPtr $( t ) -> IO (Function $( t )) |]
 
 t_call :: Type -> String -> ExpQ
 t_call typ suffix
   = mkTFunc (typ, suffix, \ n -> "Function_call_" <> n, tyf)
-  where tyf n =
+  where tyf _n =
           let t = pure typ
           in [t| Function $( t ) -> $( t ) |]
 
 t_deleteFunction :: Type -> String -> ExpQ
 t_deleteFunction typ suffix
   = mkTFunc (typ, suffix, \ n -> "Function_delete_" <> n, tyf)
-  where tyf n =
+  where tyf _n =
           let t = pure typ
           in [t| Function $( t ) -> IO () |]
 
