@@ -14,7 +14,7 @@ data TemplateParamInfo =
   TPInfo {
     tpinfoCxxType       :: String
   , tpinfoCxxHeaders    :: [HeaderName]
-  , tpinfoCxxNamespaces :: [String]
+  , tpinfoCxxNamespaces :: [Namespace]
   , tpinfoSuffix        :: String
   }
   deriving Show

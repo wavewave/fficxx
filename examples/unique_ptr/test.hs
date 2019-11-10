@@ -19,7 +19,7 @@ TH.genUniquePtrInstanceFor
   [t|CppString|]
   (TPInfo { tpinfoCxxType       = "std::string"
           , tpinfoCxxHeaders    = [ HdrName "string", HdrName "stdcxxType.h" ]
-          , tpinfoCxxNamespaces = ["std"]
+          , tpinfoCxxNamespaces = [ NS "std" ]
           , tpinfoSuffix        = "string"
           }
   )
