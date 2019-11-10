@@ -153,113 +153,113 @@ star_ t = CT (CPointer t) NoConst
 cstar_ :: CTypes -> Types
 cstar_ t = CT (CPointer t) Const
 
-self :: String -> (Types, String)
-self var = (self_, var)
+self :: String -> Arg
+self var = Arg self_ var
 
-voidp :: String -> (Types,String)
-voidp var = (voidp_ , var)
+voidp :: String -> Arg
+voidp var = Arg voidp_ var
 
-cstring :: String -> (Types,String)
-cstring var = (cstring_ , var)
+cstring :: String -> Arg
+cstring var = Arg cstring_ var
 
-cint :: String -> (Types,String)
-cint    var = (cint_    , var)
+cint :: String -> Arg
+cint var = Arg cint_ var
 
-int :: String -> (Types,String)
-int     var = (int_     , var)
+int :: String -> Arg
+int var = Arg int_ var
 
-uint :: String -> (Types,String)
-uint var = (uint_ , var)
+uint :: String -> Arg
+uint var = Arg uint_ var
 
-long :: String -> (Types,String)
-long var = (long_, var)
+long :: String -> Arg
+long var = Arg long_ var
 
-ulong :: String -> (Types,String)
-ulong var = (ulong_ , var)
+ulong :: String -> Arg
+ulong var = Arg ulong_ var
 
-clong :: String -> (Types,String)
-clong var = (clong_, var)
+clong :: String -> Arg
+clong var = Arg clong_ var
 
-culong :: String -> (Types,String)
-culong var = (culong_ , var)
+culong :: String -> Arg
+culong var = Arg culong_ var
 
-cchar :: String -> (Types,String)
-cchar var = (cchar_ , var)
+cchar :: String -> Arg
+cchar var = Arg cchar_ var
 
-char :: String -> (Types,String)
-char var = (char_ , var)
+char :: String -> Arg
+char var = Arg char_ var
 
-cshort :: String -> (Types,String)
-cshort var = (cshort_ , var)
+cshort :: String -> Arg
+cshort var = Arg cshort_ var
 
-short :: String -> (Types,String)
-short var = (short_ , var)
+short :: String -> Arg
+short var = Arg short_ var
 
-cdouble :: String -> (Types,String)
-cdouble var = (cdouble_ , var)
+cdouble :: String -> Arg
+cdouble var = Arg cdouble_ var
 
-double :: String -> (Types,String)
-double  var = (double_  , var)
+double :: String -> Arg
+double  var = Arg double_ var
 
-doublep :: String -> (Types,String)
-doublep var = (doublep_ , var)
+doublep :: String -> Arg
+doublep var = Arg doublep_ var
 
-cfloat :: String -> (Types,String)
-cfloat var = (float_ , var)
+cfloat :: String -> Arg
+cfloat var = Arg float_ var
 
-float :: String -> (Types,String)
-float var = (float_ , var)
+float :: String -> Arg
+float var = Arg float_ var
 
-bool :: String -> (Types,String)
-bool    var = (bool_    , var)
+bool :: String -> Arg
+bool var = Arg bool_ var
 
-intp :: String -> (Types, String)
-intp var = (intp_ , var)
+intp :: String -> Arg
+intp var = Arg intp_ var
 
-intref :: String -> (Types, String)
-intref var = (intref_, var)
+intref :: String -> Arg
+intref var = Arg intref_ var
 
-charpp :: String -> (Types, String)
-charpp var = (charpp_, var)
+charpp :: String -> Arg
+charpp var = Arg charpp_ var
 
-ref :: CTypes -> String -> (Types,String)
-ref t var = (ref_ t, var)
+ref :: CTypes -> String -> Arg
+ref t var = Arg (ref_ t) var
 
-star :: CTypes -> String -> (Types, String)
-star t var = (star_ t, var)
+star :: CTypes -> String -> Arg
+star t var = Arg (star_ t) var
 
-cstar :: CTypes -> String -> (Types, String)
-cstar t var = (cstar_ t, var)
+cstar :: CTypes -> String -> Arg
+cstar t var = Arg (cstar_ t) var
 
 
 cppclass_ :: Class -> Types
 cppclass_ c =  CPT (CPTClass c) NoConst
 
-cppclass :: Class -> String -> (Types, String)
-cppclass c vname = ( cppclass_ c, vname)
+cppclass :: Class -> String -> Arg
+cppclass c vname = Arg (cppclass_ c) vname
 
 
 
-cppclassconst :: Class -> String -> (Types, String)
-cppclassconst c vname = ( CPT (CPTClass c) Const, vname)
+cppclassconst :: Class -> String -> Arg
+cppclassconst c vname = Arg (CPT (CPTClass c) Const) vname
 
 cppclassref_ :: Class -> Types
 cppclassref_ c = CPT (CPTClassRef c) NoConst
 
-cppclassref :: Class -> String -> (Types, String)
-cppclassref c vname = (cppclassref_ c, vname)
+cppclassref :: Class -> String -> Arg
+cppclassref c vname = Arg (cppclassref_ c) vname
 
 cppclasscopy_ :: Class -> Types
 cppclasscopy_ c = CPT (CPTClassCopy c) NoConst
 
-cppclasscopy :: Class -> String -> (Types, String)
-cppclasscopy c vname = (cppclasscopy_ c, vname)
+cppclasscopy :: Class -> String -> Arg
+cppclasscopy c vname = Arg (cppclasscopy_ c) vname
 
 cppclassmove_ :: Class -> Types
 cppclassmove_ c = CPT (CPTClassMove c) NoConst
 
-cppclassmove :: Class -> String -> (Types, String)
-cppclassmove c vname = (cppclassmove_ c, vname)
+cppclassmove :: Class -> String -> Arg
+cppclassmove c vname = Arg (cppclassmove_ c) vname
 
 
 argToString :: Arg -> String

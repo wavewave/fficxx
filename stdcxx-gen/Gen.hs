@@ -75,7 +75,7 @@ toplevelfunctions = [ ]
 
 t_vector = TmplCls cabal "Vector" "std::vector" "t"
              [ TFunNew [] Nothing
-             , TFun void_ "push_back" "push_back" [(TemplateParam "t","x")] Nothing
+             , TFun void_ "push_back" "push_back" [Arg (TemplateParam "t") "x"] Nothing
              , TFun void_ "pop_back"  "pop_back"  []                        Nothing
              , TFun (TemplateParam "t") "at" "at" [int "n"]                 Nothing
              , TFun int_  "size"      "size"      []                        Nothing
@@ -84,7 +84,7 @@ t_vector = TmplCls cabal "Vector" "std::vector" "t"
 
 t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
              [ TFunNew [] (Just "newUniquePtr0")
-             , TFunNew [(TemplateParamPointer "t", "p")] Nothing
+             , TFunNew [Arg (TemplateParamPointer "t") "p"] Nothing
              , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
              , TFun (TemplateParamPointer "t") "release" "release" [] Nothing
              , TFun void_ "reset" "reset" [] Nothing
@@ -94,7 +94,7 @@ t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
 
 t_shared_ptr = TmplCls cabal "SharedPtr" "std::shared_ptr" "t"
              [ TFunNew [] (Just "newSharedPtr0")
-             , TFunNew [(TemplateParamPointer "t", "p")] Nothing
+             , TFunNew [Arg (TemplateParamPointer "t") "p"] Nothing
              , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
              , TFun void_ "reset" "reset" [] Nothing
              , TFun int_ "use_count" "use_count" [] Nothing
