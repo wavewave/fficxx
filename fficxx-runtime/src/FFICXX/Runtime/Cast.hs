@@ -8,19 +8,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-
------------------------------------------------------------------------------
--- |
--- Module      : FFICXX.Runtime.Cast
--- Copyright   : (c) 2011-2017 Ian-Woo Kim
---
--- License     : BSD3
--- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
--- Stability   : experimental
--- Portability : GHC
---
------------------------------------------------------------------------------
-
 module FFICXX.Runtime.Cast where
 
 import Control.Monad         ((>=>))

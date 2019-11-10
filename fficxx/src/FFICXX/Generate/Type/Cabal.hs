@@ -1,17 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
 
------------------------------------------------------------------------------
--- |
--- Module      : FFICXX.Generate.Type.Cabal
--- Copyright   : (c) 2011-2019 Ian-Woo Kim
---
--- License     : BSD3
--- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
--- Stability   : experimental
--- Portability : GHC
---
------------------------------------------------------------------------------
-
 module FFICXX.Generate.Type.Cabal where
 
 import Data.Aeson       (FromJSON(..),ToJSON(..)

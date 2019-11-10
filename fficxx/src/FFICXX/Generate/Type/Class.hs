@@ -3,19 +3,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
 
------------------------------------------------------------------------------
--- |
--- Module      : FFICXX.Generate.Type.Class
--- Copyright   : (c) 2011-2018 Ian-Woo Kim
---
--- License     : BSD3
--- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
--- Stability   : experimental
--- Portability : GHC
---
------------------------------------------------------------------------------
-
 module FFICXX.Generate.Type.Class where
+
 import qualified Data.Map                     as M
 import           Data.Monoid                       (Monoid(..))
 import           Data.Semigroup                    (Semigroup(..),(<>))

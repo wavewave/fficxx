@@ -1,15 +1,4 @@
 {-# LANGUAGE RecordWildCards #-}
------------------------------------------------------------------------------
--- |
--- Module      : FFICXX.Generate.Dependency
--- Copyright   : (c) 2011-2018 Ian-Woo Kim
---
--- License     : BSD3
--- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
--- Stability   : experimental
--- Portability : GHC
---
------------------------------------------------------------------------------
 
 module FFICXX.Generate.Dependency where
 

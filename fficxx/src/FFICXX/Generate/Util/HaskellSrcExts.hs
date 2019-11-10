@@ -1,16 +1,4 @@
 {-# LANGUAGE CPP #-}
------------------------------------------------------------------------------
--- |
--- Module      : FFICXX.Generate.Util.HaskellSrcExts
--- Copyright   : (c) 2011-2018 Ian-Woo Kim
---
--- License     : BSD3
--- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
--- Stability   : experimental
--- Portability : GHC
---
------------------------------------------------------------------------------
-
 
 module FFICXX.Generate.Util.HaskellSrcExts where
 

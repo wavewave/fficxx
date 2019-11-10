@@ -1,18 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
------------------------------------------------------------------------------
--- |
--- Module      : FFICXX.Generate.Code.HsFFI
--- Copyright   : (c) 2011-2018 Ian-Woo Kim
---
--- License     : BSD3
--- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
--- Stability   : experimental
--- Portability : GHC
---
------------------------------------------------------------------------------
-
 module FFICXX.Generate.Code.HsFFI where
 
 import Data.Maybe                              (fromMaybe,mapMaybe)
