@@ -330,38 +330,61 @@ buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] f
 
 -- |
 buildRawTypeHs :: ClassModule -> Module ()
-buildRawTypeHs m = mkModule (cmModule m <.> "RawType")
-                  [lang [ "ForeignFunctionInterface", "TypeFamilies", "MultiParamTypeClasses"
-                        , "FlexibleInstances", "TypeSynonymInstances"
-                        , "EmptyDataDecls", "ExistentialQuantification", "ScopedTypeVariables" ]]
-                  rawtypeImports rawtypeBody
-  where rawtypeImports = [ mkImport "Foreign.Ptr"
-                         , mkImport "FFICXX.Runtime.Cast"
-                         ]
-        rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
+buildRawTypeHs m =
+    mkModule
+      (cmModule m <.> "RawType")
+      [ lang
+          [ "ForeignFunctionInterface"
+          , "TypeFamilies"
+          , "MultiParamTypeClasses"
+          , "FlexibleInstances"
+          , "TypeSynonymInstances"
+          , "EmptyDataDecls"
+          , "ExistentialQuantification"
+          , "ScopedTypeVariables"
+          ]
+      ]
+      rawtypeImports
+      rawtypeBody
+  where
+    rawtypeImports = [ mkImport "Foreign.Ptr"
+                     , mkImport "FFICXX.Runtime.Cast"
+                     ]
+    rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
 
 -- |
 buildInterfaceHs :: AnnotateMap -> ClassModule -> Module ()
-buildInterfaceHs amap m = mkModule (cmModule m <.> "Interface")
-                            [lang [ "EmptyDataDecls", "ExistentialQuantification"
-                                  , "FlexibleContexts", "FlexibleInstances", "ForeignFunctionInterface"
-                                  , "MultiParamTypeClasses"
-                                  , "ScopedTypeVariables"
-                                  , "TypeFamilies", "TypeSynonymInstances"
-                                  ]]
-                            ifaceImports ifaceBody
-  where classes = cmClass m
-        ifaceImports = [ mkImport "Data.Word"
-                       , mkImport "Data.Int"
-                       , mkImport "Foreign.C"
-                       , mkImport "Foreign.Ptr"
-                       , mkImport "FFICXX.Runtime.Cast" ]
-                       <> genImportInInterface m
-                       <> genExtraImport m
-        ifaceBody =
-          runReader (mapM genHsFrontDecl classes) amap
-          <> (concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
-          <> (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
+buildInterfaceHs amap m =
+  mkModule
+    (cmModule m <.> "Interface")
+    [ lang
+      [ "EmptyDataDecls"
+      , "ExistentialQuantification"
+      , "FlexibleContexts"
+      , "FlexibleInstances"
+      , "ForeignFunctionInterface"
+      , "MultiParamTypeClasses"
+      , "ScopedTypeVariables"
+      , "TypeFamilies"
+      , "TypeSynonymInstances"
+      ]
+    ]
+    ifaceImports
+    ifaceBody
+  where
+    classes = cmClass m
+    ifaceImports = [ mkImport "Data.Word"
+                   , mkImport "Data.Int"
+                   , mkImport "Foreign.C"
+                   , mkImport "Foreign.Ptr"
+                   , mkImport "FFICXX.Runtime.Cast"
+                   ]
+                   <> genImportInInterface m
+                   <> genExtraImport m
+    ifaceBody =
+         runReader (mapM genHsFrontDecl classes) amap
+      <> (concatMap genHsFrontUpcastClass . filter (not.isAbstractClass)) classes
+      <> (concatMap genHsFrontDowncastClass . filter (not.isAbstractClass)) classes
 
 -- |
 buildCastHs :: ClassModule -> Module ()
@@ -417,41 +440,52 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    <> concatMap genTemplateMemberFunctions classes
 
 buildTemplateHs :: TemplateClassModule -> Module ()
-buildTemplateHs m = mkModule (tcmModule m <.> "Template")
-                   [lang  [ "EmptyDataDecls", "FlexibleInstances", "MultiParamTypeClasses"
-                          , "TypeFamilies"] ]
-                   [ mkImport "Foreign.C.Types"
-                   , mkImport "Foreign.Ptr"
-                   , mkImport "FFICXX.Runtime.Cast"
-                   ]
-                   body
-  where ts = tcmTemplateClasses m
-        body = concatMap genTmplInterface ts
+buildTemplateHs m =
+    mkModule (tcmModule m <.> "Template")
+      [ lang
+          [ "EmptyDataDecls"
+          , "FlexibleInstances"
+          , "MultiParamTypeClasses"
+          , "TypeFamilies"
+          ]
+      ]
+      [ mkImport "Foreign.C.Types"
+      , mkImport "Foreign.Ptr"
+      , mkImport "FFICXX.Runtime.Cast"
+      ]
+      body
+  where
+    ts = tcmTemplateClasses m
+    body = concatMap genTmplInterface ts
 
 buildTHHs :: TemplateClassModule -> Module ()
-buildTHHs m = mkModule (tcmModule m <.> "TH")
-             [lang  ["TemplateHaskell"] ]
-             ([ mkImport "Data.Char"
-              , mkImport "Data.Monoid"
-              , mkImport "Foreign.C.Types"
-              , mkImport "Foreign.Ptr"
-              , mkImport "Language.Haskell.TH"
-              , mkImport "Language.Haskell.TH.Syntax"
-              , mkImport "FFICXX.Runtime.TH"
-              ] <> imports)
-             body
-  where ts = tcmTemplateClasses m
-        imports = [ mkImport (tcmModule m <.> "Template") ]
-        body = tmplImpls <> tmplInsts
-        tmplImpls = concatMap genTmplImplementation ts
-        tmplInsts = concatMap gen ts
-          where
-            gen t = do
-              let tcihs = tcmTCIH m
-              tcih <-
-                maybeToList $
-                  find (\tcih -> tclass_name (tcihTClass tcih) == tclass_name t) tcihs
-              genTmplInstance t tcih (tclass_funcs t)
+buildTHHs m =
+  mkModule (tcmModule m <.> "TH")
+    [ lang  ["TemplateHaskell"] ]
+    (   [ mkImport "Data.Char"
+        , mkImport "Data.Monoid"
+        , mkImport "Foreign.C.Types"
+        , mkImport "Foreign.Ptr"
+        , mkImport "Language.Haskell.TH"
+        , mkImport "Language.Haskell.TH.Syntax"
+        , mkImport "FFICXX.Runtime.TH"
+        ]
+     <> imports
+    )
+    body
+  where
+    ts = tcmTemplateClasses m
+    imports = [ mkImport (tcmModule m <.> "Template") ]
+    body = tmplImpls <> tmplInsts
+    tmplImpls = concatMap genTmplImplementation ts
+    tmplInsts = concatMap gen ts
+      where
+        gen t = do
+          let tcihs = tcmTCIH m
+          tcih <-
+            maybeToList $
+              find (\tcih -> tclass_name (tcihTClass tcih) == tclass_name t) tcihs
+          genTmplInstance t tcih (tclass_funcs t)
 
 -- |
 buildInterfaceHSBOOT :: String -> Module ()
