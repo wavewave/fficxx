@@ -191,24 +191,6 @@ genTmplInstance t tcih fs =
                                        )
         lststmt xs = [ pbind_ (p "lst") (list (map (v . (\n->"f"<>show n) . fst) xs)) ]
 
-        {-
-
-            We want to generate code like the following.
-
-            addModFinalizer $ addForeignSource LangCxx
-             ("#include <MacroPatternMatch.h>\n\
-              \#include <vector>\n\
-              \#include <string>\n\
-              \#include \"Vector.h\"\n\
-              \#include \"stdcxxType.h\"\n\
-              \using namespace std;\n\
-              \Vector_instance"
-              ++ (if suffix == "int" then "_s" else "")
-              ++ "(" ++ suffix ++ ")\n"
-             )
-
-        -}
-
         foreignSrcStmt =
           qualifier $
                   (v "addModFinalizer")
