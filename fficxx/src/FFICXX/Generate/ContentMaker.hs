@@ -17,6 +17,8 @@ import Data.Text                              (Text)
 import Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
 import System.FilePath
 --
+import qualified FFICXX.Runtime.CodeGen.C as CGen
+--
 import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.HsCast            (genHsFrontInstCastable
                                               ,genHsFrontInstCastableSelf)
@@ -291,7 +293,7 @@ buildTemplateHeader (TypMcro typemacroprefix) tcih =
       typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
       fs = tclass_funcs t
 
-      headerStr = concatMap (\h -> C.include h <> "\n") (tcihCxxHeaders tcih)  -- "/* HEADER */"
+      headerStr = concatMap (\h -> CGen.render (C.include h) <> "\n") (tcihCxxHeaders tcih)
 
       deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
                 ++ "\n\n"

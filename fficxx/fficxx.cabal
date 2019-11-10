@@ -26,6 +26,7 @@ Library
                , directory
                , either
                , errors
+               , fficxx-runtime
                , filepath>1
                , hashable
                , haskell-src-exts >= 1.18

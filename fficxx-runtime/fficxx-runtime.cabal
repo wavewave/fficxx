@@ -1,12 +1,12 @@
-Name:		fficxx-runtime
-Version:	0.6
-Synopsis:	Runtime for fficxx-generated library
-Description: 	Runtime for fficxx-generated library
+Name:           fficxx-runtime
+Version:        0.6
+Synopsis:       Runtime for fficxx-generated library
+Description:    Runtime for fficxx-generated library
 License:        BSD3
-License-file:	LICENSE
-Author:		Ian-Woo Kim
-Maintainer: 	Ian-Woo Kim <ianwookim@gmail.com>
-Build-Type: 	Simple
+License-file:   LICENSE
+Author:         Ian-Woo Kim
+Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>
+Build-Type:     Simple
 Category:       FFI Tools
 Cabal-Version:  >= 1.8
 Data-files:
@@ -17,7 +17,7 @@ Source-repository head
 
 Library
   hs-source-dirs: src
-  ghc-options: 	-Wall -funbox-strict-fields -fno-warn-unused-do-bind
+  ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends:
                  base == 4.*,
@@ -26,9 +26,10 @@ Library
 
   Exposed-Modules:
                    FFICXX.Runtime.Cast
-                   FFICXX.Runtime.TH
+                   FFICXX.Runtime.CodeGen.C
                    FFICXX.Runtime.Function.Template
                    FFICXX.Runtime.Function.TH
+                   FFICXX.Runtime.TH
 
 
   Include-dirs:    csrc
