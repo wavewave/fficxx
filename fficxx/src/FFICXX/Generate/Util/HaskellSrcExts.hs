@@ -79,6 +79,9 @@ mkPVarSig n typ = PatTypeSig () (mkPVar n) typ
 pbind :: Pat () -> Exp () -> Maybe (Binds ()) -> Decl ()
 pbind pat e = PatBind () pat (UnGuardedRhs () e)
 
+pbind_ :: Pat () -> Exp () -> Decl ()
+pbind_ p e = pbind p e Nothing
+
 mkTBind :: String -> TyVarBind ()
 mkTBind = UnkindedVar () . Ident ()
 

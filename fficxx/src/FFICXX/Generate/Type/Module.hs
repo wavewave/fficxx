@@ -20,13 +20,13 @@ import FFICXX.Generate.Type.PackageInterface (HeaderName(..),Namespace(..))
 --   HPkg is generated C++ headers by fficxx, CPkg is original C++ headers
 data ClassImportHeader = ClassImportHeader
                        { cihClass :: Class
-                       , cihSelfHeader :: HeaderName
+                       , cihSelfHeader :: HeaderName -- ^ fficxx-side main header
                        , cihNamespace :: [Namespace]
                        , cihSelfCpp :: String
                        , cihImportedClasses :: [Either TemplateClass Class]  -- ^ Dependencies TODO: clarify this.
                        , cihIncludedHPkgHeadersInH   :: [HeaderName]         -- TODO: Explain why we need to have these two
                        , cihIncludedHPkgHeadersInCPP :: [HeaderName]         --       separately.
-                       , cihIncludedCPkgHeaders      :: [HeaderName]
+                       , cihIncludedCPkgHeaders      :: [HeaderName] -- ^ C++-side headers
                        } deriving (Show)
 
 
@@ -50,9 +50,12 @@ data TemplateClassModule = TCM { tcmModule :: String
                                } deriving (Show)
 
 
-data TemplateClassImportHeader = TCIH { tcihTClass :: TemplateClass
-                                      , tcihSelfHeader :: HeaderName
-                                      } deriving (Show)
+data TemplateClassImportHeader =
+  TCIH {
+    tcihTClass :: TemplateClass
+  , tcihSelfHeader :: HeaderName   -- ^ fficxx-side main header
+  , tcihCxxHeaders :: [HeaderName] -- ^ C++-side headers
+  } deriving (Show)
 
 data TopLevelImportHeader = TopLevelImportHeader {
                               tihHeaderFileName    :: String

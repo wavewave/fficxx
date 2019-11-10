@@ -40,6 +40,7 @@ import FFICXX.Generate.Type.PackageInterface  (ClassName(..),HeaderName(..)
                                               ,PackageInterface,PackageName(..)
                                               ,TypeMacro(..))
 import FFICXX.Generate.Util
+import qualified FFICXX.Generate.Util.C as C
 import FFICXX.Generate.Util.HaskellSrcExts
 
 
@@ -282,11 +283,16 @@ buildTopLevelCppDef tih =
 
 -- |
 buildTemplateHeader :: TypeMacro  -- ^ typemacro prefix
-                    -> TemplateClass
+                    -> TemplateClassImportHeader
                     -> String
-buildTemplateHeader (TypMcro typemacroprefix) t =
-  let typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
+buildTemplateHeader (TypMcro typemacroprefix) tcih =
+  let
+      t = tcihTClass tcih
+      typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
       fs = tclass_funcs t
+
+      headerStr = concatMap (\h -> C.include h <> "\n") (tcihCxxHeaders tcih)  -- "/* HEADER */"
+
       deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
                 ++ "\n\n"
                 ++ intercalateWith connRet (genTmplFunCpp True t) fs
@@ -295,12 +301,15 @@ buildTemplateHeader (TypMcro typemacroprefix) t =
        "#ifndef $typemacro\n\
        \#define $typemacro\n\
        \\n\
+       \$headers\n\
+       \\n\
        \$deffunc\n\
        \$classlevel\n\
        \#endif\n"
-       (context [ ("typemacro", typemacrostr )
-                , ("deffunc"  , deffunc      )
-                , ("classlevel" , classlevel )
+       (context [ ("typemacro"  , typemacrostr )
+                , ("headers"    , headerStr    )
+                , ("deffunc"    , deffunc      )
+                , ("classlevel" , classlevel   )
                 ])
 
 

@@ -6,6 +6,15 @@ import Data.Monoid                ( (<>) )
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 
+-- |
+data TemplateParamInfo =
+  TPInfo {
+    tpinfoCxxType       :: String
+  , tpinfoCxxHeaders    :: [String]
+  , tpinfoCxxNamespaces :: [String]
+  , tpinfoSuffix        :: String
+  }
+  deriving Show
 
 -- | Primitive C type like int, double should be treated differently than
 --   Non-primitive type. The primitive type detection is not yet automatic.

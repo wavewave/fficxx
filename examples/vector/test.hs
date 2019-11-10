@@ -8,14 +8,31 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.C.String
 
-import FFICXX.Runtime.TH (IsCPrimitive(..))
+import FFICXX.Runtime.TH (IsCPrimitive(..), TemplateParamInfo(..))
 import           STD.CppString
 import           STD.Vector.Template
 import qualified STD.Vector.TH as TH
 
 
-$(TH.genVectorInstanceFor CPrim    [t|CInt|]      "int")
-$(TH.genVectorInstanceFor NonCPrim [t|CppString|] "string")
+TH.genVectorInstanceFor
+  CPrim
+  [t|CInt|]
+  (TPInfo { tpinfoCxxType       = "int"
+          , tpinfoCxxHeaders    = []
+          , tpinfoCxxNamespaces = []
+          , tpinfoSuffix        = "int"
+          }
+  )
+
+TH.genVectorInstanceFor
+  NonCPrim
+  [t|CppString|]
+  (TPInfo { tpinfoCxxType       = "std::string"
+          , tpinfoCxxHeaders    = ["string","stdcxxType.h"]
+          , tpinfoCxxNamespaces = ["std"]
+          , tpinfoSuffix        = "string"
+          }
+  )
 
 test1 = do
   v :: Vector CInt <- newVector

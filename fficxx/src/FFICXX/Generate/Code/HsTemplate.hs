@@ -2,7 +2,7 @@
 module FFICXX.Generate.Code.HsTemplate where
 
 import Data.Monoid                    ( (<>) )
-import qualified Data.List as L       ( foldr1, intercalate )
+import qualified Data.List as L       ( foldr1 )
 import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       , letE, letStmt, name, pApp, paren
                                       , qualStmt, strE, tuple
@@ -28,7 +28,7 @@ import FFICXX.Generate.Type.Class     ( Class(..)
                                       , TemplateMemberFunction(..)
                                       )
 import FFICXX.Generate.Type.Module    ( TemplateClassImportHeader(..) )
-import FFICXX.Generate.Type.PackageInterface ( HeaderName(..), Namespace(..) )
+import FFICXX.Generate.Type.PackageInterface ( HeaderName(..) )
 import qualified FFICXX.Generate.Util.C as C
 import FFICXX.Generate.Util.HaskellSrcExts
                                       ( bracketExp
@@ -39,7 +39,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
                                       , match, mkBind1, mkTBind, mkData, mkNewtype
                                       , mkFun, mkFunSig, mkClass, mkInstance
                                       , mkPVar, mkTVar, mkVar
-                                      , op, pbind
+                                      , op, pbind_
                                       , qualConDecl, qualifier
                                       , tyapp, tycon, tyfun, tylist, tyPtr
                                       , typeBracket
@@ -67,7 +67,7 @@ genTMFExp c f = mkFun nh sig [p "typ", p "suffix"] rhs (Just bstmts)
             rhs = app (v "mkTFunc") (tuple [v "typ", v "suffix", lam, v "tyf"])
             sig' = functionSignatureTMF c f
             bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
-                               (letE [ pbind (p tp) (v "pure" `app` (v "typ")) Nothing ]
+                               (letE [ pbind_ (p tp) (v "pure" `app` (v "typ")) ]
                                   (bracketExp (typeBracket sig')))
                                Nothing
                            ]
@@ -93,7 +93,7 @@ genTMFInstance c f = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
                                   `app` v "typ"
                                   `app` v "suffix"
                     )
-        lststmt = [ pbind (p "lst") (list ([v "f1"])) Nothing ]
+        lststmt = [ pbind_ (p "lst") (list ([v "f1"])) ]
         retstmt = v "pure" `app` v "lst"
 
 --------------------
@@ -138,7 +138,7 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
             rhs = app (v "mkTFunc") (tuple [v "typ", v "suffix", lam, v "tyf"])
             sig' = functionSignatureTT t f
             bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
-                               (letE [ pbind (p tp) (v "pure" `app` (v "typ")) Nothing ]
+                               (letE [ pbind_ (p tp) (v "pure" `app` (v "typ")) ]
                                   (bracketExp (typeBracket sig')))
                                Nothing
                            ]
@@ -150,17 +150,19 @@ genTmplInstance ::
   -> [TemplateFunction]
   -> [Decl ()]
 genTmplInstance t tcih fs =
-    mkFun fname sig [p "isCprim", p "qtyp", p "suffix"] rhs Nothing
+    mkFun fname sig [p "isCprim", p "qtyp", p "param"] rhs Nothing
   where tname = tclass_name t
         fname = "gen" <> tname <> "InstanceFor"
         p = mkPVar
         v = mkVar
         sig =         tycon "IsCPrimitive"
               `tyfun` (tycon "Q" `tyapp` tycon "Type")
-              `tyfun` tycon "String"
+              `tyfun` tycon "TemplateParamInfo"
               `tyfun` (tycon "Q" `tyapp` tylist (tycon "Dec"))
         nfs = zip ([1..] :: [Int]) fs
-        rhs = doE (  [qtypstmt]
+        rhs = doE (  [ suffixstmt
+                     , qtypstmt
+                     ]
                   <> map genstmt nfs
                   -- temporary guard
                   <> (if (tname == "Vector")
@@ -168,6 +170,7 @@ genTmplInstance t tcih fs =
                       else mempty
                      )
                   <> [letStmt (lststmt nfs), qualStmt retstmt])
+        suffixstmt = letStmt [ pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param" ) ]
         qtypstmt = generator (p "typ") (v "qtyp")
         genstmt (n,f@TFun    {..}) = generator
                                        (p ("f"<>show n))
@@ -190,7 +193,7 @@ genTmplInstance t tcih fs =
                                                      `app` v    "typ"
                                                      `app` v    "suffix"
                                        )
-        lststmt xs = [ pbind (p "lst") (list (map (v . (\n->"f"<>show n) . fst) xs)) Nothing ]
+        lststmt xs = [ pbind_ (p "lst") (list (map (v . (\n->"f"<>show n) . fst) xs)) ]
 
         {-
 
@@ -216,7 +219,9 @@ genTmplInstance t tcih fs =
             `app` (      v "addForeignSource"
                    `app` con "LangCxx"
                    `app` (L.foldr1 (\x y -> inapp x (op "++") y)
-                            [ includeLit
+                            [ includeStatic
+                            , includeDynamic
+                            , namespaceStr
                             , strE (tname <> "_instance")
                             , paren $
                                 caseE
@@ -230,17 +235,37 @@ genTmplInstance t tcih fs =
                             ]
                          )
                   )
-
           where
-            includeLit = strE includeStr1
-            includeStr1 = concatMap (<> "\n")
-                            [ C.include (HdrName "MacroPatternMatch.h")
-                            , C.include (HdrName "vector")
-                            , C.include (HdrName "Vector.h")
-                            , C.include (HdrName "string")
-                            , C.include (HdrName "stdcxxType.h")
-                            , C.usingNamespace (NS "std")
-                            ]
+            includeStatic =
+              strE $ concatMap (<> "\n")
+                [ C.include (HdrName "MacroPatternMatch.h")
+                , C.include (tcihSelfHeader tcih)
+                ]
+            includeDynamic =
+              letE
+                [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param" )
+                , pbind_ (pApp (name "f") [p "x"])
+                    (L.foldr1 (\x y -> inapp x (op "++") y)
+                       [ strE "#include \""
+                       , v "x"
+                       , strE "\"\n"
+                       ]
+                    )
+                ]
+                (v "concatMap" `app` v "f" `app` v "headers")
+            namespaceStr =
+              letE
+                [ pbind_ (p "nss") (v "tpinfoCxxNamespaces" `app` v "param" )
+                , pbind_ (pApp (name "f") [p "x"])
+                    (L.foldr1 (\x y -> inapp x (op "++") y)
+                       [ strE "using namespace "
+                       , v "x"
+                       , strE ";\n"
+                       ]
+                    )
+                ]
+                (v "concatMap" `app` v "f" `app` v "nss")
+
 
         retstmt = v "pure"
                   `app` list [ v "mkInstance"

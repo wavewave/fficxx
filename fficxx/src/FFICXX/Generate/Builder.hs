@@ -118,9 +118,8 @@ simpleBuilder cfg sbc = do
   for_ tcms $ \m ->
     let tcihs = tcmTCIH m
     in for_ tcihs $ \tcih ->
-         let t = tcihTClass tcih
-             hdr = unHdrName (tcihSelfHeader tcih)
-         in gen hdr (buildTemplateHeader typmacro t)
+         let hdr = unHdrName (tcihSelfHeader tcih)
+         in gen hdr (buildTemplateHeader typmacro tcih)
   --
   putStrLn "Generating Cpp file"
   for_ cihs (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr))
