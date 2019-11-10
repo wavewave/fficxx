@@ -9,6 +9,7 @@ import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       )
 import Language.Haskell.Exts.Syntax   ( Decl(..) )
 --
+import FFICXX.Runtime.CodeGen.C       ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.C as CGen
 --
 import FFICXX.Generate.Code.Primitive ( functionSignatureT
@@ -30,7 +31,6 @@ import FFICXX.Generate.Type.Class     ( Class(..)
                                       , TemplateMemberFunction(..)
                                       )
 import FFICXX.Generate.Type.Module    ( TemplateClassImportHeader(..) )
-import FFICXX.Generate.Type.PackageInterface ( HeaderName(..) )
 import qualified FFICXX.Generate.Util.C as C
 import FFICXX.Generate.Util.HaskellSrcExts
                                       ( bracketExp

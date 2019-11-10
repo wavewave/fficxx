@@ -1,11 +1,8 @@
 module FFICXX.Generate.Util.C where
 
 import Data.Semigroup ( (<>) )
-import FFICXX.Runtime.CodeGen.C ( CStatement(..) )
+import FFICXX.Runtime.CodeGen.C ( HeaderName(..), Namespace(..), CStatement(..) )
 --
-import FFICXX.Generate.Type.PackageInterface
-       ( HeaderName(..), Namespace (..) )
-
 
 include :: HeaderName -> CStatement
 include (HdrName h) = Include h -- "#include \"" <> h <> "\""

@@ -29,16 +29,18 @@ import           Data.Maybe
 import           Data.Monoid                ((<>))
 import           System.FilePath
 --
-import           FFICXX.Generate.Name       (ffiClassName,hsClassName,hsTemplateClassName)
-import           FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc,CabalName(..)
-                                            ,cabal_moduleprefix,cabal_pkgname
-                                            ,cabal_cheaderprefix,unCabalName)
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Type.Config (ModuleUnit(..)
-                                             ,ModuleUnitImports(..),emptyModuleUnitImports
-                                             ,ModuleUnitMap(..))
-import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface
+import FFICXX.Runtime.CodeGen.C ( HeaderName(..) )
+--
+import FFICXX.Generate.Name       (ffiClassName,hsClassName,hsTemplateClassName)
+import FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc,CabalName(..)
+                                  ,cabal_moduleprefix,cabal_pkgname
+                                  ,cabal_cheaderprefix,unCabalName)
+import FFICXX.Generate.Type.Class
+import FFICXX.Generate.Type.Config (ModuleUnit(..)
+                                   ,ModuleUnitImports(..),emptyModuleUnitImports
+                                   ,ModuleUnitMap(..))
+import FFICXX.Generate.Type.Module
+-- import FFICXX.Generate.Type.PackageInterface
 
 
 -- utility functions

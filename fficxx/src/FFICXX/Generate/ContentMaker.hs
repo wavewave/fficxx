@@ -17,6 +17,7 @@ import Data.Text                              (Text)
 import Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
 import System.FilePath
 --
+import FFICXX.Runtime.CodeGen.C               ( HeaderName(..), Namespace(..) )
 import qualified FFICXX.Runtime.CodeGen.C as CGen
 --
 import FFICXX.Generate.Code.Cpp
@@ -37,10 +38,11 @@ import FFICXX.Generate.Name                   (ffiClassName,hsClassName
 import FFICXX.Generate.Type.Annotate
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
-import FFICXX.Generate.Type.PackageInterface  (ClassName(..),HeaderName(..)
-                                              ,Namespace(..)
-                                              ,PackageInterface,PackageName(..)
-                                              ,TypeMacro(..))
+import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
+                                              , PackageInterface
+                                              , PackageName(..)
+                                              , TypeMacro(..)
+                                              )
 import FFICXX.Generate.Util
 import qualified FFICXX.Generate.Util.C as C
 import FFICXX.Generate.Util.HaskellSrcExts
@@ -470,6 +472,7 @@ buildTHHs m =
         , mkImport "Foreign.Ptr"
         , mkImport "Language.Haskell.TH"
         , mkImport "Language.Haskell.TH.Syntax"
+        , mkImport "FFICXX.Runtime.CodeGen.C"
         , mkImport "FFICXX.Runtime.TH"
         ]
      <> imports

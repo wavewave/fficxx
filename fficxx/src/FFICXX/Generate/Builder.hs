@@ -18,6 +18,8 @@ import           System.Directory                        ( copyFile
 import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
 import           System.Process                          ( readProcess )
 --
+import           FFICXX.Runtime.CodeGen.C                ( HeaderName(..) )
+--
 import           FFICXX.Generate.Code.Cabal              ( buildCabalFile
                                                          , buildJSONFile
                                                          )
