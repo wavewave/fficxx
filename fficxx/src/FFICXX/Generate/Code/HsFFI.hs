@@ -8,6 +8,8 @@ import Data.Monoid                             ((<>))
 import Language.Haskell.Exts.Syntax            (Decl(..),ImportDecl(..))
 import System.FilePath                         ((<.>))
 --
+import FFICXX.Runtime.CodeGen.C                (HeaderName(..))
+--
 import FFICXX.Generate.Code.Primitive          (CFunSig(..)
                                                ,accessorCFunSig
                                                ,genericFuncArgs
@@ -22,7 +24,7 @@ import FFICXX.Generate.Name                    (aliasedFuncName
                                                ,hscFuncName)
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
-import FFICXX.Generate.Type.PackageInterface
+-- import FFICXX.Generate.Type.PackageInterface
 import FFICXX.Generate.Util
 import FFICXX.Generate.Util.HaskellSrcExts
 

@@ -1,11 +1,12 @@
 {-# LANGUAGE DeriveGeneric #-}
 module FFICXX.Generate.Type.Config where
 
-import Data.Hashable (Hashable(..))
-import Data.HashMap.Strict (HashMap)
-import GHC.Generics (Generic)
+import Data.Hashable            ( Hashable(..) )
+import Data.HashMap.Strict      ( HashMap )
+import GHC.Generics             ( Generic )
 --
-import FFICXX.Generate.Type.PackageInterface (HeaderName(..),Namespace(..))
+import FFICXX.Runtime.CodeGen.C ( HeaderName(..), Namespace(..) )
+
 
 data ModuleUnit = MU_TopLevel 
                 | MU_Class String

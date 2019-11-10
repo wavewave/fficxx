@@ -9,6 +9,11 @@ import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       )
 import Language.Haskell.Exts.Syntax   ( Decl(..) )
 --
+import FFICXX.Runtime.CodeGen.C       ( CStatement(..)
+                                      , HeaderName(..)
+                                      , render
+                                      )
+--
 import FFICXX.Generate.Code.Primitive ( functionSignatureT
                                       , functionSignatureTT
                                       , functionSignatureTMF
@@ -28,8 +33,6 @@ import FFICXX.Generate.Type.Class     ( Class(..)
                                       , TemplateMemberFunction(..)
                                       )
 import FFICXX.Generate.Type.Module    ( TemplateClassImportHeader(..) )
-import FFICXX.Generate.Type.PackageInterface ( HeaderName(..) )
-import qualified FFICXX.Generate.Util.C as C
 import FFICXX.Generate.Util.HaskellSrcExts
                                       ( bracketExp
                                       , con, conDecl, cxEmpty, clsDecl
@@ -216,31 +219,21 @@ genTmplInstance t tcih fs =
           where
             includeStatic =
               strE $ concatMap (<> "\n")
-                [ C.include (HdrName "MacroPatternMatch.h")
-                , C.include (tcihSelfHeader tcih)
+                [ render (Include (HdrName "MacroPatternMatch.h"))
+                , render (Include (tcihSelfHeader tcih))
                 ]
             includeDynamic =
               letE
                 [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param" )
                 , pbind_ (pApp (name "f") [p "x"])
-                    (L.foldr1 (\x y -> inapp x (op "++") y)
-                       [ strE "#include \""
-                       , v "x"
-                       , strE "\"\n"
-                       ]
-                    )
+                    (v "render" `app` (con "Include" `app` v "x"))
                 ]
                 (v "concatMap" `app` v "f" `app` v "headers")
             namespaceStr =
               letE
                 [ pbind_ (p "nss") (v "tpinfoCxxNamespaces" `app` v "param" )
                 , pbind_ (pApp (name "f") [p "x"])
-                    (L.foldr1 (\x y -> inapp x (op "++") y)
-                       [ strE "using namespace "
-                       , v "x"
-                       , strE ";\n"
-                       ]
-                    )
+                    (v "render" `app` (con "UsingNamespace" `app` v "x"))
                 ]
                 (v "concatMap" `app` v "f" `app` v "nss")
 

@@ -17,6 +17,13 @@ import Data.Text                              (Text)
 import Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
 import System.FilePath
 --
+import FFICXX.Runtime.CodeGen.C               ( CStatement(..)
+                                              , HeaderName(..)
+                                              , Namespace(..)
+                                              , render
+                                              )
+import qualified FFICXX.Runtime.CodeGen.C as CGen
+--
 import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.HsCast            (genHsFrontInstCastable
                                               ,genHsFrontInstCastableSelf)
@@ -35,12 +42,12 @@ import FFICXX.Generate.Name                   (ffiClassName,hsClassName
 import FFICXX.Generate.Type.Annotate
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
-import FFICXX.Generate.Type.PackageInterface  (ClassName(..),HeaderName(..)
-                                              ,Namespace(..)
-                                              ,PackageInterface,PackageName(..)
-                                              ,TypeMacro(..))
+import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
+                                              , PackageInterface
+                                              , PackageName(..)
+                                              , TypeMacro(..)
+                                              )
 import FFICXX.Generate.Util
-import qualified FFICXX.Generate.Util.C as C
 import FFICXX.Generate.Util.HaskellSrcExts
 
 
@@ -135,10 +142,8 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       typemacrostr = typemacroprefix <> ffiClassName aclass <> "__"
-      declHeaderStr = intercalateWith
-                        connRet
-                        (\x->"#include \""<>x<>"\"")
-                        (map unHdrName (cihIncludedHPkgHeadersInH header))
+      declHeaderStr =
+        intercalate "\n" $ map (render . Include) $ cihIncludedHPkgHeadersInH header
       declDefStr    = intercalateWith connRet2 genCppHeaderMacroVirtual classes
                       `connRet2`
                       intercalateWith connRet genCppHeaderMacroNonVirtual classes
@@ -291,7 +296,7 @@ buildTemplateHeader (TypMcro typemacroprefix) tcih =
       typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
       fs = tclass_funcs t
 
-      headerStr = concatMap (\h -> C.include h <> "\n") (tcihCxxHeaders tcih)  -- "/* HEADER */"
+      headerStr = concatMap (\h -> CGen.render (Include h) <> "\n") (tcihCxxHeaders tcih)
 
       deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
                 ++ "\n\n"
@@ -468,6 +473,7 @@ buildTHHs m =
         , mkImport "Foreign.Ptr"
         , mkImport "Language.Haskell.TH"
         , mkImport "Language.Haskell.TH.Syntax"
+        , mkImport "FFICXX.Runtime.CodeGen.C"
         , mkImport "FFICXX.Runtime.TH"
         ]
      <> imports

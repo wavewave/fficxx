@@ -1,10 +1,11 @@
 module FFICXX.Generate.Config where
 
-import FFICXX.Generate.Type.Cabal            ( Cabal )
-import FFICXX.Generate.Type.Class            ( Class, TemplateClass, TopLevelFunction )
-import FFICXX.Generate.Type.Config           ( ModuleUnitMap(..) )
-import FFICXX.Generate.Type.Module           ( TemplateClassImportHeader )
-import FFICXX.Generate.Type.PackageInterface ( HeaderName )
+import FFICXX.Runtime.CodeGen.C    ( HeaderName )
+--
+import FFICXX.Generate.Type.Cabal  ( Cabal )
+import FFICXX.Generate.Type.Class  ( Class, TemplateClass, TopLevelFunction )
+import FFICXX.Generate.Type.Config ( ModuleUnitMap(..) )
+import FFICXX.Generate.Type.Module ( TemplateClassImportHeader )
 
 
 data FFICXXConfig = FFICXXConfig {

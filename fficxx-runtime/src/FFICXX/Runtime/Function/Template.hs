@@ -1,7 +1,10 @@
-{-# LANGUAGE EmptyDataDecls, FlexibleInstances,
-  MultiParamTypeClasses, TypeFamilies #-}
+{-# LANGUAGE EmptyDataDecls        #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module FFICXX.Runtime.Function.Template where
-import Foreign.C.Types
 import Foreign.Ptr
 import FFICXX.Runtime.Cast
 

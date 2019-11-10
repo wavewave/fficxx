@@ -2,16 +2,18 @@
 
 module FFICXX.Runtime.TH where
 
-import Data.Monoid                ( (<>) )
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
+--
+import FFICXX.Runtime.CodeGen.C
+
 
 -- |
 data TemplateParamInfo =
   TPInfo {
     tpinfoCxxType       :: String
-  , tpinfoCxxHeaders    :: [String]
-  , tpinfoCxxNamespaces :: [String]
+  , tpinfoCxxHeaders    :: [HeaderName]
+  , tpinfoCxxNamespaces :: [Namespace]
   , tpinfoSuffix        :: String
   }
   deriving Show

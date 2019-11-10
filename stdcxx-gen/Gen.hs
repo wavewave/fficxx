@@ -5,6 +5,8 @@ import Data.Monoid                 ( mempty )
 import System.Directory            ( getCurrentDirectory )
 import System.FilePath             ( (</>) )
 --
+import FFICXX.Runtime.CodeGen.C    ( HeaderName(..), Namespace(..) )
+--
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Code.Primitive
 import FFICXX.Generate.Config      ( FFICXXConfig(..)

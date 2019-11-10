@@ -1,8 +1,10 @@
 module FFICXX.Generate.Type.Module where
 
+import FFICXX.Runtime.CodeGen.C (HeaderName(..),Namespace(..))
+--
 import FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc)
 import FFICXX.Generate.Type.Class
-import FFICXX.Generate.Type.PackageInterface (HeaderName(..),Namespace(..))
+
 
 -- | C++ side
 --   HPkg is generated C++ headers by fficxx, CPkg is original C++ headers
