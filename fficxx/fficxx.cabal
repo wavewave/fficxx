@@ -56,6 +56,7 @@ Library
                    FFICXX.Generate.Name
                    FFICXX.Generate.QQ.Verbatim
                    FFICXX.Generate.Util
+                   FFICXX.Generate.Util.C
                    FFICXX.Generate.Util.HaskellSrcExts
                    FFICXX.Generate.Type.Annotate
                    FFICXX.Generate.Type.Cabal

@@ -28,6 +28,8 @@ import FFICXX.Generate.Type.Class     ( Class(..)
                                       , TemplateMemberFunction(..)
                                       )
 import FFICXX.Generate.Type.Module    ( TemplateClassImportHeader(..) )
+import FFICXX.Generate.Type.PackageInterface ( HeaderName(..), Namespace(..) )
+import qualified FFICXX.Generate.Util.C as C
 import FFICXX.Generate.Util.HaskellSrcExts
                                       ( bracketExp
                                       , con, conDecl, cxEmpty, clsDecl
@@ -231,14 +233,13 @@ genTmplInstance t tcih fs =
 
           where
             includeLit = strE includeStr1
-            includeStr1 = L.intercalate "\n"
-                            [ "#include <MacroPatternMatch.h>"
-                            , "#include <vector>"
-                            , "#include <string>"
-                            , "#include \"Vector.h\""
-                            , "#include \"stdcxxType.h\""
-                            , "using namespace std;"
-                            , ""
+            includeStr1 = concatMap (<> "\n")
+                            [ C.include (HdrName "MacroPatternMatch.h")
+                            , C.include (HdrName "vector")
+                            , C.include (HdrName "Vector.h")
+                            , C.include (HdrName "string")
+                            , C.include (HdrName "stdcxxType.h")
+                            , C.usingNamespace (NS "std")
                             ]
 
         retstmt = v "pure"

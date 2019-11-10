@@ -6,8 +6,9 @@ cabal new-build stdcxx
 
 # vector
 # for checking temporarily generated cpp file, use -keep-tmp-files
-rm vector/test.o
+rm vector/test.o vector/test
 cabal new-exec -- ghc  vector/test.hs
+./vector/test
 #cabal new-exec -- g++ -c vector/stub.cc -o vector/stub.o -I stdcxx/csrc  -I../fficxx-runtime/csrc/
 #cabal new-exec -- ghc -c vector/test.hs
 #cabal new-exec -- ghc vector/test.hs vector/stub.o
