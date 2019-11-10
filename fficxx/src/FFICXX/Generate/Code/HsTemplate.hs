@@ -1,45 +1,46 @@
 {-# LANGUAGE RecordWildCards   #-}
 module FFICXX.Generate.Code.HsTemplate where
 
-import Data.Monoid                             ( (<>) )
-import qualified Data.List as L                ( foldr1, intercalate )
-import Language.Haskell.Exts.Build             ( app, binds, caseE, doE
-                                               , letE, letStmt, name, pApp, paren
-                                               , qualStmt, strE, tuple
-                                               )
-import Language.Haskell.Exts.Syntax            ( Decl(..) )
+import Data.Monoid                    ( (<>) )
+import qualified Data.List as L       ( foldr1, intercalate )
+import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
+                                      , letE, letStmt, name, pApp, paren
+                                      , qualStmt, strE, tuple
+                                      )
+import Language.Haskell.Exts.Syntax   ( Decl(..) )
 --
-import FFICXX.Generate.Code.Primitive          ( functionSignatureT
-                                               , functionSignatureTT
-                                               , functionSignatureTMF
-                                               )
-import FFICXX.Generate.Code.HsCast             ( castBody )
-import FFICXX.Generate.Name                    ( ffiTmplFuncName
-                                               , hsTemplateClassName
-                                               , hsTemplateMemberFunctionName
-                                               , hsTemplateMemberFunctionNameTH
-                                               , hsTmplFuncName
-                                               , hsTmplFuncNameTH
-                                               , typeclassNameT)
-import FFICXX.Generate.Type.Class              ( Class(..)
-                                               , TemplateClass(..)
-                                               , TemplateFunction(..)
-                                               , TemplateMemberFunction(..)
-                                               )
-import FFICXX.Generate.Util.HaskellSrcExts     ( bracketExp
-                                               , con, conDecl, cxEmpty
-                                               , clsDecl
-                                               , generator
-                                               , inapp, insDecl, insType
-                                               , lambda, list
-                                               , match, mkBind1, mkTBind, mkData, mkNewtype
-                                               , mkFun, mkFunSig, mkClass, mkInstance
-                                               , mkPVar, mkTVar, mkVar
-                                               , op, pbind
-                                               , qualConDecl, qualifier
-                                               , tyapp, tycon, tyfun, tylist, tyPtr
-                                               , typeBracket
-                                               )
+import FFICXX.Generate.Code.Primitive ( functionSignatureT
+                                      , functionSignatureTT
+                                      , functionSignatureTMF
+                                      )
+import FFICXX.Generate.Code.HsCast    ( castBody )
+import FFICXX.Generate.Name           ( ffiTmplFuncName
+                                      , hsTemplateClassName
+                                      , hsTemplateMemberFunctionName
+                                      , hsTemplateMemberFunctionNameTH
+                                      , hsTmplFuncName
+                                      , hsTmplFuncNameTH
+                                      , typeclassNameT
+                                      )
+import FFICXX.Generate.Type.Class     ( Class(..)
+                                      , TemplateClass(..)
+                                      , TemplateFunction(..)
+                                      , TemplateMemberFunction(..)
+                                      )
+import FFICXX.Generate.Util.HaskellSrcExts
+                                      ( bracketExp
+                                      , con, conDecl, cxEmpty, clsDecl
+                                      , generator
+                                      , inapp, insDecl, insType
+                                      , lambda, list
+                                      , match, mkBind1, mkTBind, mkData, mkNewtype
+                                      , mkFun, mkFunSig, mkClass, mkInstance
+                                      , mkPVar, mkTVar, mkVar
+                                      , op, pbind
+                                      , qualConDecl, qualifier
+                                      , tyapp, tycon, tyfun, tylist, tyPtr
+                                      , typeBracket
+                                      )
 
 
 ------------------------------
