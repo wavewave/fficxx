@@ -1,16 +1,17 @@
 {-# LANGUAGE RecordWildCards #-}
 module FFICXX.Generate.Code.Primitive where
 
-import           Control.Monad.Trans.State         (runState,put,get)
-import           Data.Monoid                       ((<>))
-import           Language.Haskell.Exts.Syntax      (Asst(..),Context,Type(..))
+import           Control.Monad.Trans.State    ( runState, put, get )
+import           Data.Monoid                  ( (<>) )
+import           Language.Haskell.Exts.Syntax ( Asst(..), Context, Type(..) )
 --
 import           FFICXX.Generate.Name
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util
 import           FFICXX.Generate.Util.HaskellSrcExts
 
-data CFunSig = CFunSig { cArgTypes :: Args
+
+data CFunSig = CFunSig { cArgTypes :: [Arg]
                        , cRetType :: Types
                        }
 
@@ -24,51 +25,51 @@ cvarToStr ctyp isconst varname = ctypToStr ctyp isconst <> " " <> varname
 ctypToStr :: CTypes -> IsConst -> String
 ctypToStr ctyp isconst =
   let typword = case ctyp of
-        CTBool -> "bool"
-        CTChar -> "char"
-        CTClock -> "clock_t"
-        CTDouble -> "double"
-        CTFile -> "FILE"
-        CTFloat -> "float"
-        CTFpos -> "fpos_t"
-        CTInt -> "int"
-        CTIntMax -> "intmax_t"
-        CTIntPtr -> "intptr_t"
-        CTJmpBuf -> "jmp_buf"
-        CTLLong -> "long long"
-        CTLong -> "long"
-        CTPtrdiff -> "ptrdiff_t"
-        CTSChar -> "sized char"
+        CTBool      -> "bool"
+        CTChar      -> "char"
+        CTClock     -> "clock_t"
+        CTDouble    -> "double"
+        CTFile      -> "FILE"
+        CTFloat     -> "float"
+        CTFpos      -> "fpos_t"
+        CTInt       -> "int"
+        CTIntMax    -> "intmax_t"
+        CTIntPtr    -> "intptr_t"
+        CTJmpBuf    -> "jmp_buf"
+        CTLLong     -> "long long"
+        CTLong      -> "long"
+        CTPtrdiff   -> "ptrdiff_t"
+        CTSChar     -> "sized char"
         CTSUSeconds -> "suseconds_t"
-        CTShort -> "short"
+        CTShort     -> "short"
         CTSigAtomic -> "sig_atomic_t"
-        CTSize -> "size_t"
-        CTTime -> "time_t"
-        CTUChar -> "unsigned char"
-        CTUInt -> "unsigned int"
-        CTUIntMax -> "uintmax_t"
-        CTUIntPtr -> "uintptr_t"
-        CTULLong -> "unsigned long long"
-        CTULong -> "unsigned long"
-        CTUSeconds -> "useconds_t"
-        CTUShort -> "unsigned short"
-        CTWchar -> "wchar_t"
-        CTInt8 -> "int8_t"
-        CTInt16 -> "int16_t"
-        CTInt32 -> "int32_t"
-        CTInt64 -> "int64_t"
-        CTUInt8 -> "uint8_t"
-        CTUInt16 -> "uint16_t"
-        CTUInt32 -> "uint32_t"
-        CTUInt64 -> "uint64_t"
-        CTString -> "char*"
-        CTVoidStar -> "void*"
+        CTSize      -> "size_t"
+        CTTime      -> "time_t"
+        CTUChar     -> "unsigned char"
+        CTUInt      -> "unsigned int"
+        CTUIntMax   -> "uintmax_t"
+        CTUIntPtr   -> "uintptr_t"
+        CTULLong    -> "unsigned long long"
+        CTULong     -> "unsigned long"
+        CTUSeconds  -> "useconds_t"
+        CTUShort    -> "unsigned short"
+        CTWchar     -> "wchar_t"
+        CTInt8      -> "int8_t"
+        CTInt16     -> "int16_t"
+        CTInt32     -> "int32_t"
+        CTInt64     -> "int64_t"
+        CTUInt8     -> "uint8_t"
+        CTUInt16    -> "uint16_t"
+        CTUInt32    -> "uint32_t"
+        CTUInt64    -> "uint64_t"
+        CTString    -> "char*"
+        CTVoidStar  -> "void*"
         CEnum _ type_str -> type_str
-        CPointer s -> ctypToStr s NoConst <> "*"
-        CRef s -> ctypToStr s NoConst <> "*"
+        CPointer s  -> ctypToStr s NoConst <> "*"
+        CRef s      -> ctypToStr s NoConst <> "*"
   in case isconst of
-        Const   -> "const" <> " " <> typword
-        NoConst -> typword
+       Const   -> "const" <> " " <> typword
+       NoConst -> typword
 
 self_ :: Types
 self_ = SelfType
@@ -285,12 +286,12 @@ argToString (TemplateAppRef  _, varname) = "void* " <> varname
 argToString (TemplateAppMove _, varname) = "void* " <> varname
 argToString t = error ("argToString: " <> show t)
 
-argsToString :: Args -> String
+argsToString :: [Arg] -> String
 argsToString args =
   let args' = (SelfType, "p") : args
   in  intercalateWith conncomma argToString args'
 
-argsToStringNoSelf :: Args -> String
+argsToStringNoSelf :: [Arg] -> String
 argsToStringNoSelf = intercalateWith conncomma argToString
 
 -- TODO: remove this function
@@ -298,7 +299,7 @@ argToCallString :: (Types,String) -> String
 argToCallString = uncurry castC2Cpp
 
 
-argsToCallString :: Args -> String
+argsToCallString :: [Arg] -> String
 argsToCallString = intercalateWith conncomma argToCallString
 
 -- TODO: rename this function by castExpressionFrom/To or something like that.
@@ -400,7 +401,7 @@ tmplArgToString _ _ _ = error "tmplArgToString: undefined"
 tmplAllArgsToString :: Bool
                     -> Selfness
                     -> TemplateClass
-                    -> Args
+                    -> [Arg]
                     -> String
 tmplAllArgsToString b s t args =
   let args' = case s of
@@ -451,7 +452,7 @@ tmplArgToCallString _ (_,varname) = varname
 
 tmplAllArgsToCallString
   :: Bool  -- ^ is primitive type?
-  -> Args
+  -> [Arg]
   -> String
 tmplAllArgsToCallString b = intercalateWith conncomma (tmplArgToCallString b)
 
@@ -877,6 +878,6 @@ genericFuncRet f =
     Static t _ _ _ -> t
     Destructor _ -> void_
 
-genericFuncArgs :: Function -> Args
+genericFuncArgs :: Function -> [Arg]
 genericFuncArgs (Destructor _) = []
 genericFuncArgs f = func_args f

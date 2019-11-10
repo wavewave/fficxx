@@ -97,24 +97,26 @@ data Types = Void
 
 -------------
 
-type Args = [(Types,String)]
+-- type Args = [(Types,String)]
 
-data Function = Constructor { func_args :: Args
+type Arg = (Types,String)
+
+data Function = Constructor { func_args :: [Arg]
                             , func_alias :: Maybe String
                             }
               | Virtual { func_ret :: Types
                         , func_name :: String
-                        , func_args :: Args
+                        , func_args :: [Arg]
                         , func_alias :: Maybe String
                         }
               | NonVirtual { func_ret :: Types
                            , func_name :: String
-                           , func_args :: Args
+                           , func_args :: [Arg]
                            , func_alias :: Maybe String
                            }
               | Static     { func_ret :: Types
                            , func_name :: String
-                           , func_args :: Args
+                           , func_args :: [Arg]
                            , func_alias :: Maybe String
                            }
               | Destructor  { func_alias :: Maybe String }
@@ -131,7 +133,7 @@ data TemplateMemberFunction =
          tmf_param :: String
        , tmf_ret :: Types
        , tmf_name :: String
-       , tmf_args :: Args
+       , tmf_args :: [Arg]
        , tmf_alias :: Maybe String
        }
        deriving Show
@@ -139,7 +141,7 @@ data TemplateMemberFunction =
 
 data TopLevelFunction = TopLevelFunction { toplevelfunc_ret :: Types
                                          , toplevelfunc_name :: String
-                                         , toplevelfunc_args :: Args
+                                         , toplevelfunc_args :: [Arg]
                                          , toplevelfunc_alias :: Maybe String
                                          }
                       | TopLevelVariable { toplevelvar_ret :: Types
@@ -233,9 +235,9 @@ instance Ord Class where
 data TemplateFunction = TFun { tfun_ret :: Types
                              , tfun_name :: String
                              , tfun_oname :: String
-                             , tfun_args :: Args
+                             , tfun_args :: [Arg]
                              , tfun_alias :: Maybe String }
-                      | TFunNew { tfun_new_args :: Args
+                      | TFunNew { tfun_new_args :: [Arg]
                                 , tfun_new_alias :: Maybe String
                                 }
                       | TFunDelete
