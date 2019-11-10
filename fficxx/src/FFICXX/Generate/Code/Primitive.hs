@@ -786,7 +786,7 @@ accessorCFunSig typ Setter = CFunSig [Arg typ "x"] Void
 
 accessorSignature :: Class -> Variable -> Accessor -> Type ()
 accessorSignature c v accessor =
-  let csig = accessorCFunSig (var_type v) accessor
+  let csig = accessorCFunSig (arg_type (unVariable v)) accessor
       HsFunSig typs assts = extractArgRetTypes (Just c) False csig
       ctxt = cxTuple assts
       arg0 = (mkTVar (fst (hsClassName c)) :)

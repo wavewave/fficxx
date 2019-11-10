@@ -125,11 +125,10 @@ data Function = Constructor { func_args :: [Arg]
               | Destructor  { func_alias :: Maybe String }
               deriving Show
 
-
-data Variable = Variable { var_type :: Types
-                         , var_name :: String
-                         }
-              deriving Show
+-- | Member variable. Isomorphic to Arg
+newtype Variable =
+  Variable { unVariable :: Arg }
+  deriving Show
 
 data TemplateMemberFunction =
        TemplateMemberFunction {

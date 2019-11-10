@@ -63,8 +63,8 @@ hsFFIClassFunc headerfilename c f =
 hsFFIAccessor ::Class -> Variable -> Accessor -> Decl ()
 hsFFIAccessor c v a =
   let -- TODO: make this a separate function
-      cname = ffiClassName c <> "_" <> var_name v <> "_" <> (case a of Getter -> "get"; Setter -> "set")
-      typ = hsFFIFuncTyp (Just (Self,c)) (accessorCFunSig (var_type v) a)
+      cname = ffiClassName c <> "_" <> arg_name (unVariable v) <> "_" <> (case a of Getter -> "get"; Setter -> "set")
+      typ = hsFFIFuncTyp (Just (Self,c)) (accessorCFunSig (arg_type (unVariable  v)) a)
   in mkForImpCcall cname (hscAccessorName c v a) typ
 
 

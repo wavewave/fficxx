@@ -417,9 +417,9 @@ tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {",
 accessorToDecl :: Variable -> Accessor -> String
 accessorToDecl v a =
   let tmpl = "$returntype Type ## _$funcname ( $args )"
-      csig = accessorCFunSig (var_type v) a
+      csig = accessorCFunSig (arg_type (unVariable v)) a
   in subst tmpl (context [ ("returntype", rettypeToString (cRetType csig))
-                         , ("funcname"  , var_name v <> "_" <> case a of Getter -> "get"; Setter -> "set")
+                         , ("funcname"  , arg_name (unVariable v) <> "_" <> case a of Getter -> "get"; Setter -> "set")
                          , ("args"      , argsToString (cArgTypes csig))
                          ])
 
@@ -432,11 +432,11 @@ accessorsToDecls vs =
 accessorToDef :: Variable -> Accessor -> String
 accessorToDef v a =
   let declstr = accessorToDecl v a
-      varexp = "to_nonconst<Type,Type ## _t>(p)->" <> var_name v
-      body Getter = "return (" <> castCpp2C (var_type v) varexp <> ");"
+      varexp = "to_nonconst<Type,Type ## _t>(p)->" <> arg_name (unVariable v)
+      body Getter = "return (" <> castCpp2C (arg_type (unVariable v)) varexp <> ");"
       body Setter =    varexp
                     <> " = "
-                    <> castC2Cpp (var_type v) "x"  -- TODO: somehow clean up this hard-coded "x".
+                    <> castC2Cpp (arg_type (unVariable v)) "x"  -- TODO: somehow clean up this hard-coded "x".
                     <> ";"
   in  intercalate "\\\n" [declstr, "{", body a, "}"]
 

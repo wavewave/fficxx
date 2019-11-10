@@ -238,7 +238,7 @@ mkModuleDepCpp y@(Right c) =
   in  nub . filter (/= y)  $
            concatMap (returnDependency.extractClassDep) fs
         <> concatMap (argumentDependency.extractClassDep) fs
-        <> concatMap (extractClassFromType . var_type) vs
+        <> concatMap (classFromArg . unVariable) vs
         <> concatMap (returnDependency.extractClassDep4TmplMemberFun) tmfs
         <> concatMap (argumentDependency.extractClassDep4TmplMemberFun) tmfs
         <> getparents y
@@ -256,7 +256,7 @@ mkModuleDepFFI1 (Right c) = let fs = class_funcs c
                                 tmfs = class_tmpl_funcs c
                             in    concatMap (returnDependency.extractClassDep) fs
                                <> concatMap (argumentDependency.extractClassDep) fs
-                               <> concatMap (extractClassFromType . var_type) vs
+                               <> concatMap (classFromArg . unVariable) vs
                                <> concatMap (returnDependency.extractClassDep4TmplMemberFun) tmfs
                                <> concatMap (argumentDependency.extractClassDep4TmplMemberFun) tmfs
 mkModuleDepFFI1 (Left t)  = let fs = tclass_funcs t

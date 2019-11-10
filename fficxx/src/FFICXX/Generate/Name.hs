@@ -108,7 +108,7 @@ cppTmplFuncName f =
     TFunDelete   -> "delete"
 
 accessorName :: Class -> Variable -> Accessor -> String
-accessorName c v a =    nonvirtualName c (var_name v)
+accessorName c v a =    nonvirtualName c (arg_name (unVariable v))
                      <> "_"
                      <> case a of
                           Getter -> "get"
