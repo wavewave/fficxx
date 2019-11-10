@@ -17,7 +17,10 @@ import Data.Text                              (Text)
 import Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
 import System.FilePath
 --
-import FFICXX.Runtime.CodeGen.C               ( HeaderName(..), Namespace(..) )
+import FFICXX.Runtime.CodeGen.C               ( CStatement(..)
+                                              , HeaderName(..)
+                                              , Namespace(..)
+                                              )
 import qualified FFICXX.Runtime.CodeGen.C as CGen
 --
 import FFICXX.Generate.Code.Cpp
@@ -44,7 +47,6 @@ import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
                                               , TypeMacro(..)
                                               )
 import FFICXX.Generate.Util
-import qualified FFICXX.Generate.Util.C as C
 import FFICXX.Generate.Util.HaskellSrcExts
 
 
@@ -295,7 +297,7 @@ buildTemplateHeader (TypMcro typemacroprefix) tcih =
       typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
       fs = tclass_funcs t
 
-      headerStr = concatMap (\h -> CGen.render (C.include h) <> "\n") (tcihCxxHeaders tcih)
+      headerStr = concatMap (\h -> CGen.render (Include h) <> "\n") (tcihCxxHeaders tcih)
 
       deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
                 ++ "\n\n"

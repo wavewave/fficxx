@@ -18,11 +18,11 @@ newtype Namespace = NS { unNamespace :: String } deriving (Show)
 
 
 data CStatement =
-    Include String        -- ^ #include "<header>"
-  | UsingNamespace String -- ^ using namespace <namespace>;
-  | Verbatim String       -- ^ temporary verbatim
+    Include HeaderName       -- ^ #include "<header>"
+  | UsingNamespace Namespace -- ^ using namespace <namespace>;
+  | Verbatim String          -- ^ temporary verbatim
 
 render :: CStatement -> String
-render (Include hdr) = "#include \"" <> hdr <> "\""
-render (UsingNamespace ns) = "using namespace " <> ns <> ";"
+render (Include (HdrName hdr)) = "#include \"" <> hdr <> "\""
+render (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 render (Verbatim str) = str
