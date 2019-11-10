@@ -27,6 +27,7 @@ import FFICXX.Generate.Type.Class     ( Class(..)
                                       , TemplateFunction(..)
                                       , TemplateMemberFunction(..)
                                       )
+import FFICXX.Generate.Type.Module    ( TemplateClassImportHeader(..) )
 import FFICXX.Generate.Util.HaskellSrcExts
                                       ( bracketExp
                                       , con, conDecl, cxEmpty, clsDecl
@@ -141,8 +142,13 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
                            ]
 
 
-genTmplInstance :: TemplateClass -> [TemplateFunction] -> [Decl ()]
-genTmplInstance t fs = mkFun fname sig [p "isCprim", p "qtyp", p "suffix"] rhs Nothing
+genTmplInstance ::
+     TemplateClass
+  -> TemplateClassImportHeader
+  -> [TemplateFunction]
+  -> [Decl ()]
+genTmplInstance t tcih fs =
+    mkFun fname sig [p "isCprim", p "qtyp", p "suffix"] rhs Nothing
   where tname = tclass_name t
         fname = "gen" <> tname <> "InstanceFor"
         p = mkPVar
@@ -209,7 +215,7 @@ genTmplInstance t fs = mkFun fname sig [p "isCprim", p "qtyp", p "suffix"] rhs N
                    `app` con "LangCxx"
                    `app` (L.foldr1 (\x y -> inapp x (op "++") y)
                             [ includeLit
-                            , strE "Vector_instance"
+                            , strE (tname <> "_instance")
                             , paren $
                                 caseE
                                   (v "isCprim")

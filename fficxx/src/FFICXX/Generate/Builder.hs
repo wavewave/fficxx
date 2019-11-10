@@ -30,8 +30,13 @@ import           System.Directory                        ( copyFile
 import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
 import           System.Process                          ( readProcess )
 --
-import           FFICXX.Generate.Code.Cabal
-import           FFICXX.Generate.Dependency
+import           FFICXX.Generate.Code.Cabal              ( buildCabalFile
+                                                         , buildJSONFile
+                                                         )
+import           FFICXX.Generate.Dependency              ( findModuleUnitImports
+                                                         , mkHSBOOTCandidateList
+                                                         , mkPackageConfig
+                                                         )
 import           FFICXX.Generate.Config                  ( FFICXXConfig(..)
                                                          , SimpleBuilderConfig(..)
                                                          )
