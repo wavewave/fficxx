@@ -224,12 +224,7 @@ genTmplInstance t tcih fs =
               letE
                 [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param" )
                 , pbind_ (pApp (name "f") [p "x"])
-                    (L.foldr1 (\x y -> inapp x (op "++") y)
-                       [ strE "#include \""
-                       , v "x"
-                       , strE "\"\n"
-                       ]
-                    )
+                    (v "render" `app` (con "Include" `app` v "x"))
                 ]
                 (v "concatMap" `app` v "f" `app` v "headers")
             namespaceStr =

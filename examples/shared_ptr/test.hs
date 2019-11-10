@@ -11,6 +11,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.C.String
 
+import FFICXX.Runtime.CodeGen.C ( HeaderName(..), Namespace(..) )
 import FFICXX.Runtime.TH (IsCPrimitive(..), TemplateParamInfo(..))
 import STD.CppString
 import STD.SharedPtr.Template
@@ -20,7 +21,7 @@ TH.genSharedPtrInstanceFor
   NonCPrim
   [t|CppString|]
   (TPInfo { tpinfoCxxType       = "std::string"
-          , tpinfoCxxHeaders    = ["string","stdcxxType.h"]
+          , tpinfoCxxHeaders    = [ HdrName "string", HdrName "stdcxxType.h" ]
           , tpinfoCxxNamespaces = ["std"]
           , tpinfoSuffix        = "string"
           }

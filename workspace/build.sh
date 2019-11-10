@@ -1,4 +1,6 @@
 rm -rf dist-newstyle
+rm -rf stdcxx
+rm -rf working
 cabal new-build fficxx
 cabal new-build fficxx-runtime
 sleep 1s

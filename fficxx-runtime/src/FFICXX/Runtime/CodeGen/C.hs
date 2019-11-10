@@ -23,6 +23,6 @@ data CStatement =
   | Verbatim String          -- ^ temporary verbatim
 
 render :: CStatement -> String
-render (Include (HdrName hdr)) = "#include \"" <> hdr <> "\""
+render (Include (HdrName hdr)) = "#include \"" <> hdr <> "\"\n"
 render (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 render (Verbatim str) = str
