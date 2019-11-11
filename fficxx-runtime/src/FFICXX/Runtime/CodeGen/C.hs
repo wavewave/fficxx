@@ -7,15 +7,20 @@ import Data.Semigroup ( (<>) )
 import Data.String    ( IsString(..) )
 
 
-newtype HeaderName = HdrName { unHdrName :: String }
-                   deriving (Hashable, Show, Eq, Ord)
+newtype HeaderName =
+  HdrName { unHdrName :: String }
+  deriving (Hashable, Show, Eq, Ord)
 
 
 instance IsString HeaderName where
   fromString = HdrName
 
-newtype Namespace = NS { unNamespace :: String } deriving (Show)
+newtype Namespace =
+  NS { unNamespace :: String }
+  deriving (Show,Eq,Ord)
 
+instance IsString Namespace where
+  fromString = NS
 
 data CStatement =
     Include HeaderName       -- ^ #include "<header>"
