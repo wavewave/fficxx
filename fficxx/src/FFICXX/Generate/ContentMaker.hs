@@ -113,7 +113,6 @@ buildTypeDeclHeader (TypMcro typemacro) classes =
                 , ("typemacro"   , typemacro       ) ])
 
 
-
 declarationTemplate :: Text
 declarationTemplate =
   "#ifdef __cplusplus\n\
@@ -123,8 +122,6 @@ declarationTemplate =
   \#ifndef $typemacro\n\
   \#define $typemacro\n\
   \\n\
-  \#include \"${cprefix}Type.h\"\n\
-  \ // \n\
   \$declarationheader\n\
   \ // \n\
   \$declarationbody\n\
@@ -146,7 +143,9 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
       aclass = cihClass header
       typemacrostr = typemacroprefix <> ffiClassName aclass <> "__"
       declHeaderStr =
-        intercalate "\n" $ map (render . Include) $ cihIncludedHPkgHeadersInH header
+        render (Include (HdrName (cprefix ++ "Type.h")))
+        `connRet2`
+        intercalate "\n" (map (render . Include) $ cihIncludedHPkgHeadersInH header)
       declDefStr    = intercalateWith connRet2 genCppHeaderMacroVirtual classes
                       `connRet2`
                       intercalateWith connRet genCppHeaderMacroNonVirtual classes
@@ -180,7 +179,6 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
                       classDeclsStr
   in subst declarationTemplate
        (context [ ("typemacro"        , typemacrostr  )
-                , ("cprefix"          , cprefix       )
                 , ("declarationheader", declHeaderStr )
                 , ("declarationbody"  , declBodyStr   ) ])
 
@@ -246,13 +244,13 @@ buildTopLevelHeader :: TypeMacro  -- ^ typemacro prefix
                     -> String
 buildTopLevelHeader (TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix <> "TOPLEVEL" <> "__"
-      declHeaderStr = intercalateWith connRet (\x->"#include \""<>x<>"\"") $
-                        map unHdrName $
-                                 map cihSelfHeader (tihClassDep tih)
-                              ++ tihExtraHeadersInH tih
+      declHeaderStr =
+        render (Include (HdrName (cprefix ++ "Type.h")))
+        `connRet2`
+        intercalate "\n"
+          (map (render . Include) (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih))
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
   in subst declarationTemplate (context [ ("typemacro"        , typemacrostr  )
-                                        , ("cprefix"          , cprefix       )
                                         , ("declarationheader", declHeaderStr )
                                         , ("declarationbody"  , declBodyStr   ) ])
 
