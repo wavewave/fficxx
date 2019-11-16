@@ -37,18 +37,18 @@ renderPragmaParam :: PragmaParam -> String
 renderPragmaParam Once = "once"
 
 render :: CStatement -> String
-render (Include (HdrName hdr))  = "#include \"" <> hdr <> "\"\n"
+render (Include (HdrName hdr))  = "\n#include \"" <> hdr <> "\"\n"
 render (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
-render (Pragma param)           = "#pragma " <> renderPragmaParam param <> "\n"
+render (Pragma param)           = "\n#pragma " <> renderPragmaParam param <> "\n"
 render EmptyLine                = "\n"
 render (Verbatim str)           = str
 
 renderBlock :: CBlock -> String
 renderBlock (ExternC cstmts) =
-     "#ifdef __cplusplus\n\
+     "\n#ifdef __cplusplus\n\
      \extern \"C\" {\n\
      \#endif\n"
   ++ concatMap render cstmts
-  ++ "#ifdef __cplusplus\n\
+  ++ "\n#ifdef __cplusplus\n\
      \}\n\
      \#endif\n"
