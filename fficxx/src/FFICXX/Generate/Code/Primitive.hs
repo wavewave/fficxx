@@ -305,42 +305,42 @@ argsToStringNoSelf = intercalateWith conncomma argToString
 
 -- new definitions
 
-argToCTypVar :: Arg -> (R.CType,R.Name)
+argToCTypVar :: Arg -> (R.CType,R.CName)
 argToCTypVar (Arg (CT ctyp isconst) varname) =
-  (R.CType (ctypToStr ctyp isconst), R.Name varname)
+  (R.CType (ctypToStr ctyp isconst), R.sname varname)
 argToCTypVar (Arg SelfType varname) =
-  (R.CType "Type ## _p", R.Name varname)
+  (R.CType "Type ## _p", R.sname varname)
 argToCTypVar (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> cname <> "_p"), R.Name varname)
-    NoConst -> (R.CType (cname <> "_p"), R.Name varname)
+    Const   -> (R.CType ("const_" <> cname <> "_p"), R.sname varname)
+    NoConst -> (R.CType (cname <> "_p"), R.sname varname)
   where cname = ffiClassName c
 argToCTypVar (Arg (CPT (CPTClassRef c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> cname <> "_p"), R.Name varname)
-    NoConst -> (R.CType (cname <> "_p"), R.Name varname)
+    Const   -> (R.CType ("const_" <> cname <> "_p"), R.sname varname)
+    NoConst -> (R.CType (cname <> "_p"), R.sname varname)
   where cname = ffiClassName c
 argToCTypVar (Arg (CPT (CPTClassCopy c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> cname <> "_p"), R.Name varname)
-    NoConst -> (R.CType (cname <> "_p"), R.Name varname)
+    Const   -> (R.CType ("const_" <> cname <> "_p"), R.sname varname)
+    NoConst -> (R.CType (cname <> "_p"), R.sname varname)
   where cname = ffiClassName c
 argToCTypVar (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> cname <> "_p"), R.Name varname)
-    NoConst -> (R.CType (cname <> "_p"), R.Name varname)
+    Const   -> (R.CType ("const_" <> cname <> "_p"), R.sname varname)
+    NoConst -> (R.CType (cname <> "_p"), R.sname varname)
   where cname = ffiClassName c
-argToCTypVar (Arg (TemplateApp     _) varname) = (R.CType "void*", R.Name varname)
-argToCTypVar (Arg (TemplateAppRef  _) varname) = (R.CType "void*", R.Name varname)
-argToCTypVar (Arg (TemplateAppMove _) varname) = (R.CType "void*", R.Name varname)
+argToCTypVar (Arg (TemplateApp     _) varname) = (R.CType "void*", R.sname varname)
+argToCTypVar (Arg (TemplateAppRef  _) varname) = (R.CType "void*", R.sname varname)
+argToCTypVar (Arg (TemplateAppMove _) varname) = (R.CType "void*", R.sname varname)
 argToCTypVar t = error ("argToCTypVar: " <> show t)
 
-argsToCTypVar :: [Arg] -> [(R.CType,R.Name)]
+argsToCTypVar :: [Arg] -> [(R.CType,R.CName)]
 argsToCTypVar args =
   let args' = (Arg SelfType "p") : args
   in map argToCTypVar args'
 
-argsToCTypVarNoSelf :: [Arg] -> [(R.CType,R.Name)]
+argsToCTypVarNoSelf :: [Arg] -> [(R.CType,R.CName)]
 argsToCTypVarNoSelf = map argToCTypVar
 
 

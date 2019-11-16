@@ -27,14 +27,27 @@ data PragmaParam = Once
 
 data CType = CType String
 
-newtype Name = Name { unName :: String }
+-- | interpolation item
+data IItem = AsIs String | Var String
+
+newtype CName = CName [IItem]
+
+sname :: String -> CName
+sname s = CName [AsIs s]
+
+renderCName :: CName -> String
+renderCName (CName items) = concatMap renderIItem items
+  where
+    renderIItem (AsIs s) = s
+    renderIItem (Var v) = "## " <> v <> " ##"
+
 
 data CDecl =
-    FunDecl CType Name [(CType,Name)] -- ^ type func( type1 arg1, type2 arg2, ... )
+    FunDecl CType CName [(CType,CName)] -- ^ type func( type1 arg1, type2 arg2, ... )
 
 data CStatement =
     UsingNamespace Namespace -- ^ using namespace <namespace>;
-  | TypeDef CType Name       -- ^ typedef origtype newname;
+  | TypeDef CType CName       -- ^ typedef origtype newname;
   | CDeclaration CDecl       -- ^ function declaration
   | Comment String           -- ^ comment
 
@@ -52,14 +65,14 @@ renderPragmaParam :: PragmaParam -> String
 renderPragmaParam Once = "once"
 
 renderCDecl :: CDecl -> String
-renderCDecl (FunDecl (CType typ) (Name fname) args) =
-    typ <> " " <> fname <> " ( " <> intercalate "," (map mkArgStr args) <> " )"
+renderCDecl (FunDecl (CType typ) fname args) =
+    typ <> " " <> renderCName fname <> " ( " <> intercalate "," (map mkArgStr args) <> " )"
   where
-    mkArgStr (CType t, Name a) = t <> " " <> a
+    mkArgStr (CType t, a) = t <> " " <> renderCName a
 
 renderCStmt :: CStatement -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
-renderCStmt (TypeDef (CType typ) (Name n)) = "typedef " <> typ <> " " <> n <> ";"
+renderCStmt (TypeDef (CType typ) n)  = "typedef " <> typ <> " " <> renderCName n <> ";"
 renderCStmt (CDeclaration e)         = renderCDecl e <> ";"
 renderCStmt (Comment str)            = "// " <> str <> "\n"
 

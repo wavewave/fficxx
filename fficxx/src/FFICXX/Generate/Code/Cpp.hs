@@ -7,7 +7,6 @@ import Data.Char
 import Data.List                             (intercalate)
 import Data.Monoid                           ((<>))
 --
--- import FFICXX.Runtime.CodeGen.C              ( CDecl(..), CStatement(..) )
 import qualified FFICXX.Runtime.CodeGen.C as R
 --
 import FFICXX.Generate.Code.Primitive        (accessorCFunSig
@@ -49,9 +48,9 @@ import FFICXX.Generate.Util
 genCppHeaderMacroType :: Class -> [R.CStatement]
 genCppHeaderMacroType c =
     [ R.Comment "Opaque type definition for $classname"
-    , R.TypeDef (R.CType ("struct " <> classname_tag)) (R.Name classname_t)
-    , R.TypeDef (R.CType (classname_t <> " *"))        (R.Name classname_p)
-    , R.TypeDef (R.CType (classname_t <> " const*"))   (R.Name ("const_" <> classname_p))
+    , R.TypeDef (R.CType ("struct " <> classname_tag)) (R.sname classname_t)
+    , R.TypeDef (R.CType (classname_t <> " *"))        (R.sname classname_p)
+    , R.TypeDef (R.CType (classname_t <> " const*"))   (R.sname ("const_" <> classname_p))
     ]
   where
     classname = ffiClassName c
@@ -202,13 +201,13 @@ genTopLevelFuncCppHeader TopLevelFunction {..} =
     R.CDeclaration (R.FunDecl ret func args)
   where
     ret  = R.CType (rettypeToString toplevelfunc_ret)
-    func = R.Name ("TopLevel_" <> maybe toplevelfunc_name id toplevelfunc_alias)
+    func = R.sname ("TopLevel_" <> maybe toplevelfunc_name id toplevelfunc_alias)
     args = argsToCTypVarNoSelf toplevelfunc_args
 genTopLevelFuncCppHeader TopLevelVariable {..} =
     R.CDeclaration (R.FunDecl ret func [])
   where
     ret  = R.CType (rettypeToString toplevelvar_ret)
-    func = R.Name ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
+    func = R.sname ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
 
 
 genTopLevelFuncCppDefinition :: TopLevelFunction -> String
