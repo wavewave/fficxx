@@ -11,7 +11,6 @@ import Data.Maybe                             ( mapMaybe, maybeToList )
 import Data.Monoid                            ( (<>) )
 import Data.List                              ( find, intercalate, nub )
 import Data.List.Split                        ( splitOn )
-import Data.Text                              ( Text )
 import Language.Haskell.Exts.Syntax           ( Module(..)
                                               , Decl(..)
                                               )
@@ -151,6 +150,7 @@ buildDeclHeader cprefix header =
          , Verbatim declBodyStr
          ]
 
+{-
 definitionTemplate :: Text
 definitionTemplate =
   "$header\n\
@@ -165,7 +165,7 @@ definitionTemplate =
   \  (to_nonconst<cname,cname ## _t>) )\n\
   \\n\
   \$cppbody\n"
-
+-}
 
 -- |
 buildDefMain :: ClassImportHeader
@@ -199,11 +199,20 @@ buildDefMain cih =
                 intercalateWith connRet genCppDefInstNonVirtual classes
                 `connRet`
                 intercalateWith connRet genCppDefInstAccessor classes
-  in subst
-       definitionTemplate
-       (context ([ ("alias"    , aliasStr     )
-                 , ("header", headerStr)
-                 , ("cppbody"  , cppBody      ) ]))
+  in concatMap render
+       [ Verbatim headerStr
+       , EmptyLine
+       , Verbatim aliasStr
+       , EmptyLine
+       , Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
+       , EmptyLine
+       , Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
+                  \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+                  \  (to_nonconst<oname,cname ## _t>), \\\n\
+                  \  (to_nonconst<cname,cname ## _t>) )\n"
+       , EmptyLine
+       , Verbatim cppBody
+       ]
 
 -- |
 buildTopLevelHeader ::
@@ -260,10 +269,27 @@ buildTopLevelCppDef tih =
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
-  in subst definitionTemplate (context [ ("header"   , declHeaderStr)
+  in concatMap render
+       [ Verbatim declHeaderStr
+       , EmptyLine
+       , Verbatim aliasStr
+       , EmptyLine
+       , Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
+       , EmptyLine
+       , Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
+                  \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+                  \  (to_nonconst<oname,cname ## _t>), \\\n\
+                  \  (to_nonconst<cname,cname ## _t>) )\n"
+       , EmptyLine
+       , Verbatim declBodyStr
+       ]
+
+
+{-
+   subst definitionTemplate (context [ ("header"   , declHeaderStr)
                                        , ("alias"    , aliasStr     )
                                        , ("cppbody"  , declBodyStr  ) ])
-
+-}
 
 -- |
 buildTemplateHeader ::
@@ -281,7 +307,20 @@ buildTemplateHeader tcih =
                 ++ "\n\n"
                 ++ intercalateWith connRet (genTmplFunCpp True t) fs
       classlevel = genTmplClassCpp False t fs ++ "\n\n" ++ genTmplClassCpp True t fs
-  in subst
+  in concatMap render
+       [ Verbatim directive
+       , EmptyLine
+       , Verbatim headerStr
+       , EmptyLine
+       , Verbatim deffunc
+       , EmptyLine
+       , Verbatim classlevel
+       ]
+
+{-
+
+
+   subst
        "$directive\n\
        \\n\
        \$headers\n\
@@ -293,7 +332,7 @@ buildTemplateHeader tcih =
                 , ("deffunc"    , deffunc      )
                 , ("classlevel" , classlevel   )
                 ])
-
+-}
 
 -- |
 buildFFIHsc :: ClassModule -> Module ()
