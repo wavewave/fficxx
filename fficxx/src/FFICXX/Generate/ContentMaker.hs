@@ -206,20 +206,19 @@ buildTopLevelHeader ::
   -> TopLevelImportHeader
   -> String
 buildTopLevelHeader cprefix tih =
-  let declHeaderStr =
-        render (Include (HdrName (cprefix ++ "Type.h")))
-        `connRet2`
-        intercalate "\n"
-          (map (render . Include) (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih))
-      declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
+  let declHeaderStmts =
+           [ Include (HdrName (cprefix ++ "Type.h")) ]
+        <> map Include (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih)
+      declBodyStr = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
   in renderBlock $
-       ExternC
-         [ Pragma Once
-         , EmptyLine
-         , Verbatim declHeaderStr
-         , EmptyLine
-         , Verbatim declBodyStr
-         ]
+       ExternC $
+            [ Pragma Once
+            , EmptyLine
+            ]
+         <> declHeaderStmts
+         <> [ EmptyLine
+            , Verbatim declBodyStr
+            ]
 
 -- |
 buildTopLevelCppDef :: TopLevelImportHeader -> String
@@ -271,26 +270,23 @@ buildTemplateHeader ::
      TemplateClassImportHeader
   -> String
 buildTemplateHeader tcih =
-  let
-      t = tcihTClass tcih
-      directive = render $ Pragma Once
+  let t = tcihTClass tcih
       fs = tclass_funcs t
-
-      headerStr = concatMap (render . Include) (tcihCxxHeaders tcih)
-
+      headerStmts = map Include (tcihCxxHeaders tcih)
       deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
                 ++ "\n\n"
                 ++ intercalateWith connRet (genTmplFunCpp True t) fs
       classlevel = genTmplClassCpp False t fs ++ "\n\n" ++ genTmplClassCpp True t fs
-  in concatMap render
-       [ Verbatim directive
-       , EmptyLine
-       , Verbatim headerStr
-       , EmptyLine
-       , Verbatim deffunc
-       , EmptyLine
-       , Verbatim classlevel
-       ]
+  in concatMap render $
+          [ Pragma Once
+          , EmptyLine
+          ]
+       <> headerStmts
+       <> [ EmptyLine
+          , Verbatim deffunc
+          , EmptyLine
+          , Verbatim classlevel
+          ]
 
 -- |
 buildFFIHsc :: ClassModule -> Module ()
