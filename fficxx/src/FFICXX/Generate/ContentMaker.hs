@@ -3,27 +3,25 @@
 
 module FFICXX.Generate.ContentMaker where
 
-import Control.Lens                           ((&),(.~),at)
+import Control.Lens                           ( (&), (.~), at )
 import Control.Monad.Trans.Reader
-import Data.Char                              (toUpper)
-import Data.Either                            (rights)
-import Data.Function                          (on)
+import Data.Either                            ( rights )
 import qualified Data.Map as M
-import Data.Maybe                             (mapMaybe,maybeToList)
-import Data.Monoid                            ((<>))
-import Data.List                              (find,intercalate,nub,nubBy)
+import Data.Maybe                             ( mapMaybe, maybeToList )
+import Data.Monoid                            ( (<>) )
+import Data.List                              ( find, intercalate, nub )
 import Data.List.Split                        ( splitOn )
-import Data.Text                              ( Text )
-import qualified Data.Text as T               ( pack )
 import Language.Haskell.Exts.Syntax           ( Module(..)
                                               , Decl(..)
                                               )
 import System.FilePath
 --
-import FFICXX.Runtime.CodeGen.C               ( CStatement(..)
+import FFICXX.Runtime.CodeGen.C               ( CBlock(..)
+                                              , CStatement(..)
                                               , HeaderName(..)
-                                              , Namespace(..)
+                                              , PragmaParam(..)
                                               , render
+                                              , renderBlock
                                               )
 --
 import FFICXX.Generate.Code.Cpp
@@ -47,9 +45,8 @@ import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
                                               , PackageInterface
                                               , PackageName(..)
-                                              , TypeMacro(..)
                                               )
-import FFICXX.Generate.Util
+import FFICXX.Generate.Util                   ( connRet, connRet2, intercalateWith )
 import FFICXX.Generate.Util.HaskellSrcExts
 
 
@@ -89,59 +86,26 @@ mkProtectedFunctionList c =
      . unProtected . class_protected) c
 
 -- |
-buildTypeDeclHeader :: TypeMacro -- ^ typemacro
-                 -> [Class]
-                 -> String
-buildTypeDeclHeader (TypMcro typemacro) classes =
+buildTypeDeclHeader ::
+     [Class]
+  -> String
+buildTypeDeclHeader classes =
   let typeDeclBodyStr = intercalateWith connRet2 (genCppHeaderMacroType) classes
-  in subst
-       "#ifdef __cplusplus\n\
-       \extern \"C\" { \n\
-       \#endif\n\
-       \\n\
-       \#ifndef $typemacro\n\
-       \#define $typemacro\n\
-       \\n\
-       \$typeDeclBody\n\
-       \\n\
-       \#endif // $typemacro\n\
-       \\n\
-       \#ifdef __cplusplus\n\
-       \}\n\
-       \#endif\n"
-       (context [ ("typeDeclBody", typeDeclBodyStr )
-                , ("typemacro"   , typemacro       ) ])
-
-
-declarationTemplate :: Text
-declarationTemplate =
-  "#ifdef __cplusplus\n\
-  \extern \"C\" { \n\
-  \#endif\n\
-  \\n\
-  \#ifndef $typemacro\n\
-  \#define $typemacro\n\
-  \\n\
-  \$declarationheader\n\
-  \ // \n\
-  \$declarationbody\n\
-  \\n\
-  \#endif // $typemacro\n\
-  \\n\
-  \#ifdef __cplusplus\n\
-  \}\n\
-  \#endif\n"
+  in renderBlock $
+       ExternC
+         [ Pragma Once
+         , EmptyLine
+         , Verbatim typeDeclBodyStr
+         ]
 
 -- |
 buildDeclHeader ::
-     TypeMacro  -- ^ typemacro prefix
-  -> String     -- ^ C prefix
+     String     -- ^ C prefix
   -> ClassImportHeader
   -> String
-buildDeclHeader (TypMcro typemacroprefix) cprefix header =
+buildDeclHeader cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
-      typemacrostr = typemacroprefix <> ffiClassName aclass <> "__"
       declHeaderStr =
         render (Include (HdrName (cprefix ++ "Type.h")))
         `connRet2`
@@ -177,39 +141,26 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
       declBodyStr   = declDefStr
                       `connRet2`
                       classDeclsStr
-  in subst declarationTemplate
-       (context [ ("typemacro"        , typemacrostr  )
-                , ("declarationheader", declHeaderStr )
-                , ("declarationbody"  , declBodyStr   ) ])
-
-
-definitionTemplate :: Text
-definitionTemplate =
-  "$header\n\
-  \\n\
-  \$alias\n\
-  \\n\
-  \#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n\
-  \\n\
-  \#define TYPECASTMETHOD(cname,mname,oname) \\\n\
-  \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
-  \  (to_nonconst<oname,cname ## _t>), \\\n\
-  \  (to_nonconst<cname,cname ## _t>) )\n\
-  \\n\
-  \$cppbody\n"
-
+  in renderBlock $
+       ExternC
+         [ Pragma Once
+         , EmptyLine
+         , Verbatim declHeaderStr
+         , EmptyLine
+         , Verbatim declBodyStr
+         ]
 
 -- |
 buildDefMain :: ClassImportHeader
           -> String
 buildDefMain cih =
   let classes = [cihClass cih]
-      headerStr =
-           render (Include "MacroPatternMatch.h")
+      headerStmts =
+           [ Include "MacroPatternMatch.h" ]
         <> genAllCppHeaderInclude cih
-        <> render (Include (cihSelfHeader cih))
-        <> "\n"
-        <> (concatMap (render . UsingNamespace) . cihNamespace) cih
+        <> [ Include (cihSelfHeader cih) ]
+      namespaceStmts =
+        (map UsingNamespace . cihNamespace) cih
       aclass = cihClass cih
       aliasStr = intercalate "\n" $
                    mapMaybe typedefstmt $
@@ -231,53 +182,61 @@ buildDefMain cih =
                 intercalateWith connRet genCppDefInstNonVirtual classes
                 `connRet`
                 intercalateWith connRet genCppDefInstAccessor classes
-  in subst
-       definitionTemplate
-       (context ([ ("alias"    , aliasStr     )
-                 , ("header", headerStr)
-                 , ("cppbody"  , cppBody      ) ]))
+  in concatMap render
+       (   headerStmts
+        <> [ EmptyLine ]
+        <> namespaceStmts
+        <> [ EmptyLine
+           , Verbatim aliasStr
+           , EmptyLine
+           , Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
+           , EmptyLine
+           , Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
+                      \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+                      \  (to_nonconst<oname,cname ## _t>), \\\n\
+                      \  (to_nonconst<cname,cname ## _t>) )\n"
+           , EmptyLine
+           , Verbatim cppBody
+           ]
+       )
 
 -- |
-buildTopLevelHeader :: TypeMacro  -- ^ typemacro prefix
-                    -> String     -- ^ C prefix
-                    -> TopLevelImportHeader
-                    -> String
-buildTopLevelHeader (TypMcro typemacroprefix) cprefix tih =
-  let typemacrostr = typemacroprefix <> "TOPLEVEL" <> "__"
-      declHeaderStr =
-        render (Include (HdrName (cprefix ++ "Type.h")))
-        `connRet2`
-        intercalate "\n"
-          (map (render . Include) (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih))
-      declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
-  in subst declarationTemplate (context [ ("typemacro"        , typemacrostr  )
-                                        , ("declarationheader", declHeaderStr )
-                                        , ("declarationbody"  , declBodyStr   ) ])
+buildTopLevelHeader ::
+     String     -- ^ C prefix
+  -> TopLevelImportHeader
+  -> String
+buildTopLevelHeader cprefix tih =
+  let declHeaderStmts =
+           [ Include (HdrName (cprefix ++ "Type.h")) ]
+        <> map Include (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih)
+      declBodyStr = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
+  in renderBlock $
+       ExternC $
+            [ Pragma Once
+            , EmptyLine
+            ]
+         <> declHeaderStmts
+         <> [ EmptyLine
+            , Verbatim declBodyStr
+            ]
 
 -- |
 buildTopLevelCppDef :: TopLevelImportHeader -> String
 buildTopLevelCppDef tih =
   let cihs = tihClassDep tih
       extclasses = tihExtraClassDep tih
-      declHeaderStr =
-        render (Include "MacroPatternMatch.h")
-        `connRet2`
-        render (Include (HdrName (tihHeaderFileName tih <.> "h")))
-        `connRet2`
-        (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
-        `connRet2`
-        otherHeaders
-        `connRet2`
-        namespaceStr
-      otherHeaders =
-        intercalate "\n" $ map (render . Include) $
-          map cihSelfHeader cihs
-          ++ tihExtraHeadersInCPP tih
+      declHeaderStmts =
+           [ Include "MacroPatternMatch.h"
+           , Include (HdrName (tihHeaderFileName tih <.> "h"))
+           ]
+        <> concatMap genAllCppHeaderInclude cihs
+        <> otherHeaderStmts
+      otherHeaderStmts =
+        map Include (map cihSelfHeader cihs ++ tihExtraHeadersInCPP tih)
 
       allns = nub ((tihClassDep tih >>= cihNamespace) ++ tihNamespaces tih)
 
-      namespaceStr = do ns <- allns
-                        render (UsingNamespace ns)
+      namespaceStmts = map UsingNamespace allns
       aliasStr = intercalate "\n" $
                    mapMaybe typedefstmt $
                      rights (concatMap cihImportedClasses cihs ++ extclasses)
@@ -288,41 +247,46 @@ buildTopLevelCppDef tih =
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
-  in subst definitionTemplate (context [ ("header"   , declHeaderStr)
-                                       , ("alias"    , aliasStr     )
-                                       , ("cppbody"  , declBodyStr  ) ])
+  in concatMap render
+       (   declHeaderStmts
+        <> [EmptyLine]
+        <> namespaceStmts
+        <> [ EmptyLine
+           , Verbatim aliasStr
+           , EmptyLine
+           , Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
+           , EmptyLine
+           , Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
+                      \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+                      \  (to_nonconst<oname,cname ## _t>), \\\n\
+                      \  (to_nonconst<cname,cname ## _t>) )\n"
+           , EmptyLine
+           , Verbatim declBodyStr
+           ]
+       )
 
 -- |
-buildTemplateHeader :: TypeMacro  -- ^ typemacro prefix
-                    -> TemplateClassImportHeader
-                    -> String
-buildTemplateHeader (TypMcro typemacroprefix) tcih =
-  let
-      t = tcihTClass tcih
-      typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
+buildTemplateHeader ::
+     TemplateClassImportHeader
+  -> String
+buildTemplateHeader tcih =
+  let t = tcihTClass tcih
       fs = tclass_funcs t
-
-      headerStr = concatMap (render . Include) (tcihCxxHeaders tcih)
-
+      headerStmts = map Include (tcihCxxHeaders tcih)
       deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
                 ++ "\n\n"
                 ++ intercalateWith connRet (genTmplFunCpp True t) fs
       classlevel = genTmplClassCpp False t fs ++ "\n\n" ++ genTmplClassCpp True t fs
-  in subst
-       "#ifndef $typemacro\n\
-       \#define $typemacro\n\
-       \\n\
-       \$headers\n\
-       \\n\
-       \$deffunc\n\
-       \$classlevel\n\
-       \#endif\n"
-       (context [ ("typemacro"  , typemacrostr )
-                , ("headers"    , headerStr    )
-                , ("deffunc"    , deffunc      )
-                , ("classlevel" , classlevel   )
-                ])
-
+  in concatMap render $
+          [ Pragma Once
+          , EmptyLine
+          ]
+       <> headerStmts
+       <> [ EmptyLine
+          , Verbatim deffunc
+          , EmptyLine
+          , Verbatim classlevel
+          ]
 
 -- |
 buildFFIHsc :: ClassModule -> Module ()

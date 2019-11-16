@@ -37,7 +37,6 @@ import           FFICXX.Generate.Type.Cabal              ( Cabal(..)
                                                          , AddCSrc(..)
                                                          )
 import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface
 import           FFICXX.Generate.Util
 --
 
@@ -92,24 +91,24 @@ simpleBuilder cfg sbc = do
   buildJSONFile cabal topLevelMod pkgconfig extralibs (workingDir</>jsonFileName)
   --
   putStrLn "Generating Header file"
-  let typmacro = TypMcro ("__"  <> macrofy (unCabalName (cabal_pkgname cabal)) <> "__")
+  let
       gen :: FilePath -> String -> IO ()
       gen file str =
         let path = workingDir </> file in withFile path WriteMode (flip hPutStrLn str)
 
 
-  gen (unCabalName pkgname <> "Type.h") (buildTypeDeclHeader typmacro (map cihClass cihs))
+  gen (unCabalName pkgname <> "Type.h") (buildTypeDeclHeader (map cihClass cihs))
   for_ cihs $ \hdr -> gen
                         (unHdrName (cihSelfHeader hdr))
-                        (buildDeclHeader typmacro (unCabalName pkgname) hdr)
+                        (buildDeclHeader (unCabalName pkgname) hdr)
   gen
     (tihHeaderFileName tih <.> "h")
-    (buildTopLevelHeader typmacro (unCabalName pkgname) tih)
+    (buildTopLevelHeader (unCabalName pkgname) tih)
   for_ tcms $ \m ->
     let tcihs = tcmTCIH m
     in for_ tcihs $ \tcih ->
          let hdr = unHdrName (tcihSelfHeader tcih)
-         in gen hdr (buildTemplateHeader typmacro tcih)
+         in gen hdr (buildTemplateHeader tcih)
   --
   putStrLn "Generating Cpp file"
   for_ cihs (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr))
