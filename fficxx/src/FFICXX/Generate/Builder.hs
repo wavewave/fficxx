@@ -37,7 +37,6 @@ import           FFICXX.Generate.Type.Cabal              ( Cabal(..)
                                                          , AddCSrc(..)
                                                          )
 import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Type.PackageInterface
 import           FFICXX.Generate.Util
 --
 

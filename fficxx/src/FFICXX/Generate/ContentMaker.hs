@@ -3,18 +3,15 @@
 
 module FFICXX.Generate.ContentMaker where
 
-import Control.Lens                           ((&),(.~),at)
+import Control.Lens                           ( (&), (.~), at )
 import Control.Monad.Trans.Reader
-import Data.Char                              (toUpper)
-import Data.Either                            (rights)
-import Data.Function                          (on)
+import Data.Either                            ( rights )
 import qualified Data.Map as M
-import Data.Maybe                             (mapMaybe,maybeToList)
-import Data.Monoid                            ((<>))
-import Data.List                              (find,intercalate,nub,nubBy)
+import Data.Maybe                             ( mapMaybe, maybeToList )
+import Data.Monoid                            ( (<>) )
+import Data.List                              ( find, intercalate, nub )
 import Data.List.Split                        ( splitOn )
 import Data.Text                              ( Text )
-import qualified Data.Text as T               ( pack )
 import Language.Haskell.Exts.Syntax           ( Module(..)
                                               , Decl(..)
                                               )
@@ -22,7 +19,6 @@ import System.FilePath
 --
 import FFICXX.Runtime.CodeGen.C               ( CStatement(..)
                                               , HeaderName(..)
-                                              , Namespace(..)
                                               , PragmaParam(..)
                                               , render
                                               )
@@ -48,7 +44,6 @@ import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
                                               , PackageInterface
                                               , PackageName(..)
-                                              , TypeMacro(..)
                                               )
 import FFICXX.Generate.Util
 import FFICXX.Generate.Util.HaskellSrcExts
