@@ -86,58 +86,18 @@ mkProtectedFunctionList c =
      . map (\x->"#define IS_" <> class_name c <> "_" <> x <> "_PROTECTED ()")
      . unProtected . class_protected) c
 
-
---        #ifdef __cplusplus\n\
---        \extern \"C\" { \n\
---       \#endif\n\
---        \\n\
-
 -- |
 buildTypeDeclHeader ::
      [Class]
   -> String
 buildTypeDeclHeader classes =
   let typeDeclBodyStr = intercalateWith connRet2 (genCppHeaderMacroType) classes
-      -- directive = render (Pragma Once)
   in renderBlock $
        ExternC
          [ Pragma Once
          , EmptyLine
          , Verbatim typeDeclBodyStr
          ]
-{-     subst
-       \$directive\n\
-       \\n\
-       \$typeDeclBody\n\
-       \\n\
-       \#ifdef __cplusplus\n\
-       \}\n\
-       \#endif\n"
-       (context
-         [ ("typeDeclBody", typeDeclBodyStr )
-         , ("directive", directive)
-         ]
-       )
--}
-
-
-  -- #ifdef __cplusplus\n\
-  --  \extern \"C\" { \n\
-  -- \#endif\n\
-  -- \\n\
-  -- \$directive\n\
-  -- \\n\
-
-  -- \#ifdef __cplusplus\n\
-  -- \}\n\
-  -- \#endif\n"
-
-declarationTemplate :: Text
-declarationTemplate =
-  "$declarationheader\n\
-  \ // \n\
-  \$declarationbody\n\
-  \\n"
 
 -- |
 buildDeclHeader ::
@@ -186,13 +146,9 @@ buildDeclHeader cprefix header =
        ExternC
          [ Pragma Once
          , EmptyLine
-         , Verbatim $
-             subst declarationTemplate
-              (context
-                [ ("declarationheader", declHeaderStr )
-                , ("declarationbody"  , declBodyStr   )
-                ]
-              )
+         , Verbatim declHeaderStr
+         , EmptyLine
+         , Verbatim declBodyStr
          ]
 
 definitionTemplate :: Text
@@ -255,9 +211,7 @@ buildTopLevelHeader ::
   -> TopLevelImportHeader
   -> String
 buildTopLevelHeader cprefix tih =
-  let
-      -- directive = render $ Pragma Once
-      declHeaderStr =
+  let declHeaderStr =
         render (Include (HdrName (cprefix ++ "Type.h")))
         `connRet2`
         intercalate "\n"
@@ -267,13 +221,9 @@ buildTopLevelHeader cprefix tih =
        ExternC
          [ Pragma Once
          , EmptyLine
-         , Verbatim $
-             subst declarationTemplate
-              (context
-                [ ("declarationheader", declHeaderStr )
-                , ("declarationbody"  , declBodyStr   )
-                ]
-              )
+         , Verbatim declHeaderStr
+         , EmptyLine
+         , Verbatim declBodyStr
          ]
 
 -- |
