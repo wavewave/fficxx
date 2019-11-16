@@ -7,7 +7,7 @@ import Data.Char
 import Data.List                             (intercalate)
 import Data.Monoid                           ((<>))
 --
-import FFICXX.Runtime.CodeGen.C              ( CDecl(..), CStatement(..) )
+-- import FFICXX.Runtime.CodeGen.C              ( CDecl(..), CStatement(..) )
 import qualified FFICXX.Runtime.CodeGen.C as R
 --
 import FFICXX.Generate.Code.Primitive        (accessorCFunSig
@@ -46,12 +46,12 @@ import FFICXX.Generate.Util
 
 ---- "Class Type Declaration" Instances
 
-genCppHeaderMacroType :: Class -> [CStatement]
+genCppHeaderMacroType :: Class -> [R.CStatement]
 genCppHeaderMacroType c =
-    [ Comment "Opaque type definition for $classname"
-    , TypeDef (R.CType ("struct " <> classname_tag)) (R.Name classname_t)
-    , TypeDef (R.CType (classname_t <> " *"))        (R.Name classname_p)
-    , TypeDef (R.CType (classname_t <> " const*"))   (R.Name ("const_" <> classname_p))
+    [ R.Comment "Opaque type definition for $classname"
+    , R.TypeDef (R.CType ("struct " <> classname_tag)) (R.Name classname_t)
+    , R.TypeDef (R.CType (classname_t <> " *"))        (R.Name classname_p)
+    , R.TypeDef (R.CType (classname_t <> " const*"))   (R.Name ("const_" <> classname_p))
     ]
   where
     classname = ffiClassName c
@@ -187,9 +187,9 @@ genCppDefInstAccessor c =
 
 -----------------
 
-genAllCppHeaderInclude :: ClassImportHeader -> [CStatement]
+genAllCppHeaderInclude :: ClassImportHeader -> [R.CMacro]
 genAllCppHeaderInclude header =
-  map Include (cihIncludedHPkgHeadersInCPP header <> cihIncludedCPkgHeaders header)
+  map R.Include (cihIncludedHPkgHeadersInCPP header <> cihIncludedCPkgHeaders header)
 
 ----
 
@@ -197,15 +197,15 @@ genAllCppHeaderInclude header =
 -- TOP LEVEL FUNCTIONS --
 -------------------------
 
-genTopLevelFuncCppHeader :: TopLevelFunction -> CStatement
+genTopLevelFuncCppHeader :: TopLevelFunction -> R.CStatement
 genTopLevelFuncCppHeader TopLevelFunction {..} =
-    CDeclaration (FunDecl ret func args)
+    R.CDeclaration (R.FunDecl ret func args)
   where
     ret  = R.CType (rettypeToString toplevelfunc_ret)
     func = R.Name ("TopLevel_" <> maybe toplevelfunc_name id toplevelfunc_alias)
     args = argsToCTypVarNoSelf toplevelfunc_args
 genTopLevelFuncCppHeader TopLevelVariable {..} =
-    CDeclaration (FunDecl ret func [])
+    R.CDeclaration (R.FunDecl ret func [])
   where
     ret  = R.CType (rettypeToString toplevelvar_ret)
     func = R.Name ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)

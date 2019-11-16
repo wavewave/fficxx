@@ -33,16 +33,20 @@ data CDecl =
     FunDecl CType Name [(CType,Name)] -- ^ type func( type1 arg1, type2 arg2, ... )
 
 data CStatement =
-    Include HeaderName       -- ^ #include "<header>"
-  | UsingNamespace Namespace -- ^ using namespace <namespace>;
-  | Pragma PragmaParam       -- ^ #pragma
+    UsingNamespace Namespace -- ^ using namespace <namespace>;
   | TypeDef CType Name       -- ^ typedef origtype newname;
-  | EmptyLine                -- ^ just for convenience
   | CDeclaration CDecl       -- ^ function declaration
   | Comment String           -- ^ comment
+
+data CMacro =
+    CRegular CStatement
+  | Include HeaderName       -- ^ #include "<header>"
+  | Pragma PragmaParam       -- ^ #pragma
+  | EmptyLine                -- ^ just for convenience
   | Verbatim String          -- ^ temporary verbatim
 
-data CBlock = ExternC [CStatement]
+
+data CBlock = ExternC [CMacro]
 
 renderPragmaParam :: PragmaParam -> String
 renderPragmaParam Once = "once"
@@ -53,22 +57,26 @@ renderCDecl (FunDecl (CType typ) (Name fname) args) =
   where
     mkArgStr (CType t, Name a) = t <> " " <> a
 
-render :: CStatement -> String
-render (Include (HdrName hdr))  = "\n#include \"" <> hdr <> "\"\n"
-render (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
-render (Pragma param)           = "\n#pragma " <> renderPragmaParam param <> "\n"
-render (TypeDef (CType typ) (Name n)) = "typedef " <> typ <> " " <> n <> ";"
-render (CDeclaration e)         = renderCDecl e <> ";"
-render EmptyLine                = "\n"
-render (Comment str)            = "// " <> str <> "\n"
-render (Verbatim str)           = str
+renderCStmt :: CStatement -> String
+renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
+renderCStmt (TypeDef (CType typ) (Name n)) = "typedef " <> typ <> " " <> n <> ";"
+renderCStmt (CDeclaration e)         = renderCDecl e <> ";"
+renderCStmt (Comment str)            = "// " <> str <> "\n"
+
+renderCMacro :: CMacro -> String
+renderCMacro (CRegular stmt)          = renderCStmt stmt
+renderCMacro (Include (HdrName hdr))  = "\n#include \"" <> hdr <> "\"\n"
+renderCMacro (Pragma param)           = "\n#pragma " <> renderPragmaParam param <> "\n"
+renderCMacro EmptyLine                = "\n"
+renderCMacro (Verbatim str)           = str
+
 
 renderBlock :: CBlock -> String
-renderBlock (ExternC cstmts) =
+renderBlock (ExternC ms) =
      "\n#ifdef __cplusplus\n\
      \extern \"C\" {\n\
      \#endif\n"
-  ++ concatMap render cstmts
+  ++ concatMap renderCMacro ms
   ++ "\n#ifdef __cplusplus\n\
      \}\n\
      \#endif\n"
