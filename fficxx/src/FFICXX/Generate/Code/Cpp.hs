@@ -7,13 +7,14 @@ import Data.Char
 import Data.List                             (intercalate)
 import Data.Monoid                           ((<>))
 --
-import FFICXX.Runtime.CodeGen.C              ( CStatement(..) )
+import FFICXX.Runtime.CodeGen.C              ( CDecl(..), CStatement(..) )
 import qualified FFICXX.Runtime.CodeGen.C as R
 --
 import FFICXX.Generate.Code.Primitive        (accessorCFunSig
                                              ,argsToCallString
                                              ,argsToString
                                              ,argsToStringNoSelf
+                                             ,argsToCTypVarNoSelf
                                              ,castCpp2C
                                              ,castC2Cpp
                                              ,CFunSig(..)
@@ -45,7 +46,7 @@ import FFICXX.Generate.Util
 
 ---- "Class Type Declaration" Instances
 
-genCppHeaderMacroType :: Class -> [CStatement] -- String
+genCppHeaderMacroType :: Class -> [CStatement]
 genCppHeaderMacroType c =
     [ Comment "Opaque type definition for $classname"
     , TypeDef (R.CType ("struct " <> classname_tag)) (R.Name classname_t)
@@ -196,18 +197,19 @@ genAllCppHeaderInclude header =
 -- TOP LEVEL FUNCTIONS --
 -------------------------
 
-genTopLevelFuncCppHeader :: TopLevelFunction -> String
+genTopLevelFuncCppHeader :: TopLevelFunction -> CStatement
 genTopLevelFuncCppHeader TopLevelFunction {..} =
-  subst "$returntype $funcname ( $args );"
-    (context [ ("returntype", rettypeToString toplevelfunc_ret                )
-             , ("funcname"  , "TopLevel_"
-                              <> maybe toplevelfunc_name id toplevelfunc_alias)
-             , ("args"      , argsToStringNoSelf toplevelfunc_args            ) ])
+    CDeclaration (FunDecl ret func args)
+  where
+    ret  = R.CType (rettypeToString toplevelfunc_ret)
+    func = R.Name ("TopLevel_" <> maybe toplevelfunc_name id toplevelfunc_alias)
+    args = argsToCTypVarNoSelf toplevelfunc_args
 genTopLevelFuncCppHeader TopLevelVariable {..} =
-  subst "$returntype $funcname ( );"
-    (context [ ("returntype", rettypeToString toplevelvar_ret                )
-             , ("funcname"  , "TopLevel_"
-                               <> maybe toplevelvar_name id toplevelvar_alias) ])
+    CDeclaration (FunDecl ret func [])
+  where
+    ret  = R.CType (rettypeToString toplevelvar_ret)
+    func = R.Name ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
+
 
 genTopLevelFuncCppDefinition :: TopLevelFunction -> String
 genTopLevelFuncCppDefinition TopLevelFunction {..} =

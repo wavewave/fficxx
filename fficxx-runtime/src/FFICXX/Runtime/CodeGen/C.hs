@@ -3,6 +3,7 @@
 module FFICXX.Runtime.CodeGen.C where
 
 import Data.Hashable  ( Hashable )
+import Data.List      ( intercalate )
 import Data.Semigroup ( (<>) )
 import Data.String    ( IsString(..) )
 
@@ -26,7 +27,10 @@ data PragmaParam = Once
 
 data CType = CType String
 
-data Name = Name String
+newtype Name = Name { unName :: String }
+
+data CDecl =
+    FunDecl CType Name [(CType,Name)] -- ^ type func( type1 arg1, type2 arg2, ... )
 
 data CStatement =
     Include HeaderName       -- ^ #include "<header>"
@@ -34,6 +38,7 @@ data CStatement =
   | Pragma PragmaParam       -- ^ #pragma
   | TypeDef CType Name       -- ^ typedef origtype newname;
   | EmptyLine                -- ^ just for convenience
+  | CDeclaration CDecl       -- ^ function declaration
   | Comment String           -- ^ comment
   | Verbatim String          -- ^ temporary verbatim
 
@@ -42,13 +47,20 @@ data CBlock = ExternC [CStatement]
 renderPragmaParam :: PragmaParam -> String
 renderPragmaParam Once = "once"
 
+renderCDecl :: CDecl -> String
+renderCDecl (FunDecl (CType typ) (Name fname) args) =
+    typ <> " " <> fname <> " ( " <> intercalate "," (map mkArgStr args) <> " )"
+  where
+    mkArgStr (CType t, Name a) = t <> " " <> a
+
 render :: CStatement -> String
 render (Include (HdrName hdr))  = "\n#include \"" <> hdr <> "\"\n"
 render (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 render (Pragma param)           = "\n#pragma " <> renderPragmaParam param <> "\n"
 render (TypeDef (CType typ) (Name n)) = "typedef " <> typ <> " " <> n <> ";"
+render (CDeclaration e)         = renderCDecl e <> ";"
 render EmptyLine                = "\n"
-render (Comment str)            = "// " ++ str ++ "\n"
+render (Comment str)            = "// " <> str <> "\n"
 render (Verbatim str)           = str
 
 renderBlock :: CBlock -> String

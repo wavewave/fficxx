@@ -209,16 +209,13 @@ buildTopLevelHeader cprefix tih =
   let declHeaderStmts =
            [ Include (HdrName (cprefix ++ "Type.h")) ]
         <> map Include (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih)
-      declBodyStr = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
+      declBodyStmts = map genTopLevelFuncCppHeader (tihFuncs tih)
   in renderBlock $
        ExternC $
-            [ Pragma Once
-            , EmptyLine
-            ]
+            [ Pragma Once, EmptyLine ]
          <> declHeaderStmts
-         <> [ EmptyLine
-            , Verbatim declBodyStr
-            ]
+         <> [ EmptyLine ]
+         <> declBodyStmts
 
 -- |
 buildTopLevelCppDef :: TopLevelImportHeader -> String

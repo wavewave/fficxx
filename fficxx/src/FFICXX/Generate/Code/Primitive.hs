@@ -5,6 +5,8 @@ import           Control.Monad.Trans.State    ( runState, put, get )
 import           Data.Monoid                  ( (<>) )
 import           Language.Haskell.Exts.Syntax ( Asst(..), Context, Type(..) )
 --
+import qualified FFICXX.Runtime.CodeGen.C as R
+--
 import           FFICXX.Generate.Name
 import           FFICXX.Generate.Type.Class
 import           FFICXX.Generate.Util
@@ -299,6 +301,49 @@ argsToString args =
 
 argsToStringNoSelf :: [Arg] -> String
 argsToStringNoSelf = intercalateWith conncomma argToString
+
+
+-- new definitions
+
+argToCTypVar :: Arg -> (R.CType,R.Name)
+argToCTypVar (Arg (CT ctyp isconst) varname) =
+  (R.CType (ctypToStr ctyp isconst), R.Name varname)
+argToCTypVar (Arg SelfType varname) =
+  (R.CType "Type ## _p", R.Name varname)
+argToCTypVar (Arg (CPT (CPTClass c) isconst) varname) =
+  case isconst of
+    Const   -> (R.CType ("const_" <> cname <> "_p"), R.Name varname)
+    NoConst -> (R.CType (cname <> "_p"), R.Name varname)
+  where cname = ffiClassName c
+argToCTypVar (Arg (CPT (CPTClassRef c) isconst) varname) =
+  case isconst of
+    Const   -> (R.CType ("const_" <> cname <> "_p"), R.Name varname)
+    NoConst -> (R.CType (cname <> "_p"), R.Name varname)
+  where cname = ffiClassName c
+argToCTypVar (Arg (CPT (CPTClassCopy c) isconst) varname) =
+  case isconst of
+    Const   -> (R.CType ("const_" <> cname <> "_p"), R.Name varname)
+    NoConst -> (R.CType (cname <> "_p"), R.Name varname)
+  where cname = ffiClassName c
+argToCTypVar (Arg (CPT (CPTClassMove c) isconst) varname) =
+  case isconst of
+    Const   -> (R.CType ("const_" <> cname <> "_p"), R.Name varname)
+    NoConst -> (R.CType (cname <> "_p"), R.Name varname)
+  where cname = ffiClassName c
+argToCTypVar (Arg (TemplateApp     _) varname) = (R.CType "void*", R.Name varname)
+argToCTypVar (Arg (TemplateAppRef  _) varname) = (R.CType "void*", R.Name varname)
+argToCTypVar (Arg (TemplateAppMove _) varname) = (R.CType "void*", R.Name varname)
+argToCTypVar t = error ("argToCTypVar: " <> show t)
+
+argsToCTypVar :: [Arg] -> [(R.CType,R.Name)]
+argsToCTypVar args =
+  let args' = (Arg SelfType "p") : args
+  in map argToCTypVar args'
+
+argsToCTypVarNoSelf :: [Arg] -> [(R.CType,R.Name)]
+argsToCTypVarNoSelf = map argToCTypVar
+
+
 
 -- TODO: remove this function
 argToCallString :: Arg -> String
