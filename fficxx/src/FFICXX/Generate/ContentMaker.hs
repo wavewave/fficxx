@@ -46,7 +46,7 @@ import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
                                               , PackageInterface
                                               , PackageName(..)
                                               )
-import FFICXX.Generate.Util
+import FFICXX.Generate.Util                   ( connRet, connRet2, intercalateWith )
 import FFICXX.Generate.Util.HaskellSrcExts
 
 
@@ -149,23 +149,6 @@ buildDeclHeader cprefix header =
          , EmptyLine
          , Verbatim declBodyStr
          ]
-
-{-
-definitionTemplate :: Text
-definitionTemplate =
-  "$header\n\
-  \\n\
-  \$alias\n\
-  \\n\
-  \#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n\
-  \\n\
-  \#define TYPECASTMETHOD(cname,mname,oname) \\\n\
-  \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
-  \  (to_nonconst<oname,cname ## _t>), \\\n\
-  \  (to_nonconst<cname,cname ## _t>) )\n\
-  \\n\
-  \$cppbody\n"
--}
 
 -- |
 buildDefMain :: ClassImportHeader
@@ -284,13 +267,6 @@ buildTopLevelCppDef tih =
        , Verbatim declBodyStr
        ]
 
-
-{-
-   subst definitionTemplate (context [ ("header"   , declHeaderStr)
-                                       , ("alias"    , aliasStr     )
-                                       , ("cppbody"  , declBodyStr  ) ])
--}
-
 -- |
 buildTemplateHeader ::
      TemplateClassImportHeader
@@ -316,23 +292,6 @@ buildTemplateHeader tcih =
        , EmptyLine
        , Verbatim classlevel
        ]
-
-{-
-
-
-   subst
-       "$directive\n\
-       \\n\
-       \$headers\n\
-       \\n\
-       \$deffunc\n\
-       \$classlevel\n"
-       (context [ ("directive"  , directive    )
-                , ("headers"    , headerStr    )
-                , ("deffunc"    , deffunc      )
-                , ("classlevel" , classlevel   )
-                ])
--}
 
 -- |
 buildFFIHsc :: ClassModule -> Module ()
