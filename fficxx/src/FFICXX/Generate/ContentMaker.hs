@@ -90,13 +90,13 @@ buildTypeDeclHeader ::
      [Class]
   -> String
 buildTypeDeclHeader classes =
-  let typeDeclBodyStr = intercalateWith connRet2 (genCppHeaderMacroType) classes
+  let typeDeclBodyStmts =
+        intercalate [EmptyLine] $
+          map genCppHeaderMacroType classes
   in renderBlock $
-       ExternC
-         [ Pragma Once
-         , EmptyLine
-         , Verbatim typeDeclBodyStr
-         ]
+       ExternC $
+         [ Pragma Once, EmptyLine ] <> typeDeclBodyStmts
+
 
 -- |
 buildDeclHeader ::

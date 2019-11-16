@@ -8,6 +8,7 @@ import Data.List                             (intercalate)
 import Data.Monoid                           ((<>))
 --
 import FFICXX.Runtime.CodeGen.C              ( CStatement(..) )
+import qualified FFICXX.Runtime.CodeGen.C as R
 --
 import FFICXX.Generate.Code.Primitive        (accessorCFunSig
                                              ,argsToCallString
@@ -44,13 +45,18 @@ import FFICXX.Generate.Util
 
 ---- "Class Type Declaration" Instances
 
-genCppHeaderMacroType :: Class -> String
-genCppHeaderMacroType c = let tmpl = "// Opaque type definition for $classname \n\
-                                    \typedef struct ${classname}_tag ${classname}_t; \n\
-                                    \typedef ${classname}_t * ${classname}_p; \n\
-                                    \typedef ${classname}_t const* const_${classname}_p; \n"
-                      in subst tmpl (context [ ("classname", ffiClassName c) ])
-
+genCppHeaderMacroType :: Class -> [CStatement] -- String
+genCppHeaderMacroType c =
+    [ Comment "Opaque type definition for $classname"
+    , TypeDef (R.CType ("struct " <> classname_tag)) (R.Name classname_t)
+    , TypeDef (R.CType (classname_t <> " *"))        (R.Name classname_p)
+    , TypeDef (R.CType (classname_t <> " const*"))   (R.Name ("const_" <> classname_p))
+    ]
+  where
+    classname = ffiClassName c
+    classname_tag = classname <> "_tag"
+    classname_t   = classname <> "_t"
+    classname_p   = classname <> "_p"
 
 ---- "Class Declaration Virtual" Declaration
 

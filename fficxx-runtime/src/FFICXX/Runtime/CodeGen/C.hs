@@ -24,11 +24,17 @@ instance IsString Namespace where
 
 data PragmaParam = Once
 
+data CType = CType String
+
+data Name = Name String
+
 data CStatement =
     Include HeaderName       -- ^ #include "<header>"
   | UsingNamespace Namespace -- ^ using namespace <namespace>;
   | Pragma PragmaParam       -- ^ #pragma
+  | TypeDef CType Name       -- ^ typedef origtype newname;
   | EmptyLine                -- ^ just for convenience
+  | Comment String           -- ^ comment
   | Verbatim String          -- ^ temporary verbatim
 
 data CBlock = ExternC [CStatement]
@@ -40,7 +46,9 @@ render :: CStatement -> String
 render (Include (HdrName hdr))  = "\n#include \"" <> hdr <> "\"\n"
 render (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 render (Pragma param)           = "\n#pragma " <> renderPragmaParam param <> "\n"
+render (TypeDef (CType typ) (Name n)) = "typedef " <> typ <> " " <> n <> ";"
 render EmptyLine                = "\n"
+render (Comment str)            = "// " ++ str ++ "\n"
 render (Verbatim str)           = str
 
 renderBlock :: CBlock -> String
