@@ -89,18 +89,11 @@ mkProtectedFunctionList c =
      . map (\x->"#define IS_" <> class_name c <> "_" <> x <> "_PROTECTED ()")
      . unProtected . class_protected) c
 
-
-    -- \#ifndef $typemacro\n\
-    --    \#define $typemacro\n\
-    --    \#endif // $typemacro\n\
-
-
 -- |
 buildTypeDeclHeader ::
-     -- TypeMacro -- ^ typemacro
      [Class]
   -> String
-buildTypeDeclHeader {- (TypMcro typemacro) -} classes =
+buildTypeDeclHeader classes =
   let typeDeclBodyStr = intercalateWith connRet2 (genCppHeaderMacroType) classes
       directive = render (Pragma Once)
   in subst
@@ -118,14 +111,8 @@ buildTypeDeclHeader {- (TypMcro typemacro) -} classes =
        (context
          [ ("typeDeclBody", typeDeclBodyStr )
          , ("directive", directive)
-                -- , ("typemacro"   , typemacro       )
          ]
        )
-
---   \#ifndef $typemacro\n\
---   \#define $typemacro\n\
---   \#endif // $typemacro\n\
---   \\n\
 
 declarationTemplate :: Text
 declarationTemplate =
@@ -145,14 +132,12 @@ declarationTemplate =
 
 -- |
 buildDeclHeader ::
-     -- TypeMacro  -- ^ typemacro prefix
      String     -- ^ C prefix
   -> ClassImportHeader
   -> String
-buildDeclHeader {- (TypMcro typemacroprefix) -} cprefix header =
+buildDeclHeader cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
-      -- typemacrostr = typemacroprefix <> ffiClassName aclass <> "__"
       directive = render $ Pragma Once
       declHeaderStr =
         render (Include (HdrName (cprefix ++ "Type.h")))
@@ -191,8 +176,7 @@ buildDeclHeader {- (TypMcro typemacroprefix) -} cprefix header =
                       classDeclsStr
   in subst declarationTemplate
        (context
-         [ -- ("typemacro"        , typemacrostr  )
-           ("directive"        , directive)
+         [ ("directive"        , directive)
          , ("declarationheader", declHeaderStr )
          , ("declarationbody"  , declBodyStr   )
          ]
@@ -255,12 +239,11 @@ buildDefMain cih =
 
 -- |
 buildTopLevelHeader ::
-   --  TypeMacro  -- ^ typemacro prefix
      String     -- ^ C prefix
   -> TopLevelImportHeader
   -> String
-buildTopLevelHeader {- (TypMcro typemacroprefix) -} cprefix tih =
-  let -- typemacrostr = typemacroprefix <> "TOPLEVEL" <> "__"
+buildTopLevelHeader cprefix tih =
+  let
       directive = render $ Pragma Once
       declHeaderStr =
         render (Include (HdrName (cprefix ++ "Type.h")))
@@ -271,8 +254,7 @@ buildTopLevelHeader {- (TypMcro typemacroprefix) -} cprefix tih =
   in subst
        declarationTemplate
        (context
-         [ -- ("typemacro"        , typemacrostr  )
-           ("directive"        , directive)
+         [ ("directive"        , directive)
          , ("declarationheader", declHeaderStr )
          , ("declarationbody"  , declBodyStr   )
          ]
@@ -316,21 +298,15 @@ buildTopLevelCppDef tih =
                                        , ("alias"    , aliasStr     )
                                        , ("cppbody"  , declBodyStr  ) ])
 
--- #ifndef $typemacro\n\
---       \#define $typemacro\n\
---       \#endif\n
-
 
 -- |
 buildTemplateHeader ::
-    -- TypeMacro  -- ^ typemacro prefix
      TemplateClassImportHeader
   -> String
-buildTemplateHeader {- (TypMcro typemacroprefix) -} tcih =
+buildTemplateHeader tcih =
   let
       t = tcihTClass tcih
       directive = render $ Pragma Once
-      -- typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
       fs = tclass_funcs t
 
       headerStr = concatMap (render . Include) (tcihCxxHeaders tcih)
@@ -346,8 +322,7 @@ buildTemplateHeader {- (TypMcro typemacroprefix) -} tcih =
        \\n\
        \$deffunc\n\
        \$classlevel\n"
-       (context [ -- ("typemacro"  , typemacrostr )
-                  ("directive"  , directive    )
+       (context [ ("directive"  , directive    )
                 , ("headers"    , headerStr    )
                 , ("deffunc"    , deffunc      )
                 , ("classlevel" , classlevel   )
