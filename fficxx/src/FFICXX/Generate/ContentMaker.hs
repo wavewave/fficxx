@@ -12,9 +12,12 @@ import qualified Data.Map as M
 import Data.Maybe                             (mapMaybe,maybeToList)
 import Data.Monoid                            ((<>))
 import Data.List                              (find,intercalate,nub,nubBy)
-import Data.List.Split                        (splitOn)
-import Data.Text                              (Text)
-import Language.Haskell.Exts.Syntax           (Module(..),Decl(..))
+import Data.List.Split                        ( splitOn )
+import Data.Text                              ( Text )
+import qualified Data.Text as T               ( pack )
+import Language.Haskell.Exts.Syntax           ( Module(..)
+                                              , Decl(..)
+                                              )
 import System.FilePath
 --
 import FFICXX.Runtime.CodeGen.C               ( CStatement(..)
@@ -22,7 +25,6 @@ import FFICXX.Runtime.CodeGen.C               ( CStatement(..)
                                               , Namespace(..)
                                               , render
                                               )
-import qualified FFICXX.Runtime.CodeGen.C as CGen
 --
 import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.HsCast            (genHsFrontInstCastable
@@ -111,7 +113,6 @@ buildTypeDeclHeader (TypMcro typemacro) classes =
                 , ("typemacro"   , typemacro       ) ])
 
 
-
 declarationTemplate :: Text
 declarationTemplate =
   "#ifdef __cplusplus\n\
@@ -121,8 +122,6 @@ declarationTemplate =
   \#ifndef $typemacro\n\
   \#define $typemacro\n\
   \\n\
-  \#include \"${cprefix}Type.h\"\n\
-  \ // \n\
   \$declarationheader\n\
   \ // \n\
   \$declarationbody\n\
@@ -134,16 +133,19 @@ declarationTemplate =
   \#endif\n"
 
 -- |
-buildDeclHeader :: TypeMacro  -- ^ typemacro prefix
-             -> String     -- ^ C prefix
-             -> ClassImportHeader
-             -> String
+buildDeclHeader ::
+     TypeMacro  -- ^ typemacro prefix
+  -> String     -- ^ C prefix
+  -> ClassImportHeader
+  -> String
 buildDeclHeader (TypMcro typemacroprefix) cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
       typemacrostr = typemacroprefix <> ffiClassName aclass <> "__"
       declHeaderStr =
-        intercalate "\n" $ map (render . Include) $ cihIncludedHPkgHeadersInH header
+        render (Include (HdrName (cprefix ++ "Type.h")))
+        `connRet2`
+        intercalate "\n" (map (render . Include) $ cihIncludedHPkgHeadersInH header)
       declDefStr    = intercalateWith connRet2 genCppHeaderMacroVirtual classes
                       `connRet2`
                       intercalateWith connRet genCppHeaderMacroNonVirtual classes
@@ -177,17 +179,13 @@ buildDeclHeader (TypMcro typemacroprefix) cprefix header =
                       classDeclsStr
   in subst declarationTemplate
        (context [ ("typemacro"        , typemacrostr  )
-                , ("cprefix"          , cprefix       )
                 , ("declarationheader", declHeaderStr )
                 , ("declarationbody"  , declBodyStr   ) ])
 
 
 definitionTemplate :: Text
 definitionTemplate =
-  "#include<MacroPatternMatch.h>\n\
-  \$header\n\
-  \\n\
-  \$namespace\n\
+  "$header\n\
   \\n\
   \$alias\n\
   \\n\
@@ -206,8 +204,12 @@ buildDefMain :: ClassImportHeader
           -> String
 buildDefMain cih =
   let classes = [cihClass cih]
-      headerStr = genAllCppHeaderInclude cih <> "\n#include \"" <> (unHdrName (cihSelfHeader cih)) <> "\""
-      namespaceStr = (concatMap (\x->"using namespace " <> unNamespace x <> ";\n") . cihNamespace) cih
+      headerStr =
+           render (Include "MacroPatternMatch.h")
+        <> genAllCppHeaderInclude cih
+        <> render (Include (cihSelfHeader cih))
+        <> "\n"
+        <> (concatMap (render . UsingNamespace) . cihNamespace) cih
       aclass = cihClass cih
       aliasStr = intercalate "\n" $
                    mapMaybe typedefstmt $
@@ -229,10 +231,11 @@ buildDefMain cih =
                 intercalateWith connRet genCppDefInstNonVirtual classes
                 `connRet`
                 intercalateWith connRet genCppDefInstAccessor classes
-  in subst definitionTemplate (context ([ ("header"   , headerStr    )
-                                        , ("alias"    , aliasStr     )
-                                        , ("namespace", namespaceStr )
-                                        , ("cppbody"  , cppBody      ) ]))
+  in subst
+       definitionTemplate
+       (context ([ ("alias"    , aliasStr     )
+                 , ("header", headerStr)
+                 , ("cppbody"  , cppBody      ) ]))
 
 -- |
 buildTopLevelHeader :: TypeMacro  -- ^ typemacro prefix
@@ -241,13 +244,13 @@ buildTopLevelHeader :: TypeMacro  -- ^ typemacro prefix
                     -> String
 buildTopLevelHeader (TypMcro typemacroprefix) cprefix tih =
   let typemacrostr = typemacroprefix <> "TOPLEVEL" <> "__"
-      declHeaderStr = intercalateWith connRet (\x->"#include \""<>x<>"\"") $
-                        map unHdrName $
-                                 map cihSelfHeader (tihClassDep tih)
-                              ++ tihExtraHeadersInH tih
+      declHeaderStr =
+        render (Include (HdrName (cprefix ++ "Type.h")))
+        `connRet2`
+        intercalate "\n"
+          (map (render . Include) (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih))
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
   in subst declarationTemplate (context [ ("typemacro"        , typemacrostr  )
-                                        , ("cprefix"          , cprefix       )
                                         , ("declarationheader", declHeaderStr )
                                         , ("declarationbody"  , declBodyStr   ) ])
 
@@ -256,21 +259,25 @@ buildTopLevelCppDef :: TopLevelImportHeader -> String
 buildTopLevelCppDef tih =
   let cihs = tihClassDep tih
       extclasses = tihExtraClassDep tih
-      declHeaderStr = "#include \"" <> tihHeaderFileName tih <.> "h" <> "\""
-                      `connRet2`
-                      (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
-                      `connRet2`
-                      otherHeaders
+      declHeaderStr =
+        render (Include "MacroPatternMatch.h")
+        `connRet2`
+        render (Include (HdrName (tihHeaderFileName tih <.> "h")))
+        `connRet2`
+        (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
+        `connRet2`
+        otherHeaders
+        `connRet2`
+        namespaceStr
       otherHeaders =
-        intercalateWith connRet (\x->"#include \""<>x<>"\"") $
-          map unHdrName $
-               map cihSelfHeader cihs
-            ++ tihExtraHeadersInCPP tih
+        intercalate "\n" $ map (render . Include) $
+          map cihSelfHeader cihs
+          ++ tihExtraHeadersInCPP tih
 
-      allns = nubBy ((==) `on` unNamespace) ((tihClassDep tih >>= cihNamespace) ++ tihNamespaces tih)
+      allns = nub ((tihClassDep tih >>= cihNamespace) ++ tihNamespaces tih)
 
       namespaceStr = do ns <- allns
-                        ("using namespace " <> unNamespace ns <> ";\n")
+                        render (UsingNamespace ns)
       aliasStr = intercalate "\n" $
                    mapMaybe typedefstmt $
                      rights (concatMap cihImportedClasses cihs ++ extclasses)
@@ -282,7 +289,6 @@ buildTopLevelCppDef tih =
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
   in subst definitionTemplate (context [ ("header"   , declHeaderStr)
-                                       , ("namespace", namespaceStr )
                                        , ("alias"    , aliasStr     )
                                        , ("cppbody"  , declBodyStr  ) ])
 
@@ -296,7 +302,7 @@ buildTemplateHeader (TypMcro typemacroprefix) tcih =
       typemacrostr = typemacroprefix <> "TEMPLATE__" <> map toUpper (tclass_name t) <> "__"
       fs = tclass_funcs t
 
-      headerStr = concatMap (\h -> CGen.render (Include h) <> "\n") (tcihCxxHeaders tcih)
+      headerStr = concatMap (render . Include) (tcihCxxHeaders tcih)
 
       deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
                 ++ "\n\n"
