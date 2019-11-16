@@ -17,10 +17,12 @@ import Language.Haskell.Exts.Syntax           ( Module(..)
                                               )
 import System.FilePath
 --
-import FFICXX.Runtime.CodeGen.C               ( CStatement(..)
+import FFICXX.Runtime.CodeGen.C               ( CBlock(..)
+                                              , CStatement(..)
                                               , HeaderName(..)
                                               , PragmaParam(..)
                                               , render
+                                              , renderBlock
                                               )
 --
 import FFICXX.Generate.Code.Cpp
@@ -84,18 +86,26 @@ mkProtectedFunctionList c =
      . map (\x->"#define IS_" <> class_name c <> "_" <> x <> "_PROTECTED ()")
      . unProtected . class_protected) c
 
+
+--        #ifdef __cplusplus\n\
+--        \extern \"C\" { \n\
+--       \#endif\n\
+--        \\n\
+
 -- |
 buildTypeDeclHeader ::
      [Class]
   -> String
 buildTypeDeclHeader classes =
   let typeDeclBodyStr = intercalateWith connRet2 (genCppHeaderMacroType) classes
-      directive = render (Pragma Once)
-  in subst
-       "#ifdef __cplusplus\n\
-       \extern \"C\" { \n\
-       \#endif\n\
-       \\n\
+      -- directive = render (Pragma Once)
+  in renderBlock $
+       ExternC
+         [ Pragma Once
+         , EmptyLine
+         , Verbatim typeDeclBodyStr
+         ]
+{-     subst
        \$directive\n\
        \\n\
        \$typeDeclBody\n\
@@ -108,22 +118,26 @@ buildTypeDeclHeader classes =
          , ("directive", directive)
          ]
        )
+-}
+
+
+  -- #ifdef __cplusplus\n\
+  --  \extern \"C\" { \n\
+  -- \#endif\n\
+  -- \\n\
+  -- \$directive\n\
+  -- \\n\
+
+  -- \#ifdef __cplusplus\n\
+  -- \}\n\
+  -- \#endif\n"
 
 declarationTemplate :: Text
 declarationTemplate =
-  "#ifdef __cplusplus\n\
-  \extern \"C\" { \n\
-  \#endif\n\
-  \\n\
-  \$directive\n\
-  \\n\
-  \$declarationheader\n\
+  "$declarationheader\n\
   \ // \n\
   \$declarationbody\n\
-  \\n\
-  \#ifdef __cplusplus\n\
-  \}\n\
-  \#endif\n"
+  \\n"
 
 -- |
 buildDeclHeader ::
@@ -133,7 +147,6 @@ buildDeclHeader ::
 buildDeclHeader cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
-      directive = render $ Pragma Once
       declHeaderStr =
         render (Include (HdrName (cprefix ++ "Type.h")))
         `connRet2`
@@ -169,14 +182,18 @@ buildDeclHeader cprefix header =
       declBodyStr   = declDefStr
                       `connRet2`
                       classDeclsStr
-  in subst declarationTemplate
-       (context
-         [ ("directive"        , directive)
-         , ("declarationheader", declHeaderStr )
-         , ("declarationbody"  , declBodyStr   )
+  in renderBlock $
+       ExternC
+         [ Pragma Once
+         , EmptyLine
+         , Verbatim $
+             subst declarationTemplate
+              (context
+                [ ("declarationheader", declHeaderStr )
+                , ("declarationbody"  , declBodyStr   )
+                ]
+              )
          ]
-       )
-
 
 definitionTemplate :: Text
 definitionTemplate =
@@ -239,21 +256,25 @@ buildTopLevelHeader ::
   -> String
 buildTopLevelHeader cprefix tih =
   let
-      directive = render $ Pragma Once
+      -- directive = render $ Pragma Once
       declHeaderStr =
         render (Include (HdrName (cprefix ++ "Type.h")))
         `connRet2`
         intercalate "\n"
           (map (render . Include) (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih))
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
-  in subst
-       declarationTemplate
-       (context
-         [ ("directive"        , directive)
-         , ("declarationheader", declHeaderStr )
-         , ("declarationbody"  , declBodyStr   )
+  in renderBlock $
+       ExternC
+         [ Pragma Once
+         , EmptyLine
+         , Verbatim $
+             subst declarationTemplate
+              (context
+                [ ("declarationheader", declHeaderStr )
+                , ("declarationbody"  , declBodyStr   )
+                ]
+              )
          ]
-       )
 
 -- |
 buildTopLevelCppDef :: TopLevelImportHeader -> String
