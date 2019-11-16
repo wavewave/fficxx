@@ -155,12 +155,12 @@ buildDefMain :: ClassImportHeader
           -> String
 buildDefMain cih =
   let classes = [cihClass cih]
-      headerStr =
-           render (Include "MacroPatternMatch.h")
+      headerStmts =
+           [ Include "MacroPatternMatch.h" ]
         <> genAllCppHeaderInclude cih
-        <> render (Include (cihSelfHeader cih))
-        <> "\n"
-        <> (concatMap (render . UsingNamespace) . cihNamespace) cih
+        <> [ Include (cihSelfHeader cih) ]
+      namespaceStmts =
+        (map UsingNamespace . cihNamespace) cih
       aclass = cihClass cih
       aliasStr = intercalate "\n" $
                    mapMaybe typedefstmt $
@@ -183,19 +183,22 @@ buildDefMain cih =
                 `connRet`
                 intercalateWith connRet genCppDefInstAccessor classes
   in concatMap render
-       [ Verbatim headerStr
-       , EmptyLine
-       , Verbatim aliasStr
-       , EmptyLine
-       , Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
-       , EmptyLine
-       , Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
-                  \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
-                  \  (to_nonconst<oname,cname ## _t>), \\\n\
-                  \  (to_nonconst<cname,cname ## _t>) )\n"
-       , EmptyLine
-       , Verbatim cppBody
-       ]
+       (   headerStmts
+        <> [ EmptyLine ]
+        <> namespaceStmts
+        <> [ EmptyLine
+           , Verbatim aliasStr
+           , EmptyLine
+           , Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
+           , EmptyLine
+           , Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
+                      \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+                      \  (to_nonconst<oname,cname ## _t>), \\\n\
+                      \  (to_nonconst<cname,cname ## _t>) )\n"
+           , EmptyLine
+           , Verbatim cppBody
+           ]
+       )
 
 -- |
 buildTopLevelHeader ::
@@ -223,25 +226,18 @@ buildTopLevelCppDef :: TopLevelImportHeader -> String
 buildTopLevelCppDef tih =
   let cihs = tihClassDep tih
       extclasses = tihExtraClassDep tih
-      declHeaderStr =
-        render (Include "MacroPatternMatch.h")
-        `connRet2`
-        render (Include (HdrName (tihHeaderFileName tih <.> "h")))
-        `connRet2`
-        (intercalate "\n" (nub (map genAllCppHeaderInclude cihs)))
-        `connRet2`
-        otherHeaders
-        `connRet2`
-        namespaceStr
-      otherHeaders =
-        intercalate "\n" $ map (render . Include) $
-          map cihSelfHeader cihs
-          ++ tihExtraHeadersInCPP tih
+      declHeaderStmts =
+           [ Include "MacroPatternMatch.h"
+           , Include (HdrName (tihHeaderFileName tih <.> "h"))
+           ]
+        <> concatMap genAllCppHeaderInclude cihs
+        <> otherHeaderStmts
+      otherHeaderStmts =
+        map Include (map cihSelfHeader cihs ++ tihExtraHeadersInCPP tih)
 
       allns = nub ((tihClassDep tih >>= cihNamespace) ++ tihNamespaces tih)
 
-      namespaceStr = do ns <- allns
-                        render (UsingNamespace ns)
+      namespaceStmts = map UsingNamespace allns
       aliasStr = intercalate "\n" $
                    mapMaybe typedefstmt $
                      rights (concatMap cihImportedClasses cihs ++ extclasses)
@@ -253,19 +249,22 @@ buildTopLevelCppDef tih =
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
   in concatMap render
-       [ Verbatim declHeaderStr
-       , EmptyLine
-       , Verbatim aliasStr
-       , EmptyLine
-       , Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
-       , EmptyLine
-       , Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
-                  \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
-                  \  (to_nonconst<oname,cname ## _t>), \\\n\
-                  \  (to_nonconst<cname,cname ## _t>) )\n"
-       , EmptyLine
-       , Verbatim declBodyStr
-       ]
+       (   declHeaderStmts
+        <> [EmptyLine]
+        <> namespaceStmts
+        <> [ EmptyLine
+           , Verbatim aliasStr
+           , EmptyLine
+           , Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
+           , EmptyLine
+           , Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
+                      \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+                      \  (to_nonconst<oname,cname ## _t>), \\\n\
+                      \  (to_nonconst<cname,cname ## _t>) )\n"
+           , EmptyLine
+           , Verbatim declBodyStr
+           ]
+       )
 
 -- |
 buildTemplateHeader ::

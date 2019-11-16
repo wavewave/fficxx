@@ -7,9 +7,7 @@ import Data.Char
 import Data.List                             (intercalate)
 import Data.Monoid                           ((<>))
 --
-import FFICXX.Runtime.CodeGen.C              ( CStatement(..)
-                                             , render
-                                             )
+import FFICXX.Runtime.CodeGen.C              ( CStatement(..) )
 --
 import FFICXX.Generate.Code.Primitive        (accessorCFunSig
                                              ,argsToCallString
@@ -182,15 +180,11 @@ genCppDefInstAccessor c =
 
 -----------------
 
-genAllCppHeaderInclude :: ClassImportHeader -> String
+genAllCppHeaderInclude :: ClassImportHeader -> [CStatement]
 genAllCppHeaderInclude header =
-    intercalate "\n" $
-      map (render . Include) $
-        (cihIncludedHPkgHeadersInCPP header <> cihIncludedCPkgHeaders header)
+  map Include (cihIncludedHPkgHeadersInCPP header <> cihIncludedCPkgHeaders header)
 
 ----
-
-
 
 -------------------------
 -- TOP LEVEL FUNCTIONS --
