@@ -149,17 +149,23 @@ genCppDefMacroAccessor c =
 
 ---- Define Macro to provide TemplateMemberFunction C-C++ shim code for a class
 
-genCppDefMacroTemplateMemberFunction :: Class -> TemplateMemberFunction -> String
-genCppDefMacroTemplateMemberFunction c f = subst tmpl ctxt
+genCppDefMacroTemplateMemberFunction ::
+     Class
+  -> TemplateMemberFunction
+  -> R.CMacro
+genCppDefMacroTemplateMemberFunction c f =
+   R.Define (R.sname macroname) (R.sname "Type")
+     [ R.CVerbatim (subst tmpl ctxt) ]
+  -- subst tmpl ctxt
   where
-    tmpl = "#define ${macroname}(Type) \\\n\
-           \  extern \"C\" { \\\n\
-           \    $decl; \\\n\
-           \  } \\\n\
-           \  inline $defn \\\n\
-           \  auto a_${macroname}_##Type = ${macroname}_##Type  ;\n"
+    macroname = hsTemplateMemberFunctionName c f
+    tmpl = "extern \"C\" { \\\n\
+           \  $decl; \\\n\
+           \} \\\n\
+           \inline $defn \\\n\
+           \auto a_${macroname}_##Type = ${macroname}_##Type;\n"
     ctxt = context
-             [ ("macroname", hsTemplateMemberFunctionName c f)
+             [ ("macroname", macroname)
              , ("decl"     , R.renderCDecl (tmplMemberFunToDecl c f))
              , ("defn"     , tmplMemberFunToDef c f)
              ]

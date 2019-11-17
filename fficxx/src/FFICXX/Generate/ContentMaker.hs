@@ -124,6 +124,11 @@ buildDeclHeader cprefix header =
                  map (R.renderCMacro . genCppDefMacroNonVirtual) classes
       acdef  = intercalate "\n\n" $
                  map (R.renderCMacro . genCppDefMacroAccessor) classes
+      tmpldef= intercalate "\n\n" $
+                 map
+                   (\c -> intercalate "\n\n" $ map (R.renderCMacro . genCppDefMacroTemplateMemberFunction c) (class_tmpl_funcs c))
+                   classes
+
       declDefStr = vdecl
                    `connRet2`
                    nvdecl
@@ -136,11 +141,7 @@ buildDeclHeader cprefix header =
                    `connRet2`
                    acdef
                    `connRet2`
-                   flip (intercalateWith connRet2) classes
-                     (\c -> intercalateWith connRet2
-                              (genCppDefMacroTemplateMemberFunction c)
-                              (class_tmpl_funcs c)
-                     )
+                   tmpldef
       classDeclsStr = -- NOTE: Deletable is treated specially.
                       -- TODO: We had better make it as a separate constructor in Class.
                       if (fst.hsClassName) aclass /= "Deletable"
