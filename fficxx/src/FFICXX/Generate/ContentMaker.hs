@@ -124,9 +124,9 @@ buildDeclHeader cprefix header =
                              `connRet2`
                              R.renderCStmt (genCppHeaderInstVirtual (aclass, aclass))
                              `connRet2`
-                             intercalateWith connRet genCppHeaderInstNonVirtual classes
+                             intercalate "\n" (map (R.renderCStmt . genCppHeaderInstNonVirtual) classes)
                              `connRet2`
-                             intercalateWith connRet genCppHeaderInstAccessor classes
+                             intercalate "\n" (map (R.renderCStmt . genCppHeaderInstAccessor) classes)
                         else ""
       declBodyStr   = declDefStr
                       `connRet2`
@@ -160,17 +160,19 @@ buildDefMain cih =
                                  then Nothing
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
 
-      cppBody = mkProtectedFunctionList (cihClass cih)
-                `connRet`
-                buildParentDef genCppDefInstVirtual (cihClass cih)
-                `connRet`
-                (if isAbstractClass aclass
-                  then ""
-                  else R.renderCStmt (genCppDefInstVirtual (aclass, aclass)))
-                `connRet`
-                intercalateWith connRet genCppDefInstNonVirtual classes
-                `connRet`
-                intercalateWith connRet genCppDefInstAccessor classes
+      cppBody =
+        mkProtectedFunctionList (cihClass cih)
+        `connRet`
+        buildParentDef genCppDefInstVirtual (cihClass cih)
+        `connRet`
+        (if isAbstractClass aclass
+         then ""
+         else R.renderCStmt (genCppDefInstVirtual (aclass, aclass))
+        )
+        `connRet`
+        (intercalate "\n" (map (R.renderCStmt . genCppDefInstNonVirtual) classes))
+        `connRet`
+        (intercalate "\n" (map (R.renderCStmt . genCppDefInstAccessor) classes))
   in concatMap R.renderCMacro
        (   headerStmts
         <> [ R.EmptyLine ]
