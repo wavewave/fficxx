@@ -22,7 +22,6 @@ import FFICXX.Generate.Code.Primitive        ( accessorCFunSig
                                              , tmplMemFuncArgToCTypVar
                                              , tmplMemFuncRetTypeToString
                                              , tmplAllArgsToCallString
-                                             -- , tmplAllArgsToString
                                              , tmplAllArgsToCTypVar
                                              , tmplRetTypeToString
                                              )
@@ -366,27 +365,6 @@ funcToDef c func
 
 funcsToDefs :: Class -> [Function] -> String
 funcsToDefs c = intercalateWith connBSlash (funcToDef c)
-
-
-{-  subst "$ret ${tname}_${fname}_ ## Type ( $args )"
-    (context [ ("tname", tclass_name)
-             , ("fname", ffiTmplFuncName f)
-             , ("args" , tmplAllArgsToString b Self t tfun_args)
-             , ("ret"  , tmplRetTypeToString b tfun_ret) ])
-  subst "$ret ${tname}_${fname}_ ## Type ( $args )"
-    (context [ ("tname", tclass_name)
-             , ("fname", ffiTmplFuncName f)
-             , ("args" , tmplAllArgsToString b NoSelf t tfun_new_args)
-             , ("ret"  , tmplRetTypeToString b (TemplateType t)) ])
-
-  subst "$ret ${tname}_delete_ ## Type ( $args )"
-    (context [ ("tname", tclass_name                     )
-             , ("args" , tmplAllArgsToString b Self t [] )
-             , ("ret"  , "void" ) ])
-
--}
-
-
 
 
 tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> R.CDecl
