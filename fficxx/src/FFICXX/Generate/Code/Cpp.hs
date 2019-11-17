@@ -90,10 +90,10 @@ genCppHeaderMacroNonVirtual c =
 
 genCppHeaderMacroAccessor :: Class -> R.CMacro
 genCppHeaderMacroAccessor c =
-  let funcDeclStr = accessorsToDecls (class_vars c)
+  let funcDecls  = map R.CDeclaration $ accessorsToDecls (class_vars c)
       macrocname = map toUpper (ffiClassName c)
-      macroname = macrocname <> "_DECL_ACCESSOR"
-  in R.Define (R.sname macroname) (R.sname "Type") [ R.CVerbatim funcDeclStr ]
+      macroname  = macrocname <> "_DECL_ACCESSOR"
+  in R.Define (R.sname macroname) (R.sname "Type") funcDecls
 
 
 ---- "Class Declaration Virtual/NonVirtual/Accessor" Instances
@@ -420,27 +420,30 @@ tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {",
       TFunDelete   -> callstr <> ";"
       TFun {..} -> returnCpp b (tfun_ret) callstr
 
-
 -- Accessor Declaration and Definition
 
-accessorToDecl :: Variable -> Accessor -> String
+accessorToDecl :: Variable -> Accessor -> R.CDecl
 accessorToDecl v a =
-  let tmpl = "$returntype Type ## _$funcname ( $args )"
-      csig = accessorCFunSig (arg_type (unVariable v)) a
-  in subst tmpl (context [ ("returntype", rettypeToString (cRetType csig))
-                         , ("funcname"  , arg_name (unVariable v) <> "_" <> case a of Getter -> "get"; Setter -> "set")
-                         , ("args"      , argsToString (cArgTypes csig))
-                         ])
+  let csig = accessorCFunSig (arg_type (unVariable v)) a
+      ret = R.CType $ rettypeToString (cRetType csig)
+      fname =
+        R.CName [ R.NamePart "Type"
+                , R.NamePart (   "_"
+                              <> arg_name (unVariable v)
+                              <> "_"
+                              <> case a of Getter -> "get"; Setter -> "set"
+                             )
+                ]
+      args = argsToCTypVar (cArgTypes csig)
+  in R.FunDecl ret fname args
 
-accessorsToDecls :: [Variable] -> String
+accessorsToDecls :: [Variable] -> [R.CDecl]
 accessorsToDecls vs =
-  let dcls = concatMap (\v -> [accessorToDecl v Getter,accessorToDecl v Setter]) vs
-  in intercalate "; \\\n" dcls
-
+  concatMap (\v -> [accessorToDecl v Getter,accessorToDecl v Setter]) vs
 
 accessorToDef :: Variable -> Accessor -> String
 accessorToDef v a =
-  let declstr = accessorToDecl v a
+  let declstr = R.renderCDecl (accessorToDecl v a)
       varexp = "to_nonconst<Type,Type ## _t>(p)->" <> arg_name (unVariable v)
       body Getter = "return (" <> castCpp2C (arg_type (unVariable v)) varexp <> ");"
       body Setter =    varexp
