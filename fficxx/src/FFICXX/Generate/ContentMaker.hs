@@ -41,7 +41,7 @@ import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
                                               , PackageInterface
                                               , PackageName(..)
                                               )
-import FFICXX.Generate.Util                   ( connRet, connRet2, intercalateWith )
+import FFICXX.Generate.Util                   ( connRet, intercalateWith )
 import FFICXX.Generate.Util.HaskellSrcExts
 
 
@@ -111,11 +111,8 @@ buildDeclHeader cprefix header =
       nvdef  = map genCppDefMacroNonVirtual    classes
       acdef  = map genCppDefMacroAccessor      classes
       tmpldef= map (\c -> map (genCppDefMacroTemplateMemberFunction c) (class_tmpl_funcs c)) classes
-
-      declDefStr = intercalate "\n\n"
-                 . map R.renderCMacro
-                 . intercalate [R.EmptyLine]
-                 $ [vdecl,nvdecl,acdecl,vdef,nvdef,acdef]++tmpldef
+      declDefStmts =
+        intercalate [R.EmptyLine] $ [vdecl,nvdecl,acdecl,vdef,nvdef,acdef]++tmpldef
       classDeclStmts =
         -- NOTE: Deletable is treated specially.
         -- TODO: We had better make it as a separate constructor in Class.
@@ -125,17 +122,14 @@ buildDeclHeader cprefix header =
              <> map genCppHeaderInstNonVirtual classes
              <> map genCppHeaderInstAccessor classes
         else []
-      declBodyStr =
-        declDefStr
-        `connRet2`
-        intercalate "\n" (map R.renderCStmt classDeclStmts)
   in R.renderBlock $
        R.ExternC $
             [ R.Pragma R.Once, R.EmptyLine ]
          <> declHeaderStmts
-         <> [ R.EmptyLine
-            , R.Verbatim declBodyStr
-            ]
+         <> [ R.EmptyLine ]
+         <> declDefStmts
+         <> [ R.EmptyLine ]
+         <> map R.CRegular classDeclStmts
 
 -- |
 buildDefMain :: ClassImportHeader
