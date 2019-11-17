@@ -156,7 +156,6 @@ genCppDefMacroTemplateMemberFunction ::
 genCppDefMacroTemplateMemberFunction c f =
    R.Define (R.sname macroname) (R.sname "Type")
      [ R.CVerbatim (subst tmpl ctxt) ]
-  -- subst tmpl ctxt
   where
     macroname = hsTemplateMemberFunctionName c f
     tmpl = "extern \"C\" { \\\n\

@@ -112,36 +112,18 @@ buildDeclHeader cprefix header =
       declHeaderStmts =
            [ R.Include (HdrName (cprefix ++ "Type.h")) ]
         <> map R.Include (cihIncludedHPkgHeadersInH header)
-      vdecl  = intercalate "\n\n" $
-                 map (R.renderCMacro . genCppHeaderMacroVirtual) classes
-      nvdecl = intercalate "\n\n" $
-                 map (R.renderCMacro . genCppHeaderMacroNonVirtual) classes
-      acdecl = intercalate "\n\n" $
-                 map (R.renderCMacro . genCppHeaderMacroAccessor) classes
-      vdef   = intercalate "\n\n" $
-                 map (R.renderCMacro . genCppDefMacroVirtual) classes
-      nvdef  = intercalate "\n\n" $
-                 map (R.renderCMacro . genCppDefMacroNonVirtual) classes
-      acdef  = intercalate "\n\n" $
-                 map (R.renderCMacro . genCppDefMacroAccessor) classes
-      tmpldef= intercalate "\n\n" $
-                 map
-                   (\c -> intercalate "\n\n" $ map (R.renderCMacro . genCppDefMacroTemplateMemberFunction c) (class_tmpl_funcs c))
-                   classes
+      vdecl  = map genCppHeaderMacroVirtual    classes
+      nvdecl = map genCppHeaderMacroNonVirtual classes
+      acdecl = map genCppHeaderMacroAccessor   classes
+      vdef   = map genCppDefMacroVirtual       classes
+      nvdef  = map genCppDefMacroNonVirtual    classes
+      acdef  = map genCppDefMacroAccessor      classes
+      tmpldef= map (\c -> map (genCppDefMacroTemplateMemberFunction c) (class_tmpl_funcs c)) classes
 
-      declDefStr = vdecl
-                   `connRet2`
-                   nvdecl
-                   `connRet2`
-                   acdecl
-                   `connRet2`
-                   vdef
-                   `connRet2`
-                   nvdef
-                   `connRet2`
-                   acdef
-                   `connRet2`
-                   tmpldef
+      declDefStr = intercalate "\n\n"
+                 . map R.renderCMacro
+                 . intercalate [R.EmptyLine]
+                 $ [vdecl,nvdecl,acdecl,vdef,nvdef,acdef]++tmpldef
       classDeclsStr = -- NOTE: Deletable is treated specially.
                       -- TODO: We had better make it as a separate constructor in Class.
                       if (fst.hsClassName) aclass /= "Deletable"
