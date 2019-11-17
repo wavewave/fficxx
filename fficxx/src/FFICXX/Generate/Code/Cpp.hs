@@ -72,53 +72,28 @@ genCppHeaderMacroVirtual aclass =
                 $ aclass
       macrocname = map toUpper (ffiClassName aclass)
       macroname = macrocname <> "_DECL_VIRT"
-  in -- [ R.Undef $ R.sname macroname
-     -- ,
-     R.Define (R.sname macroname) (R.sname "Type") funcDecls
-     -- ]
+  in R.Define (R.sname macroname) (R.sname "Type") funcDecls
 
 genCppHeaderMacroNonVirtual :: Class -> R.CMacro
 genCppHeaderMacroNonVirtual c =
-  let tmpl = "#define ${macroname}(Type) \\\n$funcdecl"
-      funcDeclStr = intercalate "\\\n"
-                  . map (R.renderCStmt . R.CDeclaration)
-                  . funcsToDecls c
-                  . filter (not.isVirtualFunc)
-                  . class_funcs
-                  $ c
+  let funcDecls = map R.CDeclaration
+                . funcsToDecls c
+                . filter (not.isVirtualFunc)
+                . class_funcs
+                $ c
       macrocname = map toUpper (ffiClassName c)
       macroname = macrocname <> "_DECL_NONVIRT"
-  in -- [ R.Undef $ R.sname macroname
-       R.Verbatim $
-         subst
-           tmpl
-           (context [ ("macroname", macroname  )
-                    , ("funcdecl" , funcDeclStr)
-                    ]
-           )
-     -- ]
+  in R.Define (R.sname macroname) (R.sname "Type") funcDecls
 
 
 ---- "Class Declaration Accessor" Declaration
 
 genCppHeaderMacroAccessor :: Class -> R.CMacro
 genCppHeaderMacroAccessor c =
-  let tmpl = "#define ${macroname}(Type)\\\n$funcdecl"
-      declBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
-                                        , ("funcdecl" , funcDeclStr               ) ])
-      funcDeclStr = accessorsToDecls (class_vars c)
+  let funcDeclStr = accessorsToDecls (class_vars c)
       macrocname = map toUpper (ffiClassName c)
       macroname = macrocname <> "_DECL_ACCESSOR"
-
-  in -- [ R.Undef $ R.sname macroname
-     R.Verbatim $
-         subst
-           tmpl
-           (context [ ("macroname", macroname  )
-                    , ("funcdecl" , funcDeclStr)
-                    ]
-           )
-     -- ]
+  in R.Define (R.sname macroname) (R.sname "Type") [ R.CVerbatim funcDeclStr ]
 
 
 ---- "Class Declaration Virtual/NonVirtual/Accessor" Instances

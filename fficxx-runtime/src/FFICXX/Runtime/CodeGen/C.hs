@@ -47,6 +47,7 @@ data CStatement =
   | TypeDef CType CName      -- ^ typedef origtype newname;
   | CDeclaration CDecl       -- ^ function declaration;
   | Comment String           -- ^ comment
+  | CVerbatim String         -- ^ temporary verbatim
 
 data CMacro =
     CRegular CStatement
@@ -74,6 +75,7 @@ renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 renderCStmt (TypeDef (CType typ) n)  = "typedef " <> typ <> " " <> renderCName n <> ";"
 renderCStmt (CDeclaration e)         = renderCDecl e <> ";"
 renderCStmt (Comment str)            = "// " <> str <> "\n"
+renderCStmt (CVerbatim str)          = str
 
 renderCMacro :: CMacro -> String
 renderCMacro (CRegular stmt)          = renderCStmt stmt
