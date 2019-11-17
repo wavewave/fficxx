@@ -263,7 +263,7 @@ cppclassmove_ c = CPT (CPTClassMove c) NoConst
 cppclassmove :: Class -> String -> Arg
 cppclassmove c vname = Arg (cppclassmove_ c) vname
 
-
+{-
 argToString :: Arg -> String
 argToString (Arg (CT ctyp isconst) varname) =
   cvarToStr ctyp isconst varname
@@ -301,7 +301,7 @@ argsToString args =
 
 argsToStringNoSelf :: [Arg] -> String
 argsToStringNoSelf = intercalateWith conncomma argToString
-
+-}
 
 -- new definitions
 

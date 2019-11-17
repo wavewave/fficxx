@@ -11,8 +11,8 @@ import qualified FFICXX.Runtime.CodeGen.C as R
 --
 import FFICXX.Generate.Code.Primitive        ( accessorCFunSig
                                              , argsToCallString
-                                             , argsToString
-                                             , argsToStringNoSelf
+                                             -- , argsToString
+                                             -- , argsToStringNoSelf
                                              , argsToCTypVar
                                              , argsToCTypVarNoSelf
                                              , castCpp2C
@@ -201,41 +201,41 @@ genAllCppHeaderInclude header =
 -------------------------
 -- TOP LEVEL FUNCTIONS --
 -------------------------
+-- genTopLevelFuncCppHeader
 
-genTopLevelFuncCppHeader :: TopLevelFunction -> R.CStatement
-genTopLevelFuncCppHeader TopLevelFunction {..} =
-    R.CDeclaration (R.FunDecl ret func args)
+topLevelFunDecl :: TopLevelFunction -> R.CDecl
+topLevelFunDecl TopLevelFunction {..} = R.FunDecl ret func args
   where
     ret  = R.CType (rettypeToString toplevelfunc_ret)
     func = R.sname ("TopLevel_" <> maybe toplevelfunc_name id toplevelfunc_alias)
     args = argsToCTypVarNoSelf toplevelfunc_args
-genTopLevelFuncCppHeader TopLevelVariable {..} =
-    R.CDeclaration (R.FunDecl ret func [])
+topLevelFunDecl TopLevelVariable {..} = R.FunDecl ret func []
   where
     ret  = R.CType (rettypeToString toplevelvar_ret)
     func = R.sname ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
 
 
 genTopLevelFuncCppDefinition :: TopLevelFunction -> String
-genTopLevelFuncCppDefinition TopLevelFunction {..} =
-  let tmpl = "$returntype $funcname ( $args ) { \n  $funcbody\n}"
+genTopLevelFuncCppDefinition tf@TopLevelFunction {..} =
+  let tmpl = "$decl { \n  $funcbody\n}"
+      decl = R.renderCDecl $ topLevelFunDecl tf
       callstr = toplevelfunc_name <> "("
                 <> argsToCallString toplevelfunc_args
                 <> ")"
       funcDefStr = returnCpp False (toplevelfunc_ret) callstr
-  in subst tmpl (context [ ("returntype", rettypeToString toplevelfunc_ret                )
-                         , ("funcname"  , "TopLevel_"
-                                          <> maybe toplevelfunc_name id toplevelfunc_alias)
-                         , ("args"      , argsToStringNoSelf toplevelfunc_args            )
-                         , ("funcbody"  , funcDefStr                                      ) ])
-genTopLevelFuncCppDefinition TopLevelVariable {..} =
-  let tmpl = "$returntype $funcname ( ) { \n  $funcbody\n}"
+  in subst tmpl (context [ ("decl"    , decl)
+                         , ("funcbody", funcDefStr)
+                         ]
+                )
+genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
+  let tmpl = "$decl { \n  $funcbody\n}"
+      decl = R.renderCDecl $ topLevelFunDecl tv
       callstr = toplevelvar_name
       funcDefStr = returnCpp False (toplevelvar_ret) callstr
-  in subst tmpl (context [ ("returntype", rettypeToString toplevelvar_ret               )
-                         , ("funcname"  , "TopLevel_"
-                                          <> maybe toplevelvar_name id toplevelvar_alias)
-                         , ("funcbody"  , funcDefStr                                    ) ])
+  in subst tmpl (context [ ("decl"    , decl)
+                         , ("funcbody", funcDefStr)
+                         ]
+                )
 
 
 genTmplFunCpp :: Bool -- ^ is for simple type?

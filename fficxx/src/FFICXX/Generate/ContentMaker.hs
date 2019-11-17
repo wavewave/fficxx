@@ -217,7 +217,7 @@ buildTopLevelHeader cprefix tih =
   let declHeaderStmts =
            [ R.Include (HdrName (cprefix ++ "Type.h")) ]
         <> map R.Include (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih)
-      declBodyStmts = map genTopLevelFuncCppHeader (tihFuncs tih)
+      declBodyStmts = map (R.CDeclaration . topLevelFunDecl) $ tihFuncs tih
   in R.renderBlock $
        R.ExternC $
             [ R.Pragma R.Once, R.EmptyLine ]
