@@ -63,29 +63,21 @@ genCppHeaderMacroType c =
 
 ---- "Class Declaration Virtual" Declaration
 
-genCppHeaderMacroVirtual :: Class -> [R.CMacro]
+genCppHeaderMacroVirtual :: Class -> R.CMacro
 genCppHeaderMacroVirtual aclass =
-  let -- tmpl = "#define ${macroname}(Type) \\\n${funcdecl}"
-      funcDecls = map R.CDeclaration
+  let funcDecls = map R.CDeclaration
                 . funcsToDecls aclass
                 . virtualFuncs
                 . class_funcs
                 $ aclass
       macrocname = map toUpper (ffiClassName aclass)
       macroname = macrocname <> "_DECL_VIRT"
-  in [ R.Undef $ R.sname macroname
-     , R.Define (R.sname macroname) (R.sname "Type") funcDecls
-     ]
-     {- Verbatim $
-         subst
-           tmpl
-           (context [ ("macroname", macroname  )
-                    , ("funcdecl" , funcDeclStr)
-                    ]
-           )
-     ] -}
+  in -- [ R.Undef $ R.sname macroname
+     -- ,
+     R.Define (R.sname macroname) (R.sname "Type") funcDecls
+     -- ]
 
-genCppHeaderMacroNonVirtual :: Class -> [R.CMacro]
+genCppHeaderMacroNonVirtual :: Class -> R.CMacro
 genCppHeaderMacroNonVirtual c =
   let tmpl = "#define ${macroname}(Type) \\\n$funcdecl"
       funcDeclStr = intercalate "\\\n"
@@ -96,20 +88,20 @@ genCppHeaderMacroNonVirtual c =
                   $ c
       macrocname = map toUpper (ffiClassName c)
       macroname = macrocname <> "_DECL_NONVIRT"
-  in [ R.Undef $ R.sname macroname
-     , R.Verbatim $
+  in -- [ R.Undef $ R.sname macroname
+       R.Verbatim $
          subst
            tmpl
            (context [ ("macroname", macroname  )
                     , ("funcdecl" , funcDeclStr)
                     ]
            )
-     ]
+     -- ]
 
 
 ---- "Class Declaration Accessor" Declaration
 
-genCppHeaderMacroAccessor :: Class -> [R.CMacro]
+genCppHeaderMacroAccessor :: Class -> R.CMacro
 genCppHeaderMacroAccessor c =
   let tmpl = "#define ${macroname}(Type)\\\n$funcdecl"
       declBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
@@ -118,15 +110,15 @@ genCppHeaderMacroAccessor c =
       macrocname = map toUpper (ffiClassName c)
       macroname = macrocname <> "_DECL_ACCESSOR"
 
-  in [ R.Undef $ R.sname macroname
-     , R.Verbatim $
+  in -- [ R.Undef $ R.sname macroname
+     R.Verbatim $
          subst
            tmpl
            (context [ ("macroname", macroname  )
                     , ("funcdecl" , funcDeclStr)
                     ]
            )
-     ]
+     -- ]
 
 
 ---- "Class Declaration Virtual/NonVirtual/Accessor" Instances

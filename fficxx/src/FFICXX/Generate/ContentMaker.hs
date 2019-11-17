@@ -113,11 +113,11 @@ buildDeclHeader cprefix header =
            [ R.Include (HdrName (cprefix ++ "Type.h")) ]
         <> map R.Include (cihIncludedHPkgHeadersInH header)
       vdef  = intercalate "\n\n" $
-                map (concat . map R.renderCMacro . genCppHeaderMacroVirtual) classes
+                map (R.renderCMacro . genCppHeaderMacroVirtual) classes
       nvdef = intercalate "\n\n" $
-                map (concat . map R.renderCMacro . genCppHeaderMacroNonVirtual) classes
+                map (R.renderCMacro . genCppHeaderMacroNonVirtual) classes
       acdef = intercalate "\n\n" $
-                map (concat . map R.renderCMacro . genCppHeaderMacroAccessor) classes
+                map (R.renderCMacro . genCppHeaderMacroAccessor) classes
 
       declDefStr = vdef
                    `connRet2`
