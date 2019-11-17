@@ -41,7 +41,6 @@ import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
                                               , PackageInterface
                                               , PackageName(..)
                                               )
-import FFICXX.Generate.Util                   ( connRet, intercalateWith )
 import FFICXX.Generate.Util.HaskellSrcExts
 
 

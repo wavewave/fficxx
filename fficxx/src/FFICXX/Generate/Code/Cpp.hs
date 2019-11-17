@@ -33,9 +33,7 @@ import FFICXX.Generate.Name                  ( aliasedFuncName
                                              )
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
-import FFICXX.Generate.Util                  ( connRet
-                                             , context
-                                             , intercalateWith
+import FFICXX.Generate.Util                  ( context
                                              , subst
                                              , toUppers
                                              )
@@ -124,7 +122,11 @@ genCppHeaderInstAccessor c =
 
 genCppDefMacroVirtual :: Class -> R.CMacro
 genCppDefMacroVirtual aclass =
-  let funcDefStr = funcsToDefs aclass . virtualFuncs . class_funcs $ aclass
+  let funcDefStr = intercalate "\n"
+                 . map (R.renderCStmt . funcToDef aclass)
+                 . virtualFuncs
+                 . class_funcs
+                 $ aclass
       macrocname = map toUpper (ffiClassName aclass)
       macroname = macrocname <> "_DEF_VIRT"
   in R.Define (R.sname macroname) [R.sname "Type"] [ R.CVerbatim funcDefStr ]
@@ -133,7 +135,8 @@ genCppDefMacroVirtual aclass =
 
 genCppDefMacroNonVirtual :: Class -> R.CMacro
 genCppDefMacroNonVirtual aclass =
-  let funcDefStr = funcsToDefs aclass
+  let funcDefStr = intercalate "\n"
+                 . map (R.renderCStmt . funcToDef aclass)
                  . filter (not.isVirtualFunc)
                  . class_funcs
                  $ aclass
@@ -169,7 +172,7 @@ genCppDefMacroTemplateMemberFunction c f =
     ctxt = context
              [ ("macroname", macroname)
              , ("decl"     , R.renderCDecl (tmplMemberFunToDecl c f))
-             , ("defn"     , tmplMemberFunToDef c f)
+             , ("defn"     , R.renderCStmt (tmplMemberFunToDef c f))
              ]
 
 
@@ -230,9 +233,6 @@ genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
       body = [ R.CVerbatim funcDefStr ]
   in R.CDefinition decl body
 
-
--- #define ${tname}_${fname}${suffix}(Type) \n\
-
 genTmplFunCpp :: Bool -- ^ is for simple type?
               -> TemplateClass
               -> TemplateFunction
@@ -253,7 +253,7 @@ genTmplFunCpp b t@TmplCls {..} f =
            [ ("tname"  , tclass_name )
            , ("fname"  , ffiTmplFuncName f)
            , ("decl"   , R.renderCDecl (tmplFunToDecl b t f) )
-           , ("defn"   , tmplFunToDef b t f )
+           , ("defn"   , R.renderCStmt (tmplFunToDef b t f) )
            ]
 
 genTmplClassCpp :: Bool -- ^ is for simple type
@@ -315,8 +315,6 @@ returnCpp b ret callstr =
            else "return to_nonconst<Type ## _t, Type>("
                 <> callstr <> ") ;"
 
-
-
 -- Function Declaration and Definition
 
 funcToDecl :: Class -> Function -> R.CDecl
@@ -334,36 +332,28 @@ funcToDecl c func
         args  = argsToCTypVar (genericFuncArgs func)
     in R.FunDecl ret fname args
 
-funcToDef :: Class -> Function -> String
+funcToDef :: Class -> Function -> R.CStatement
 funcToDef c func
   | isNewFunc func =
-    let declstr = R.renderCDecl $ funcToDecl c func
-        callstr = "(" <> argsToCallString (genericFuncArgs func) <> ")"
+    let callstr = "(" <> argsToCallString (genericFuncArgs func) <> ")"
         returnstr = "Type * newp = new Type " <> callstr <> ";\nreturn to_nonconst<Type ## _t, Type >(newp);"
-    in intercalate "\n" [declstr, "{", returnstr, "}"]
+    in R.CDefinition (funcToDecl c func) [ R.CVerbatim returnstr ]
   | isDeleteFunc func =
-    let declstr = R.renderCDecl $ funcToDecl c func
-        returnstr = "delete (to_nonconst<Type,Type ## _t>(p));"
-    in intercalate "\n" [declstr, "{", returnstr, "}"]
+    let returnstr = "delete (to_nonconst<Type,Type ## _t>(p));"
+    in R.CDefinition (funcToDecl c func) [ R.CVerbatim returnstr ]
   | isStaticFunc func =
-    let declstr = R.renderCDecl $ funcToDecl c func
-        callstr = cppFuncName c func <> "("
+    let callstr = cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
         returnstr = returnCpp False (genericFuncRet func) callstr
-    in intercalate "\n" [declstr, "{", returnstr, "}"]
+    in R.CDefinition (funcToDecl c func) [ R.CVerbatim returnstr ]
   | otherwise =
-    let declstr = R.renderCDecl $ funcToDecl c func
-        callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
+    let callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
                   <> cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
         returnstr = returnCpp False (genericFuncRet func) callstr
-    in intercalate "\n" [declstr, "{", returnstr, "}"]
-
-funcsToDefs :: Class -> [Function] -> String
-funcsToDefs c = intercalate "\n" . map (funcToDef c)
-
+    in R.CDefinition (funcToDecl c func) [ R.CVerbatim returnstr ]
 
 tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> R.CDecl
 tmplFunToDecl b t@TmplCls {..} f@TFun {..}    = R.FunDecl ret func args
@@ -382,30 +372,28 @@ tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.FunDecl ret func args
     func = R.CName [R.NamePart (tclass_name <> "_delete_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b Self t []
 
-
 tmplFunToDef :: Bool -- ^ for simple type
              -> TemplateClass
              -> TemplateFunction
-             -> String
+             -> R.CStatement
 tmplFunToDef b t@TmplCls {..} f =
-  intercalate "\n" [declstr, "  {", "    "<>returnstr, "  }"]
- where
-  declstr = R.renderCDecl (tmplFunToDecl b t f)
-  callstr =
-    case f of
-      TFun {..}    -> "(static_cast<" <> tclass_oname <> "<Type>*>(p))->"
-                      <> tfun_oname <> "("
-                      <> tmplAllArgsToCallString b tfun_args
-                      <> ")"
-      TFunNew {..} -> "new " <> tclass_oname <> "<Type>("
-                      <> tmplAllArgsToCallString b tfun_new_args
-                      <> ")"
-      TFunDelete   -> "delete (static_cast<" <> tclass_oname <> "<Type>*>(p))"
-  returnstr =
-    case f of
-      TFunNew {..} -> "return static_cast<void*>("<>callstr<>");"
-      TFunDelete   -> callstr <> ";"
-      TFun {..} -> returnCpp b (tfun_ret) callstr
+    R.CDefinition (tmplFunToDecl b t f) [ R.CVerbatim returnstr ]
+  where
+    callstr =
+      case f of
+        TFun {..}    -> "(static_cast<" <> tclass_oname <> "<Type>*>(p))->"
+                        <> tfun_oname <> "("
+                        <> tmplAllArgsToCallString b tfun_args
+                        <> ")"
+        TFunNew {..} -> "new " <> tclass_oname <> "<Type>("
+                        <> tmplAllArgsToCallString b tfun_new_args
+                        <> ")"
+        TFunDelete   -> "delete (static_cast<" <> tclass_oname <> "<Type>*>(p))"
+    returnstr =
+      case f of
+        TFunNew {..} -> "return static_cast<void*>("<>callstr<>");"
+        TFunDelete   -> callstr <> ";"
+        TFun {..} -> returnCpp b (tfun_ret) callstr
 
 -- Accessor Declaration and Definition
 
@@ -428,24 +416,20 @@ accessorsToDecls :: [Variable] -> [R.CDecl]
 accessorsToDecls vs =
   concatMap (\v -> [accessorToDecl v Getter,accessorToDecl v Setter]) vs
 
-accessorToDef :: Variable -> Accessor -> String
+accessorToDef :: Variable -> Accessor -> R.CStatement
 accessorToDef v a =
-  let declstr = R.renderCDecl (accessorToDecl v a)
-      varexp = "to_nonconst<Type,Type ## _t>(p)->" <> arg_name (unVariable v)
+  let varexp = "to_nonconst<Type,Type ## _t>(p)->" <> arg_name (unVariable v)
       body Getter = "return (" <> castCpp2C (arg_type (unVariable v)) varexp <> ");"
       body Setter =    varexp
                     <> " = "
-                    <> castC2Cpp (arg_type (unVariable v)) "x"  -- TODO: somehow clean up this hard-coded "x".
+                    <> castC2Cpp (arg_type (unVariable v)) "x"  -- TODO: clean up this hard-coded "x".
                     <> ";"
-  in intercalate "\n" [declstr, "{", body a, "}"]
-
+  in R.CDefinition (accessorToDecl v a) [ R.CVerbatim (body a) ]
 
 accessorsToDefs :: [Variable] -> String
 accessorsToDefs vs =
   let defs = concatMap (\v -> [accessorToDef v Getter,accessorToDef v Setter]) vs
-  in intercalate "; \n" defs
-
-
+  in intercalate "; \n" $ map R.renderCStmt defs
 
 -- Template Member Function Declaration and Definition
 
@@ -461,11 +445,10 @@ tmplMemberFunToDecl c f =
   in R.FunDecl ret fname args
 
 -- TODO: Handle simple type
-tmplMemberFunToDef :: Class -> TemplateMemberFunction -> String
+tmplMemberFunToDef :: Class -> TemplateMemberFunction -> R.CStatement
 tmplMemberFunToDef c f =
-    intercalate "\n" [ declstr, "{", returnstr, "}" ]
+    R.CDefinition (tmplMemberFunToDecl c f) [ R.CVerbatim returnstr ]
   where
-    declstr = R.renderCDecl $ tmplMemberFunToDecl c f
     callstr =    "(to_nonconst<" <> ffiClassName c  <> "," <> ffiClassName c <> "_t" <> ">(p))"
               <> "->"
               <> tmf_name f
