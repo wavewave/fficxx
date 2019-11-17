@@ -64,7 +64,7 @@ genCppHeaderMacroType c =
 genCppHeaderMacroVirtual :: Class -> R.CMacro
 genCppHeaderMacroVirtual aclass =
   let funcDecls = map R.CDeclaration
-                . funcsToDecls aclass
+                . map (funcToDecl aclass)
                 . virtualFuncs
                 . class_funcs
                 $ aclass
@@ -75,7 +75,7 @@ genCppHeaderMacroVirtual aclass =
 genCppHeaderMacroNonVirtual :: Class -> R.CMacro
 genCppHeaderMacroNonVirtual c =
   let funcDecls = map R.CDeclaration
-                . funcsToDecls c
+                . map (funcToDecl c)
                 . filter (not.isVirtualFunc)
                 . class_funcs
                 $ c
@@ -332,9 +332,6 @@ funcToDecl c func
           R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
         args  = argsToCTypVar (genericFuncArgs func)
     in R.FunDecl ret fname args
-
-funcsToDecls :: Class -> [Function] -> [R.CDecl]
-funcsToDecls c = map (funcToDecl c)
 
 funcToDef :: Class -> Function -> String
 funcToDef c func
