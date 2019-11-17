@@ -46,8 +46,10 @@ data CStatement =
     UsingNamespace Namespace -- ^ using namespace <namespace>;
   | TypeDef CType CName      -- ^ typedef origtype newname;
   | CDeclaration CDecl       -- ^ function declaration;
+  | CDefinition CDecl [CStatement] -- ^ function definition;
   | CMacroApp CName [CName]  -- ^ C Macro application at statement level (temporary)
   | Comment String           -- ^ comment
+  | CEmptyLine               -- ^ for convenience
   | CVerbatim String         -- ^ temporary verbatim
 
 data CMacro =
@@ -71,13 +73,28 @@ renderCDecl (FunDecl (CType typ) fname args) =
   where
     mkArgStr (CType t, a) = t <> " " <> renderCName a
 
+-- | render CStatement in a regular environment
 renderCStmt :: CStatement -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 renderCStmt (TypeDef (CType typ) n)  = "typedef " <> typ <> " " <> renderCName n <> ";"
 renderCStmt (CDeclaration e)         = renderCDecl e <> ";"
+renderCStmt (CDefinition d body)     =
+  renderCDecl d <> " {\n" <> concatMap renderCStmt body <> "\n}\n"
 renderCStmt (CMacroApp n as)         = renderCName n <> "(" <> intercalate ", " (map renderCName as) <> ")" -- NOTE: no semicolon.
 renderCStmt (Comment str)            = "// " <> str <> "\n"
+renderCStmt CEmptyLine               = "\n"
 renderCStmt (CVerbatim str)          = str
+
+-- | render CStatement in a macro definition environment
+renderCStmtInMacro :: CStatement -> [String]
+renderCStmtInMacro (CDefinition d body) =
+     [ renderCDecl d <> " {" ]
+  <> map renderCStmt body
+  <> [ "}" ]
+renderCStmtInMacro (Comment _str)  = [""] -- Comment cannot exist in Macro
+renderCStmtInMacro CEmptyLine      = [""]
+renderCStmtInMacro (CVerbatim str) = lines str
+renderCStmtInMacro s               = [renderCStmt s]
 
 renderCMacro :: CMacro -> String
 renderCMacro (CRegular stmt)          = renderCStmt stmt
@@ -89,7 +106,7 @@ renderCMacro (Define m ts stmts)       =
    <> case ts of
         [] -> " "
         _  -> "("  <> intercalate ", " (map renderCName ts) <> ") \\\n"
-   <> intercalate "\\\n" (map renderCStmt stmts)
+   <> intercalate "\\\n" (concatMap renderCStmtInMacro stmts)
    <> "\n"
 renderCMacro EmptyLine                = "\n"
 renderCMacro (Verbatim str)           = str

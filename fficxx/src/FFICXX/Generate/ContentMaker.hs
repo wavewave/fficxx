@@ -41,7 +41,6 @@ import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
                                               , PackageInterface
                                               , PackageName(..)
                                               )
-import FFICXX.Generate.Util                   ( connRet, intercalateWith )
 import FFICXX.Generate.Util.HaskellSrcExts
 
 
@@ -224,7 +223,9 @@ buildTopLevelCppDef tih =
                               in if n1 == n2
                                  then Nothing
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
-      declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
+      declBodyStr =
+        intercalate "\n" $
+          map (R.renderCStmt . genTopLevelFuncCppDefinition) (tihFuncs tih)
 
   in concatMap R.renderCMacro
        (   declHeaderStmts
@@ -252,10 +253,14 @@ buildTemplateHeader tcih =
   let t = tcihTClass tcih
       fs = tclass_funcs t
       headerStmts = map R.Include (tcihCxxHeaders tcih)
-      deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
+      deffunc =    intercalate "\n"
+                     (map (R.renderCMacro . genTmplFunCpp False t) fs)
                 ++ "\n\n"
-                ++ intercalateWith connRet (genTmplFunCpp True t) fs
-      classlevel = genTmplClassCpp False t fs ++ "\n\n" ++ genTmplClassCpp True t fs
+                ++ intercalate "\n"
+                     (map (R.renderCMacro . genTmplFunCpp True t) fs)
+      classlevel =    R.renderCMacro (genTmplClassCpp False t fs)
+                   ++ "\n\n"
+                   ++ R.renderCMacro (genTmplClassCpp True t fs)
   in concatMap R.renderCMacro $
           [ R.Pragma R.Once
           , R.EmptyLine
