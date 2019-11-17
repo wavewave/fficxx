@@ -263,47 +263,6 @@ cppclassmove_ c = CPT (CPTClassMove c) NoConst
 cppclassmove :: Class -> String -> Arg
 cppclassmove c vname = Arg (cppclassmove_ c) vname
 
-{-
-argToString :: Arg -> String
-argToString (Arg (CT ctyp isconst) varname) =
-  cvarToStr ctyp isconst varname
-argToString (Arg SelfType varname) =
-  "Type ## _p " <> varname
-argToString (Arg (CPT (CPTClass c) isconst) varname) =
-  case isconst of
-    Const   -> "const_" <> cname <> "_p " <> varname
-    NoConst -> cname <> "_p " <> varname
-  where cname = ffiClassName c
-argToString (Arg (CPT (CPTClassRef c) isconst) varname) =
-  case isconst of
-    Const   -> "const_" <> cname <> "_p " <> varname
-    NoConst -> cname <> "_p " <> varname
-  where cname = ffiClassName c
-argToString (Arg (CPT (CPTClassCopy c) isconst) varname) =
-  case isconst of
-    Const   -> "const_" <> cname <> "_p " <> varname
-    NoConst -> cname <> "_p " <> varname
-  where cname = ffiClassName c
-argToString (Arg (CPT (CPTClassMove c) isconst) varname) =
-  case isconst of
-    Const   -> "const_" <> cname <> "_p " <> varname
-    NoConst -> cname <> "_p " <> varname
-  where cname = ffiClassName c
-argToString (Arg (TemplateApp     _) varname) = "void* " <> varname
-argToString (Arg (TemplateAppRef  _) varname) = "void* " <> varname
-argToString (Arg (TemplateAppMove _) varname) = "void* " <> varname
-argToString t = error ("argToString: " <> show t)
-
-argsToString :: [Arg] -> String
-argsToString args =
-  let args' = (Arg SelfType "p") : args
-  in  intercalateWith conncomma argToString args'
-
-argsToStringNoSelf :: [Arg] -> String
-argsToStringNoSelf = intercalateWith conncomma argToString
--}
-
--- new definitions
 
 argToCTypVar :: Arg -> (R.CType,R.CName)
 argToCTypVar (Arg (CT ctyp isconst) varname) =

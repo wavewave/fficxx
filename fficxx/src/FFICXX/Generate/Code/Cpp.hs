@@ -11,8 +11,6 @@ import qualified FFICXX.Runtime.CodeGen.C as R
 --
 import FFICXX.Generate.Code.Primitive        ( accessorCFunSig
                                              , argsToCallString
-                                             -- , argsToString
-                                             -- , argsToStringNoSelf
                                              , argsToCTypVar
                                              , argsToCTypVarNoSelf
                                              , castCpp2C
@@ -21,7 +19,6 @@ import FFICXX.Generate.Code.Primitive        ( accessorCFunSig
                                              , genericFuncArgs
                                              , genericFuncRet
                                              , rettypeToString
-                                             -- , tmplMemFuncArgToString
                                              , tmplMemFuncArgToCTypVar
                                              , tmplMemFuncRetTypeToString
                                              , tmplAllArgsToCallString
@@ -473,14 +470,6 @@ tmplMemberFunToDecl c f =
                 ]
       args = map (tmplMemFuncArgToCTypVar c) ((Arg SelfType "p"):tmf_args f)
   in R.FunDecl ret fname args
-
-{-
-  subst "$ret ${macroname}_##Type ( $args )"
-    (context [ ("macroname", hsTemplateMemberFunctionName c f)
-             , ("args"     , intercalateWith conncomma (tmplMemFuncArgToString c) ((Arg SelfType "p"):tmf_args f))
-             , ("ret"      , tmplMemFuncRetTypeToString c (tmf_ret f))
-             ])
--}
 
 -- TODO: Handle simple type
 tmplMemberFunToDef :: Class -> TemplateMemberFunction -> String
