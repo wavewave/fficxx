@@ -21,7 +21,8 @@ import FFICXX.Generate.Code.Primitive        ( accessorCFunSig
                                              , genericFuncArgs
                                              , genericFuncRet
                                              , rettypeToString
-                                             , tmplMemFuncArgToString
+                                             -- , tmplMemFuncArgToString
+                                             , tmplMemFuncArgToCTypVar
                                              , tmplMemFuncRetTypeToString
                                              , tmplAllArgsToCallString
                                              , tmplAllArgsToString
@@ -165,7 +166,7 @@ genCppDefMacroTemplateMemberFunction c f = subst tmpl ctxt
            \  auto a_${macroname}_##Type = ${macroname}_##Type  ;\n"
     ctxt = context
              [ ("macroname", hsTemplateMemberFunctionName c f)
-             , ("decl"     , tmplMemberFunToDecl c f)
+             , ("decl"     , R.renderCDecl (tmplMemberFunToDecl c f))
              , ("defn"     , tmplMemberFunToDef c f)
              ]
 
@@ -450,7 +451,7 @@ accessorToDef v a =
                     <> " = "
                     <> castC2Cpp (arg_type (unVariable v)) "x"  -- TODO: somehow clean up this hard-coded "x".
                     <> ";"
-  in  intercalate "\\\n" [declstr, "{", body a, "}"]
+  in intercalate "\\\n" [declstr, "{", body a, "}"]
 
 
 accessorsToDefs :: [Variable] -> String
@@ -463,14 +464,23 @@ accessorsToDefs vs =
 -- Template Member Function Declaration and Definition
 
 -- TODO: Handle simple type
-tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> String
+tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> R.CDecl
 tmplMemberFunToDecl c f =
+  let ret = R.CType $ tmplMemFuncRetTypeToString c (tmf_ret f)
+      fname =
+        R.CName [ R.NamePart (hsTemplateMemberFunctionName c f)
+                , R.NamePart "Type"
+                ]
+      args = map (tmplMemFuncArgToCTypVar c) ((Arg SelfType "p"):tmf_args f)
+  in R.FunDecl ret fname args
+
+{-
   subst "$ret ${macroname}_##Type ( $args )"
     (context [ ("macroname", hsTemplateMemberFunctionName c f)
              , ("args"     , intercalateWith conncomma (tmplMemFuncArgToString c) ((Arg SelfType "p"):tmf_args f))
              , ("ret"      , tmplMemFuncRetTypeToString c (tmf_ret f))
              ])
-
+-}
 
 -- TODO: Handle simple type
 tmplMemberFunToDef :: Class -> TemplateMemberFunction -> String
@@ -481,7 +491,7 @@ tmplMemberFunToDef c f =
                                   , "  }"
                                   ]
   where
-    declstr = tmplMemberFunToDecl c f
+    declstr = R.renderCDecl $ tmplMemberFunToDecl c f
     callstr =    "(to_nonconst<" <> ffiClassName c  <> "," <> ffiClassName c <> "_t" <> ">(p))"
               <> "->"
               <> tmf_name f
