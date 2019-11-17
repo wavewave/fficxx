@@ -75,11 +75,12 @@ buildParentDef f cls = g (class_allparents cls,cls)
                      map (\p -> R.renderCStmt (f (p,c))) ps
 
 -- |
-mkProtectedFunctionList :: Class -> String
+mkProtectedFunctionList :: Class -> [R.CMacro]
 mkProtectedFunctionList c =
-    (unlines
-     . map (\x->"#define IS_" <> class_name c <> "_" <> x <> "_PROTECTED ()")
-     . unProtected . class_protected) c
+    map (\x-> R.Define (R.sname ("IS_" <> class_name c <> "_" <> x <> "_PROTECTED")) [] [])
+  . unProtected
+  . class_protected
+  $ c
 
 -- |
 buildTypeDeclHeader ::
@@ -161,7 +162,7 @@ buildDefMain cih =
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
 
       cppBody =
-        mkProtectedFunctionList (cihClass cih)
+        intercalate "\n" (map R.renderCMacro (mkProtectedFunctionList (cihClass cih)))
         `connRet`
         buildParentDef genCppDefInstVirtual (cihClass cih)
         `connRet`

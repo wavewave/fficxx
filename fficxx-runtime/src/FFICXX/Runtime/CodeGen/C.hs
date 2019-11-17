@@ -55,7 +55,7 @@ data CMacro =
   | Include HeaderName       -- ^ #include "<header>"
   | Pragma PragmaParam       -- ^ #pragma
   | Undef CName              -- ^ #undef name
-  | Define CName CName [CStatement] -- ^ #define macro (type) definition
+  | Define CName [CName] [CStatement] -- ^ #define macro (type) definition
   | EmptyLine                -- ^ just for convenience
   | Verbatim String          -- ^ temporary verbatim
 
@@ -84,8 +84,11 @@ renderCMacro (CRegular stmt)          = renderCStmt stmt
 renderCMacro (Include (HdrName hdr))  = "\n#include \"" <> hdr <> "\"\n"
 renderCMacro (Pragma param)           = "\n#pragma " <> renderPragmaParam param <> "\n"
 renderCMacro (Undef n)                = "\n#undef " <> renderCName n <> "\n"
-renderCMacro (Define m t stmts)       =
-     "\n#define " <> renderCName m <> "(" <> renderCName t<> ") \\\n"
+renderCMacro (Define m ts stmts)       =
+     "\n#define " <> renderCName m
+   <> "("
+   <> intercalate ", " (map renderCName ts)
+   <> ") \\\n"
    <> intercalate "\\\n" (map renderCStmt stmts)
    <> "\n"
 renderCMacro EmptyLine                = "\n"

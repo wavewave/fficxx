@@ -70,7 +70,7 @@ genCppHeaderMacroVirtual aclass =
                 $ aclass
       macrocname = map toUpper (ffiClassName aclass)
       macroname = macrocname <> "_DECL_VIRT"
-  in R.Define (R.sname macroname) (R.sname "Type") funcDecls
+  in R.Define (R.sname macroname) [R.sname "Type"] funcDecls
 
 genCppHeaderMacroNonVirtual :: Class -> R.CMacro
 genCppHeaderMacroNonVirtual c =
@@ -81,7 +81,7 @@ genCppHeaderMacroNonVirtual c =
                 $ c
       macrocname = map toUpper (ffiClassName c)
       macroname = macrocname <> "_DECL_NONVIRT"
-  in R.Define (R.sname macroname) (R.sname "Type") funcDecls
+  in R.Define (R.sname macroname) [R.sname "Type"] funcDecls
 
 
 ---- "Class Declaration Accessor" Declaration
@@ -91,7 +91,7 @@ genCppHeaderMacroAccessor c =
   let funcDecls  = map R.CDeclaration $ accessorsToDecls (class_vars c)
       macrocname = map toUpper (ffiClassName c)
       macroname  = macrocname <> "_DECL_ACCESSOR"
-  in R.Define (R.sname macroname) (R.sname "Type") funcDecls
+  in R.Define (R.sname macroname) [R.sname "Type"] funcDecls
 
 
 ---- "Class Declaration Virtual/NonVirtual/Accessor" Instances
@@ -122,7 +122,7 @@ genCppDefMacroVirtual aclass =
   let funcDefStr = funcsToDefs aclass . virtualFuncs . class_funcs $ aclass
       macrocname = map toUpper (ffiClassName aclass)
       macroname = macrocname <> "_DEF_VIRT"
-  in R.Define (R.sname macroname) (R.sname "Type") [ R.CVerbatim funcDefStr ]
+  in R.Define (R.sname macroname) [R.sname "Type"] [ R.CVerbatim funcDefStr ]
 
 ---- "Class Definition NonVirtual" Declaration
 
@@ -134,7 +134,7 @@ genCppDefMacroNonVirtual aclass =
                  $ aclass
       macrocname = map toUpper (ffiClassName aclass)
       macroname = macrocname <> "_DEF_NONVIRT"
-  in R.Define (R.sname macroname) (R.sname "Type") [ R.CVerbatim funcDefStr ]
+  in R.Define (R.sname macroname) [R.sname "Type"] [ R.CVerbatim funcDefStr ]
 
 ---- Define Macro to provide Accessor C-C++ shim code for a class
 
@@ -143,7 +143,7 @@ genCppDefMacroAccessor c =
   let funcDefStr = accessorsToDefs (class_vars c)
       macrocname = map toUpper (ffiClassName c)
       macroname = macrocname <> "_DEF_ACCESSOR"
-  in R.Define (R.sname macroname) (R.sname "Type") [ R.CVerbatim funcDefStr ]
+  in R.Define (R.sname macroname) [R.sname "Type"] [ R.CVerbatim funcDefStr ]
 
 ---- Define Macro to provide TemplateMemberFunction C-C++ shim code for a class
 
@@ -152,7 +152,7 @@ genCppDefMacroTemplateMemberFunction ::
   -> TemplateMemberFunction
   -> R.CMacro
 genCppDefMacroTemplateMemberFunction c f =
-   R.Define (R.sname macroname) (R.sname "Type")
+   R.Define (R.sname macroname) [R.sname "Type"]
      [ R.CVerbatim (subst tmpl ctxt) ]
   where
     macroname = hsTemplateMemberFunctionName c f
