@@ -76,37 +76,58 @@ genCppHeaderMacroVirtual aclass =
       macroname = macrocname <> "_DECL_VIRT"
   in [ R.Undef $ R.sname macroname
      , R.Verbatim $
-         subst tmpl (context [ ("macroname", macroname  )
-                             , ("funcdecl" , funcDeclStr)
-                             ]
-                    )
+         subst
+           tmpl
+           (context [ ("macroname", macroname  )
+                    , ("funcdecl" , funcDeclStr)
+                    ]
+           )
      ]
 
----- "Class Declaration Non-Virtual" Declaration
-
-genCppHeaderMacroNonVirtual :: Class -> String
+genCppHeaderMacroNonVirtual :: Class -> [R.CMacro]
 genCppHeaderMacroNonVirtual c =
-  let tmpl = "#undef ${classname}_DECL_NONVIRT \n#define ${classname}_DECL_NONVIRT(Type) \\\n$funcdecl"
-      declBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
-                                        , ("funcdecl" , funcDeclStr               ) ])
+  let tmpl = "#define ${macroname}(Type) \\\n$funcdecl"
       funcDeclStr = intercalate "\\\n"
                   . map (R.renderCStmt . R.CDeclaration)
                   . funcsToDecls c
                   . filter (not.isVirtualFunc)
                   . class_funcs
                   $ c
-  in  declBodyStr
+      macrocname = map toUpper (ffiClassName c)
+      macroname = macrocname <> "_DECL_NONVIRT"
+  in [ R.Undef $ R.sname macroname
+     , R.Verbatim $
+         subst
+           tmpl
+           (context [ ("macroname", macroname  )
+                    , ("funcdecl" , funcDeclStr)
+                    ]
+           )
+     ]
 
 
 ---- "Class Declaration Accessor" Declaration
 
-genCppHeaderMacroAccessor :: Class -> String
+-- #undef ${classname}_DECL_ACCESSOR\n
+
+genCppHeaderMacroAccessor :: Class -> [R.CMacro]
 genCppHeaderMacroAccessor c =
-  let tmpl = "#undef ${classname}_DECL_ACCESSOR\n#define ${classname}_DECL_ACCESSOR(Type)\\\n$funcdecl"
+  let tmpl = "#define ${macroname}(Type)\\\n$funcdecl"
       declBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
                                         , ("funcdecl" , funcDeclStr               ) ])
       funcDeclStr = accessorsToDecls (class_vars c)
-  in  declBodyStr
+      macrocname = map toUpper (ffiClassName c)
+      macroname = macrocname <> "_DECL_ACCESSOR"
+
+  in [ R.Undef $ R.sname macroname
+     , R.Verbatim $
+         subst
+           tmpl
+           (context [ ("macroname", macroname  )
+                    , ("funcdecl" , funcDeclStr)
+                    ]
+           )
+     ]
 
 
 ---- "Class Declaration Virtual/NonVirtual/Accessor" Instances
