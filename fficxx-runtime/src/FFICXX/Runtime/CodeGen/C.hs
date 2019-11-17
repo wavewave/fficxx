@@ -27,19 +27,16 @@ data PragmaParam = Once
 
 data CType = CType String
 
--- | interpolation item
-data IItem = AsIs String | Var String
+-- | parts for interpolation
+newtype NamePart = NamePart String
 
-newtype CName = CName [IItem]
+newtype CName = CName [NamePart]
 
 sname :: String -> CName
-sname s = CName [AsIs s]
+sname s = CName [NamePart s]
 
 renderCName :: CName -> String
-renderCName (CName items) = concatMap renderIItem items
-  where
-    renderIItem (AsIs s) = s
-    renderIItem (Var v) = "## " <> v <> " ##"
+renderCName (CName ps) = intercalate " ## " $ map (\(NamePart p) -> p) ps
 
 
 data CDecl =
@@ -47,8 +44,8 @@ data CDecl =
 
 data CStatement =
     UsingNamespace Namespace -- ^ using namespace <namespace>;
-  | TypeDef CType CName       -- ^ typedef origtype newname;
-  | CDeclaration CDecl       -- ^ function declaration
+  | TypeDef CType CName      -- ^ typedef origtype newname;
+  | CDeclaration CDecl       -- ^ function declaration;
   | Comment String           -- ^ comment
 
 data CMacro =

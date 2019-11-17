@@ -9,27 +9,30 @@ import Data.Monoid                           ((<>))
 --
 import qualified FFICXX.Runtime.CodeGen.C as R
 --
-import FFICXX.Generate.Code.Primitive        (accessorCFunSig
-                                             ,argsToCallString
-                                             ,argsToString
-                                             ,argsToStringNoSelf
-                                             ,argsToCTypVarNoSelf
-                                             ,castCpp2C
-                                             ,castC2Cpp
-                                             ,CFunSig(..)
-                                             ,genericFuncArgs
-                                             ,genericFuncRet
-                                             ,rettypeToString
-                                             ,tmplMemFuncArgToString
-                                             ,tmplMemFuncRetTypeToString
-                                             ,tmplAllArgsToCallString
-                                             ,tmplAllArgsToString
-                                             ,tmplRetTypeToString)
-import FFICXX.Generate.Name                  (aliasedFuncName
-                                             ,cppFuncName
-                                             ,ffiClassName
-                                             ,ffiTmplFuncName
-                                             ,hsTemplateMemberFunctionName)
+import FFICXX.Generate.Code.Primitive        ( accessorCFunSig
+                                             , argsToCallString
+                                             , argsToString
+                                             , argsToStringNoSelf
+                                             , argsToCTypVar
+                                             , argsToCTypVarNoSelf
+                                             , castCpp2C
+                                             , castC2Cpp
+                                             , CFunSig(..)
+                                             , genericFuncArgs
+                                             , genericFuncRet
+                                             , rettypeToString
+                                             , tmplMemFuncArgToString
+                                             , tmplMemFuncRetTypeToString
+                                             , tmplAllArgsToCallString
+                                             , tmplAllArgsToString
+                                             , tmplRetTypeToString
+                                             )
+import FFICXX.Generate.Name                  ( aliasedFuncName
+                                             , cppFuncName
+                                             , ffiClassName
+                                             , ffiTmplFuncName
+                                             , hsTemplateMemberFunctionName
+                                             )
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Util
@@ -63,7 +66,12 @@ genCppHeaderMacroType c =
 genCppHeaderMacroVirtual :: Class -> String
 genCppHeaderMacroVirtual aclass =
   let tmpl = "#undef ${classname}_DECL_VIRT \n#define ${classname}_DECL_VIRT(Type) \\\n${funcdecl}"
-      funcDeclStr = (funcsToDecls aclass) . virtualFuncs . class_funcs $ aclass
+      funcDeclStr = intercalate "\\\n"
+                  . map (R.renderCStmt . R.CDeclaration)
+                  . funcsToDecls aclass
+                  . virtualFuncs
+                  . class_funcs
+                  $ aclass
   in subst tmpl (context [ ("classname", map toUpper (ffiClassName aclass) )
                          , ("funcdecl" , funcDeclStr                     ) ])
 
@@ -75,8 +83,12 @@ genCppHeaderMacroNonVirtual c =
   let tmpl = "#undef ${classname}_DECL_NONVIRT \n#define ${classname}_DECL_NONVIRT(Type) \\\n$funcdecl"
       declBodyStr = subst tmpl (context [ ("classname", map toUpper (ffiClassName c))
                                         , ("funcdecl" , funcDeclStr               ) ])
-      funcDeclStr = (funcsToDecls c) . filter (not.isVirtualFunc)
-                                     . class_funcs $ c
+      funcDeclStr = intercalate "\\\n"
+                  . map (R.renderCStmt . R.CDeclaration)
+                  . funcsToDecls c
+                  . filter (not.isVirtualFunc)
+                  . class_funcs
+                  $ c
   in  declBodyStr
 
 
@@ -317,47 +329,47 @@ returnCpp b ret callstr =
 
 -- Function Declaration and Definition
 
-funcToDecl :: Class -> Function -> String
+funcToDecl :: Class -> Function -> R.CDecl
 funcToDecl c func
   | isNewFunc func || isStaticFunc func =
-    let tmpl = "$returntype Type ## _$funcname ( $args )"
-    in subst tmpl (context [ ("returntype", rettypeToString (genericFuncRet func))
-                           , ("funcname",  aliasedFuncName c func)
-                           , ("args", argsToStringNoSelf (genericFuncArgs func))
-                           ])
+    let ret   = R.CType $ rettypeToString (genericFuncRet func)
+        fname =
+          R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
+        args  = argsToCTypVarNoSelf (genericFuncArgs func)
+    in R.FunDecl ret fname args
   | otherwise =
-    let tmpl = "$returntype Type ## _$funcname ( $args )"
-    in subst tmpl (context [ ("returntype", rettypeToString (genericFuncRet func))
-                           , ("funcname", aliasedFuncName c func)
-                           , ("args", argsToString (genericFuncArgs func))
-                           ])
+    let ret   = R.CType $ rettypeToString (genericFuncRet func)
+        fname =
+          R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
+        args  = argsToCTypVar (genericFuncArgs func)
+    in R.FunDecl ret fname args
 
+funcsToDecls :: Class -> [Function] -> [R.CDecl]
+funcsToDecls c = map (funcToDecl c)
 
-
-funcsToDecls :: Class -> [Function] -> String
-funcsToDecls c = intercalateWith connSemicolonBSlash (funcToDecl c)
+  -- intercalateWith connSemicolonBSlash (funcToDecl c)
 
 
 funcToDef :: Class -> Function -> String
 funcToDef c func
   | isNewFunc func =
-    let declstr = funcToDecl c func
+    let declstr = R.renderCDecl $ funcToDecl c func
         callstr = "(" <> argsToCallString (genericFuncArgs func) <> ")"
         returnstr = "Type * newp = new Type " <> callstr <> "; \\\nreturn to_nonconst<Type ## _t, Type >(newp);"
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"]
   | isDeleteFunc func =
-    let declstr = funcToDecl c func
+    let declstr = R.renderCDecl $ funcToDecl c func
         returnstr = "delete (to_nonconst<Type,Type ## _t>(p)) ; "
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"]
   | isStaticFunc func =
-    let declstr = funcToDecl c func
+    let declstr = R.renderCDecl $ funcToDecl c func
         callstr = cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
         returnstr = returnCpp False (genericFuncRet func) callstr
     in intercalateWith connBSlash id [declstr, "{", returnstr, "}"]
   | otherwise =
-    let declstr = funcToDecl c func
+    let declstr = R.renderCDecl $ funcToDecl c func
         callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
                   <> cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
