@@ -210,27 +210,38 @@ topLevelFunDecl TopLevelVariable {..} = R.FunDecl ret func []
     func = R.sname ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
 
 
-genTopLevelFuncCppDefinition :: TopLevelFunction -> String
+
+   {-
+
+tmpl = "$decl { \n  $funcbody\n}"
+   subst tmpl (context [ ("decl"    , decl)
+                         , ("funcbody", funcDefStr)
+                         ]
+                )
+subst tmpl (context [ ("decl"    , decl)
+                         , ("funcbody", funcDefStr)
+                         ]
+                )
+
+
+   -}
+
+
+genTopLevelFuncCppDefinition :: TopLevelFunction -> R.CStatement
 genTopLevelFuncCppDefinition tf@TopLevelFunction {..} =
-  let tmpl = "$decl { \n  $funcbody\n}"
-      decl = R.renderCDecl $ topLevelFunDecl tf
+  let decl = topLevelFunDecl tf
       callstr = toplevelfunc_name <> "("
                 <> argsToCallString toplevelfunc_args
                 <> ")"
       funcDefStr = returnCpp False (toplevelfunc_ret) callstr
-  in subst tmpl (context [ ("decl"    , decl)
-                         , ("funcbody", funcDefStr)
-                         ]
-                )
+      body = [ R.CVerbatim funcDefStr ]
+  in R.CDefinition decl body
 genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
-  let tmpl = "$decl { \n  $funcbody\n}"
-      decl = R.renderCDecl $ topLevelFunDecl tv
+  let decl = topLevelFunDecl tv
       callstr = toplevelvar_name
       funcDefStr = returnCpp False (toplevelvar_ret) callstr
-  in subst tmpl (context [ ("decl"    , decl)
-                         , ("funcbody", funcDefStr)
-                         ]
-                )
+      body = [ R.CVerbatim funcDefStr ]
+  in R.CDefinition decl body
 
 
 genTmplFunCpp :: Bool -- ^ is for simple type?

@@ -46,8 +46,10 @@ data CStatement =
     UsingNamespace Namespace -- ^ using namespace <namespace>;
   | TypeDef CType CName      -- ^ typedef origtype newname;
   | CDeclaration CDecl       -- ^ function declaration;
+  | CDefinition CDecl [CStatement] -- ^ function definition;
   | CMacroApp CName [CName]  -- ^ C Macro application at statement level (temporary)
   | Comment String           -- ^ comment
+  | CEmptyLine               -- ^ for convenience
   | CVerbatim String         -- ^ temporary verbatim
 
 data CMacro =
@@ -75,8 +77,11 @@ renderCStmt :: CStatement -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 renderCStmt (TypeDef (CType typ) n)  = "typedef " <> typ <> " " <> renderCName n <> ";"
 renderCStmt (CDeclaration e)         = renderCDecl e <> ";"
+renderCStmt (CDefinition d body)     =
+  renderCDecl d <> " {\n" <> concatMap renderCStmt body <> "\n}\n"
 renderCStmt (CMacroApp n as)         = renderCName n <> "(" <> intercalate ", " (map renderCName as) <> ")" -- NOTE: no semicolon.
 renderCStmt (Comment str)            = "// " <> str <> "\n"
+renderCStmt CEmptyLine               = "\n"
 renderCStmt (CVerbatim str)          = str
 
 renderCMacro :: CMacro -> String

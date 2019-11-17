@@ -224,7 +224,9 @@ buildTopLevelCppDef tih =
                               in if n1 == n2
                                  then Nothing
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
-      declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
+      declBodyStr =
+        intercalate "\n" $
+          map (R.renderCStmt . genTopLevelFuncCppDefinition) (tihFuncs tih)
 
   in concatMap R.renderCMacro
        (   declHeaderStmts
