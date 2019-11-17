@@ -96,10 +96,12 @@ genCppHeaderMacroAccessor c =
 
 ---- "Class Declaration Virtual/NonVirtual/Accessor" Instances
 
-genCppHeaderInstVirtual :: (Class,Class) -> String
+genCppHeaderInstVirtual :: (Class,Class) -> R.CStatement
 genCppHeaderInstVirtual (p,c) =
-  let strc = map toUpper (ffiClassName p)
-  in  strc<>"_DECL_VIRT(" <> ffiClassName c <> ");\n"
+  let macroname = map toUpper (ffiClassName p) <> "_DECL_VIRT"
+  in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
+
+     -- strc<>"_DECL_VIRT(" <> ffiClassName c <> ");\n"
 
 genCppHeaderInstNonVirtual :: Class -> String
 genCppHeaderInstNonVirtual c =
@@ -172,10 +174,13 @@ genCppDefMacroTemplateMemberFunction c f =
 
 ---- Invoke Macro to define Virtual/NonVirtual method for a class
 
-genCppDefInstVirtual :: (Class,Class) -> String
+genCppDefInstVirtual :: (Class,Class) -> R.CStatement
 genCppDefInstVirtual (p,c) =
-  let strc = map toUpper (ffiClassName p)
-  in  strc<>"_DEF_VIRT(" <> ffiClassName c <> ")\n"
+  let macroname = map toUpper (ffiClassName p) <> "_DEF_VIRT"
+  in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
+
+  --  strc =  (ffiClassName p)
+  -- in  strc<>"_DEF_VIRT(" <> ffiClassName c <> ")\n"
 
 genCppDefInstNonVirtual :: Class -> String
 genCppDefInstNonVirtual c =

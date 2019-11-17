@@ -16,14 +16,6 @@ import Language.Haskell.Exts.Syntax           ( Module(..)
                                               )
 import System.FilePath
 --
-{- import FFICXX.Runtime.CodeGen.C               ( CBlock(..)
-                                              , CStatement(..)
-                                              , CMacro
-                                              , HeaderName(..)
-                                              , PragmaParam(..)
-                                              , renderCMacro
-                                              , renderBlock
-                                              ) -}
 import FFICXX.Runtime.CodeGen.C               ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.C as R
 --
@@ -77,9 +69,10 @@ buildDaughterDef f m =
     in (concatMap f' lst)
 
 -- |
-buildParentDef :: ((Class,Class)->String) -> Class -> String
+buildParentDef :: ((Class,Class) -> R.CStatement) -> Class -> String
 buildParentDef f cls = g (class_allparents cls,cls)
-  where g (ps,c) = concatMap (\p -> f (p,c)) ps
+  where g (ps,c) = intercalate "\n" $
+                     map (\p -> R.renderCStmt (f (p,c))) ps
 
 -- |
 mkProtectedFunctionList :: Class -> String
@@ -129,7 +122,7 @@ buildDeclHeader cprefix header =
                       if (fst.hsClassName) aclass /= "Deletable"
                         then buildParentDef genCppHeaderInstVirtual aclass
                              `connRet2`
-                             genCppHeaderInstVirtual (aclass, aclass)
+                             R.renderCStmt (genCppHeaderInstVirtual (aclass, aclass))
                              `connRet2`
                              intercalateWith connRet genCppHeaderInstNonVirtual classes
                              `connRet2`
@@ -171,9 +164,9 @@ buildDefMain cih =
                 `connRet`
                 buildParentDef genCppDefInstVirtual (cihClass cih)
                 `connRet`
-                if isAbstractClass aclass
+                (if isAbstractClass aclass
                   then ""
-                  else genCppDefInstVirtual (aclass, aclass)
+                  else R.renderCStmt (genCppDefInstVirtual (aclass, aclass)))
                 `connRet`
                 intercalateWith connRet genCppDefInstNonVirtual classes
                 `connRet`
