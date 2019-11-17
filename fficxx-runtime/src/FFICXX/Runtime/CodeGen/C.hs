@@ -86,9 +86,9 @@ renderCMacro (Pragma param)           = "\n#pragma " <> renderPragmaParam param 
 renderCMacro (Undef n)                = "\n#undef " <> renderCName n <> "\n"
 renderCMacro (Define m ts stmts)       =
      "\n#define " <> renderCName m
-   <> "("
-   <> intercalate ", " (map renderCName ts)
-   <> ") \\\n"
+   <> case ts of
+        [] -> " "
+        _  -> "("  <> intercalate ", " (map renderCName ts) <> ") \\\n"
    <> intercalate "\\\n" (map renderCStmt stmts)
    <> "\n"
 renderCMacro EmptyLine                = "\n"

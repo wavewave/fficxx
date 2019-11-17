@@ -69,15 +69,14 @@ buildDaughterDef f m =
     in (concatMap f' lst)
 
 -- |
-buildParentDef :: ((Class,Class) -> R.CStatement) -> Class -> String
-buildParentDef f cls = g (class_allparents cls,cls)
-  where g (ps,c) = intercalate "\n" $
-                     map (\p -> R.renderCStmt (f (p,c))) ps
+buildParentDef :: ((Class,Class) -> R.CStatement) -> Class -> [R.CStatement]
+buildParentDef f cls = map (\p -> f (p,cls)) . class_allparents $ cls
+--  where g (ps,c) = map (\p -> f (p,c)) ps
 
 -- |
 mkProtectedFunctionList :: Class -> [R.CMacro]
 mkProtectedFunctionList c =
-    map (\x-> R.Define (R.sname ("IS_" <> class_name c <> "_" <> x <> "_PROTECTED")) [] [])
+    map (\x-> R.Define (R.sname ("IS_" <> class_name c <> "_" <> x <> "_PROTECTED")) [] [R.CVerbatim "()"])
   . unProtected
   . class_protected
   $ c
@@ -118,20 +117,19 @@ buildDeclHeader cprefix header =
                  . map R.renderCMacro
                  . intercalate [R.EmptyLine]
                  $ [vdecl,nvdecl,acdecl,vdef,nvdef,acdef]++tmpldef
-      classDeclsStr = -- NOTE: Deletable is treated specially.
-                      -- TODO: We had better make it as a separate constructor in Class.
-                      if (fst.hsClassName) aclass /= "Deletable"
-                        then buildParentDef genCppHeaderInstVirtual aclass
-                             `connRet2`
-                             R.renderCStmt (genCppHeaderInstVirtual (aclass, aclass))
-                             `connRet2`
-                             intercalate "\n" (map (R.renderCStmt . genCppHeaderInstNonVirtual) classes)
-                             `connRet2`
-                             intercalate "\n" (map (R.renderCStmt . genCppHeaderInstAccessor) classes)
-                        else ""
-      declBodyStr   = declDefStr
-                      `connRet2`
-                      classDeclsStr
+      classDeclStmts =
+        -- NOTE: Deletable is treated specially.
+        -- TODO: We had better make it as a separate constructor in Class.
+        if (fst.hsClassName) aclass /= "Deletable"
+        then    buildParentDef genCppHeaderInstVirtual aclass
+             <> [genCppHeaderInstVirtual (aclass, aclass)]
+             <> map genCppHeaderInstNonVirtual classes
+             <> map genCppHeaderInstAccessor classes
+        else []
+      declBodyStr =
+        declDefStr
+        `connRet2`
+        intercalate "\n" (map R.renderCStmt classDeclStmts)
   in R.renderBlock $
        R.ExternC $
             [ R.Pragma R.Once, R.EmptyLine ]
@@ -161,7 +159,20 @@ buildDefMain cih =
                                  then Nothing
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
 
-      cppBody =
+      cppBodyStmts =
+           mkProtectedFunctionList (cihClass cih)
+        <> map
+             R.CRegular
+             (   buildParentDef genCppDefInstVirtual (cihClass cih)
+              <> (if isAbstractClass aclass
+                  then []
+                  else [genCppDefInstVirtual (aclass, aclass)]
+                 )
+              <> map genCppDefInstNonVirtual classes
+              <> map genCppDefInstAccessor classes
+             )
+
+        {-
         intercalate "\n" (map R.renderCMacro (mkProtectedFunctionList (cihClass cih)))
         `connRet`
         buildParentDef genCppDefInstVirtual (cihClass cih)
@@ -174,6 +185,7 @@ buildDefMain cih =
         (intercalate "\n" (map (R.renderCStmt . genCppDefInstNonVirtual) classes))
         `connRet`
         (intercalate "\n" (map (R.renderCStmt . genCppDefInstAccessor) classes))
+        -}
   in concatMap R.renderCMacro
        (   headerStmts
         <> [ R.EmptyLine ]
@@ -188,8 +200,8 @@ buildDefMain cih =
                         \  (to_nonconst<oname,cname ## _t>), \\\n\
                         \  (to_nonconst<cname,cname ## _t>) )\n"
            , R.EmptyLine
-           , R.Verbatim cppBody
            ]
+        <> cppBodyStmts
        )
 
 -- |
