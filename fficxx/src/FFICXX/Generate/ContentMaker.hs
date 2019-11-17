@@ -71,7 +71,6 @@ buildDaughterDef f m =
 -- |
 buildParentDef :: ((Class,Class) -> R.CStatement) -> Class -> [R.CStatement]
 buildParentDef f cls = map (\p -> f (p,cls)) . class_allparents $ cls
---  where g (ps,c) = map (\p -> f (p,c)) ps
 
 -- |
 mkProtectedFunctionList :: Class -> [R.CMacro]
@@ -171,21 +170,6 @@ buildDefMain cih =
               <> map genCppDefInstNonVirtual classes
               <> map genCppDefInstAccessor classes
              )
-
-        {-
-        intercalate "\n" (map R.renderCMacro (mkProtectedFunctionList (cihClass cih)))
-        `connRet`
-        buildParentDef genCppDefInstVirtual (cihClass cih)
-        `connRet`
-        (if isAbstractClass aclass
-         then ""
-         else R.renderCStmt (genCppDefInstVirtual (aclass, aclass))
-        )
-        `connRet`
-        (intercalate "\n" (map (R.renderCStmt . genCppDefInstNonVirtual) classes))
-        `connRet`
-        (intercalate "\n" (map (R.renderCStmt . genCppDefInstAccessor) classes))
-        -}
   in concatMap R.renderCMacro
        (   headerStmts
         <> [ R.EmptyLine ]
