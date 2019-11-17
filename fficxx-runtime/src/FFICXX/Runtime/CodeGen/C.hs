@@ -36,7 +36,7 @@ sname :: String -> CName
 sname s = CName [NamePart s]
 
 renderCName :: CName -> String
-renderCName (CName ps) = intercalate " ## " $ map (\(NamePart p) -> p) ps
+renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
 
 data CDecl =
@@ -52,6 +52,8 @@ data CMacro =
     CRegular CStatement
   | Include HeaderName       -- ^ #include "<header>"
   | Pragma PragmaParam       -- ^ #pragma
+  | Undef CName              -- ^ #undef name
+  --   | Define CName CName [CStatement] -- ^ #define
   | EmptyLine                -- ^ just for convenience
   | Verbatim String          -- ^ temporary verbatim
 
@@ -77,6 +79,7 @@ renderCMacro :: CMacro -> String
 renderCMacro (CRegular stmt)          = renderCStmt stmt
 renderCMacro (Include (HdrName hdr))  = "\n#include \"" <> hdr <> "\"\n"
 renderCMacro (Pragma param)           = "\n#pragma " <> renderPragmaParam param <> "\n"
+renderCMacro (Undef n)                = "\n#undef " <> renderCName n <> "\n"
 renderCMacro EmptyLine                = "\n"
 renderCMacro (Verbatim str)           = str
 

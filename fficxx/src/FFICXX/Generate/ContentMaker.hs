@@ -112,23 +112,26 @@ buildDeclHeader cprefix header =
       declHeaderStmts =
            [ R.Include (HdrName (cprefix ++ "Type.h")) ]
         <> map R.Include (cihIncludedHPkgHeadersInH header)
-      declDefStr    = intercalateWith connRet2 genCppHeaderMacroVirtual classes
-                      `connRet2`
-                      intercalateWith connRet genCppHeaderMacroNonVirtual classes
-                      `connRet2`
-                      intercalateWith connRet genCppHeaderMacroAccessor classes
-                      `connRet2`
-                      intercalateWith connRet2 genCppDefMacroVirtual classes
-                      `connRet2`
-                      intercalateWith connRet2 genCppDefMacroNonVirtual classes
-                      `connRet2`
-                      intercalateWith connRet2 genCppDefMacroAccessor classes
-                      `connRet2`
-                      flip (intercalateWith connRet2) classes
-                        (\c -> intercalateWith connRet2
-                                 (genCppDefMacroTemplateMemberFunction c)
-                                 (class_tmpl_funcs c)
-                        )
+      virtdef = intercalate "\n\n" $
+                  map (concat . map R.renderCMacro . genCppHeaderMacroVirtual) classes
+
+      declDefStr = virtdef
+                   `connRet2`
+                   intercalateWith connRet genCppHeaderMacroNonVirtual classes
+                   `connRet2`
+                   intercalateWith connRet genCppHeaderMacroAccessor classes
+                   `connRet2`
+                   intercalateWith connRet2 genCppDefMacroVirtual classes
+                   `connRet2`
+                   intercalateWith connRet2 genCppDefMacroNonVirtual classes
+                   `connRet2`
+                   intercalateWith connRet2 genCppDefMacroAccessor classes
+                   `connRet2`
+                   flip (intercalateWith connRet2) classes
+                     (\c -> intercalateWith connRet2
+                              (genCppDefMacroTemplateMemberFunction c)
+                              (class_tmpl_funcs c)
+                     )
       classDeclsStr = -- NOTE: Deletable is treated specially.
                       -- TODO: We had better make it as a separate constructor in Class.
                       if (fst.hsClassName) aclass /= "Deletable"

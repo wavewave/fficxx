@@ -63,18 +63,24 @@ genCppHeaderMacroType c =
 
 ---- "Class Declaration Virtual" Declaration
 
-genCppHeaderMacroVirtual :: Class -> String
+genCppHeaderMacroVirtual :: Class -> [R.CMacro]
 genCppHeaderMacroVirtual aclass =
-  let tmpl = "#undef ${classname}_DECL_VIRT \n#define ${classname}_DECL_VIRT(Type) \\\n${funcdecl}"
+  let tmpl = "#define ${macroname}(Type) \\\n${funcdecl}"
       funcDeclStr = intercalate "\\\n"
                   . map (R.renderCStmt . R.CDeclaration)
                   . funcsToDecls aclass
                   . virtualFuncs
                   . class_funcs
                   $ aclass
-  in subst tmpl (context [ ("classname", map toUpper (ffiClassName aclass) )
-                         , ("funcdecl" , funcDeclStr                     ) ])
-
+      macrocname = map toUpper (ffiClassName aclass)
+      macroname = macrocname <> "_DECL_VIRT"
+  in [ R.Undef $ R.sname macroname
+     , R.Verbatim $
+         subst tmpl (context [ ("macroname", macroname  )
+                             , ("funcdecl" , funcDeclStr)
+                             ]
+                    )
+     ]
 
 ---- "Class Declaration Non-Virtual" Declaration
 
