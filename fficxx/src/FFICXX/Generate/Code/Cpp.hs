@@ -65,24 +65,25 @@ genCppHeaderMacroType c =
 
 genCppHeaderMacroVirtual :: Class -> [R.CMacro]
 genCppHeaderMacroVirtual aclass =
-  let tmpl = "#define ${macroname}(Type) \\\n${funcdecl}"
-      funcDeclStr = intercalate "\\\n"
-                  . map (R.renderCStmt . R.CDeclaration)
-                  . funcsToDecls aclass
-                  . virtualFuncs
-                  . class_funcs
-                  $ aclass
+  let -- tmpl = "#define ${macroname}(Type) \\\n${funcdecl}"
+      funcDecls = map R.CDeclaration
+                . funcsToDecls aclass
+                . virtualFuncs
+                . class_funcs
+                $ aclass
       macrocname = map toUpper (ffiClassName aclass)
       macroname = macrocname <> "_DECL_VIRT"
   in [ R.Undef $ R.sname macroname
-     , R.Verbatim $
+     , R.Define (R.sname macroname) (R.sname "Type") funcDecls
+     ]
+     {- Verbatim $
          subst
            tmpl
            (context [ ("macroname", macroname  )
                     , ("funcdecl" , funcDeclStr)
                     ]
            )
-     ]
+     ] -}
 
 genCppHeaderMacroNonVirtual :: Class -> [R.CMacro]
 genCppHeaderMacroNonVirtual c =
@@ -107,8 +108,6 @@ genCppHeaderMacroNonVirtual c =
 
 
 ---- "Class Declaration Accessor" Declaration
-
--- #undef ${classname}_DECL_ACCESSOR\n
 
 genCppHeaderMacroAccessor :: Class -> [R.CMacro]
 genCppHeaderMacroAccessor c =
