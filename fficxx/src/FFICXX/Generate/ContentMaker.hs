@@ -112,24 +112,29 @@ buildDeclHeader cprefix header =
       declHeaderStmts =
            [ R.Include (HdrName (cprefix ++ "Type.h")) ]
         <> map R.Include (cihIncludedHPkgHeadersInH header)
-      vdef  = intercalate "\n\n" $
-                map (R.renderCMacro . genCppHeaderMacroVirtual) classes
-      nvdef = intercalate "\n\n" $
-                map (R.renderCMacro . genCppHeaderMacroNonVirtual) classes
-      acdef = intercalate "\n\n" $
-                map (R.renderCMacro . genCppHeaderMacroAccessor) classes
-
-      declDefStr = vdef
+      vdecl  = intercalate "\n\n" $
+                 map (R.renderCMacro . genCppHeaderMacroVirtual) classes
+      nvdecl = intercalate "\n\n" $
+                 map (R.renderCMacro . genCppHeaderMacroNonVirtual) classes
+      acdecl = intercalate "\n\n" $
+                 map (R.renderCMacro . genCppHeaderMacroAccessor) classes
+      vdef   = intercalate "\n\n" $
+                 map (R.renderCMacro . genCppDefMacroVirtual) classes
+      nvdef  = intercalate "\n\n" $
+                 map (R.renderCMacro . genCppDefMacroNonVirtual) classes
+      acdef  = intercalate "\n\n" $
+                 map (R.renderCMacro . genCppDefMacroAccessor) classes
+      declDefStr = vdecl
+                   `connRet2`
+                   nvdecl
+                   `connRet2`
+                   acdecl
+                   `connRet2`
+                   vdef
                    `connRet2`
                    nvdef
                    `connRet2`
                    acdef
-                   `connRet2`
-                   intercalateWith connRet2 genCppDefMacroVirtual classes
-                   `connRet2`
-                   intercalateWith connRet2 genCppDefMacroNonVirtual classes
-                   `connRet2`
-                   intercalateWith connRet2 genCppDefMacroAccessor classes
                    `connRet2`
                    flip (intercalateWith connRet2) classes
                      (\c -> intercalateWith connRet2
