@@ -16,13 +16,16 @@ import Language.Haskell.Exts.Syntax           ( Module(..)
                                               )
 import System.FilePath
 --
-import FFICXX.Runtime.CodeGen.C               ( CBlock(..)
+{- import FFICXX.Runtime.CodeGen.C               ( CBlock(..)
                                               , CStatement(..)
+                                              , CMacro
                                               , HeaderName(..)
                                               , PragmaParam(..)
-                                              , render
+                                              , renderCMacro
                                               , renderBlock
-                                              )
+                                              ) -}
+import FFICXX.Runtime.CodeGen.C               ( HeaderName(..) )
+import qualified FFICXX.Runtime.CodeGen.C as R
 --
 import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.HsCast            (genHsFrontInstCastable
@@ -90,13 +93,13 @@ buildTypeDeclHeader ::
      [Class]
   -> String
 buildTypeDeclHeader classes =
-  let typeDeclBodyStr = intercalateWith connRet2 (genCppHeaderMacroType) classes
-  in renderBlock $
-       ExternC
-         [ Pragma Once
-         , EmptyLine
-         , Verbatim typeDeclBodyStr
-         ]
+  let typeDeclBodyStmts =
+        intercalate [R.EmptyLine] $
+          map (map R.CRegular . genCppHeaderMacroType) classes
+  in R.renderBlock $
+       R.ExternC $
+         [ R.Pragma R.Once, R.EmptyLine ] <> typeDeclBodyStmts
+
 
 -- |
 buildDeclHeader ::
@@ -106,27 +109,21 @@ buildDeclHeader ::
 buildDeclHeader cprefix header =
   let classes = [cihClass header]
       aclass = cihClass header
-      declHeaderStr =
-        render (Include (HdrName (cprefix ++ "Type.h")))
-        `connRet2`
-        intercalate "\n" (map (render . Include) $ cihIncludedHPkgHeadersInH header)
-      declDefStr    = intercalateWith connRet2 genCppHeaderMacroVirtual classes
-                      `connRet2`
-                      intercalateWith connRet genCppHeaderMacroNonVirtual classes
-                      `connRet2`
-                      intercalateWith connRet genCppHeaderMacroAccessor classes
-                      `connRet2`
-                      intercalateWith connRet2 genCppDefMacroVirtual classes
-                      `connRet2`
-                      intercalateWith connRet2 genCppDefMacroNonVirtual classes
-                      `connRet2`
-                      intercalateWith connRet2 genCppDefMacroAccessor classes
-                      `connRet2`
-                      flip (intercalateWith connRet2) classes
-                        (\c -> intercalateWith connRet2
-                                 (genCppDefMacroTemplateMemberFunction c)
-                                 (class_tmpl_funcs c)
-                        )
+      declHeaderStmts =
+           [ R.Include (HdrName (cprefix ++ "Type.h")) ]
+        <> map R.Include (cihIncludedHPkgHeadersInH header)
+      vdecl  = map genCppHeaderMacroVirtual    classes
+      nvdecl = map genCppHeaderMacroNonVirtual classes
+      acdecl = map genCppHeaderMacroAccessor   classes
+      vdef   = map genCppDefMacroVirtual       classes
+      nvdef  = map genCppDefMacroNonVirtual    classes
+      acdef  = map genCppDefMacroAccessor      classes
+      tmpldef= map (\c -> map (genCppDefMacroTemplateMemberFunction c) (class_tmpl_funcs c)) classes
+
+      declDefStr = intercalate "\n\n"
+                 . map R.renderCMacro
+                 . intercalate [R.EmptyLine]
+                 $ [vdecl,nvdecl,acdecl,vdef,nvdef,acdef]++tmpldef
       classDeclsStr = -- NOTE: Deletable is treated specially.
                       -- TODO: We had better make it as a separate constructor in Class.
                       if (fst.hsClassName) aclass /= "Deletable"
@@ -141,14 +138,13 @@ buildDeclHeader cprefix header =
       declBodyStr   = declDefStr
                       `connRet2`
                       classDeclsStr
-  in renderBlock $
-       ExternC
-         [ Pragma Once
-         , EmptyLine
-         , Verbatim declHeaderStr
-         , EmptyLine
-         , Verbatim declBodyStr
-         ]
+  in R.renderBlock $
+       R.ExternC $
+            [ R.Pragma R.Once, R.EmptyLine ]
+         <> declHeaderStmts
+         <> [ R.EmptyLine
+            , R.Verbatim declBodyStr
+            ]
 
 -- |
 buildDefMain :: ClassImportHeader
@@ -156,11 +152,11 @@ buildDefMain :: ClassImportHeader
 buildDefMain cih =
   let classes = [cihClass cih]
       headerStmts =
-           [ Include "MacroPatternMatch.h" ]
+           [ R.Include "MacroPatternMatch.h" ]
         <> genAllCppHeaderInclude cih
-        <> [ Include (cihSelfHeader cih) ]
+        <> [ R.Include (cihSelfHeader cih) ]
       namespaceStmts =
-        (map UsingNamespace . cihNamespace) cih
+        (map R.UsingNamespace . cihNamespace) cih
       aclass = cihClass cih
       aliasStr = intercalate "\n" $
                    mapMaybe typedefstmt $
@@ -182,21 +178,21 @@ buildDefMain cih =
                 intercalateWith connRet genCppDefInstNonVirtual classes
                 `connRet`
                 intercalateWith connRet genCppDefInstAccessor classes
-  in concatMap render
+  in concatMap R.renderCMacro
        (   headerStmts
-        <> [ EmptyLine ]
-        <> namespaceStmts
-        <> [ EmptyLine
-           , Verbatim aliasStr
-           , EmptyLine
-           , Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
-           , EmptyLine
-           , Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
-                      \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
-                      \  (to_nonconst<oname,cname ## _t>), \\\n\
-                      \  (to_nonconst<cname,cname ## _t>) )\n"
-           , EmptyLine
-           , Verbatim cppBody
+        <> [ R.EmptyLine ]
+        <> map R.CRegular namespaceStmts
+        <> [ R.EmptyLine
+           , R.Verbatim aliasStr
+           , R.EmptyLine
+           , R.Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
+           , R.EmptyLine
+           , R.Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
+                        \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+                        \  (to_nonconst<oname,cname ## _t>), \\\n\
+                        \  (to_nonconst<cname,cname ## _t>) )\n"
+           , R.EmptyLine
+           , R.Verbatim cppBody
            ]
        )
 
@@ -207,18 +203,15 @@ buildTopLevelHeader ::
   -> String
 buildTopLevelHeader cprefix tih =
   let declHeaderStmts =
-           [ Include (HdrName (cprefix ++ "Type.h")) ]
-        <> map Include (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih)
-      declBodyStr = intercalateWith connRet genTopLevelFuncCppHeader (tihFuncs tih)
-  in renderBlock $
-       ExternC $
-            [ Pragma Once
-            , EmptyLine
-            ]
+           [ R.Include (HdrName (cprefix ++ "Type.h")) ]
+        <> map R.Include (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih)
+      declBodyStmts = map (R.CDeclaration . topLevelFunDecl) $ tihFuncs tih
+  in R.renderBlock $
+       R.ExternC $
+            [ R.Pragma R.Once, R.EmptyLine ]
          <> declHeaderStmts
-         <> [ EmptyLine
-            , Verbatim declBodyStr
-            ]
+         <> [ R.EmptyLine ]
+         <> map R.CRegular declBodyStmts
 
 -- |
 buildTopLevelCppDef :: TopLevelImportHeader -> String
@@ -226,17 +219,17 @@ buildTopLevelCppDef tih =
   let cihs = tihClassDep tih
       extclasses = tihExtraClassDep tih
       declHeaderStmts =
-           [ Include "MacroPatternMatch.h"
-           , Include (HdrName (tihHeaderFileName tih <.> "h"))
+           [ R.Include "MacroPatternMatch.h"
+           , R.Include (HdrName (tihHeaderFileName tih <.> "h"))
            ]
         <> concatMap genAllCppHeaderInclude cihs
         <> otherHeaderStmts
       otherHeaderStmts =
-        map Include (map cihSelfHeader cihs ++ tihExtraHeadersInCPP tih)
+        map R.Include (map cihSelfHeader cihs ++ tihExtraHeadersInCPP tih)
 
       allns = nub ((tihClassDep tih >>= cihNamespace) ++ tihNamespaces tih)
 
-      namespaceStmts = map UsingNamespace allns
+      namespaceStmts = map R.UsingNamespace allns
       aliasStr = intercalate "\n" $
                    mapMaybe typedefstmt $
                      rights (concatMap cihImportedClasses cihs ++ extclasses)
@@ -247,21 +240,21 @@ buildTopLevelCppDef tih =
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
       declBodyStr    = intercalateWith connRet genTopLevelFuncCppDefinition (tihFuncs tih)
 
-  in concatMap render
+  in concatMap R.renderCMacro
        (   declHeaderStmts
-        <> [EmptyLine]
-        <> namespaceStmts
-        <> [ EmptyLine
-           , Verbatim aliasStr
-           , EmptyLine
-           , Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
-           , EmptyLine
-           , Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
-                      \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
-                      \  (to_nonconst<oname,cname ## _t>), \\\n\
-                      \  (to_nonconst<cname,cname ## _t>) )\n"
-           , EmptyLine
-           , Verbatim declBodyStr
+        <> [R.EmptyLine]
+        <> map R.CRegular namespaceStmts
+        <> [ R.EmptyLine
+           , R.Verbatim aliasStr
+           , R.EmptyLine
+           , R.Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
+           , R.EmptyLine
+           , R.Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
+                        \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+                        \  (to_nonconst<oname,cname ## _t>), \\\n\
+                        \  (to_nonconst<cname,cname ## _t>) )\n"
+           , R.EmptyLine
+           , R.Verbatim declBodyStr
            ]
        )
 
@@ -272,20 +265,20 @@ buildTemplateHeader ::
 buildTemplateHeader tcih =
   let t = tcihTClass tcih
       fs = tclass_funcs t
-      headerStmts = map Include (tcihCxxHeaders tcih)
+      headerStmts = map R.Include (tcihCxxHeaders tcih)
       deffunc = intercalateWith connRet (genTmplFunCpp False t) fs
                 ++ "\n\n"
                 ++ intercalateWith connRet (genTmplFunCpp True t) fs
       classlevel = genTmplClassCpp False t fs ++ "\n\n" ++ genTmplClassCpp True t fs
-  in concatMap render $
-          [ Pragma Once
-          , EmptyLine
+  in concatMap R.renderCMacro $
+          [ R.Pragma R.Once
+          , R.EmptyLine
           ]
        <> headerStmts
-       <> [ EmptyLine
-          , Verbatim deffunc
-          , EmptyLine
-          , Verbatim classlevel
+       <> [ R.EmptyLine
+          , R.Verbatim deffunc
+          , R.EmptyLine
+          , R.Verbatim classlevel
           ]
 
 -- |

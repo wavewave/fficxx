@@ -85,7 +85,6 @@ hsTmplFuncNameTH t f = "t_" <> hsTmplFuncName t f
 
 hsTemplateMemberFunctionName :: Class -> TemplateMemberFunction -> String
 hsTemplateMemberFunctionName c f = fromMaybe (nonvirtualName c (tmf_name f)) (tmf_alias f)
-  --   fst (hsClassName c) <> "_" <> tmf_name f -- TODO: alias
 
 
 hsTemplateMemberFunctionNameTH :: Class -> TemplateMemberFunction -> String

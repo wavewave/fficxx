@@ -9,10 +9,8 @@ import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       )
 import Language.Haskell.Exts.Syntax   ( Decl(..) )
 --
-import FFICXX.Runtime.CodeGen.C       ( CStatement(..)
-                                      , HeaderName(..)
-                                      , render
-                                      )
+import FFICXX.Runtime.CodeGen.C       ( HeaderName(..) )
+import qualified FFICXX.Runtime.CodeGen.C as R
 --
 import FFICXX.Generate.Code.Primitive ( functionSignatureT
                                       , functionSignatureTT
@@ -219,21 +217,21 @@ genTmplInstance t tcih fs =
           where
             includeStatic =
               strE $ concatMap (<> "\n")
-                [ render (Include (HdrName "MacroPatternMatch.h"))
-                , render (Include (tcihSelfHeader tcih))
+                [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h"))
+                , R.renderCMacro (R.Include (tcihSelfHeader tcih))
                 ]
             includeDynamic =
               letE
                 [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param" )
                 , pbind_ (pApp (name "f") [p "x"])
-                    (v "render" `app` (con "Include" `app` v "x"))
+                    (v "renderCMacro" `app` (con "Include" `app` v "x"))
                 ]
                 (v "concatMap" `app` v "f" `app` v "headers")
             namespaceStr =
               letE
                 [ pbind_ (p "nss") (v "tpinfoCxxNamespaces" `app` v "param" )
                 , pbind_ (pApp (name "f") [p "x"])
-                    (v "render" `app` (con "UsingNamespace" `app` v "x"))
+                    (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
                 ]
                 (v "concatMap" `app` v "f" `app` v "nss")
 
