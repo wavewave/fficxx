@@ -70,7 +70,7 @@ genCppHeaderMacroVirtual aclass =
                 $ aclass
       macrocname = map toUpper (ffiClassName aclass)
       macroname = macrocname <> "_DECL_VIRT"
-  in R.Define (R.sname macroname) (R.sname "Type") funcDecls
+  in R.Define (R.sname macroname) [R.sname "Type"] funcDecls
 
 genCppHeaderMacroNonVirtual :: Class -> R.CMacro
 genCppHeaderMacroNonVirtual c =
@@ -81,7 +81,7 @@ genCppHeaderMacroNonVirtual c =
                 $ c
       macrocname = map toUpper (ffiClassName c)
       macroname = macrocname <> "_DECL_NONVIRT"
-  in R.Define (R.sname macroname) (R.sname "Type") funcDecls
+  in R.Define (R.sname macroname) [R.sname "Type"] funcDecls
 
 
 ---- "Class Declaration Accessor" Declaration
@@ -91,27 +91,25 @@ genCppHeaderMacroAccessor c =
   let funcDecls  = map R.CDeclaration $ accessorsToDecls (class_vars c)
       macrocname = map toUpper (ffiClassName c)
       macroname  = macrocname <> "_DECL_ACCESSOR"
-  in R.Define (R.sname macroname) (R.sname "Type") funcDecls
+  in R.Define (R.sname macroname) [R.sname "Type"] funcDecls
 
 
 ---- "Class Declaration Virtual/NonVirtual/Accessor" Instances
 
-genCppHeaderInstVirtual :: (Class,Class) -> String
+genCppHeaderInstVirtual :: (Class,Class) -> R.CStatement
 genCppHeaderInstVirtual (p,c) =
-  let strc = map toUpper (ffiClassName p)
-  in  strc<>"_DECL_VIRT(" <> ffiClassName c <> ");\n"
+  let macroname = map toUpper (ffiClassName p) <> "_DECL_VIRT"
+  in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
-genCppHeaderInstNonVirtual :: Class -> String
+genCppHeaderInstNonVirtual :: Class -> R.CStatement
 genCppHeaderInstNonVirtual c =
-  let strx = map toUpper (ffiClassName c)
-  in  strx<>"_DECL_NONVIRT(" <> ffiClassName c <> ");\n"
+  let macroname = map toUpper (ffiClassName c) <> "_DECL_NONVIRT"
+  in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
-
-genCppHeaderInstAccessor :: Class -> String
+genCppHeaderInstAccessor :: Class -> R.CStatement
 genCppHeaderInstAccessor c =
-  let strx = map toUpper (ffiClassName c)
-  in  strx<>"_DECL_ACCESSOR(" <> ffiClassName c <> ");\n"
-
+  let macroname = map toUpper (ffiClassName c) <> "_DECL_ACCESSOR"
+  in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
 ----
 ---- Definition
@@ -124,7 +122,7 @@ genCppDefMacroVirtual aclass =
   let funcDefStr = funcsToDefs aclass . virtualFuncs . class_funcs $ aclass
       macrocname = map toUpper (ffiClassName aclass)
       macroname = macrocname <> "_DEF_VIRT"
-  in R.Define (R.sname macroname) (R.sname "Type") [ R.CVerbatim funcDefStr ]
+  in R.Define (R.sname macroname) [R.sname "Type"] [ R.CVerbatim funcDefStr ]
 
 ---- "Class Definition NonVirtual" Declaration
 
@@ -136,7 +134,7 @@ genCppDefMacroNonVirtual aclass =
                  $ aclass
       macrocname = map toUpper (ffiClassName aclass)
       macroname = macrocname <> "_DEF_NONVIRT"
-  in R.Define (R.sname macroname) (R.sname "Type") [ R.CVerbatim funcDefStr ]
+  in R.Define (R.sname macroname) [R.sname "Type"] [ R.CVerbatim funcDefStr ]
 
 ---- Define Macro to provide Accessor C-C++ shim code for a class
 
@@ -145,7 +143,7 @@ genCppDefMacroAccessor c =
   let funcDefStr = accessorsToDefs (class_vars c)
       macrocname = map toUpper (ffiClassName c)
       macroname = macrocname <> "_DEF_ACCESSOR"
-  in R.Define (R.sname macroname) (R.sname "Type") [ R.CVerbatim funcDefStr ]
+  in R.Define (R.sname macroname) [R.sname "Type"] [ R.CVerbatim funcDefStr ]
 
 ---- Define Macro to provide TemplateMemberFunction C-C++ shim code for a class
 
@@ -154,7 +152,7 @@ genCppDefMacroTemplateMemberFunction ::
   -> TemplateMemberFunction
   -> R.CMacro
 genCppDefMacroTemplateMemberFunction c f =
-   R.Define (R.sname macroname) (R.sname "Type")
+   R.Define (R.sname macroname) [R.sname "Type"]
      [ R.CVerbatim (subst tmpl ctxt) ]
   where
     macroname = hsTemplateMemberFunctionName c f
@@ -172,22 +170,20 @@ genCppDefMacroTemplateMemberFunction c f =
 
 ---- Invoke Macro to define Virtual/NonVirtual method for a class
 
-genCppDefInstVirtual :: (Class,Class) -> String
+genCppDefInstVirtual :: (Class,Class) -> R.CStatement
 genCppDefInstVirtual (p,c) =
-  let strc = map toUpper (ffiClassName p)
-  in  strc<>"_DEF_VIRT(" <> ffiClassName c <> ")\n"
+  let macroname = map toUpper (ffiClassName p) <> "_DEF_VIRT"
+  in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
-genCppDefInstNonVirtual :: Class -> String
+genCppDefInstNonVirtual :: Class -> R.CStatement
 genCppDefInstNonVirtual c =
-  subst "${capitalclassname}_DEF_NONVIRT(${classname})"
-    (context [ ("capitalclassname", toUppers (ffiClassName c))
-             , ("classname"       , ffiClassName c           ) ])
+  let macroname = toUppers (ffiClassName c) <> "_DEF_NONVIRT"
+  in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
-genCppDefInstAccessor :: Class -> String
+genCppDefInstAccessor :: Class -> R.CStatement
 genCppDefInstAccessor c =
-  subst "${capitalclassname}_DEF_ACCESSOR(${classname})"
-    (context [ ("capitalclassname", toUppers (ffiClassName c))
-             , ("classname"       , ffiClassName c           ) ])
+  let macroname = toUppers (ffiClassName c) <> "_DEF_ACCESSOR"
+  in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
 -----------------
 
@@ -339,9 +335,6 @@ funcToDecl c func
 
 funcsToDecls :: Class -> [Function] -> [R.CDecl]
 funcsToDecls c = map (funcToDecl c)
-
-  -- intercalateWith connSemicolonBSlash (funcToDecl c)
-
 
 funcToDef :: Class -> Function -> String
 funcToDef c func

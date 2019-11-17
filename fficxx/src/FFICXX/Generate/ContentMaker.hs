@@ -16,14 +16,6 @@ import Language.Haskell.Exts.Syntax           ( Module(..)
                                               )
 import System.FilePath
 --
-{- import FFICXX.Runtime.CodeGen.C               ( CBlock(..)
-                                              , CStatement(..)
-                                              , CMacro
-                                              , HeaderName(..)
-                                              , PragmaParam(..)
-                                              , renderCMacro
-                                              , renderBlock
-                                              ) -}
 import FFICXX.Runtime.CodeGen.C               ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.C as R
 --
@@ -49,7 +41,7 @@ import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
                                               , PackageInterface
                                               , PackageName(..)
                                               )
-import FFICXX.Generate.Util                   ( connRet, connRet2, intercalateWith )
+import FFICXX.Generate.Util                   ( connRet, intercalateWith )
 import FFICXX.Generate.Util.HaskellSrcExts
 
 
@@ -77,16 +69,16 @@ buildDaughterDef f m =
     in (concatMap f' lst)
 
 -- |
-buildParentDef :: ((Class,Class)->String) -> Class -> String
-buildParentDef f cls = g (class_allparents cls,cls)
-  where g (ps,c) = concatMap (\p -> f (p,c)) ps
+buildParentDef :: ((Class,Class) -> R.CStatement) -> Class -> [R.CStatement]
+buildParentDef f cls = map (\p -> f (p,cls)) . class_allparents $ cls
 
 -- |
-mkProtectedFunctionList :: Class -> String
+mkProtectedFunctionList :: Class -> [R.CMacro]
 mkProtectedFunctionList c =
-    (unlines
-     . map (\x->"#define IS_" <> class_name c <> "_" <> x <> "_PROTECTED ()")
-     . unProtected . class_protected) c
+    map (\x-> R.Define (R.sname ("IS_" <> class_name c <> "_" <> x <> "_PROTECTED")) [] [R.CVerbatim "()"])
+  . unProtected
+  . class_protected
+  $ c
 
 -- |
 buildTypeDeclHeader ::
@@ -119,32 +111,25 @@ buildDeclHeader cprefix header =
       nvdef  = map genCppDefMacroNonVirtual    classes
       acdef  = map genCppDefMacroAccessor      classes
       tmpldef= map (\c -> map (genCppDefMacroTemplateMemberFunction c) (class_tmpl_funcs c)) classes
-
-      declDefStr = intercalate "\n\n"
-                 . map R.renderCMacro
-                 . intercalate [R.EmptyLine]
-                 $ [vdecl,nvdecl,acdecl,vdef,nvdef,acdef]++tmpldef
-      classDeclsStr = -- NOTE: Deletable is treated specially.
-                      -- TODO: We had better make it as a separate constructor in Class.
-                      if (fst.hsClassName) aclass /= "Deletable"
-                        then buildParentDef genCppHeaderInstVirtual aclass
-                             `connRet2`
-                             genCppHeaderInstVirtual (aclass, aclass)
-                             `connRet2`
-                             intercalateWith connRet genCppHeaderInstNonVirtual classes
-                             `connRet2`
-                             intercalateWith connRet genCppHeaderInstAccessor classes
-                        else ""
-      declBodyStr   = declDefStr
-                      `connRet2`
-                      classDeclsStr
+      declDefStmts =
+        intercalate [R.EmptyLine] $ [vdecl,nvdecl,acdecl,vdef,nvdef,acdef]++tmpldef
+      classDeclStmts =
+        -- NOTE: Deletable is treated specially.
+        -- TODO: We had better make it as a separate constructor in Class.
+        if (fst.hsClassName) aclass /= "Deletable"
+        then    buildParentDef genCppHeaderInstVirtual aclass
+             <> [genCppHeaderInstVirtual (aclass, aclass)]
+             <> map genCppHeaderInstNonVirtual classes
+             <> map genCppHeaderInstAccessor classes
+        else []
   in R.renderBlock $
        R.ExternC $
             [ R.Pragma R.Once, R.EmptyLine ]
          <> declHeaderStmts
-         <> [ R.EmptyLine
-            , R.Verbatim declBodyStr
-            ]
+         <> [ R.EmptyLine ]
+         <> declDefStmts
+         <> [ R.EmptyLine ]
+         <> map R.CRegular classDeclStmts
 
 -- |
 buildDefMain :: ClassImportHeader
@@ -167,17 +152,18 @@ buildDefMain cih =
                                  then Nothing
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
 
-      cppBody = mkProtectedFunctionList (cihClass cih)
-                `connRet`
-                buildParentDef genCppDefInstVirtual (cihClass cih)
-                `connRet`
-                if isAbstractClass aclass
-                  then ""
-                  else genCppDefInstVirtual (aclass, aclass)
-                `connRet`
-                intercalateWith connRet genCppDefInstNonVirtual classes
-                `connRet`
-                intercalateWith connRet genCppDefInstAccessor classes
+      cppBodyStmts =
+           mkProtectedFunctionList (cihClass cih)
+        <> map
+             R.CRegular
+             (   buildParentDef genCppDefInstVirtual (cihClass cih)
+              <> (if isAbstractClass aclass
+                  then []
+                  else [genCppDefInstVirtual (aclass, aclass)]
+                 )
+              <> map genCppDefInstNonVirtual classes
+              <> map genCppDefInstAccessor classes
+             )
   in concatMap R.renderCMacro
        (   headerStmts
         <> [ R.EmptyLine ]
@@ -192,8 +178,8 @@ buildDefMain cih =
                         \  (to_nonconst<oname,cname ## _t>), \\\n\
                         \  (to_nonconst<cname,cname ## _t>) )\n"
            , R.EmptyLine
-           , R.Verbatim cppBody
            ]
+        <> cppBodyStmts
        )
 
 -- |

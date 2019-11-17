@@ -46,6 +46,7 @@ data CStatement =
     UsingNamespace Namespace -- ^ using namespace <namespace>;
   | TypeDef CType CName      -- ^ typedef origtype newname;
   | CDeclaration CDecl       -- ^ function declaration;
+  | CMacroApp CName [CName]  -- ^ C Macro application at statement level (temporary)
   | Comment String           -- ^ comment
   | CVerbatim String         -- ^ temporary verbatim
 
@@ -54,7 +55,7 @@ data CMacro =
   | Include HeaderName       -- ^ #include "<header>"
   | Pragma PragmaParam       -- ^ #pragma
   | Undef CName              -- ^ #undef name
-  | Define CName CName [CStatement] -- ^ #define macro (type) definition
+  | Define CName [CName] [CStatement] -- ^ #define macro (type) definition
   | EmptyLine                -- ^ just for convenience
   | Verbatim String          -- ^ temporary verbatim
 
@@ -66,7 +67,7 @@ renderPragmaParam Once = "once"
 
 renderCDecl :: CDecl -> String
 renderCDecl (FunDecl (CType typ) fname args) =
-    typ <> " " <> renderCName fname <> " ( " <> intercalate "," (map mkArgStr args) <> " )"
+    typ <> " " <> renderCName fname <> " ( " <> intercalate ", " (map mkArgStr args) <> " )"
   where
     mkArgStr (CType t, a) = t <> " " <> renderCName a
 
@@ -74,6 +75,7 @@ renderCStmt :: CStatement -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 renderCStmt (TypeDef (CType typ) n)  = "typedef " <> typ <> " " <> renderCName n <> ";"
 renderCStmt (CDeclaration e)         = renderCDecl e <> ";"
+renderCStmt (CMacroApp n as)         = renderCName n <> "(" <> intercalate ", " (map renderCName as) <> ")" -- NOTE: no semicolon.
 renderCStmt (Comment str)            = "// " <> str <> "\n"
 renderCStmt (CVerbatim str)          = str
 
@@ -82,8 +84,11 @@ renderCMacro (CRegular stmt)          = renderCStmt stmt
 renderCMacro (Include (HdrName hdr))  = "\n#include \"" <> hdr <> "\"\n"
 renderCMacro (Pragma param)           = "\n#pragma " <> renderPragmaParam param <> "\n"
 renderCMacro (Undef n)                = "\n#undef " <> renderCName n <> "\n"
-renderCMacro (Define m t stmts)       =
-     "\n#define " <> renderCName m <> "(" <> renderCName t<> ")\\\n"
+renderCMacro (Define m ts stmts)       =
+     "\n#define " <> renderCName m
+   <> case ts of
+        [] -> " "
+        _  -> "("  <> intercalate ", " (map renderCName ts) <> ") \\\n"
    <> intercalate "\\\n" (map renderCStmt stmts)
    <> "\n"
 renderCMacro EmptyLine                = "\n"
