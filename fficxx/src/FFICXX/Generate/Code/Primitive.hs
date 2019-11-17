@@ -536,31 +536,6 @@ tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## 
 -- Template Member Function --
 -- ---------------------------
 
-tmplMemFuncArgToString :: Class -> Arg -> String
-tmplMemFuncArgToString _ (Arg (CT ctyp isconst) varname) = cvarToStr ctyp isconst varname
-tmplMemFuncArgToString c (Arg SelfType varname) = ffiClassName c <> "_p " <> varname
-tmplMemFuncArgToString _ (Arg (CPT (CPTClass c) isconst) varname) =
-  case isconst of
-    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
-    NoConst -> ffiClassName c <> "_p " <> varname
-tmplMemFuncArgToString _ (Arg (CPT (CPTClassRef c) isconst) varname) =
-  case isconst of
-    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
-    NoConst -> ffiClassName c <> "_p " <> varname
-tmplMemFuncArgToString _ (Arg (CPT (CPTClassMove c) isconst) varname) =
-  case isconst of
-    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
-    NoConst -> ffiClassName c <> "_p " <> varname
-tmplMemFuncArgToString _ (Arg (TemplateApp     _) v) = "void* " <> v
-tmplMemFuncArgToString _ (Arg (TemplateAppRef  _) v) = "void* " <> v
-tmplMemFuncArgToString _ (Arg (TemplateAppMove _) v) = "void* " <> v
-tmplMemFuncArgToString _ (Arg (TemplateType   _)  v) = "void* " <> v
-tmplMemFuncArgToString _ (Arg (TemplateParam _) v) = "Type##_p " <> v
-tmplMemFuncArgToString _ (Arg (TemplateParamPointer _) v) = "Type##_p " <> v
-tmplMemFuncArgToString _ _ = error "tmplMemFuncArgToString: undefined"
-
--- new definitions
-
 tmplMemFuncArgToCTypVar :: Class -> Arg -> (R.CType, R.CName)
 tmplMemFuncArgToCTypVar _ (Arg (CT ctyp isconst) varname) =
   (R.CType (ctypToStr ctyp isconst), R.sname varname)
