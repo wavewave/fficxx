@@ -22,7 +22,8 @@ import FFICXX.Generate.Code.Primitive        ( accessorCFunSig
                                              , tmplMemFuncArgToCTypVar
                                              , tmplMemFuncRetTypeToString
                                              , tmplAllArgsToCallString
-                                             , tmplAllArgsToString
+                                             -- , tmplAllArgsToString
+                                             , tmplAllArgsToCTypVar
                                              , tmplRetTypeToString
                                              )
 import FFICXX.Generate.Name                  ( aliasedFuncName
@@ -249,7 +250,7 @@ genTmplFunCpp b t@TmplCls {..} f = subst tmpl ctxt
            (("suffix",if b then "_s" else ""):) $
              [ ("tname"  , tclass_name )
              , ("fname"  , ffiTmplFuncName f)
-             , ("decl"   , tmplFunToDecl b t f )
+             , ("decl"   , R.renderCDecl (tmplFunToDecl b t f) )
              , ("defn"   , tmplFunToDef b t f ) ]
 
 genTmplClassCpp :: Bool -- ^ is for simple type
@@ -363,31 +364,47 @@ funcToDef c func
         returnstr = returnCpp False (genericFuncRet func) callstr
     in  intercalateWith connBSlash id [declstr, "{", returnstr, "}"]
 
-
-
 funcsToDefs :: Class -> [Function] -> String
 funcsToDefs c = intercalateWith connBSlash (funcToDef c)
 
 
-tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> String
-tmplFunToDecl b t@TmplCls {..} f@TFun {..} =
-  subst "$ret ${tname}_${fname}_ ## Type ( $args )"
+{-  subst "$ret ${tname}_${fname}_ ## Type ( $args )"
     (context [ ("tname", tclass_name)
              , ("fname", ffiTmplFuncName f)
              , ("args" , tmplAllArgsToString b Self t tfun_args)
              , ("ret"  , tmplRetTypeToString b tfun_ret) ])
-tmplFunToDecl b t@TmplCls {..} f@TFunNew {..} =
   subst "$ret ${tname}_${fname}_ ## Type ( $args )"
     (context [ ("tname", tclass_name)
              , ("fname", ffiTmplFuncName f)
              , ("args" , tmplAllArgsToString b NoSelf t tfun_new_args)
              , ("ret"  , tmplRetTypeToString b (TemplateType t)) ])
-tmplFunToDecl b t@TmplCls {..} TFunDelete =
+
   subst "$ret ${tname}_delete_ ## Type ( $args )"
     (context [ ("tname", tclass_name                     )
              , ("args" , tmplAllArgsToString b Self t [] )
              , ("ret"  , "void" ) ])
 
+-}
+
+
+
+
+tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> R.CDecl
+tmplFunToDecl b t@TmplCls {..} f@TFun {..}    = R.FunDecl ret func args
+  where
+    ret  = R.CType (tmplRetTypeToString b tfun_ret)
+    func = R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]
+    args = tmplAllArgsToCTypVar b Self t tfun_args
+tmplFunToDecl b t@TmplCls {..} f@TFunNew {..} = R.FunDecl ret func args
+  where
+    ret  = R.CType (tmplRetTypeToString b (TemplateType t))
+    func = R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]
+    args = tmplAllArgsToCTypVar b NoSelf t tfun_new_args
+tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.FunDecl ret func args
+  where
+    ret  = R.CType "void"
+    func = R.CName [R.NamePart (tclass_name <> "_delete_"), R.NamePart "Type"]
+    args = tmplAllArgsToCTypVar b Self t []
 
 
 tmplFunToDef :: Bool -- ^ for simple type
@@ -396,7 +413,7 @@ tmplFunToDef :: Bool -- ^ for simple type
              -> String
 tmplFunToDef b t@TmplCls {..} f = intercalateWith connBSlash id [declstr, "  {", "    "<>returnstr, "  }"]
  where
-  declstr = tmplFunToDecl b t f
+  declstr = R.renderCDecl (tmplFunToDecl b t f)
   callstr =
     case f of
       TFun {..}    -> "(static_cast<" <> tclass_oname <> "<Type>*>(p))->"

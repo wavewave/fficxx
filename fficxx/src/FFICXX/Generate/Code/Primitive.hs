@@ -381,45 +381,44 @@ castCpp2C t e =
                               -- if b then "(" <> callstr <> ");"
                               --      else "to_nonconst<Type ## _t, Type>(" <> e <> ") ;"
 
-
-
-tmplArgToString :: Bool -> TemplateClass -> Arg -> String
-tmplArgToString _ _  (Arg (CT ctyp isconst) varname) =
-  cvarToStr ctyp isconst varname
-tmplArgToString _ t (Arg SelfType varname) =
-  tclass_oname t <> "* " <> varname
-tmplArgToString _ _ (Arg (CPT (CPTClass c) isconst) varname) =
+tmplArgToCTypVar :: Bool -> TemplateClass -> Arg -> (R.CType,R.CName)
+tmplArgToCTypVar _ _  (Arg (CT ctyp isconst) varname) =
+  (R.CType (ctypToStr ctyp isconst), R.sname varname)
+tmplArgToCTypVar _ t (Arg SelfType varname) =
+  (R.CType (tclass_oname t <> "*"), R.sname varname)
+tmplArgToCTypVar _ _ (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
-    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
-    NoConst -> ffiClassName c <> "_p " <> varname
-tmplArgToString _ _ (Arg (CPT (CPTClassRef c) isconst) varname) =
+    Const   -> (R.CType ("const_" <> ffiClassName c <> "_p"), R.sname varname)
+    NoConst -> (R.CType (ffiClassName c <> "_p"), R.sname varname)
+tmplArgToCTypVar _ _ (Arg (CPT (CPTClassRef c) isconst) varname) =
   case isconst of
-    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
-    NoConst -> ffiClassName c <> "_p " <> varname
-tmplArgToString _ _ (Arg (CPT (CPTClassMove c) isconst) varname) =
+    Const   -> (R.CType ("const_" <> ffiClassName c <> "_p"), R.sname varname)
+    NoConst -> (R.CType (ffiClassName c <> "_p"), R.sname varname)
+tmplArgToCTypVar _ _ (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
-    Const   -> "const_" <> ffiClassName c <> "_p " <> varname
-    NoConst -> ffiClassName c <> "_p " <> varname
-tmplArgToString _ _ (Arg (TemplateApp     _) v) = "void* " <> v
-tmplArgToString _ _ (Arg (TemplateAppRef  _) v) = "void* " <> v
-tmplArgToString _ _ (Arg (TemplateAppMove _) v) = "void* " <> v
-tmplArgToString _ _ (Arg (TemplateType    _) v) = "void* " <> v
-tmplArgToString True  _ (Arg (TemplateParam _) v) = "Type " <> v
-tmplArgToString False _ (Arg (TemplateParam _) v) = "Type ## _p " <> v
-tmplArgToString True  _ (Arg (TemplateParamPointer _) v) = "Type " <> v
-tmplArgToString False _ (Arg (TemplateParamPointer _) v) = "Type ## _p " <> v
-tmplArgToString _ _ _ = error "tmplArgToString: undefined"
+    Const   -> (R.CType ("const_" <> ffiClassName c <> "_p"), R.sname varname)
+    NoConst -> (R.CType (ffiClassName c <> "_p"), R.sname varname)
+tmplArgToCTypVar _ _ (Arg (TemplateApp     _) v) = (R.CType "void*", R.sname v)
+tmplArgToCTypVar _ _ (Arg (TemplateAppRef  _) v) = (R.CType "void*", R.sname v)
+tmplArgToCTypVar _ _ (Arg (TemplateAppMove _) v) = (R.CType "void*", R.sname v)
+tmplArgToCTypVar _ _ (Arg (TemplateType    _) v) = (R.CType "void*", R.sname v)
+tmplArgToCTypVar True  _ (Arg (TemplateParam _) v) = (R.CType "Type", R.sname v)
+tmplArgToCTypVar False _ (Arg (TemplateParam _) v) = (R.CType "Type ## _p", R.sname v)
+tmplArgToCTypVar True  _ (Arg (TemplateParamPointer _) v) = (R.CType "Type", R.sname v)
+tmplArgToCTypVar False _ (Arg (TemplateParamPointer _) v) = (R.CType "Type ## _p", R.sname v)
+tmplArgToCTypVar _ _ _ = error "tmplArgToCTypVar: undefined"
 
-tmplAllArgsToString :: Bool
-                    -> Selfness
-                    -> TemplateClass
-                    -> [Arg]
-                    -> String
-tmplAllArgsToString b s t args =
+tmplAllArgsToCTypVar ::
+     Bool
+  -> Selfness
+  -> TemplateClass
+  -> [Arg]
+  -> [(R.CType,R.CName)]
+tmplAllArgsToCTypVar b s t args =
   let args' = case s of
                 Self   -> (Arg (TemplateType t) "p") : args
                 NoSelf -> args
-  in  intercalateWith conncomma (tmplArgToString b t) args'
+  in map (tmplArgToCTypVar b t) args'
 
 
 
