@@ -68,8 +68,8 @@ buildDaughterDef f m =
     in (concatMap f' lst)
 
 -- |
-buildParentDef :: ((Class,Class) -> R.CStatement) -> Class -> [R.CStatement]
-buildParentDef f cls = map (\p -> f (p,cls)) . class_allparents $ cls
+buildParentDef :: ((Class,Class) -> [R.CStatement]) -> Class -> [R.CStatement]
+buildParentDef f cls = concatMap (\p -> f (p,cls)) . class_allparents $ cls
 
 -- |
 mkProtectedFunctionList :: Class -> [R.CMacro]
@@ -116,10 +116,10 @@ buildDeclHeader cprefix header =
         -- NOTE: Deletable is treated specially.
         -- TODO: We had better make it as a separate constructor in Class.
         if (fst.hsClassName) aclass /= "Deletable"
-        then    buildParentDef genCppHeaderInstVirtual aclass
-             <> [genCppHeaderInstVirtual (aclass, aclass)]
-             <> map genCppHeaderInstNonVirtual classes
-             <> map genCppHeaderInstAccessor classes
+        then    buildParentDef (\(p,c) -> [genCppHeaderInstVirtual (p,c), R.CEmptyLine]) aclass
+             <> [genCppHeaderInstVirtual (aclass, aclass), R.CEmptyLine]
+             <> concatMap (\c -> [genCppHeaderInstNonVirtual c, R.CEmptyLine]) classes
+             <> concatMap (\c -> [genCppHeaderInstAccessor c, R.CEmptyLine]) classes
         else []
   in R.renderBlock $
        R.ExternC $
@@ -155,13 +155,13 @@ buildDefMain cih =
            mkProtectedFunctionList (cihClass cih)
         <> map
              R.CRegular
-             (   buildParentDef genCppDefInstVirtual (cihClass cih)
+             (   buildParentDef (\(p,c) -> [genCppDefInstVirtual (p,c), R.CEmptyLine])  (cihClass cih)
               <> (if isAbstractClass aclass
                   then []
-                  else [genCppDefInstVirtual (aclass, aclass)]
+                  else [genCppDefInstVirtual (aclass, aclass), R.CEmptyLine]
                  )
-              <> map genCppDefInstNonVirtual classes
-              <> map genCppDefInstAccessor classes
+              <> concatMap (\c -> [genCppDefInstNonVirtual c, R.CEmptyLine]) classes
+              <> concatMap (\c -> [genCppDefInstAccessor c, R.CEmptyLine]) classes
              )
   in concatMap R.renderCMacro
        (   headerStmts
