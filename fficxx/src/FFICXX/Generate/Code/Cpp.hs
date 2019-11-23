@@ -338,7 +338,7 @@ funcToDef c func
                ]
     in R.CDefinition (funcToDecl c func) body
   | isDeleteFunc func =
-    let body = [ R.CVerbatim $ "delete (to_nonconst<Type,Type ## _t>(p));" ]
+    let body = [ R.CDelete $ R.CEVerbatim "(to_nonconst<Type,Type ## _t>(p))" ]
     in R.CDefinition (funcToDecl c func) body
   | isStaticFunc func =
     let callstr = cppFuncName c func <> "("
@@ -378,24 +378,23 @@ tmplFunToDef :: Bool -- ^ for simple type
 tmplFunToDef b t@TmplCls {..} f =
     R.CDefinition (tmplFunToDecl b t f) body
   where
-    callstr =
-      case f of
-        TFun {..} ->
-             "(static_cast<" <> tclass_oname <> "<Type>*>(p))->"
-          <> tfun_oname <> "("
-          <> tmplAllArgsToCallString b tfun_args
-          <> ")"
-        TFunNew {..} ->
-             "new " <> tclass_oname <> "<Type>("
-          <> tmplAllArgsToCallString b tfun_new_args
-          <> ")"
-        TFunDelete ->
-          "delete (static_cast<" <> tclass_oname <> "<Type>*>(p))"
     body =
       case f of
-        TFunNew {..} -> [ R.CReturn $ R.CEVerbatim $ "static_cast<void*>("<>callstr<>")" ]
-        TFunDelete   -> [ R.CReturn $ R.CEVerbatim $ callstr ]
-        TFun {..}    -> returnCpp b (tfun_ret) callstr
+        TFunNew {..} ->
+          let callstr =
+                  "new " <> tclass_oname <> "<Type>("
+                <> tmplAllArgsToCallString b tfun_new_args
+                <> ")"
+          in  [ R.CReturn $ R.CEVerbatim $ "static_cast<void*>("<>callstr<>")" ]
+        TFunDelete   ->
+          [ R.CDelete $ R.CEVerbatim $ "(static_cast<" <> tclass_oname <> "<Type>*>(p))" ]
+        TFun {..}    ->
+          let callstr =
+                   "(static_cast<" <> tclass_oname <> "<Type>*>(p))->"
+                <> tfun_oname <> "("
+                <> tmplAllArgsToCallString b tfun_args
+                <> ")"
+          in returnCpp b (tfun_ret) callstr
 
 -- Accessor Declaration and Definition
 

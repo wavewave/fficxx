@@ -49,6 +49,7 @@ data CStatement =
   | CDeclaration CDecl       -- ^ function declaration;
   | CDefinition CDecl [CStatement] -- ^ function definition;
   | CReturn CExp             -- ^ return statement
+  | CDelete CExp             -- ^ delete statement
   | CMacroApp CName [CName]  -- ^ C Macro application at statement level (temporary)
   | Comment String           -- ^ comment
   | CEmptyLine               -- ^ for convenience
@@ -89,6 +90,7 @@ renderCStmt (CDeclaration e)         = renderCDecl e <> ";"
 renderCStmt (CDefinition d body)     =
   renderCDecl d <> " {\n" <> concatMap renderCStmt body <> "\n}\n"
 renderCStmt (CReturn e)              = "return " <> renderCExp e <> ";"
+renderCStmt (CDelete e)              = "delete " <> renderCExp e <> ";"
 renderCStmt (CMacroApp n as)         = renderCName n <> "(" <> intercalate ", " (map renderCName as) <> ")" -- NOTE: no semicolon.
 renderCStmt (Comment str)            = "// " <> str <> "\n"
 renderCStmt CEmptyLine               = "\n"
