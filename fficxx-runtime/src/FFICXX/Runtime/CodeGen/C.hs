@@ -38,6 +38,7 @@ sname s = CName [NamePart s]
 renderCName :: CName -> String
 renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
+data CExp = CEVerbatim String
 
 data CDecl =
     FunDecl CType CName [(CType,CName)] -- ^ type func( type1 arg1, type2 arg2, ... )
@@ -47,6 +48,7 @@ data CStatement =
   | TypeDef CType CName      -- ^ typedef origtype newname;
   | CDeclaration CDecl       -- ^ function declaration;
   | CDefinition CDecl [CStatement] -- ^ function definition;
+  | CReturn CExp             -- ^ return statement
   | CMacroApp CName [CName]  -- ^ C Macro application at statement level (temporary)
   | Comment String           -- ^ comment
   | CEmptyLine               -- ^ for convenience
@@ -70,6 +72,9 @@ renderPragmaParam Once = "once"
 renderCType :: CType -> String
 renderCType (CTVerbatim t) = t
 
+renderCExp :: CExp -> String
+renderCExp (CEVerbatim e) = e
+
 renderCDecl :: CDecl -> String
 renderCDecl (FunDecl typ fname args) =
     renderCType typ <> " " <> renderCName fname <> " ( " <> intercalate ", " (map mkArgStr args) <> " )"
@@ -83,6 +88,7 @@ renderCStmt (TypeDef typ n)          = "typedef " <> renderCType typ <> " " <> r
 renderCStmt (CDeclaration e)         = renderCDecl e <> ";"
 renderCStmt (CDefinition d body)     =
   renderCDecl d <> " {\n" <> concatMap renderCStmt body <> "\n}\n"
+renderCStmt (CReturn e)              = "return " <> renderCExp e <> ";"
 renderCStmt (CMacroApp n as)         = renderCName n <> "(" <> intercalate ", " (map renderCName as) <> ")" -- NOTE: no semicolon.
 renderCStmt (Comment str)            = "// " <> str <> "\n"
 renderCStmt CEmptyLine               = "\n"
