@@ -222,12 +222,12 @@ genTopLevelFuncCppDefinition tf@TopLevelFunction {..} =
       callstr = toplevelfunc_name <> "("
                 <> argsToCallString toplevelfunc_args
                 <> ")"
-      body = [ returnCpp False (toplevelfunc_ret) callstr ]
+      body = returnCpp False (toplevelfunc_ret) callstr
   in R.CDefinition decl body
 genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
   let decl = topLevelFunDecl tv
       callstr = toplevelvar_name
-      body = [ returnCpp False (toplevelvar_ret) callstr ]
+      body = returnCpp False (toplevelvar_ret) callstr
   in R.CDefinition decl body
 
 genTmplFunCpp :: Bool -- ^ is for simple type?
@@ -272,40 +272,45 @@ genTmplClassCpp b TmplCls {..} fs =
 returnCpp :: Bool  -- ^ for simple type
           -> Types
           -> String -- ^ call string
-          -> R.CStatement -- String
+          -> [R.CStatement]
 returnCpp b ret callstr =
   case ret of
-    Void                    -> R.CVerbatim (callstr <> ";")
-    SelfType                -> R.CReturn $ R.CEVerbatim $ "to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ")"
-    CT (CRef _) _           -> R.CReturn $ R.CEVerbatim $ "(&("<>callstr<>"))"
-    CT _ _                  -> R.CReturn $ R.CEVerbatim $ callstr
-    CPT (CPTClass c') _     -> R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(("<>str<>"*)"<>callstr<>")"
+    Void                    -> [R.CVerbatim (callstr <> ";")]
+    SelfType                -> [R.CReturn $ R.CEVerbatim $ "to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ")"]
+    CT (CRef _) _           -> [R.CReturn $ R.CEVerbatim $ "(&("<>callstr<>"))"]
+    CT _ _                  -> [R.CReturn $ R.CEVerbatim $ callstr]
+    CPT (CPTClass c') _     -> [R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(("<>str<>"*)"<>callstr<>")"]
                                where str = ffiClassName c'
-    CPT (CPTClassRef c') _  -> R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>"))"
+    CPT (CPTClassRef c') _  -> [R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>"))"]
                                where str = ffiClassName c'
-    CPT (CPTClassCopy c') _ -> R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(new "<>str<>"("<>callstr<>"))"
+    CPT (CPTClassCopy c') _ -> [R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(new "<>str<>"("<>callstr<>"))"]
                                where str = ffiClassName c'
     CPT (CPTClassMove c') _ -> -- TODO: check whether this is working or not.
-                               R.CReturn $ R.CEVerbatim $ "std::move(to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>")))"
+                               [R.CReturn $ R.CEVerbatim $ "std::move(to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>")))"]
                                where str = ffiClassName c'
     TemplateApp (TemplateAppInfo _ _ cpptype) ->
-      R.CVerbatim $    cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
-                    <> "return (static_cast<void*>(r));"
+      [ R.CVerbatim $ cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> ");"
+      , R.CReturn $ R.CEVerbatim "(static_cast<void*>(r))"
+      ]
     TemplateAppRef (TemplateAppInfo _ _ cpptype) ->
-      R.CVerbatim $    cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
-                    <> "return (static_cast<void*>(r));"
+      [ R.CVerbatim $ cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> ");"
+      , R.CReturn $ R.CEVerbatim "(static_cast<void*>(r))"
+      ]
     TemplateAppMove (TemplateAppInfo _ _ cpptype) ->
-      R.CVerbatim $    cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
-                    <> "return std::move(static_cast<void*>(r));"
+      [ R.CVerbatim $ cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> ");"
+      , R.CReturn $ R.CEVerbatim "std::move(static_cast<void*>(r));"
+      ]
     TemplateType _          -> error "returnCpp: TemplateType"
     TemplateParam _         ->
-      R.CReturn $ R.CEVerbatim $
-        if b then "(" <> callstr <> ")"
-             else "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
+      [ R.CReturn $ R.CEVerbatim $
+          if b then "(" <> callstr <> ")"
+               else "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
+      ]
     TemplateParamPointer _  ->
-      R.CReturn $ R.CEVerbatim $
-        if b then "(" <> callstr <> ")"
-             else "to_nonconst<Type ## _t, Type>(" <> callstr <> ")"
+      [ R.CReturn $ R.CEVerbatim $
+          if b then "(" <> callstr <> ")"
+               else "to_nonconst<Type ## _t, Type>(" <> callstr <> ")"
+      ]
 
 -- Function Declaration and Definition
 
@@ -328,25 +333,26 @@ funcToDef :: Class -> Function -> R.CStatement
 funcToDef c func
   | isNewFunc func =
     let callstr = "(" <> argsToCallString (genericFuncArgs func) <> ")"
-        returnstmt = R.CVerbatim $    "Type * newp = new Type " <> callstr <> ";\n"
-                                   <> "return to_nonconst<Type ## _t, Type >(newp);"
-    in R.CDefinition (funcToDecl c func) [ returnstmt ]
+        body = [ R.CVerbatim $ "Type * newp = new Type " <> callstr <> ";"
+               , R.CReturn $ R.CEVerbatim "to_nonconst<Type ## _t, Type >(newp);"
+               ]
+    in R.CDefinition (funcToDecl c func) body
   | isDeleteFunc func =
-    let returnstmt = R.CVerbatim $ "delete (to_nonconst<Type,Type ## _t>(p));"
-    in R.CDefinition (funcToDecl c func) [ returnstmt ]
+    let body = [ R.CVerbatim $ "delete (to_nonconst<Type,Type ## _t>(p));" ]
+    in R.CDefinition (funcToDecl c func) body
   | isStaticFunc func =
     let callstr = cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
-        returnstmt = returnCpp False (genericFuncRet func) callstr
-    in R.CDefinition (funcToDecl c func) [ returnstmt ]
+        body = returnCpp False (genericFuncRet func) callstr
+    in R.CDefinition (funcToDecl c func) body
   | otherwise =
     let callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
                   <> cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
-        returnstmt = returnCpp False (genericFuncRet func) callstr
-    in R.CDefinition (funcToDecl c func) [ returnstmt ]
+        body = returnCpp False (genericFuncRet func) callstr
+    in R.CDefinition (funcToDecl c func) body
 
 tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> R.CDecl
 tmplFunToDecl b t@TmplCls {..} f@TFun {..}    = R.FunDecl ret func args
@@ -370,7 +376,7 @@ tmplFunToDef :: Bool -- ^ for simple type
              -> TemplateFunction
              -> R.CStatement
 tmplFunToDef b t@TmplCls {..} f =
-    R.CDefinition (tmplFunToDecl b t f) [ returnstmt ]
+    R.CDefinition (tmplFunToDecl b t f) body
   where
     callstr =
       case f of
@@ -385,10 +391,10 @@ tmplFunToDef b t@TmplCls {..} f =
           <> ")"
         TFunDelete ->
           "delete (static_cast<" <> tclass_oname <> "<Type>*>(p))"
-    returnstmt =
+    body =
       case f of
-        TFunNew {..} -> R.CReturn $ R.CEVerbatim $ "static_cast<void*>("<>callstr<>")"
-        TFunDelete   -> R.CReturn $ R.CEVerbatim $ callstr
+        TFunNew {..} -> [ R.CReturn $ R.CEVerbatim $ "static_cast<void*>("<>callstr<>")" ]
+        TFunDelete   -> [ R.CReturn $ R.CEVerbatim $ callstr ]
         TFun {..}    -> returnCpp b (tfun_ret) callstr
 
 -- Accessor Declaration and Definition
@@ -444,11 +450,11 @@ tmplMemberFunToDecl c f =
 -- TODO: Handle simple type
 tmplMemberFunToDef :: Class -> TemplateMemberFunction -> R.CStatement
 tmplMemberFunToDef c f =
-    R.CDefinition (tmplMemberFunToDecl c f) [ returnstmt ]
+    R.CDefinition (tmplMemberFunToDecl c f) body
   where
     callstr =    "(to_nonconst<" <> ffiClassName c  <> "," <> ffiClassName c <> "_t" <> ">(p))"
               <> "->"
               <> tmf_name f
               <> "<Type>"
               <> "(" <> tmplAllArgsToCallString False (tmf_args f) <> ")"
-    returnstmt = returnCpp False (tmf_ret f) callstr
+    body = returnCpp False (tmf_ret f) callstr
