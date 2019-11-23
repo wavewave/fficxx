@@ -43,13 +43,17 @@ data CExp = CEVerbatim String
 data CFunDecl =
     CFunDecl CType CName [(CType,CName)] -- ^ type func( type1 arg1, type2 arg2, ... )
 
+data CVarDecl =
+    CVarDecl CType CName                 -- ^ type var
+
 data CStatement =
     UsingNamespace Namespace -- ^ using namespace <namespace>;
   | TypeDef CType CName      -- ^ typedef origtype newname;
-  | CDeclaration CFunDecl       -- ^ function declaration;
+  | CDeclaration CFunDecl    -- ^ function declaration;
   | CDefinition CFunDecl [CStatement] -- ^ function definition;
-  | CReturn CExp             -- ^ return statement
-  | CDelete CExp             -- ^ delete statement
+  | CInit CVarDecl CExp      -- ^ variable initialization;
+  | CReturn CExp             -- ^ return statement;
+  | CDelete CExp             -- ^ delete statement;
   | CMacroApp CName [CName]  -- ^ C Macro application at statement level (temporary)
   | Comment String           -- ^ comment
   | CEmptyLine               -- ^ for convenience
@@ -82,6 +86,9 @@ renderCFDecl (CFunDecl typ fname args) =
   where
     mkArgStr (t, a) = renderCType t <> " " <> renderCName a
 
+renderCVDecl :: CVarDecl -> String
+renderCVDecl (CVarDecl typ vname) = renderCType typ <> " " <> renderCName vname
+
 -- | render CStatement in a regular environment
 renderCStmt :: CStatement -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
@@ -89,6 +96,7 @@ renderCStmt (TypeDef typ n)          = "typedef " <> renderCType typ <> " " <> r
 renderCStmt (CDeclaration e)         = renderCFDecl e <> ";"
 renderCStmt (CDefinition d body)     =
   renderCFDecl d <> " {\n" <> concatMap renderCStmt body <> "\n}\n"
+renderCStmt (CInit d e)              = renderCVDecl d <> "=" <> renderCExp e <> ";"
 renderCStmt (CReturn e)              = "return " <> renderCExp e <> ";"
 renderCStmt (CDelete e)              = "delete " <> renderCExp e <> ";"
 renderCStmt (CMacroApp n as)         = renderCName n <> "(" <> intercalate ", " (map renderCName as) <> ")" -- NOTE: no semicolon.

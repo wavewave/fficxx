@@ -289,15 +289,21 @@ returnCpp b ret callstr =
                                [R.CReturn $ R.CEVerbatim $ "std::move(to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>")))"]
                                where str = ffiClassName c'
     TemplateApp (TemplateAppInfo _ _ cpptype) ->
-      [ R.CVerbatim $ cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> ");"
+      [ R.CInit
+          (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
+          (R.CEVerbatim $ "new " <> cpptype <> "(" <> callstr <> ")")
       , R.CReturn $ R.CEVerbatim "(static_cast<void*>(r))"
       ]
     TemplateAppRef (TemplateAppInfo _ _ cpptype) ->
-      [ R.CVerbatim $ cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> ");"
+      [ R.CInit
+          (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
+          (R.CEVerbatim $ "new " <> cpptype <> "(" <> callstr <> ")")
       , R.CReturn $ R.CEVerbatim "(static_cast<void*>(r))"
       ]
     TemplateAppMove (TemplateAppInfo _ _ cpptype) ->
-      [ R.CVerbatim $ cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> ");"
+      [ R.CInit
+          (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
+          (R.CEVerbatim $ "new " <> cpptype <> "(" <> callstr <> ")")
       , R.CReturn $ R.CEVerbatim "std::move(static_cast<void*>(r));"
       ]
     TemplateType _          -> error "returnCpp: TemplateType"
@@ -333,7 +339,9 @@ funcToDef :: Class -> Function -> R.CStatement
 funcToDef c func
   | isNewFunc func =
     let callstr = "(" <> argsToCallString (genericFuncArgs func) <> ")"
-        body = [ R.CVerbatim $ "Type * newp = new Type " <> callstr <> ";"
+        body = [ R.CInit
+                   (R.CVarDecl (R.CTVerbatim "Type*") (R.sname "newp"))
+                   (R.CEVerbatim $ "new Type " <> callstr)
                , R.CReturn $ R.CEVerbatim "to_nonconst<Type ## _t, Type >(newp);"
                ]
     in R.CDefinition (funcToDecl c func) body
