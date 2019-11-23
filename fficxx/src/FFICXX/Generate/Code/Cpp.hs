@@ -276,17 +276,17 @@ returnCpp :: Bool  -- ^ for simple type
 returnCpp b ret callstr =
   case ret of
     Void                    -> R.CVerbatim (callstr <> ";")
-    SelfType                -> R.CVerbatim ("return to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ") ;")
-    CT (CRef _) _           -> R.CVerbatim ("return (&("<>callstr<>"));")
-    CT _ _                  -> R.CVerbatim ("return "<>callstr<>";")
-    CPT (CPTClass c') _     -> R.CVerbatim ("return to_nonconst<"<>str<>"_t,"<>str<>">(("<>str<>"*)"<>callstr<>");")
+    SelfType                -> R.CReturn $ R.CEVerbatim $ "to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ")"
+    CT (CRef _) _           -> R.CReturn $ R.CEVerbatim $ "(&("<>callstr<>"))"
+    CT _ _                  -> R.CReturn $ R.CEVerbatim $ callstr
+    CPT (CPTClass c') _     -> R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(("<>str<>"*)"<>callstr<>")"
                                where str = ffiClassName c'
-    CPT (CPTClassRef c') _  -> R.CVerbatim ("return to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>"));")
+    CPT (CPTClassRef c') _  -> R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>"))"
                                where str = ffiClassName c'
-    CPT (CPTClassCopy c') _ -> R.CVerbatim ("return to_nonconst<"<>str<>"_t,"<>str<>">(new "<>str<>"("<>callstr<>"));")
+    CPT (CPTClassCopy c') _ -> R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(new "<>str<>"("<>callstr<>"))"
                                where str = ffiClassName c'
     CPT (CPTClassMove c') _ -> -- TODO: check whether this is working or not.
-                               R.CVerbatim ("return std::move(to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>")));")
+                               R.CReturn $ R.CEVerbatim $ "std::move(to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>")))"
                                where str = ffiClassName c'
     TemplateApp (TemplateAppInfo _ _ cpptype) ->
       R.CVerbatim $    cpptype <> "* r = new " <> cpptype <> "(" <> callstr <> "); "
@@ -299,15 +299,13 @@ returnCpp b ret callstr =
                     <> "return std::move(static_cast<void*>(r));"
     TemplateType _          -> error "returnCpp: TemplateType"
     TemplateParam _         ->
-      R.CVerbatim $
-        if b then "return (" <> callstr <> ");"
-             else "return to_nonconst<Type ## _t, Type>((Type *)&("
-                  <> callstr <> ")) ;"
+      R.CReturn $ R.CEVerbatim $
+        if b then "(" <> callstr <> ")"
+             else "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
     TemplateParamPointer _  ->
-      R.CVerbatim $
-        if b then "return (" <> callstr <> ");"
-             else "return to_nonconst<Type ## _t, Type>("
-                  <> callstr <> ") ;"
+      R.CReturn $ R.CEVerbatim $
+        if b then "(" <> callstr <> ")"
+             else "to_nonconst<Type ## _t, Type>(" <> callstr <> ")"
 
 -- Function Declaration and Definition
 
@@ -389,8 +387,8 @@ tmplFunToDef b t@TmplCls {..} f =
           "delete (static_cast<" <> tclass_oname <> "<Type>*>(p))"
     returnstmt =
       case f of
-        TFunNew {..} -> R.CVerbatim $ "return static_cast<void*>("<>callstr<>");"
-        TFunDelete   -> R.CVerbatim $ callstr <> ";"
+        TFunNew {..} -> R.CReturn $ R.CEVerbatim $ "static_cast<void*>("<>callstr<>")"
+        TFunDelete   -> R.CReturn $ R.CEVerbatim $ callstr
         TFun {..}    -> returnCpp b (tfun_ret) callstr
 
 -- Accessor Declaration and Definition
@@ -417,12 +415,13 @@ accessorsToDecls vs =
 accessorToDef :: Variable -> Accessor -> R.CStatement
 accessorToDef v a =
   let varexp = "to_nonconst<Type,Type ## _t>(p)->" <> arg_name (unVariable v)
-      body Getter = "return (" <> castCpp2C (arg_type (unVariable v)) varexp <> ");"
-      body Setter =    varexp
-                    <> " = "
-                    <> castC2Cpp (arg_type (unVariable v)) "x"  -- TODO: clean up this hard-coded "x".
-                    <> ";"
-  in R.CDefinition (accessorToDecl v a) [ R.CVerbatim (body a) ]
+      body Getter = R.CReturn $ R.CEVerbatim $ "(" <> castCpp2C (arg_type (unVariable v)) varexp <> ")"
+      body Setter = R.CVerbatim $
+                         varexp
+                      <> " = "
+                      <> castC2Cpp (arg_type (unVariable v)) "x"  -- TODO: clean up this hard-coded "x".
+                      <> ";"
+  in R.CDefinition (accessorToDecl v a) [ body a ]
 
 accessorsToDefs :: [Variable] -> String
 accessorsToDefs vs =
