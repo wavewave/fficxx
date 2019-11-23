@@ -171,7 +171,7 @@ genCppDefMacroTemplateMemberFunction c f =
            \auto a_${macroname}_##Type = ${macroname}_##Type;\n"
     ctxt = context
              [ ("macroname", macroname)
-             , ("decl"     , R.renderCDecl (tmplMemberFunToDecl c f))
+             , ("decl"     , R.renderCFDecl (tmplMemberFunToDecl c f))
              , ("defn"     , R.renderCStmt (tmplMemberFunToDef c f))
              ]
 
@@ -205,13 +205,13 @@ genAllCppHeaderInclude header =
 -- TOP LEVEL FUNCTIONS --
 -------------------------
 
-topLevelFunDecl :: TopLevelFunction -> R.CDecl
-topLevelFunDecl TopLevelFunction {..} = R.FunDecl ret func args
+topLevelFunDecl :: TopLevelFunction -> R.CFunDecl
+topLevelFunDecl TopLevelFunction {..} = R.CFunDecl ret func args
   where
     ret  = R.CTVerbatim (rettypeToString toplevelfunc_ret)
     func = R.sname ("TopLevel_" <> maybe toplevelfunc_name id toplevelfunc_alias)
     args = argsToCTypVarNoSelf toplevelfunc_args
-topLevelFunDecl TopLevelVariable {..} = R.FunDecl ret func []
+topLevelFunDecl TopLevelVariable {..} = R.CFunDecl ret func []
   where
     ret  = R.CTVerbatim (rettypeToString toplevelvar_ret)
     func = R.sname ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
@@ -249,7 +249,7 @@ genTmplFunCpp b t@TmplCls {..} f =
   ctxt = context
            [ ("tname"  , tclass_name )
            , ("fname"  , ffiTmplFuncName f)
-           , ("decl"   , R.renderCDecl (tmplFunToDecl b t f) )
+           , ("decl"   , R.renderCFDecl (tmplFunToDecl b t f) )
            , ("defn"   , R.renderCStmt (tmplFunToDef b t f) )
            ]
 
@@ -314,20 +314,20 @@ returnCpp b ret callstr =
 
 -- Function Declaration and Definition
 
-funcToDecl :: Class -> Function -> R.CDecl
+funcToDecl :: Class -> Function -> R.CFunDecl
 funcToDecl c func
   | isNewFunc func || isStaticFunc func =
     let ret   = R.CTVerbatim $ rettypeToString (genericFuncRet func)
         fname =
           R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
         args  = argsToCTypVarNoSelf (genericFuncArgs func)
-    in R.FunDecl ret fname args
+    in R.CFunDecl ret fname args
   | otherwise =
     let ret   = R.CTVerbatim $ rettypeToString (genericFuncRet func)
         fname =
           R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
         args  = argsToCTypVar (genericFuncArgs func)
-    in R.FunDecl ret fname args
+    in R.CFunDecl ret fname args
 
 funcToDef :: Class -> Function -> R.CStatement
 funcToDef c func
@@ -354,18 +354,18 @@ funcToDef c func
         body = returnCpp False (genericFuncRet func) callstr
     in R.CDefinition (funcToDecl c func) body
 
-tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> R.CDecl
-tmplFunToDecl b t@TmplCls {..} f@TFun {..}    = R.FunDecl ret func args
+tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> R.CFunDecl
+tmplFunToDecl b t@TmplCls {..} f@TFun {..}    = R.CFunDecl ret func args
   where
     ret  = R.CTVerbatim (tmplRetTypeToString b tfun_ret)
     func = R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b Self t tfun_args
-tmplFunToDecl b t@TmplCls {..} f@TFunNew {..} = R.FunDecl ret func args
+tmplFunToDecl b t@TmplCls {..} f@TFunNew {..} = R.CFunDecl ret func args
   where
     ret  = R.CTVerbatim (tmplRetTypeToString b (TemplateType t))
     func = R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b NoSelf t tfun_new_args
-tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.FunDecl ret func args
+tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.CFunDecl ret func args
   where
     ret  = R.CTVerbatim "void"
     func = R.CName [R.NamePart (tclass_name <> "_delete_"), R.NamePart "Type"]
@@ -398,7 +398,7 @@ tmplFunToDef b t@TmplCls {..} f =
 
 -- Accessor Declaration and Definition
 
-accessorToDecl :: Variable -> Accessor -> R.CDecl
+accessorToDecl :: Variable -> Accessor -> R.CFunDecl
 accessorToDecl v a =
   let csig = accessorCFunSig (arg_type (unVariable v)) a
       ret = R.CTVerbatim $ rettypeToString (cRetType csig)
@@ -411,9 +411,9 @@ accessorToDecl v a =
                              )
                 ]
       args = argsToCTypVar (cArgTypes csig)
-  in R.FunDecl ret fname args
+  in R.CFunDecl ret fname args
 
-accessorsToDecls :: [Variable] -> [R.CDecl]
+accessorsToDecls :: [Variable] -> [R.CFunDecl]
 accessorsToDecls vs =
   concatMap (\v -> [accessorToDecl v Getter,accessorToDecl v Setter]) vs
 
@@ -436,7 +436,7 @@ accessorsToDefs vs =
 -- Template Member Function Declaration and Definition
 
 -- TODO: Handle simple type
-tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> R.CDecl
+tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> R.CFunDecl
 tmplMemberFunToDecl c f =
   let ret = R.CTVerbatim $ tmplMemFuncRetTypeToString c (tmf_ret f)
       fname =
@@ -444,7 +444,7 @@ tmplMemberFunToDecl c f =
                 , R.NamePart "Type"
                 ]
       args = map (tmplMemFuncArgToCTypVar c) ((Arg SelfType "p"):tmf_args f)
-  in R.FunDecl ret fname args
+  in R.CFunDecl ret fname args
 
 -- TODO: Handle simple type
 tmplMemberFunToDef :: Class -> TemplateMemberFunction -> R.CStatement

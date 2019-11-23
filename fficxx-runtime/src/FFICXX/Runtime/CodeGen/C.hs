@@ -40,14 +40,14 @@ renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
 data CExp = CEVerbatim String
 
-data CDecl =
-    FunDecl CType CName [(CType,CName)] -- ^ type func( type1 arg1, type2 arg2, ... )
+data CFunDecl =
+    CFunDecl CType CName [(CType,CName)] -- ^ type func( type1 arg1, type2 arg2, ... )
 
 data CStatement =
     UsingNamespace Namespace -- ^ using namespace <namespace>;
   | TypeDef CType CName      -- ^ typedef origtype newname;
-  | CDeclaration CDecl       -- ^ function declaration;
-  | CDefinition CDecl [CStatement] -- ^ function definition;
+  | CDeclaration CFunDecl       -- ^ function declaration;
+  | CDefinition CFunDecl [CStatement] -- ^ function definition;
   | CReturn CExp             -- ^ return statement
   | CDelete CExp             -- ^ delete statement
   | CMacroApp CName [CName]  -- ^ C Macro application at statement level (temporary)
@@ -76,8 +76,8 @@ renderCType (CTVerbatim t) = t
 renderCExp :: CExp -> String
 renderCExp (CEVerbatim e) = e
 
-renderCDecl :: CDecl -> String
-renderCDecl (FunDecl typ fname args) =
+renderCFDecl :: CFunDecl -> String
+renderCFDecl (CFunDecl typ fname args) =
     renderCType typ <> " " <> renderCName fname <> " ( " <> intercalate ", " (map mkArgStr args) <> " )"
   where
     mkArgStr (t, a) = renderCType t <> " " <> renderCName a
@@ -86,9 +86,9 @@ renderCDecl (FunDecl typ fname args) =
 renderCStmt :: CStatement -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 renderCStmt (TypeDef typ n)          = "typedef " <> renderCType typ <> " " <> renderCName n <> ";"
-renderCStmt (CDeclaration e)         = renderCDecl e <> ";"
+renderCStmt (CDeclaration e)         = renderCFDecl e <> ";"
 renderCStmt (CDefinition d body)     =
-  renderCDecl d <> " {\n" <> concatMap renderCStmt body <> "\n}\n"
+  renderCFDecl d <> " {\n" <> concatMap renderCStmt body <> "\n}\n"
 renderCStmt (CReturn e)              = "return " <> renderCExp e <> ";"
 renderCStmt (CDelete e)              = "delete " <> renderCExp e <> ";"
 renderCStmt (CMacroApp n as)         = renderCName n <> "(" <> intercalate ", " (map renderCName as) <> ")" -- NOTE: no semicolon.
@@ -99,7 +99,7 @@ renderCStmt (CVerbatim str)          = str
 -- | render CStatement in a macro definition environment
 renderCStmtInMacro :: CStatement -> [String]
 renderCStmtInMacro (CDefinition d body) =
-     [ renderCDecl d <> " {" ]
+     [ renderCFDecl d <> " {" ]
   <> map renderCStmt body
   <> [ "}" ]
 renderCStmtInMacro (Comment _str)  = [""] -- Comment cannot exist in Macro
