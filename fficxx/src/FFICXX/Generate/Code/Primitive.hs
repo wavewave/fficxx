@@ -266,32 +266,32 @@ cppclassmove c vname = Arg (cppclassmove_ c) vname
 
 argToCTypVar :: Arg -> (R.CType,R.CName)
 argToCTypVar (Arg (CT ctyp isconst) varname) =
-  (R.CType (ctypToStr ctyp isconst), R.sname varname)
+  (R.CTVerbatim (ctypToStr ctyp isconst), R.sname varname)
 argToCTypVar (Arg SelfType varname) =
-  (R.CType "Type ## _p", R.sname varname)
+  (R.CTVerbatim "Type ## _p", R.sname varname)
 argToCTypVar (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> cname <> "_p"), R.sname varname)
-    NoConst -> (R.CType (cname <> "_p"), R.sname varname)
+    Const   -> (R.CTVerbatim ("const_" <> cname <> "_p"), R.sname varname)
+    NoConst -> (R.CTVerbatim (cname <> "_p"), R.sname varname)
   where cname = ffiClassName c
 argToCTypVar (Arg (CPT (CPTClassRef c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> cname <> "_p"), R.sname varname)
-    NoConst -> (R.CType (cname <> "_p"), R.sname varname)
+    Const   -> (R.CTVerbatim ("const_" <> cname <> "_p"), R.sname varname)
+    NoConst -> (R.CTVerbatim (cname <> "_p"), R.sname varname)
   where cname = ffiClassName c
 argToCTypVar (Arg (CPT (CPTClassCopy c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> cname <> "_p"), R.sname varname)
-    NoConst -> (R.CType (cname <> "_p"), R.sname varname)
+    Const   -> (R.CTVerbatim ("const_" <> cname <> "_p"), R.sname varname)
+    NoConst -> (R.CTVerbatim (cname <> "_p"), R.sname varname)
   where cname = ffiClassName c
 argToCTypVar (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> cname <> "_p"), R.sname varname)
-    NoConst -> (R.CType (cname <> "_p"), R.sname varname)
+    Const   -> (R.CTVerbatim ("const_" <> cname <> "_p"), R.sname varname)
+    NoConst -> (R.CTVerbatim (cname <> "_p"), R.sname varname)
   where cname = ffiClassName c
-argToCTypVar (Arg (TemplateApp     _) varname) = (R.CType "void*", R.sname varname)
-argToCTypVar (Arg (TemplateAppRef  _) varname) = (R.CType "void*", R.sname varname)
-argToCTypVar (Arg (TemplateAppMove _) varname) = (R.CType "void*", R.sname varname)
+argToCTypVar (Arg (TemplateApp     _) varname) = (R.CTVerbatim "void*", R.sname varname)
+argToCTypVar (Arg (TemplateAppRef  _) varname) = (R.CTVerbatim "void*", R.sname varname)
+argToCTypVar (Arg (TemplateAppMove _) varname) = (R.CTVerbatim "void*", R.sname varname)
 argToCTypVar t = error ("argToCTypVar: " <> show t)
 
 argsToCTypVar :: [Arg] -> [(R.CType,R.CName)]
@@ -383,29 +383,29 @@ castCpp2C t e =
 
 tmplArgToCTypVar :: Bool -> TemplateClass -> Arg -> (R.CType,R.CName)
 tmplArgToCTypVar _ _  (Arg (CT ctyp isconst) varname) =
-  (R.CType (ctypToStr ctyp isconst), R.sname varname)
+  (R.CTVerbatim (ctypToStr ctyp isconst), R.sname varname)
 tmplArgToCTypVar _ t (Arg SelfType varname) =
-  (R.CType (tclass_oname t <> "*"), R.sname varname)
+  (R.CTVerbatim (tclass_oname t <> "*"), R.sname varname)
 tmplArgToCTypVar _ _ (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CType (ffiClassName c <> "_p"), R.sname varname)
+    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
+    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
 tmplArgToCTypVar _ _ (Arg (CPT (CPTClassRef c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CType (ffiClassName c <> "_p"), R.sname varname)
+    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
+    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
 tmplArgToCTypVar _ _ (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CType (ffiClassName c <> "_p"), R.sname varname)
-tmplArgToCTypVar _ _ (Arg (TemplateApp     _) v) = (R.CType "void*", R.sname v)
-tmplArgToCTypVar _ _ (Arg (TemplateAppRef  _) v) = (R.CType "void*", R.sname v)
-tmplArgToCTypVar _ _ (Arg (TemplateAppMove _) v) = (R.CType "void*", R.sname v)
-tmplArgToCTypVar _ _ (Arg (TemplateType    _) v) = (R.CType "void*", R.sname v)
-tmplArgToCTypVar True  _ (Arg (TemplateParam _) v) = (R.CType "Type", R.sname v)
-tmplArgToCTypVar False _ (Arg (TemplateParam _) v) = (R.CType "Type ## _p", R.sname v)
-tmplArgToCTypVar True  _ (Arg (TemplateParamPointer _) v) = (R.CType "Type", R.sname v)
-tmplArgToCTypVar False _ (Arg (TemplateParamPointer _) v) = (R.CType "Type ## _p", R.sname v)
+    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
+    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
+tmplArgToCTypVar _ _ (Arg (TemplateApp     _) v) = (R.CTVerbatim "void*", R.sname v)
+tmplArgToCTypVar _ _ (Arg (TemplateAppRef  _) v) = (R.CTVerbatim "void*", R.sname v)
+tmplArgToCTypVar _ _ (Arg (TemplateAppMove _) v) = (R.CTVerbatim "void*", R.sname v)
+tmplArgToCTypVar _ _ (Arg (TemplateType    _) v) = (R.CTVerbatim "void*", R.sname v)
+tmplArgToCTypVar True  _ (Arg (TemplateParam _) v) = (R.CTVerbatim "Type", R.sname v)
+tmplArgToCTypVar False _ (Arg (TemplateParam _) v) = (R.CTVerbatim "Type ## _p", R.sname v)
+tmplArgToCTypVar True  _ (Arg (TemplateParamPointer _) v) = (R.CTVerbatim "Type", R.sname v)
+tmplArgToCTypVar False _ (Arg (TemplateParamPointer _) v) = (R.CTVerbatim "Type ## _p", R.sname v)
 tmplArgToCTypVar _ _ _ = error "tmplArgToCTypVar: undefined"
 
 tmplAllArgsToCTypVar ::
@@ -496,27 +496,27 @@ tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## 
 
 tmplMemFuncArgToCTypVar :: Class -> Arg -> (R.CType, R.CName)
 tmplMemFuncArgToCTypVar _ (Arg (CT ctyp isconst) varname) =
-  (R.CType (ctypToStr ctyp isconst), R.sname varname)
+  (R.CTVerbatim (ctypToStr ctyp isconst), R.sname varname)
 tmplMemFuncArgToCTypVar c (Arg SelfType varname) =
-  (R.CType (ffiClassName c <> "_p"), R.sname varname)
+  (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
 tmplMemFuncArgToCTypVar _ (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CType (ffiClassName c <> "_p"), R.sname varname)
+    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
+    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
 tmplMemFuncArgToCTypVar _ (Arg (CPT (CPTClassRef c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CType (ffiClassName c <> "_p"), R.sname varname)
+    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
+    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
 tmplMemFuncArgToCTypVar _ (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
-    Const   -> (R.CType ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CType (ffiClassName c <> "_p"), R.sname varname)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateApp     _) v) = (R.CType "void*", R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateAppRef  _) v) = (R.CType "void*", R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateAppMove _) v) = (R.CType "void*", R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateType   _)  v) = (R.CType "void*", R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateParam _) v) = (R.CType "Type##_p", R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateParamPointer _) v) = (R.CType "Type##_p", R.sname v)
+    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
+    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateApp     _) v) = (R.CTVerbatim "void*", R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateAppRef  _) v) = (R.CTVerbatim "void*", R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateAppMove _) v) = (R.CTVerbatim "void*", R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateType   _)  v) = (R.CTVerbatim "void*", R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateParam _) v) = (R.CTVerbatim "Type##_p", R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateParamPointer _) v) = (R.CTVerbatim "Type##_p", R.sname v)
 tmplMemFuncArgToCTypVar _ _ = error "tmplMemFuncArgToString: undefined"
 
 

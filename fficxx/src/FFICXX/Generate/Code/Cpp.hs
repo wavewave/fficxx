@@ -52,9 +52,9 @@ import FFICXX.Generate.Util                  ( context
 genCppHeaderMacroType :: Class -> [R.CStatement]
 genCppHeaderMacroType c =
     [ R.Comment "Opaque type definition for $classname"
-    , R.TypeDef (R.CType ("struct " <> classname_tag)) (R.sname classname_t)
-    , R.TypeDef (R.CType (classname_t <> " *"))        (R.sname classname_p)
-    , R.TypeDef (R.CType (classname_t <> " const*"))   (R.sname ("const_" <> classname_p))
+    , R.TypeDef (R.CTVerbatim ("struct " <> classname_tag)) (R.sname classname_t)
+    , R.TypeDef (R.CTVerbatim (classname_t <> " *"))        (R.sname classname_p)
+    , R.TypeDef (R.CTVerbatim (classname_t <> " const*"))   (R.sname ("const_" <> classname_p))
     ]
   where
     classname = ffiClassName c
@@ -209,12 +209,12 @@ genAllCppHeaderInclude header =
 topLevelFunDecl :: TopLevelFunction -> R.CDecl
 topLevelFunDecl TopLevelFunction {..} = R.FunDecl ret func args
   where
-    ret  = R.CType (rettypeToString toplevelfunc_ret)
+    ret  = R.CTVerbatim (rettypeToString toplevelfunc_ret)
     func = R.sname ("TopLevel_" <> maybe toplevelfunc_name id toplevelfunc_alias)
     args = argsToCTypVarNoSelf toplevelfunc_args
 topLevelFunDecl TopLevelVariable {..} = R.FunDecl ret func []
   where
-    ret  = R.CType (rettypeToString toplevelvar_ret)
+    ret  = R.CTVerbatim (rettypeToString toplevelvar_ret)
     func = R.sname ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
 
 genTopLevelFuncCppDefinition :: TopLevelFunction -> R.CStatement
@@ -320,13 +320,13 @@ returnCpp b ret callstr =
 funcToDecl :: Class -> Function -> R.CDecl
 funcToDecl c func
   | isNewFunc func || isStaticFunc func =
-    let ret   = R.CType $ rettypeToString (genericFuncRet func)
+    let ret   = R.CTVerbatim $ rettypeToString (genericFuncRet func)
         fname =
           R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
         args  = argsToCTypVarNoSelf (genericFuncArgs func)
     in R.FunDecl ret fname args
   | otherwise =
-    let ret   = R.CType $ rettypeToString (genericFuncRet func)
+    let ret   = R.CTVerbatim $ rettypeToString (genericFuncRet func)
         fname =
           R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
         args  = argsToCTypVar (genericFuncArgs func)
@@ -358,17 +358,17 @@ funcToDef c func
 tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> R.CDecl
 tmplFunToDecl b t@TmplCls {..} f@TFun {..}    = R.FunDecl ret func args
   where
-    ret  = R.CType (tmplRetTypeToString b tfun_ret)
+    ret  = R.CTVerbatim (tmplRetTypeToString b tfun_ret)
     func = R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b Self t tfun_args
 tmplFunToDecl b t@TmplCls {..} f@TFunNew {..} = R.FunDecl ret func args
   where
-    ret  = R.CType (tmplRetTypeToString b (TemplateType t))
+    ret  = R.CTVerbatim (tmplRetTypeToString b (TemplateType t))
     func = R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b NoSelf t tfun_new_args
 tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.FunDecl ret func args
   where
-    ret  = R.CType "void"
+    ret  = R.CTVerbatim "void"
     func = R.CName [R.NamePart (tclass_name <> "_delete_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b Self t []
 
@@ -400,7 +400,7 @@ tmplFunToDef b t@TmplCls {..} f =
 accessorToDecl :: Variable -> Accessor -> R.CDecl
 accessorToDecl v a =
   let csig = accessorCFunSig (arg_type (unVariable v)) a
-      ret = R.CType $ rettypeToString (cRetType csig)
+      ret = R.CTVerbatim $ rettypeToString (cRetType csig)
       fname =
         R.CName [ R.NamePart "Type"
                 , R.NamePart (   "_"
@@ -436,7 +436,7 @@ accessorsToDefs vs =
 -- TODO: Handle simple type
 tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> R.CDecl
 tmplMemberFunToDecl c f =
-  let ret = R.CType $ tmplMemFuncRetTypeToString c (tmf_ret f)
+  let ret = R.CTVerbatim $ tmplMemFuncRetTypeToString c (tmf_ret f)
       fname =
         R.CName [ R.NamePart (hsTemplateMemberFunctionName c f)
                 , R.NamePart "Type"

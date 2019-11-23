@@ -25,7 +25,7 @@ instance IsString Namespace where
 
 data PragmaParam = Once
 
-data CType = CType String
+data CType = CTVerbatim String
 
 -- | parts for interpolation
 newtype NamePart = NamePart String
@@ -67,16 +67,19 @@ data CBlock = ExternC [CMacro]
 renderPragmaParam :: PragmaParam -> String
 renderPragmaParam Once = "once"
 
+renderCType :: CType -> String
+renderCType (CTVerbatim t) = t
+
 renderCDecl :: CDecl -> String
-renderCDecl (FunDecl (CType typ) fname args) =
-    typ <> " " <> renderCName fname <> " ( " <> intercalate ", " (map mkArgStr args) <> " )"
+renderCDecl (FunDecl typ fname args) =
+    renderCType typ <> " " <> renderCName fname <> " ( " <> intercalate ", " (map mkArgStr args) <> " )"
   where
-    mkArgStr (CType t, a) = t <> " " <> renderCName a
+    mkArgStr (t, a) = renderCType t <> " " <> renderCName a
 
 -- | render CStatement in a regular environment
 renderCStmt :: CStatement -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
-renderCStmt (TypeDef (CType typ) n)  = "typedef " <> typ <> " " <> renderCName n <> ";"
+renderCStmt (TypeDef typ n)          = "typedef " <> renderCType typ <> " " <> renderCName n <> ";"
 renderCStmt (CDeclaration e)         = renderCDecl e <> ";"
 renderCStmt (CDefinition d body)     =
   renderCDecl d <> " {\n" <> concatMap renderCStmt body <> "\n}\n"

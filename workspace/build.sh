@@ -1,8 +1,8 @@
 rm -rf dist-newstyle
 rm -rf stdcxx
 rm -rf working
-cabal new-build fficxx
 cabal new-build fficxx-runtime
+cabal new-build fficxx
 sleep 1s
 cabal new-exec runhaskell ../stdcxx-gen/Gen.hs
 cabal new-build stdcxx
