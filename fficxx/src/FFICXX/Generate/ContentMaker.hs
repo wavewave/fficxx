@@ -170,10 +170,10 @@ buildDefMain cih =
         <> [ R.EmptyLine
            , R.Verbatim aliasStr
            , R.EmptyLine
-           , R.Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
+           , R.Verbatim "#define CHECKPROTECT(x,y) FXIS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
            , R.EmptyLine
            , R.Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
-                        \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+                        \  FXIIF( CHECKPROTECT(cname,mname) ) ( \\\n\
                         \  (to_nonconst<oname,cname ## _t>), \\\n\
                         \  (to_nonconst<cname,cname ## _t>) )\n"
            , R.EmptyLine
@@ -234,10 +234,10 @@ buildTopLevelCppDef tih =
         <> [ R.EmptyLine
            , R.Verbatim aliasStr
            , R.EmptyLine
-           , R.Verbatim "#define CHECKPROTECT(x,y) IS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
+           , R.Verbatim "#define CHECKPROTECT(x,y) FXIS_PAREN(IS_ ## x ## _ ## y ## _PROTECTED)\n"
            , R.EmptyLine
            , R.Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
-                        \  IIF( CHECKPROTECT(cname,mname) ) ( \\\n\
+                        \  FXIIF( CHECKPROTECT(cname,mname) ) ( \\\n\
                         \  (to_nonconst<oname,cname ## _t>), \\\n\
                         \  (to_nonconst<cname,cname ## _t>) )\n"
            , R.EmptyLine
