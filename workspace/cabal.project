@@ -3,4 +3,5 @@ packages:
   ../fficxx-runtime/
 optional-packages:
   ./stdcxx/
+  ./tmf-test/
 

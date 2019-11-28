@@ -1,11 +1,55 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
+
+import qualified Data.HashMap.Strict as HM
+import System.Directory (getCurrentDirectory)
+import System.Environment (getArgs)
+import System.FilePath ((</>))
+--
+import FFICXX.Generate.Builder        ( simpleBuilder )
+import FFICXX.Generate.Code.Primitive ( bool_
+                                      , charpp
+                                      , cppclass, cppclass_
+                                      , cstring, cstring_
+                                      , double, double_
+                                      , int, int_
+                                      , uint, uint_
+                                      , void_, voidp
+                                      )
+import FFICXX.Generate.Config         ( FFICXXConfig(..)
+                                      , SimpleBuilderConfig(..)
+                                      )
+import FFICXX.Generate.Type.Cabal     ( BuildType(..), Cabal(..), CabalName(..) )
+import FFICXX.Generate.Type.Config    ( ModuleUnit(..), ModuleUnitMap(..), ModuleUnitImports(..)
+                                      , modImports
+                                      )
+import FFICXX.Generate.Type.Class     ( Arg(..)
+                                      , Class(..)
+                                      , CTypes(CTDouble)
+                                      , Function(..)
+                                      , ProtectedMethod(..)
+                                      , TopLevelFunction(..)
+                                      , Variable(..)
+                                      )
+import FFICXX.Generate.Type.Config    ( ModuleUnit(..)
+                                      , ModuleUnitImports(..)
+                                      )
+import FFICXX.Runtime.CodeGen.C       ( Namespace(..), HeaderName(..) )
+
+
 
 import qualified Data.HashMap.Strict as HM (fromList)
 import Data.Monoid (mempty)
 --
 import FFICXX.Generate.Builder
 import FFICXX.Generate.Code.Primitive
-import FFICXX.Generate.Type.Cabal (AddCInc(..),AddCSrc(..),Cabal(..),CabalName(..))
+import FFICXX.Generate.Type.Cabal     ( AddCInc(..)
+                                      , AddCSrc(..)
+                                      , BuildType(Simple)
+                                      , Cabal(..)
+                                      , CabalName(..)
+                                      )
 import FFICXX.Generate.Type.Config (ModuleUnit(..),ModuleUnitMap(..)
                                    ,ModuleUnitImports(..))
 import FFICXX.Generate.Type.Class
@@ -124,21 +168,22 @@ classA cabal =
           tmf_param = "t"
         , tmf_ret = void_
         , tmf_name = "method"
-        , tmf_args = [ (TemplateParamPointer "t", "x") ]
+        , tmf_args = [ Arg (TemplateParamPointer "t") "x" ]
         , tmf_alias = Nothing
         }
       , TemplateMemberFunction {
           tmf_param = "t"
         , tmf_ret = void_
         , tmf_name = "method2"
-        , tmf_args = [ (TemplateAppMove
-                          (TemplateAppInfo {
+        , tmf_args = [ Arg
+                         (TemplateAppMove
+                           TemplateAppInfo {
                              tapp_tclass = t_unique_ptr
                            , tapp_tparam = TArg_TypeParam "t"
                            , tapp_CppTypeForParam = "std::unique_ptr<Type>"
-                           })
-                       , "x"
-                       )
+                           }
+                         )
+                         "x"
                      ]
         , tmf_alias = Nothing
         }
@@ -181,41 +226,50 @@ toplevelfunctions = [ ]
 
 templates = [  ]
 
-headerMap =
-  ModuleUnitMap $
-    HM.fromList $
-      [ ( MU_Class "A"
-        , ModuleUnitImports {
-            muimports_namespaces = []
-          , muimports_headers = [HdrName "test.h"]
-          }
-        )
-      , ( MU_Class "T1"
-        , ModuleUnitImports {
-            muimports_namespaces = []
-          , muimports_headers = [HdrName "test.h"]
-          }
-        )
-      , ( MU_Class "T2"
-        , ModuleUnitImports {
-            muimports_namespaces = []
-          , muimports_headers = [HdrName "test.h"]
-          }
-        )
-
-      ]
-
+headers =
+  [ modImports "A"  [] ["test.h"]
+  , modImports "T1" [] ["test.h"]
+  , modImports "T2" [] ["test.h"]
+  ]
 
 main :: IO ()
 main = do
+  args <- getArgs
+  let tmpldir =  if length args == 1
+                 then args !! 0
+                 else "../template"
+
+  cwd <- getCurrentDirectory
+
   cabal <- do
-    testH   <- readFile "test.h"
-    testCpp <- readFile "test.cpp"
+    testH   <- readFile (tmpldir </> "test.h")
+    testCpp <- readFile (tmpldir </> "test.cpp")
     pure (cabal_ testH testCpp)
 
+  let fficfg = FFICXXConfig {
+                 fficxxconfig_workingDir     = cwd </> "tmp" </> "working"
+               , fficxxconfig_installBaseDir = cwd </> "tmf-test"
+               , fficxxconfig_staticFileDir  = tmpldir
+               }
+      sbcfg  = SimpleBuilderConfig {
+                 sbcTopModule  = "TMFTest"
+               , sbcModUnitMap = ModuleUnitMap (HM.fromList headers)
+               , sbcCabal      = cabal
+               , sbcClasses    = classes cabal
+               , sbcTopLevels  = toplevelfunctions
+               , sbcTemplates  = templates
+               , sbcExtraLibs  = extraLib
+               , sbcExtraDeps  = extraDep
+               , sbcStaticFiles = []
+               }
+
+  simpleBuilder fficfg sbcfg
+
+{-
   simpleBuilder
     "TestPkg"
     headerMap
     (cabal,classes cabal,toplevelfunctions,templates)
     [ ]
     extraDep
+-}

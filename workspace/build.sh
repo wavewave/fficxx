@@ -1,5 +1,6 @@
 rm -rf dist-newstyle
 rm -rf stdcxx
+rm -rf tmf-test
 rm -rf working
 cabal new-build fficxx-runtime
 cabal new-build fficxx
@@ -29,16 +30,7 @@ cabal new-exec -- ghc -keep-tmp-files function/hsMain.hs
 ./function/hsMain
 
 # template-member
-#rm Gen.o
-#rm -rf working
-runhaskell ./template-member/Gen.hs
-cabal new-build testpkg
-#cd testpkg && cabal clean && cd ..
-
-#cabal sandbox delete && cabal sandbox init && cabal sandbox add-source testpkg && cabal install testpkg
-
-#g++ -c stub.cc -I${BASEDIR}/stdcxx-0.5/include -I${BASEDIR}/fficxx-runtime-0.5/include -Itestpkg/csrc
-#cabal exec -- ghc -c TH.hs
+runhaskell ./template-member/Gen.hs ./template-member
+cabal new-build tmf-test
 cabal new-exec -- ghc template-member/app.hs
-#cabal exec -- ghc app.hs stub.o
 
