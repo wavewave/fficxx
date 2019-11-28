@@ -24,6 +24,7 @@ cabal new-exec -- ghc -threaded shared_ptr/test.hs
 ./shared_ptr/test
 
 # function
-rm function/hsMain.o function/hsMain
-cabal new-exec -- ghc function/hsMain.hs
+rm test.o function/hsMain.o function/hsMain
+g++ -c function/test.cpp
+cabal new-exec -- ghc -keep-tmp-files function/hsMain.hs test.o
 ./function/hsMain

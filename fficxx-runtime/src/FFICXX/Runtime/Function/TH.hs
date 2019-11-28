@@ -1,8 +1,11 @@
 {-# LANGUAGE TemplateHaskell #-}
 module FFICXX.Runtime.Function.TH where
+
 import Foreign.Ptr
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
+--
+import FFICXX.Runtime.CodeGen.C
 import FFICXX.Runtime.TH
 import FFICXX.Runtime.Function.Template
 
@@ -39,13 +42,28 @@ t_deleteFunction typ suffix
           in [t| Function $( t ) -> IO () |]
 
 
-genFunctionInstanceFor :: Q Type -> String -> Q [Dec]
-genFunctionInstanceFor qtyp suffix
-  = do typ <- qtyp
+genFunctionInstanceFor :: Q Type -> FunctionParamInfo -> Q [Dec]
+genFunctionInstanceFor qtyp param
+  = do let suffix = fpinfoSuffix param
+       typ <- qtyp
        f1 <- mkNew "newFunction" t_newFunction typ suffix
        f2 <- mkMember "call" t_call typ suffix
        f3 <- mkMember "deleteFunction" t_deleteFunction typ suffix
        wrap <- mkWrapper (typ,suffix)
+       addModFinalizer
+         (addForeignSource LangCxx
+            ("\n#include \"functional\"\n\n\n#include \"Function.h\"\n\n"
+               ++
+               let headers = fpinfoCxxHeaders param
+                   f x = renderCMacro (Include x)
+                 in concatMap f headers
+                 ++
+                 let nss = fpinfoCxxNamespaces param
+                     f x = renderCStmt (UsingNamespace x)
+                   in concatMap f nss
+                   ++
+                   "Function(" ++ suffix ++ ")\n"))
+
        let lst = [f1,f2,f3]
        return [ mkInstance [] (AppT (con "IFunction") typ) lst
               , mkInstance [] (AppT (con "FunPtrWrapper") typ) [wrap]
