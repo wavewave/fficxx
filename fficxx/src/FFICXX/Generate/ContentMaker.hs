@@ -131,8 +131,9 @@ buildDeclHeader cprefix header =
          <> map R.CRegular classDeclStmts
 
 -- |
-buildDefMain :: ClassImportHeader
-          -> String
+buildDefMain ::
+     ClassImportHeader
+  -> String
 buildDefMain cih =
   let classes = [cihClass cih]
       headerStmts =
@@ -374,7 +375,8 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                                         , "TypeSynonymInstances"
                                         ] ]
                                  implImports implBody
-  where classes = cmClass m
+  where -- TODO: classes should come from ClassImportHeader, not from module, directly.
+        classes = cmClass m
         implImports = [ mkImport "Data.Monoid"                -- for template member
                       , mkImport "Data.Word"
                       , mkImport "Data.Int"
@@ -384,6 +386,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                       , mkImport "Language.Haskell.TH.Syntax" -- for template member
                       , mkImport "System.IO.Unsafe"
                       , mkImport "FFICXX.Runtime.Cast"
+                      , mkImport "FFICXX.Runtime.CodeGen.C"   -- for template member
                       , mkImport "FFICXX.Runtime.TH"          -- for template member
                       ]
                       <> genImportInImplementation m
@@ -396,7 +399,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
                    <> concatMap genHsFrontInstVariables classes
-                   <> concatMap genTemplateMemberFunctions classes
+                   <> concatMap genTemplateMemberFunctions (cmCIH m)
 
 buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m =

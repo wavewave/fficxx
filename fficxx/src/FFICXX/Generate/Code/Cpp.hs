@@ -448,7 +448,7 @@ tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> R.CFunDecl
 tmplMemberFunToDecl c f =
   let ret = R.CTVerbatim $ tmplMemFuncRetTypeToString c (tmf_ret f)
       fname =
-        R.CName [ R.NamePart (hsTemplateMemberFunctionName c f)
+        R.CName [ R.NamePart (hsTemplateMemberFunctionName c f <> "_")
                 , R.NamePart "Type"
                 ]
       args = map (tmplMemFuncArgToCTypVar c) ((Arg SelfType "p"):tmf_args f)

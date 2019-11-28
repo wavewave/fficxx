@@ -30,7 +30,9 @@ import FFICXX.Generate.Type.Class     ( Class(..)
                                       , TemplateFunction(..)
                                       , TemplateMemberFunction(..)
                                       )
-import FFICXX.Generate.Type.Module    ( TemplateClassImportHeader(..) )
+import FFICXX.Generate.Type.Module    ( ClassImportHeader(..)
+                                      , TemplateClassImportHeader(..)
+                                      )
 import FFICXX.Generate.Util.HaskellSrcExts
                                       ( bracketExp
                                       , con, conDecl, cxEmpty, clsDecl
@@ -51,51 +53,93 @@ import FFICXX.Generate.Util.HaskellSrcExts
 -- Template member function --
 ------------------------------
 
-genTemplateMemberFunctions :: Class -> [Decl ()]
-genTemplateMemberFunctions c =
-  concatMap (\f -> genTMFExp c f <> genTMFInstance c f) (class_tmpl_funcs c)
+genTemplateMemberFunctions :: ClassImportHeader -> [Decl ()]
+genTemplateMemberFunctions cih =
+  let c = cihClass cih 
+  in concatMap (\f -> genTMFExp c f <> genTMFInstance cih f) (class_tmpl_funcs c)
 
 
 genTMFExp :: Class -> TemplateMemberFunction -> [Decl ()]
 genTMFExp c f = mkFun nh sig [p "typ", p "suffix"] rhs (Just bstmts)
-      where nh = hsTemplateMemberFunctionNameTH c f
-            sig = tycon "Type" `tyfun` (tycon "String" `tyfun` (tyapp (tycon "Q") (tycon "Exp")))
-            v = mkVar
-            p = mkPVar
-            tp = tmf_param f
-            lit' = strE (hsTemplateMemberFunctionName c f <> "_")
-            lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
-            rhs = app (v "mkTFunc") (tuple [v "typ", v "suffix", lam, v "tyf"])
-            sig' = functionSignatureTMF c f
-            bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
-                               (letE [ pbind_ (p tp) (v "pure" `app` (v "typ")) ]
-                                  (bracketExp (typeBracket sig')))
-                               Nothing
-                           ]
+  where
+    nh = hsTemplateMemberFunctionNameTH c f
+    sig = tycon "Type" `tyfun` (tycon "String" `tyfun` (tyapp (tycon "Q") (tycon "Exp")))
+    v = mkVar
+    p = mkPVar
+    tp = tmf_param f
+    lit' = strE (hsTemplateMemberFunctionName c f <> "_")
+    lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
+    rhs = app (v "mkTFunc") (tuple [v "typ", v "suffix", lam, v "tyf"])
+    sig' = functionSignatureTMF c f
+    bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
+                       (letE [ pbind_ (p tp) (v "pure" `app` (v "typ")) ]
+                          (bracketExp (typeBracket sig')))
+                       Nothing
+                   ]
 
-
-genTMFInstance :: Class -> TemplateMemberFunction -> [Decl ()]
-genTMFInstance c f = mkFun fname sig [p "qtyp", p "suffix"] rhs Nothing
-  where fname = "genInstanceFor_" <> hsTemplateMemberFunctionName c f
-        p = mkPVar
-        v = mkVar
-        sig = (tyapp (tycon "Q") (tycon "Type")) `tyfun`
-                (tycon "String" `tyfun`
-                  (tyapp (tycon "Q") (tylist (tycon "Dec"))))
-        rhs = doE [qtypstmt, genstmt, letStmt lststmt, qualStmt retstmt]
-        qtypstmt = generator (p "typ") (v "qtyp")
-        genstmt = generator
-                    (p "f1")
-                    (v "mkMember" `app` (     strE (hsTemplateMemberFunctionName c f <> "_")
-                                        `app` v "<>"
-                                        `app` v "suffix"
-                                        )
-                                  `app` v (hsTemplateMemberFunctionNameTH c f)
-                                  `app` v "typ"
-                                  `app` v "suffix"
-                    )
-        lststmt = [ pbind_ (p "lst") (list ([v "f1"])) ]
-        retstmt = v "pure" `app` v "lst"
+genTMFInstance :: ClassImportHeader -> TemplateMemberFunction -> [Decl ()]
+genTMFInstance cih f = mkFun fname sig [p "isCprim", p "qtyp", p "param"] rhs Nothing
+  where
+    c = cihClass cih
+    fname = "genInstanceFor_" <> hsTemplateMemberFunctionName c f
+    p = mkPVar
+    v = mkVar
+    sig =         tycon "IsCPrimitive"
+          `tyfun` (tycon "Q" `tyapp` tycon "Type")
+          `tyfun` tycon "TemplateParamInfo"
+          `tyfun` (tycon "Q" `tyapp` tylist (tycon "Dec"))
+    rhs = doE [suffixstmt, qtypstmt, genstmt, foreignSrcStmt, letStmt lststmt, qualStmt retstmt]
+    suffixstmt = letStmt [ pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param" ) ]
+    qtypstmt = generator (p "typ") (v "qtyp")
+    genstmt = generator
+                (p "f1")
+                (v "mkMember" `app` (     strE (hsTemplateMemberFunctionName c f <> "_")
+                                    `app` v "<>"
+                                    `app` v "suffix"
+                                    )
+                              `app` v (hsTemplateMemberFunctionNameTH c f)
+                              `app` v "typ"
+                              `app` v "suffix"
+                )
+    lststmt = [ pbind_ (p "lst") (list ([v "f1"])) ]
+    retstmt = v "pure" `app` v "lst"
+    -- TODO: refactor out the following code.
+    foreignSrcStmt =
+      qualifier $
+              (v "addModFinalizer")
+        `app` (      v "addForeignSource"
+               `app` con "LangCxx"
+               `app` (L.foldr1 (\x y -> inapp x (op "++") y)
+                        [ includeStatic
+                        , includeDynamic
+                        , namespaceStr
+                        , strE (hsTemplateMemberFunctionName c f)
+                        , strE "("
+                        , v "suffix"
+                        , strE ")\n"
+                        ]
+                     )
+              )
+      where
+        includeStatic =
+          strE $ concatMap ((<>"\n") . R.renderCMacro . R.Include) $
+               [ HdrName "MacroPatternMatch.h", cihSelfHeader cih ]
+            <> cihIncludedHPkgHeadersInCPP cih
+            <> cihIncludedCPkgHeaders cih
+        includeDynamic =
+          letE
+            [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param" )
+            , pbind_ (pApp (name "f") [p "x"])
+                (v "renderCMacro" `app` (con "Include" `app` v "x"))
+            ]
+            (v "concatMap" `app` v "f" `app` v "headers")
+        namespaceStr =
+          letE
+            [ pbind_ (p "nss") (v "tpinfoCxxNamespaces" `app` v "param" )
+            , pbind_ (pApp (name "f") [p "x"])
+                (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
+            ]
+            (v "concatMap" `app` v "f" `app` v "nss")
 
 --------------------
 -- Template Class --
@@ -161,12 +205,10 @@ genTmplInstance t tcih fs =
               `tyfun` tycon "TemplateParamInfo"
               `tyfun` (tycon "Q" `tyapp` tylist (tycon "Dec"))
         nfs = zip ([1..] :: [Int]) fs
-        rhs = doE (  [ suffixstmt
-                     , qtypstmt
-                     ]
-                  <> map genstmt nfs
-                  <> [foreignSrcStmt]
-                  <> [letStmt (lststmt nfs), qualStmt retstmt])
+        rhs = doE (   [ suffixstmt, qtypstmt ]
+                   <> map genstmt nfs
+                   <> [foreignSrcStmt, letStmt (lststmt nfs), qualStmt retstmt]
+                  )
         suffixstmt = letStmt [ pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param" ) ]
         qtypstmt = generator (p "typ") (v "qtyp")
         genstmt (n,f@TFun    {..}) = generator
@@ -191,7 +233,7 @@ genTmplInstance t tcih fs =
                                                      `app` v    "suffix"
                                        )
         lststmt xs = [ pbind_ (p "lst") (list (map (v . (\n->"f"<>show n) . fst) xs)) ]
-
+        -- TODO: refactor out the following code.
         foreignSrcStmt =
           qualifier $
                   (v "addModFinalizer")

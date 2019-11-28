@@ -23,7 +23,7 @@ data ClassImportHeader = ClassImportHeader
 -- | Haskell side
 data ClassModule = ClassModule
                    { cmModule :: String
-                   , cmClass :: [Class]
+                   , cmClass :: [Class]   -- TODO: this should be merged into CIH.
                    , cmCIH :: [ClassImportHeader]
                    , cmImportedModulesHighNonSource :: [Either TemplateClass Class]  -- ^ imported modules that do not need source
                                                                          -- NOTE: source means the same cabal package.
