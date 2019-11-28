@@ -24,3 +24,16 @@ data ModuleUnitImports =
 emptyModuleUnitImports = ModuleUnitImports [] []
 
 newtype ModuleUnitMap = ModuleUnitMap { unModuleUnitMap :: HashMap ModuleUnit ModuleUnitImports }
+
+modImports ::
+     String
+  -> [String]
+  -> [HeaderName]
+  -> (ModuleUnit,ModuleUnitImports)
+modImports n ns hs =
+  ( MU_Class n
+  , ModuleUnitImports {
+      muimports_namespaces = map NS ns
+    , muimports_headers    = hs
+    }
+  )
