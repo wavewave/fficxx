@@ -30,7 +30,7 @@ cabal new-exec -- ghc -keep-tmp-files function/hsMain.hs
 ./function/hsMain
 
 # template-member
-runhaskell ./template-member/Gen.hs ./template-member
+runhaskell ./template-member/Gen.hs ./template-member/template
 cabal new-build tmf-test
 cabal new-exec -- ghc template-member/app.hs
-
+./template-member/app
