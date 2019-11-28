@@ -128,10 +128,10 @@ genTMFInstance cih f = mkFun fname sig [p "isCprim", p "qtyp", p "param"] rhs No
               )
       where
         includeStatic =
-          strE $ concatMap (<> "\n")
-            [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h"))
-            , R.renderCMacro (R.Include (cihSelfHeader cih)) -- (tcihSelfHeader tcih))
-            ]
+          strE $ concatMap ((<>"\n") . R.renderCMacro . R.Include) $
+               [ HdrName "MacroPatternMatch.h", cihSelfHeader cih ]
+            <> cihIncludedHPkgHeadersInCPP cih
+            <> cihIncludedCPkgHeaders cih
         includeDynamic =
           letE
             [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param" )
