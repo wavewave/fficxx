@@ -114,12 +114,6 @@ genTMFInstance cih f = mkFun fname sig [p "isCprim", p "qtyp", p "param"] rhs No
                         , includeDynamic
                         , namespaceStr
                         , strE (hsTemplateMemberFunctionName c f)
-                        -- , paren $
-                        --     caseE
-                        --       (v "isCprim")
-                        --       [ match (p "CPrim")    (strE "_s")
-                        --       , match (p "NonCPrim") (strE "")
-                        --      ]
                         , strE "("
                         , v "suffix"
                         , strE ")\n"

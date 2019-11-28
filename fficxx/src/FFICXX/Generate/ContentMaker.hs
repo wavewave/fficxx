@@ -375,7 +375,8 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                                         , "TypeSynonymInstances"
                                         ] ]
                                  implImports implBody
-  where classes = cmClass m
+  where -- TODO: classes should come from ClassImportHeader, not from module, directly.
+        classes = cmClass m
         implImports = [ mkImport "Data.Monoid"                -- for template member
                       , mkImport "Data.Word"
                       , mkImport "Data.Int"
