@@ -22,7 +22,7 @@ TH.genFunctionInstanceFor
 TH.genFunctionInstanceFor
   [t|Int -> IO ()|]
   FPInfo {
-    fpinfoCxxArgTypes = [ "int" ]
+    fpinfoCxxArgTypes = [ ("int","x") ]
   , fpinfoCxxRetType = Nothing
   , fpinfoCxxHeaders =  []
   , fpinfoCxxNamespaces = []

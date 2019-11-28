@@ -27,7 +27,7 @@ data IsCPrimitive = CPrim | NonCPrim
 -- | function pointer parameter for std::function
 data FunctionParamInfo =
   FPInfo {
-    fpinfoCxxArgTypes   :: [String]
+    fpinfoCxxArgTypes   :: [(String,String)]
   , fpinfoCxxRetType    :: Maybe String -- Nothing = void
   , fpinfoCxxHeaders    :: [HeaderName]
   , fpinfoCxxNamespaces :: [Namespace]
