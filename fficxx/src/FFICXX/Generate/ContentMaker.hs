@@ -131,8 +131,9 @@ buildDeclHeader cprefix header =
          <> map R.CRegular classDeclStmts
 
 -- |
-buildDefMain :: ClassImportHeader
-          -> String
+buildDefMain ::
+     ClassImportHeader
+  -> String
 buildDefMain cih =
   let classes = [cihClass cih]
       headerStmts =
