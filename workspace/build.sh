@@ -22,3 +22,8 @@ cabal new-exec -- ghc unique_ptr/test.hs
 rm shared_ptr/test.o shared_ptr/test
 cabal new-exec -- ghc -threaded shared_ptr/test.hs
 ./shared_ptr/test
+
+# function
+rm function/hsMain.o function/hsMain
+cabal new-exec -- ghc -keep-tmp-files function/hsMain.hs
+./function/hsMain

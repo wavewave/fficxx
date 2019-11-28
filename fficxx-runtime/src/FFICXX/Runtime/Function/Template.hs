@@ -8,6 +8,7 @@ module FFICXX.Runtime.Function.Template where
 import Foreign.Ptr
 import FFICXX.Runtime.Cast
 
+
 data RawFunction t
 
 newtype Function t = Function (Ptr (RawFunction t))

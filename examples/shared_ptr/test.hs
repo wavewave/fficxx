@@ -51,6 +51,6 @@ main = do
     forkIO $ worker ptr
     forkOS $ worker ptr
 
-    threadDelay 10000000
+    threadDelay 3000000
 
     deleteSharedPtr ptr
