@@ -7,7 +7,7 @@ in
 { mkDerivation, base, fficxx, fficxx-runtime, stdenv, template-haskell }:
 mkDerivation {
   pname = "stdcxx";
-  version = "0.5";
+  version = "0.6";
   src = stdcxx-src;
   libraryHaskellDepends = [
     base fficxx fficxx-runtime template-haskell
