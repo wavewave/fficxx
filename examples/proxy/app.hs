@@ -9,8 +9,8 @@ import Foreign.Ptr                ( castPtr )
 --
 import FFICXX.Runtime.Function.Template (Function(..),newFunction,wrapFunPtr)
 --
-import InheritTest.Impl
-import InheritTest.Loader
+import ProxyTest.Impl
+import ProxyTest.Loader
 --
 import TH2 (newImplSub)
 

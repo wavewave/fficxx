@@ -32,7 +32,7 @@ genImplProxy = do
       (   concatMap (renderCMacro . Include) [ "MacroPatternMatch.h"
                                              , "functional"
                                              , "Function.h"
-                                             , "InheritTestImpl.h"
+                                             , "ProxyTestImpl.h"
                                              , "test.h"
                                              ]
        ++ "extern \"C\" {\n\

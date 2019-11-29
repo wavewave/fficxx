@@ -8,7 +8,7 @@ module TH2 where
 import Foreign.Ptr
 import FFICXX.Runtime.Cast
 import STD.Deletable.Interface
-import InheritTest.Impl.Interface
+import ProxyTest.Impl.Interface
 
 import qualified TH
 

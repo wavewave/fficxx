@@ -127,14 +127,14 @@ t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" "t"
              ]
 
 -- -------------------------------------------------------------------
--- inherit-test
+-- proxy-test
 -- -------------------------------------------------------------------
 
 cabal_ testH testCpp =
-  Cabal { cabal_pkgname            = CabalName "inherit-test"
+  Cabal { cabal_pkgname            = CabalName "proxy-test"
         , cabal_version            = "0.0"
-        , cabal_cheaderprefix      = "InheritTest"
-        , cabal_moduleprefix       = "InheritTest"
+        , cabal_cheaderprefix      = "ProxyTest"
+        , cabal_moduleprefix       = "ProxyTest"
         , cabal_additional_c_incs  = [ AddCInc "test.h" testH ]
         , cabal_additional_c_srcs  = [ AddCSrc "test.cpp" testCpp ]
         , cabal_additional_pkgdeps = [ CabalName "stdcxx" ]
@@ -220,11 +220,11 @@ main = do
 
   let fficfg = FFICXXConfig {
                  fficxxconfig_workingDir     = cwd </> "tmp" </> "working2"
-               , fficxxconfig_installBaseDir = cwd </> "inherit-test"
+               , fficxxconfig_installBaseDir = cwd </> "proxy-test"
                , fficxxconfig_staticFileDir  = tmpldir
                }
       sbcfg  = SimpleBuilderConfig {
-                 sbcTopModule  = "InheritTest"
+                 sbcTopModule  = "ProxyTest"
                , sbcModUnitMap = ModuleUnitMap (HM.fromList headers)
                , sbcCabal      = cabal
                , sbcClasses    = classes cabal

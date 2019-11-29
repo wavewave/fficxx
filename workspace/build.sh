@@ -1,7 +1,7 @@
 rm -rf dist-newstyle
 rm -rf stdcxx
 rm -rf tmf-test
-rm -rf inherit-test
+rm -rf proxy-test
 rm -rf working
 cabal new-build fficxx-runtime
 cabal new-build fficxx
@@ -35,7 +35,7 @@ runhaskell ./template-member/Gen.hs ./template-member/template
 cabal new-build tmf-test
 cabal new-exec -- runhaskell -- -fobject-code -O0 template-member/app.hs
 
-# inherit
-runhaskell ./inherit/Gen.hs ./inherit/template
-cabal new-build inherit-test
-cabal new-exec -- runhaskell -- -iinherit -fobject-code -O0 inherit/app.hs
+# proxy
+runhaskell ./proxy/Gen.hs ./proxy/template
+cabal new-build proxy-test
+cabal new-exec -- runhaskell -- -iproxy -fobject-code -O0 proxy/app.hs
