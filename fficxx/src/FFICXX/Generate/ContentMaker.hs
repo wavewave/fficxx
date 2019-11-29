@@ -448,7 +448,7 @@ buildTHHs m =
           tcih <-
             maybeToList $
               find (\tcih -> tclass_name (tcihTClass tcih) == tclass_name t) tcihs
-          genTmplInstance t tcih (tclass_funcs t)
+          genTmplInstance tcih (tclass_funcs t)
 
 -- |
 buildInterfaceHSBOOT :: String -> Module ()
