@@ -151,82 +151,42 @@ extraDep = []
 
 extraLib = []
 
-classA cabal =
+impl cabal =
   Class {
     class_cabal = cabal
-  , class_name = "A"
+  , class_name = "Impl"
   , class_parents = [ deletable ]
   , class_protected = mempty
   , class_alias = Nothing
   , class_funcs = [ Constructor [ ] Nothing ]
   , class_vars  = [ ]
-  , class_tmpl_funcs =
-      [ TemplateMemberFunction {
-          tmf_param = "t"
-        , tmf_ret = void_
-        , tmf_name = "method"
-        , tmf_args = [ Arg (TemplateParamPointer "t") "x" ]
-        , tmf_alias = Nothing
-        }
-      , TemplateMemberFunction {
-          tmf_param = "t"
-        , tmf_ret = void_
-        , tmf_name = "method2"
-        , tmf_args = [ Arg
-                         (TemplateAppMove
-                           TemplateAppInfo {
-                             tapp_tclass = t_unique_ptr
-                           , tapp_tparam = TArg_TypeParam "t"
-                           , tapp_CppTypeForParam = "std::unique_ptr<Type>"
-                           }
-                         )
-                         "x"
-                     ]
-        , tmf_alias = Nothing
-        }
-      ]
+  , class_tmpl_funcs = []
   }
 
-classT1 cabal =
+loader cabal =
   Class {
     class_cabal = cabal
-  , class_name = "T1"
+  , class_name = "Loader"
   , class_parents = [ deletable ]
   , class_protected = mempty
   , class_alias = Nothing
   , class_funcs =
-      [ Constructor [ ] Nothing
-      , NonVirtual void_ "print" [ ] Nothing
+      [ Constructor [ cppclass (impl cabal) "m" ] Nothing
+      , NonVirtual void_ "invoke" [] Nothing
       ]
   , class_vars = [ ]
   , class_tmpl_funcs = [ ]
   }
 
-classT2 cabal =
-  Class {
-    class_cabal = cabal
-  , class_name = "T2"
-  , class_parents = [ deletable ]
-  , class_protected = mempty
-  , class_alias = Nothing
-  , class_funcs =
-      [ Constructor [ ] Nothing
-      , NonVirtual void_ "print" [ ] Nothing
-      ]
-  , class_vars = [ ]
-  , class_tmpl_funcs = [ ]
-  }
-
-classes cabal = [ classA cabal, classT1 cabal, classT2 cabal ]
+classes cabal = [ impl cabal, loader cabal ]
 
 toplevelfunctions = [ ]
 
 templates = [  ]
 
 headers =
-  [ modImports "A"  [] ["test.h"]
-  , modImports "T1" [] ["test.h"]
-  , modImports "T2" [] ["test.h"]
+  [ modImports "Impl"  [] ["test.h"]
+  , modImports "Loader" [] ["test.h"]
   ]
 
 main :: IO ()

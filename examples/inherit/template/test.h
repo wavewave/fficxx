@@ -1,41 +1,23 @@
-#include <iostream>
-#include <memory>
+#pragma once
 
-class A {
+class Impl {
 public:
-    A() {}
-    ~A() {}
+    Impl() {}
+    ~Impl() {}
 
-    template<typename T> void method( T* x );
-
-    template<typename T> void method2( std::unique_ptr<T> x );
+    virtual void action( );
 };
 
-template<typename T> void A::method( T* x ) {
-    std::cout << "in A::method" << std::endl;
-    x->print();
-}
+class Loader {
 
-template<typename T> void A::method2( std::unique_ptr<T> x ) {
-    std::cout << "in A::method2" << std::endl;
-    T* y = x.get();
-    y->print();
-}
+private:
+  Impl *fImpl;
 
-
-
-class T1 {
 public:
-    T1() {}
-    ~T1() {}
+  Loader( Impl* m ): fImpl(m) {}
 
-    void print();
-};
+  void invoke() {
+    fImpl->action();
+  }
 
-class T2 {
-public:
-    T2() {}
-    ~T2() {}
-
-    void print();
 };

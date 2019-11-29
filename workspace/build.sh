@@ -34,10 +34,8 @@ cabal new-exec -- runhaskell -- -fobject-code -O0 function/hsMain.hs
 runhaskell ./template-member/Gen.hs ./template-member/template
 cabal new-build tmf-test
 cabal new-exec -- runhaskell -- -fobject-code -O0 template-member/app.hs
-#./template-member/app
 
 # inherit
 runhaskell ./inherit/Gen.hs ./inherit/template
 cabal new-build inherit-test
 cabal new-exec -- runhaskell -- -fobject-code -O0 inherit/app.hs
-#./template-member/app
