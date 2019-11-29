@@ -191,11 +191,11 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
 
 genTmplInstance ::
      TemplateClassImportHeader
-  -> [TemplateFunction]
   -> [Decl ()]
-genTmplInstance tcih fs =
+genTmplInstance tcih =
     mkFun fname sig [p "isCprim", p "qtyp", p "param"] rhs Nothing
   where t = tcihTClass tcih
+        fs = tclass_funcs t
         tname = tclass_name t
         fname = "gen" <> tname <> "InstanceFor"
         p = mkPVar

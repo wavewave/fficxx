@@ -7,9 +7,9 @@ import Control.Lens                           ( (&), (.~), at )
 import Control.Monad.Trans.Reader
 import Data.Either                            ( rights )
 import qualified Data.Map as M
-import Data.Maybe                             ( mapMaybe, maybeToList )
+import Data.Maybe                             ( mapMaybe  )
 import Data.Monoid                            ( (<>) )
-import Data.List                              ( find, intercalate, nub )
+import Data.List                              ( intercalate, nub )
 import Data.List.Split                        ( splitOn )
 import Language.Haskell.Exts.Syntax           ( Module(..)
                                               , Decl(..)
@@ -417,8 +417,8 @@ buildTemplateHs m =
       ]
       body
   where
-    ts = map tcihTClass $ tcmTCIH m
-    body = concatMap genTmplInterface ts
+    t = tcihTClass $ tcmTCIH m
+    body = genTmplInterface t
 
 buildTHHs :: TemplateClassModule -> Module ()
 buildTHHs m =
@@ -437,18 +437,13 @@ buildTHHs m =
     )
     body
   where
-    ts = map tcihTClass $ tcmTCIH m
+    t = tcihTClass $ tcmTCIH m
     imports = [ mkImport (tcmModule m <.> "Template") ]
     body = tmplImpls <> tmplInsts
-    tmplImpls = concatMap genTmplImplementation ts
-    tmplInsts = concatMap gen ts
-      where
-        gen t = do
-          let tcihs = tcmTCIH m
-          tcih <-
-            maybeToList $
-              find (\tcih -> tclass_name (tcihTClass tcih) == tclass_name t) tcihs
-          genTmplInstance tcih (tclass_funcs t)
+    tmplImpls = genTmplImplementation t
+    tmplInsts = do
+      let tcih = tcmTCIH m
+      genTmplInstance tcih -- (tclass_funcs t)
 
 -- |
 buildInterfaceHSBOOT :: String -> Module ()

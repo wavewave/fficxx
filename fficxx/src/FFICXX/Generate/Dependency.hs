@@ -306,7 +306,7 @@ mkTCM ::
   -> TemplateClassModule
 mkTCM tcih =
   let t = tcihTClass tcih
-  in TCM (getTClassModuleBase t) [tcih]
+  in TCM (getTClassModuleBase t) tcih
 
 
 mkPackageConfig
@@ -322,7 +322,7 @@ mkPackageConfig (pkgname,getImports) (cs,fs,ts,extra) acincs acsrcs =
       --
       tih = mkTIH pkgname getImports cihs fs
       tcms = map mkTCM ts
-      tcihs = concatMap tcmTCIH tcms
+      tcihs = map tcmTCIH tcms
   in PkgConfig {
        pcfg_classModules = ms
      , pcfg_classImportHeaders = cihs
