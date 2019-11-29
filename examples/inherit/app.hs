@@ -7,25 +7,14 @@ module Main where
 import Data.IORef                 ( IORef, newIORef, readIORef )
 import Foreign.Ptr                ( castPtr )
 --
-import FFICXX.Runtime.TH          ( FunctionParamInfo(..), IsCPrimitive(..), TemplateParamInfo(..) )
-import FFICXX.Runtime.Function.Template
-import FFICXX.Runtime.Function.TH ( genFunctionInstanceFor )
-import STD.UniquePtr.Template
-import STD.UniquePtr.TH
-
+import FFICXX.Runtime.Function.Template (Function(..),newFunction,wrapFunPtr)
+--
 import InheritTest.Impl
 import InheritTest.ImplSub
 import InheritTest.Loader
+--
+import TH ()
 
-genFunctionInstanceFor
-  [t|IO ()|]
-  FPInfo {
-    fpinfoCxxArgTypes = []
-  , fpinfoCxxRetType = Nothing
-  , fpinfoCxxHeaders =  []
-  , fpinfoCxxNamespaces = []
-  , fpinfoSuffix = "f1"
-  }
 
 testFn :: IORef Int -> IO ()
 testFn ref = do

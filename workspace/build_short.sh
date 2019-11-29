@@ -11,4 +11,4 @@ cabal new-build stdcxx
 # inherit
 runhaskell ./inherit/Gen.hs ./inherit/template
 cabal new-build inherit-test
-cabal new-exec -- runhaskell -- -fobject-code -O0 inherit/app.hs
+cabal new-exec -- runhaskell -- -iinherit -fobject-code -O0 inherit/app.hs
