@@ -21,3 +21,11 @@ public:
   }
 
 };
+
+class ImplSub : public Impl {
+public:
+    ImplSub() {}
+    ~ImplSub() {}
+
+    virtual void action( );
+};

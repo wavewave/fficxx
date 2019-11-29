@@ -8,6 +8,7 @@ import STD.UniquePtr.Template
 import STD.UniquePtr.TH
 
 import InheritTest.Impl
+import InheritTest.ImplSub
 import InheritTest.Loader
 
 
@@ -17,4 +18,8 @@ main = do
   loader <- newLoader impl
 
   loader_invoke loader
-  pure ()
+
+
+  implsub <- newImplSub
+  loader2 <- newLoader implsub
+  loader_invoke loader2

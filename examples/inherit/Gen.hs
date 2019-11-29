@@ -163,6 +163,19 @@ impl cabal =
   , class_tmpl_funcs = []
   }
 
+implSub cabal =
+  Class {
+    class_cabal = cabal
+  , class_name = "ImplSub"
+  , class_parents = [ impl cabal ]
+  , class_protected = mempty
+  , class_alias = Nothing
+  , class_funcs = [ Constructor [ ] Nothing ]
+  , class_vars  = [ ]
+  , class_tmpl_funcs = []
+  }
+
+
 loader cabal =
   Class {
     class_cabal = cabal
@@ -178,15 +191,16 @@ loader cabal =
   , class_tmpl_funcs = [ ]
   }
 
-classes cabal = [ impl cabal, loader cabal ]
+classes cabal = [ impl cabal, implSub cabal, loader cabal ]
 
 toplevelfunctions = [ ]
 
 templates = [  ]
 
 headers =
-  [ modImports "Impl"  [] ["test.h"]
-  , modImports "Loader" [] ["test.h"]
+  [ modImports "Impl"    [] ["test.h"]
+  , modImports "ImplSub" [] ["test.h"]
+  , modImports "Loader"  [] ["test.h"]
   ]
 
 main :: IO ()
