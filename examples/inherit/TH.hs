@@ -35,7 +35,8 @@ genImplProxy = do
                                              , "InheritTestImpl.h"
                                              , "test.h"
                                              ]
-       ++ "class ImplSub : public Impl {\n\
+       ++ "extern \"C\" {\n\
+          \class ImplSub : public Impl {\n\
           \private:\n\
           \  std::function<void()>* fn;\n\
           \public:\n\
@@ -56,7 +57,14 @@ genImplProxy = do
           \\n\
           \DELETABLE_DEF_VIRT(ImplSub)\n\
           \IMPL_DEF_VIRT(ImplSub)\n\
-          \\n"
+          \\n\
+          \\n\
+          \ImplSub_p ImplSub_newImplSub ( void* m ) {\n\
+          \  ImplSub* newp = new ImplSub(m);\n\
+          \  return to_nonconst<ImplSub_t,ImplSub>(newp);\n\
+          \}\n\
+          \\n\
+          \} // extern C\n"
       )
     )
   pure []

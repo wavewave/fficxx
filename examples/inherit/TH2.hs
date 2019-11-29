@@ -7,6 +7,8 @@ module TH2 where
 
 import Foreign.Ptr
 import FFICXX.Runtime.Cast
+import STD.Deletable.Interface
+import InheritTest.Impl.Interface
 
 import qualified TH
 
@@ -22,8 +24,20 @@ instance () => FPtr (ImplSub) where
         get_fptr (ImplSub ptr) = ptr
         cast_fptr_to_obj = ImplSub
 
-foreign import ccall safe "ImplSub_delete"
-  c_impl_delete :: Ptr RawImplSub -> IO ()
+instance () => Castable (ImplSub) (Ptr RawImplSub) where
+        cast x f = f (castPtr (get_fptr x))
+        uncast x f = f (cast_fptr_to_obj (castPtr x))
 
--- foreign import ccall safe "ImplSub_newImpl"
---   c_impl_newimpl :: IO (Ptr RawImplSub)
+foreign import ccall safe "ImplSub_delete"
+  c_implsub_delete :: Ptr RawImplSub -> IO ()
+
+foreign import ccall safe "ImplSub_newImplSub"
+  c_implsub_newimplsub :: Ptr () -> IO (Ptr RawImplSub)
+
+instance IDeletable ImplSub where
+  delete = xform0 c_implsub_delete
+
+instance IImpl ImplSub
+
+newImplSub :: Ptr () -> IO ImplSub
+newImplSub = xform0 c_implsub_newimplsub

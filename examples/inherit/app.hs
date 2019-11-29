@@ -12,7 +12,8 @@ import FFICXX.Runtime.Function.Template (Function(..),newFunction,wrapFunPtr)
 import InheritTest.Impl
 import InheritTest.Loader
 --
-import TH2 ()
+import TH2 (newImplSub)
+
 
 testFn :: IORef Int -> IO ()
 testFn ref = do
@@ -31,9 +32,8 @@ main = do
   ref <- newIORef 8
   Function ptr <- newFunction =<< wrapFunPtr (testFn ref)
 
-  pure ()
-{-
   implsub <- newImplSub (castPtr ptr)
   loader2 <- newLoader implsub
   loader_invoke loader2
--}
+
+  pure ()
