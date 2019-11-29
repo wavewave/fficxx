@@ -4,4 +4,4 @@ packages:
 optional-packages:
   ./stdcxx/
   ./tmf-test/
-
+  ./inherit-test/

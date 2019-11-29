@@ -1,6 +1,7 @@
 rm -rf dist-newstyle
 rm -rf stdcxx
 rm -rf tmf-test
+rm -rf inherit-test
 rm -rf working
 cabal new-build fficxx-runtime
 cabal new-build fficxx
@@ -26,11 +27,17 @@ cabal new-exec -- ghc -threaded shared_ptr/test.hs
 
 # function
 rm function/hsMain.o function/hsMain
-cabal new-exec -- ghc -keep-tmp-files function/hsMain.hs
-./function/hsMain
+cabal new-exec -- runhaskell -- -fobject-code -O0 function/hsMain.hs
+#./function/hsMain
 
 # template-member
 runhaskell ./template-member/Gen.hs ./template-member/template
 cabal new-build tmf-test
-cabal new-exec -- ghc template-member/app.hs
-./template-member/app
+cabal new-exec -- runhaskell -- -fobject-code -O0 template-member/app.hs
+#./template-member/app
+
+# inherit
+runhaskell ./inherit/Gen.hs ./inherit/template
+cabal new-build inherit-test
+cabal new-exec -- runhaskell -- -fobject-code -O0 inherit/app.hs
+#./template-member/app
