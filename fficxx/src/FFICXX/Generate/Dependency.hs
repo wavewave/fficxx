@@ -281,8 +281,7 @@ mkClassModule :: (ModuleUnit -> ModuleUnitImports)
 mkClassModule getImports extra c =
     ClassModule {
       cmModule = getClassModuleBase c
-    , cmClass = [c]
-    , cmCIH = map (mkCIH getImports) [c]
+    , cmCIH = mkCIH getImports c
     , cmImportedModulesHighNonSource = highs_nonsource
     , cmImportedModulesRaw =raws
     , cmImportedModulesHighSource = highs_source
@@ -306,7 +305,7 @@ mkTCM ::
   -> TemplateClassModule
 mkTCM tcih =
   let t = tcihTClass tcih
-  in TCM (getTClassModuleBase t) [t] [tcih]
+  in TCM (getTClassModuleBase t) tcih
 
 
 mkPackageConfig
@@ -318,11 +317,11 @@ mkPackageConfig
 mkPackageConfig (pkgname,getImports) (cs,fs,ts,extra) acincs acsrcs =
   let ms = map (mkClassModule getImports extra) cs
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
-      cihs = nubBy cmpfunc (concatMap cmCIH ms)
+      cihs = nubBy cmpfunc (map cmCIH ms)
       --
       tih = mkTIH pkgname getImports cihs fs
       tcms = map mkTCM ts
-      tcihs = concatMap tcmTCIH tcms
+      tcihs = map tcmTCIH tcms
   in PkgConfig {
        pcfg_classModules = ms
      , pcfg_classImportHeaders = cihs

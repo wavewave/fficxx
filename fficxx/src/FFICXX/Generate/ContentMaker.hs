@@ -7,9 +7,9 @@ import Control.Lens                           ( (&), (.~), at )
 import Control.Monad.Trans.Reader
 import Data.Either                            ( rights )
 import qualified Data.Map as M
-import Data.Maybe                             ( mapMaybe, maybeToList )
+import Data.Maybe                             ( mapMaybe  )
 import Data.Monoid                            ( (<>) )
-import Data.List                              ( find, intercalate, nub )
+import Data.List                              ( intercalate, nub )
 import Data.List.Split                        ( splitOn )
 import Language.Haskell.Exts.Syntax           ( Module(..)
                                               , Decl(..)
@@ -277,7 +277,6 @@ buildTemplateHeader tcih =
 buildFFIHsc :: ClassModule -> Module ()
 buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody
   where mname = cmModule m
-        headers = cmCIH m
         ffiImports = [ mkImport "Data.Word"
                      , mkImport "Data.Int"
                      , mkImport "Foreign.C"
@@ -285,7 +284,7 @@ buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] f
                      , mkImport (mname <.> "RawType") ]
                      <> genImportInFFI m
                      <> genExtraImport m
-        hscBody = concatMap genHsFFI headers
+        hscBody = genHsFFI (cmCIH m)
 
 
 -- |
@@ -310,7 +309,8 @@ buildRawTypeHs m =
     rawtypeImports = [ mkImport "Foreign.Ptr"
                      , mkImport "FFICXX.Runtime.Cast"
                      ]
-    rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
+    rawtypeBody = let c = cihClass (cmCIH m)
+                  in if isAbstractClass c then [] else hsClassRawType c
 
 -- |
 buildInterfaceHs :: AnnotateMap -> ClassModule -> Module ()
@@ -332,7 +332,7 @@ buildInterfaceHs amap m =
     ifaceImports
     ifaceBody
   where
-    classes = cmClass m
+    classes = [cihClass (cmCIH m)]
     ifaceImports = [ mkImport "Data.Word"
                    , mkImport "Data.Int"
                    , mkImport "Foreign.C"
@@ -352,7 +352,7 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
                       , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
                castImports body
-  where classes = cmClass m
+  where classes = [ cihClass (cmCIH m) ]
         castImports =    [ mkImport "Foreign.Ptr"
                          , mkImport "FFICXX.Runtime.Cast"
                          , mkImport "System.IO.Unsafe" ]
@@ -375,8 +375,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                                         , "TypeSynonymInstances"
                                         ] ]
                                  implImports implBody
-  where -- TODO: classes should come from ClassImportHeader, not from module, directly.
-        classes = cmClass m
+  where classes = [ cihClass (cmCIH m) ]
         implImports = [ mkImport "Data.Monoid"                -- for template member
                       , mkImport "Data.Word"
                       , mkImport "Data.Int"
@@ -399,7 +398,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
                    <> concatMap genHsFrontInstVariables classes
-                   <> concatMap genTemplateMemberFunctions (cmCIH m)
+                   <> genTemplateMemberFunctions (cmCIH m)
 
 buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m =
@@ -417,8 +416,8 @@ buildTemplateHs m =
       ]
       body
   where
-    ts = tcmTemplateClasses m
-    body = concatMap genTmplInterface ts
+    t = tcihTClass $ tcmTCIH m
+    body = genTmplInterface t
 
 buildTHHs :: TemplateClassModule -> Module ()
 buildTHHs m =
@@ -437,18 +436,13 @@ buildTHHs m =
     )
     body
   where
-    ts = tcmTemplateClasses m
+    t = tcihTClass $ tcmTCIH m
     imports = [ mkImport (tcmModule m <.> "Template") ]
     body = tmplImpls <> tmplInsts
-    tmplImpls = concatMap genTmplImplementation ts
-    tmplInsts = concatMap gen ts
-      where
-        gen t = do
-          let tcihs = tcmTCIH m
-          tcih <-
-            maybeToList $
-              find (\tcih -> tclass_name (tcihTClass tcih) == tclass_name t) tcihs
-          genTmplInstance t tcih (tclass_funcs t)
+    tmplImpls = genTmplImplementation t
+    tmplInsts = do
+      let tcih = tcmTCIH m
+      genTmplInstance tcih -- (tclass_funcs t)
 
 -- |
 buildInterfaceHSBOOT :: String -> Module ()
@@ -458,7 +452,8 @@ buildInterfaceHSBOOT mname = mkModule (mname <.> "Interface") [] [] hsbootBody
 
 -- |
 buildModuleHs :: ClassModule -> Module ()
-buildModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (genImportInModule (cmClass m)) []
+buildModuleHs m = mkModuleE (cmModule m) [] (genExport c) (genImportInModule c) []
+  where c = cihClass (cmCIH m)
 
 -- |
 buildTopLevelHs :: String -> ([ClassModule],[TemplateClassModule]) -> TopLevelImportHeader -> Module ()

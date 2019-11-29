@@ -105,10 +105,9 @@ simpleBuilder cfg sbc = do
     (tihHeaderFileName tih <.> "h")
     (buildTopLevelHeader (unCabalName pkgname) tih)
   for_ tcms $ \m ->
-    let tcihs = tcmTCIH m
-    in for_ tcihs $ \tcih ->
-         let hdr = unHdrName (tcihSelfHeader tcih)
-         in gen hdr (buildTemplateHeader tcih)
+    let tcih = tcmTCIH m
+        hdr = unHdrName (tcihSelfHeader tcih)
+    in gen hdr (buildTemplateHeader tcih)
   --
   putStrLn "Generating Cpp file"
   for_ cihs (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr))
