@@ -35,7 +35,6 @@ data ClassModule = ClassModule
                    } deriving (Show)
 
 data TemplateClassModule = TCM { tcmModule :: String
-                               , tcmTemplateClasses :: [TemplateClass]
                                , tcmTCIH :: [TemplateClassImportHeader]
                                } deriving (Show)
 

@@ -306,7 +306,7 @@ mkTCM ::
   -> TemplateClassModule
 mkTCM tcih =
   let t = tcihTClass tcih
-  in TCM (getTClassModuleBase t) [t] [tcih]
+  in TCM (getTClassModuleBase t) [tcih]
 
 
 mkPackageConfig

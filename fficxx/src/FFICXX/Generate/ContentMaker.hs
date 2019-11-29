@@ -417,7 +417,7 @@ buildTemplateHs m =
       ]
       body
   where
-    ts = tcmTemplateClasses m
+    ts = map tcihTClass $ tcmTCIH m
     body = concatMap genTmplInterface ts
 
 buildTHHs :: TemplateClassModule -> Module ()
@@ -437,7 +437,7 @@ buildTHHs m =
     )
     body
   where
-    ts = tcmTemplateClasses m
+    ts = map tcihTClass $ tcmTCIH m
     imports = [ mkImport (tcmModule m <.> "Template") ]
     body = tmplImpls <> tmplInsts
     tmplImpls = concatMap genTmplImplementation ts
