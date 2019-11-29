@@ -28,7 +28,7 @@ data ClassImportHeader =
 data ClassModule =
   ClassModule {
     cmModule :: String
-  , cmCIH :: [ClassImportHeader]
+  , cmCIH :: ClassImportHeader
   , cmImportedModulesHighNonSource :: [Either TemplateClass Class]
     -- ^ imported modules that do not need source
     -- NOTE: source means the same cabal package.

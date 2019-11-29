@@ -277,7 +277,6 @@ buildTemplateHeader tcih =
 buildFFIHsc :: ClassModule -> Module ()
 buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody
   where mname = cmModule m
-        headers = cmCIH m
         ffiImports = [ mkImport "Data.Word"
                      , mkImport "Data.Int"
                      , mkImport "Foreign.C"
@@ -285,7 +284,7 @@ buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] f
                      , mkImport (mname <.> "RawType") ]
                      <> genImportInFFI m
                      <> genExtraImport m
-        hscBody = concatMap genHsFFI headers
+        hscBody = genHsFFI (cmCIH m)
 
 
 -- |
@@ -310,7 +309,8 @@ buildRawTypeHs m =
     rawtypeImports = [ mkImport "Foreign.Ptr"
                      , mkImport "FFICXX.Runtime.Cast"
                      ]
-    rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . map cihClass . cmCIH $ m
+    rawtypeBody = let c = cihClass (cmCIH m)
+                  in if isAbstractClass c then [] else hsClassRawType c
 
 -- |
 buildInterfaceHs :: AnnotateMap -> ClassModule -> Module ()
@@ -332,7 +332,7 @@ buildInterfaceHs amap m =
     ifaceImports
     ifaceBody
   where
-    classes = map cihClass $ cmCIH m
+    classes = [cihClass (cmCIH m)]
     ifaceImports = [ mkImport "Data.Word"
                    , mkImport "Data.Int"
                    , mkImport "Foreign.C"
@@ -352,7 +352,7 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
                       , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
                castImports body
-  where classes = map cihClass $ cmCIH m
+  where classes = [ cihClass (cmCIH m) ]
         castImports =    [ mkImport "Foreign.Ptr"
                          , mkImport "FFICXX.Runtime.Cast"
                          , mkImport "System.IO.Unsafe" ]
@@ -375,8 +375,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                                         , "TypeSynonymInstances"
                                         ] ]
                                  implImports implBody
-  where -- TODO: classes should come from ClassImportHeader, not from module, directly.
-        classes = map cihClass $ cmCIH m
+  where classes = [ cihClass (cmCIH m) ]
         implImports = [ mkImport "Data.Monoid"                -- for template member
                       , mkImport "Data.Word"
                       , mkImport "Data.Int"
@@ -399,7 +398,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                    <> concatMap genHsFrontInstNonVirtual classes
                    <> concatMap genHsFrontInstStatic classes
                    <> concatMap genHsFrontInstVariables classes
-                   <> concatMap genTemplateMemberFunctions (cmCIH m)
+                   <> genTemplateMemberFunctions (cmCIH m)
 
 buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m =
@@ -453,8 +452,8 @@ buildInterfaceHSBOOT mname = mkModule (mname <.> "Interface") [] [] hsbootBody
 
 -- |
 buildModuleHs :: ClassModule -> Module ()
-buildModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport cs) (genImportInModule cs) []
-  where cs = map cihClass (cmCIH m)
+buildModuleHs m = mkModuleE (cmModule m) [] (genExport c) (genImportInModule c) []
+  where c = cihClass (cmCIH m)
 
 -- |
 buildTopLevelHs :: String -> ([ClassModule],[TemplateClassModule]) -> TopLevelImportHeader -> Module ()

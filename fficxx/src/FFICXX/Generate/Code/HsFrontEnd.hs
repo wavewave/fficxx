@@ -244,9 +244,8 @@ genExtraImport :: ClassModule -> [ImportDecl ()]
 genExtraImport cm = map mkImport (cmExtraImport cm)
 
 
-genImportInModule :: [Class] -> [ImportDecl ()]
-genImportInModule = concatMap (\x -> map (\y -> mkImport (getClassModuleBase x<.>y)) ["RawType","Interface","Implementation"])
-
+genImportInModule :: Class -> [ImportDecl ()]
+genImportInModule x = map (\y -> mkImport (getClassModuleBase x<.>y)) ["RawType","Interface","Implementation"]
 
 
 genImportInInterface :: ClassModule -> [ImportDecl ()]
@@ -282,7 +281,7 @@ genImportInCast m = [ mkImport (cmModule m <.> "RawType")
 genImportInImplementation :: ClassModule -> [ImportDecl ()]
 genImportInImplementation m =
   let modlstraw' = cmImportedModulesForFFI m
-      modlsthigh = nub $ map Right $ concatMap class_allparents (map cihClass $ cmCIH m)
+      modlsthigh = nub $ map Right $ class_allparents $ cihClass $ cmCIH m
       modlstraw = filter (not.(flip elem modlsthigh)) modlstraw'
   in  [ mkImport (cmModule m <.> "RawType")
       , mkImport (cmModule m <.> "FFI")

@@ -43,12 +43,12 @@ genCsrcFiles (tih,cmods) acincs acsrcs =
   let -- indent = cabalIndentation
       selfheaders' = do
         x <- cmods
-        y <- cmCIH x
+        let y = cmCIH x
         return (cihSelfHeader y)
       selfheaders = nub selfheaders'
       selfcpp' = do
         x <- cmods
-        y <- cmCIH x
+        let y = cmCIH x
         return (cihSelfCpp y)
       selfcpp = nub selfcpp'
       tlh = tihHeaderFileName tih <.> "h"
@@ -69,13 +69,10 @@ genIncludeFiles :: String        -- ^ package name
                 -> [AddCInc]
                 -> [String]
 genIncludeFiles pkgname (cih,tcih) acincs =
-  let -- indent = cabalIndentation
-      selfheaders = map cihSelfHeader cih <> map tcihSelfHeader tcih
+  let selfheaders = map cihSelfHeader cih <> map tcihSelfHeader tcih
       includeFileStrs = map unHdrName (selfheaders ++ map (\(AddCInc hdr _) -> HdrName hdr) acincs)
   in (pkgname<>"Type.h") : includeFileStrs
 
-
---     unlines ((indent<>
 
 
 -- for library
@@ -83,10 +80,9 @@ genCppFiles :: (TopLevelImportHeader,[ClassModule])
             -> [AddCSrc]
             -> [String]
 genCppFiles (tih,cmods) acsrcs =
-  let -- indent = cabalIndentation
-      selfcpp' = do
+  let selfcpp' = do
         x <- cmods
-        y <- cmCIH x
+        let y = cmCIH x
         return (cihSelfCpp y)
       selfcpp = nub selfcpp'
       tlcpp = tihHeaderFileName tih <.> "cpp"
@@ -95,23 +91,18 @@ genCppFiles (tih,cmods) acsrcs =
                       ++ map (\(AddCSrc src _) -> src) acsrcs
   in cppFileStrs
 
-
-
 -- | generate exposed module list in cabal file
 genExposedModules :: String -> ([ClassModule],[TemplateClassModule]) -> [String]
 genExposedModules summarymod (cmods,tmods) =
-    let -- indentspace = cabalIndentation
-        -- summarystrs = summarymod
-        cmodstrs = map cmModule cmods
-        rawType = map ((\x -> x <> ".RawType").cmModule) cmods
-        ffi = map ((\x -> x <> ".FFI").cmModule) cmods
-        interface= map ((\x-> x <> ".Interface").cmModule) cmods
-        cast = map ((\x-> x <> ".Cast").cmModule) cmods
-        implementation = map ((\x-> x <> ".Implementation").cmModule) cmods
-        template = map ((\x-> x <> ".Template").tcmModule) tmods
-        th = map ((\x-> x <> ".TH").tcmModule) tmods
-    in  -- unlines
-        [summarymod]<>cmodstrs<>rawType<>ffi<>interface<>cast<>implementation<>template<>th
+  let cmodstrs = map cmModule cmods
+      rawType = map ((\x -> x <> ".RawType").cmModule) cmods
+      ffi = map ((\x -> x <> ".FFI").cmModule) cmods
+      interface= map ((\x-> x <> ".Interface").cmModule) cmods
+      cast = map ((\x-> x <> ".Cast").cmModule) cmods
+      implementation = map ((\x-> x <> ".Implementation").cmModule) cmods
+      template = map ((\x-> x <> ".Template").tcmModule) tmods
+      th = map ((\x-> x <> ".TH").tcmModule) tmods
+  in [summarymod]<>cmodstrs<>rawType<>ffi<>interface<>cast<>implementation<>template<>th
 
 -- | generate other modules in cabal file
 genOtherModules :: [ClassModule] -> [String]
