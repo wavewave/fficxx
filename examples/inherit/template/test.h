@@ -1,9 +1,11 @@
 #pragma once
 
+#include <functional>
+
 class Impl {
 public:
     Impl() {}
-    ~Impl() {}
+    virtual ~Impl() {}
 
     virtual void action( );
 };
@@ -15,6 +17,7 @@ private:
 
 public:
   Loader( Impl* m ): fImpl(m) {}
+  virtual ~Loader() {}
 
   void invoke() {
     fImpl->action();
@@ -23,9 +26,13 @@ public:
 };
 
 class ImplSub : public Impl {
+private:
+  std::function<void()>* fn;
 public:
-    ImplSub() {}
-    ~ImplSub() {}
+    ImplSub( void* fp ) {
+      fn = static_cast<std::function<void()>*>(fp);
+    }
+    virtual ~ImplSub() {}
 
     virtual void action( );
 };

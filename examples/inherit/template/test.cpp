@@ -7,4 +7,5 @@ void Impl::action() {
 
 void ImplSub::action() {
   std::cout << "ImplSub::action()" << std::endl;
+  (*(this->fn))();
 }

@@ -170,7 +170,7 @@ implSub cabal =
   , class_parents = [ impl cabal ]
   , class_protected = mempty
   , class_alias = Nothing
-  , class_funcs = [ Constructor [ ] Nothing ]
+  , class_funcs = [ Constructor [ voidp "fp" ] Nothing ]
   , class_vars  = [ ]
   , class_tmpl_funcs = []
   }
