@@ -281,7 +281,6 @@ mkClassModule :: (ModuleUnit -> ModuleUnitImports)
 mkClassModule getImports extra c =
     ClassModule {
       cmModule = getClassModuleBase c
-    , cmClass = [c]
     , cmCIH = map (mkCIH getImports) [c]
     , cmImportedModulesHighNonSource = highs_nonsource
     , cmImportedModulesRaw =raws

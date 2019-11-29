@@ -310,7 +310,7 @@ buildRawTypeHs m =
     rawtypeImports = [ mkImport "Foreign.Ptr"
                      , mkImport "FFICXX.Runtime.Cast"
                      ]
-    rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . cmClass $ m
+    rawtypeBody = concatMap hsClassRawType . filter (not.isAbstractClass) . map cihClass . cmCIH $ m
 
 -- |
 buildInterfaceHs :: AnnotateMap -> ClassModule -> Module ()
@@ -332,7 +332,7 @@ buildInterfaceHs amap m =
     ifaceImports
     ifaceBody
   where
-    classes = cmClass m
+    classes = map cihClass $ cmCIH m
     ifaceImports = [ mkImport "Data.Word"
                    , mkImport "Data.Int"
                    , mkImport "Foreign.C"
@@ -352,7 +352,7 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
                [ lang [ "FlexibleInstances", "FlexibleContexts", "TypeFamilies"
                       , "MultiParamTypeClasses", "OverlappingInstances", "IncoherentInstances" ] ]
                castImports body
-  where classes = cmClass m
+  where classes = map cihClass $ cmCIH m
         castImports =    [ mkImport "Foreign.Ptr"
                          , mkImport "FFICXX.Runtime.Cast"
                          , mkImport "System.IO.Unsafe" ]
@@ -376,7 +376,7 @@ buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
                                         ] ]
                                  implImports implBody
   where -- TODO: classes should come from ClassImportHeader, not from module, directly.
-        classes = cmClass m
+        classes = map cihClass $ cmCIH m
         implImports = [ mkImport "Data.Monoid"                -- for template member
                       , mkImport "Data.Word"
                       , mkImport "Data.Int"
@@ -453,7 +453,8 @@ buildInterfaceHSBOOT mname = mkModule (mname <.> "Interface") [] [] hsbootBody
 
 -- |
 buildModuleHs :: ClassModule -> Module ()
-buildModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport (cmClass m)) (genImportInModule (cmClass m)) []
+buildModuleHs m = mkModuleE (cmModule m) [] (concatMap genExport cs) (genImportInModule cs) []
+  where cs = map cihClass (cmCIH m)
 
 -- |
 buildTopLevelHs :: String -> ([ClassModule],[TemplateClassModule]) -> TopLevelImportHeader -> Module ()
