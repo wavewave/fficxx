@@ -12,9 +12,7 @@ import FFICXX.Runtime.Function.Template (Function(..),newFunction,wrapFunPtr)
 import InheritTest.Impl
 import InheritTest.Loader
 --
-import qualified TH
-
-TH.genImplProxy
+import TH2 ()
 
 testFn :: IORef Int -> IO ()
 testFn ref = do

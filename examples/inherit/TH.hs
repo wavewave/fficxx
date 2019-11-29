@@ -4,6 +4,8 @@
 
 module TH where
 
+import Foreign.Ptr
+import FFICXX.Runtime.Cast
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 --
@@ -23,14 +25,16 @@ genFunctionInstanceFor
   }
 
 
--- newImplSub :: () => IO ImplSUb
--- newImplSub = xformnull c_impl_newimpl
-
 genImplProxy :: Q [Dec]
 genImplProxy = do
   addModFinalizer
     (addForeignSource LangCxx
-      (   concatMap (renderCMacro . Include) ["functional", "Function.h", "InheritTestImpl.h", "test.h"]
+      (   concatMap (renderCMacro . Include) [ "MacroPatternMatch.h"
+                                             , "functional"
+                                             , "Function.h"
+                                             , "InheritTestImpl.h"
+                                             , "test.h"
+                                             ]
        ++ "class ImplSub : public Impl {\n\
           \private:\n\
           \  std::function<void()>* fn;\n\
@@ -50,6 +54,7 @@ genImplProxy = do
           \typedef ImplSub_t * ImplSub_p;\n\
           \typedef ImplSub_t const* const_ImplSub_p;\n\
           \\n\
+          \DELETABLE_DEF_VIRT(ImplSub)\n\
           \IMPL_DEF_VIRT(ImplSub)\n\
           \\n"
       )
