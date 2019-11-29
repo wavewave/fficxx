@@ -10,7 +10,6 @@ import Foreign.Ptr                ( castPtr )
 import FFICXX.Runtime.Function.Template (Function(..),newFunction,wrapFunPtr)
 --
 import InheritTest.Impl
--- import InheritTest.ImplSub
 import InheritTest.Loader
 --
 import qualified TH
@@ -30,10 +29,12 @@ main = do
 
   loader_invoke loader
 
-{-
+
   ref <- newIORef 8
   Function ptr <- newFunction =<< wrapFunPtr (testFn ref)
 
+  pure ()
+{-
   implsub <- newImplSub (castPtr ptr)
   loader2 <- newLoader implsub
   loader_invoke loader2

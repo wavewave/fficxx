@@ -22,11 +22,15 @@ genFunctionInstanceFor
   , fpinfoSuffix = "f1"
   }
 
+
+-- newImplSub :: () => IO ImplSUb
+-- newImplSub = xformnull c_impl_newimpl
+
 genImplProxy :: Q [Dec]
 genImplProxy = do
   addModFinalizer
     (addForeignSource LangCxx
-      (   concatMap (renderCMacro . Include) ["functional", "Function.h", "test.h"]
+      (   concatMap (renderCMacro . Include) ["functional", "Function.h", "InheritTestImpl.h", "test.h"]
        ++ "class ImplSub : public Impl {\n\
           \private:\n\
           \  std::function<void()>* fn;\n\
@@ -40,7 +44,14 @@ genImplProxy = do
           \\n\
           \void ImplSub::action() {\n\
           \ (*(this->fn))();\n\
-          \}\n"
+          \}\n\
+          \\n\
+          \typedef struct ImplSub_tag ImplSub_t;\n\
+          \typedef ImplSub_t * ImplSub_p;\n\
+          \typedef ImplSub_t const* const_ImplSub_p;\n\
+          \\n\
+          \IMPL_DEF_VIRT(ImplSub)\n\
+          \\n"
       )
     )
   pure []
