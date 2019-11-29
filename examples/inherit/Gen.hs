@@ -163,6 +163,7 @@ impl cabal =
   , class_tmpl_funcs = []
   }
 
+{-
 implSub cabal =
   Class {
     class_cabal = cabal
@@ -174,7 +175,7 @@ implSub cabal =
   , class_vars  = [ ]
   , class_tmpl_funcs = []
   }
-
+-}
 
 loader cabal =
   Class {
@@ -191,7 +192,7 @@ loader cabal =
   , class_tmpl_funcs = [ ]
   }
 
-classes cabal = [ impl cabal, implSub cabal, loader cabal ]
+classes cabal = [ impl cabal {-, implSub cabal -}, loader cabal ]
 
 toplevelfunctions = [ ]
 
@@ -199,7 +200,7 @@ templates = [  ]
 
 headers =
   [ modImports "Impl"    [] ["test.h"]
-  , modImports "ImplSub" [] ["test.h"]
+  -- , modImports "ImplSub" [] ["test.h"]
   , modImports "Loader"  [] ["test.h"]
   ]
 

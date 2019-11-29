@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 class Impl {
 public:
     Impl() {}
@@ -23,16 +21,4 @@ public:
     fImpl->action();
   }
 
-};
-
-class ImplSub : public Impl {
-private:
-  std::function<void()>* fn;
-public:
-    ImplSub( void* fp ) {
-      fn = static_cast<std::function<void()>*>(fp);
-    }
-    virtual ~ImplSub() {}
-
-    virtual void action( );
 };
