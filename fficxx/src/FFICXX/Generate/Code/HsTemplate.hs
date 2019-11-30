@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards   #-}
+
 module FFICXX.Generate.Code.HsTemplate where
 
 import Data.Monoid                    ( (<>) )
