@@ -14,30 +14,30 @@ import qualified TH
 
 TH.genImplProxy
 
-data RawImplSub
+data RawImplProxy
 
-newtype ImplSub = ImplSub (Ptr RawImplSub)
+newtype ImplProxy = ImplProxy (Ptr RawImplProxy)
                  deriving (Eq, Ord, Show)
 
-instance () => FPtr (ImplSub) where
-        type Raw ImplSub = RawImplSub
-        get_fptr (ImplSub ptr) = ptr
-        cast_fptr_to_obj = ImplSub
+instance () => FPtr (ImplProxy) where
+        type Raw ImplProxy = RawImplProxy
+        get_fptr (ImplProxy ptr) = ptr
+        cast_fptr_to_obj = ImplProxy
 
-instance () => Castable (ImplSub) (Ptr RawImplSub) where
+instance () => Castable (ImplProxy) (Ptr RawImplProxy) where
         cast x f = f (castPtr (get_fptr x))
         uncast x f = f (cast_fptr_to_obj (castPtr x))
 
-foreign import ccall safe "ImplSub_delete"
-  c_implsub_delete :: Ptr RawImplSub -> IO ()
+foreign import ccall safe "ImplProxy_delete"
+  c_implsub_delete :: Ptr RawImplProxy -> IO ()
 
-foreign import ccall safe "ImplSub_newImplSub"
-  c_implsub_newimplsub :: Ptr () -> IO (Ptr RawImplSub)
+foreign import ccall safe "ImplProxy_newImplProxy"
+  c_implsub_newimplsub :: Ptr () -> IO (Ptr RawImplProxy)
 
-instance IDeletable ImplSub where
+instance IDeletable ImplProxy where
   delete = xform0 c_implsub_delete
 
-instance IImpl ImplSub
+instance IImpl ImplProxy
 
-newImplSub :: Ptr () -> IO ImplSub
-newImplSub = xform0 c_implsub_newimplsub
+newImplProxy :: Ptr () -> IO ImplProxy
+newImplProxy = xform0 c_implsub_newimplsub

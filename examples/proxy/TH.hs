@@ -36,32 +36,32 @@ genImplProxy = do
                                              , "test.h"
                                              ]
        ++ "extern \"C\" {\n\
-          \class ImplSub : public Impl {\n\
+          \class ImplProxy : public Impl {\n\
           \private:\n\
           \  std::function<void()>* fn;\n\
           \public:\n\
-          \  ImplSub( void* fp ) {\n\
+          \  ImplProxy( void* fp ) {\n\
           \    fn = static_cast<std::function<void()>*>(fp);\n\
           \  }\n\
-          \  virtual ~ImplSub() {}\n\
+          \  virtual ~ImplProxy() {}\n\
           \  virtual void action();\n\
           \};\n\
           \\n\
-          \void ImplSub::action() {\n\
+          \void ImplProxy::action() {\n\
           \ (*(this->fn))();\n\
           \}\n\
           \\n\
-          \typedef struct ImplSub_tag ImplSub_t;\n\
-          \typedef ImplSub_t * ImplSub_p;\n\
-          \typedef ImplSub_t const* const_ImplSub_p;\n\
+          \typedef struct ImplProxy_tag ImplProxy_t;\n\
+          \typedef ImplProxy_t * ImplProxy_p;\n\
+          \typedef ImplProxy_t const* const_ImplProxy_p;\n\
           \\n\
-          \DELETABLE_DEF_VIRT(ImplSub)\n\
-          \IMPL_DEF_VIRT(ImplSub)\n\
+          \DELETABLE_DEF_VIRT(ImplProxy)\n\
+          \IMPL_DEF_VIRT(ImplProxy)\n\
           \\n\
           \\n\
-          \ImplSub_p ImplSub_newImplSub ( void* m ) {\n\
-          \  ImplSub* newp = new ImplSub(m);\n\
-          \  return to_nonconst<ImplSub_t,ImplSub>(newp);\n\
+          \ImplProxy_p ImplProxy_newImplProxy ( void* m ) {\n\
+          \  ImplProxy* newp = new ImplProxy(m);\n\
+          \  return to_nonconst<ImplProxy_t,ImplProxy>(newp);\n\
           \}\n\
           \\n\
           \} // extern C\n"

@@ -12,7 +12,7 @@ import FFICXX.Runtime.Function.Template (Function(..),newFunction,wrapFunPtr)
 import ProxyTest.Impl
 import ProxyTest.Loader
 --
-import TH2 (newImplSub)
+import TH2 (newImplProxy)
 
 
 testFn :: IORef Int -> IO ()
@@ -32,7 +32,7 @@ main = do
   ref <- newIORef 8
   Function ptr <- newFunction =<< wrapFunPtr (testFn ref)
 
-  implsub <- newImplSub (castPtr ptr)
+  implsub <- newImplProxy (castPtr ptr)
   loader2 <- newLoader implsub
   loader_invoke loader2
 
