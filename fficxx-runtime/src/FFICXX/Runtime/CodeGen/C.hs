@@ -68,7 +68,6 @@ data CMacro =
   | EmptyLine                -- ^ just for convenience
   | Verbatim String          -- ^ temporary verbatim
 
-
 data CBlock = ExternC [CMacro]
 
 renderPragmaParam :: PragmaParam -> String

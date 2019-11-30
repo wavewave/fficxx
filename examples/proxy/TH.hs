@@ -24,47 +24,55 @@ genFunctionInstanceFor
   , fpinfoSuffix = "f1"
   }
 
-
 genImplProxy :: Q [Dec]
 genImplProxy = do
   addModFinalizer
     (addForeignSource LangCxx
-      (   concatMap (renderCMacro . Include) [ "MacroPatternMatch.h"
-                                             , "functional"
-                                             , "Function.h"
-                                             , "ProxyTestImpl.h"
-                                             , "test.h"
-                                             ]
-       ++ "extern \"C\" {\n\
-          \class ImplProxy : public Impl {\n\
-          \private:\n\
-          \  std::function<void()>* fn;\n\
-          \public:\n\
-          \  ImplProxy( void* fp ) {\n\
-          \    fn = static_cast<std::function<void()>*>(fp);\n\
-          \  }\n\
-          \  virtual ~ImplProxy() {}\n\
-          \  virtual void action();\n\
-          \};\n\
-          \\n\
-          \void ImplProxy::action() {\n\
-          \ (*(this->fn))();\n\
-          \}\n\
-          \\n\
-          \typedef struct ImplProxy_tag ImplProxy_t;\n\
-          \typedef ImplProxy_t * ImplProxy_p;\n\
-          \typedef ImplProxy_t const* const_ImplProxy_p;\n\
-          \\n\
-          \DELETABLE_DEF_VIRT(ImplProxy)\n\
-          \IMPL_DEF_VIRT(ImplProxy)\n\
-          \\n\
-          \\n\
-          \ImplProxy_p ImplProxy_newImplProxy ( void* m ) {\n\
-          \  ImplProxy* newp = new ImplProxy(m);\n\
-          \  return to_nonconst<ImplProxy_t,ImplProxy>(newp);\n\
-          \}\n\
-          \\n\
-          \} // extern C\n"
+      (concatMap
+         (renderCMacro . Include)
+         [ "MacroPatternMatch.h"
+         , "functional"
+         , "Function.h"
+         , "ProxyTestImpl.h"
+         , "test.h"
+         ]
+      <> (renderBlock $ ExternC $
+           (   [ Verbatim
+                 "class ImplProxy : public Impl {\n\
+                 \private:\n\
+                 \  std::function<void()>* fn;\n\
+                 \public:\n\
+                 \  ImplProxy( void* fp ) {\n\
+                 \    fn = static_cast<std::function<void()>*>(fp);\n\
+                 \  }\n\
+                 \  virtual ~ImplProxy() {}\n\
+                 \  virtual void action();\n\
+                 \};\n"
+               , Verbatim
+                 "void ImplProxy::action() {\n\
+                 \ (*(this->fn))();\n\
+                 \}\n"
+               ]
+            <> (map CRegular
+                  [ TypeDef (CTVerbatim "struct ImplProxy_tag") (sname "ImplProxy_t")
+                  , TypeDef (CTVerbatim "ImplProxy_t *") (sname "ImplProxy_p")
+                  , TypeDef (CTVerbatim "ImplProxy_t const*") (sname "const_ImplProxy_p")
+                  , CMacroApp (sname "DELETABLE_DEF_VIRT") [sname "ImplProxy"]
+                  , CMacroApp (sname "IMPL_DEF_VIRT")      [sname "ImplProxy"]
+                  , CDefinition
+                      (CFunDecl
+                        (CTVerbatim "ImplProxy_p")
+                        (sname "ImplProxy_newImplProxy")
+                        [(CTVerbatim "void*", sname "m")]
+                      )
+                      [ CInit (CVarDecl (CTVerbatim "ImplProxy*") (sname "newp"))
+                              (CEVerbatim $ "new ImplProxy(m)")
+                      , CReturn $ CEVerbatim "to_nonconst<ImplProxy_t,ImplProxy>(newp);"
+                      ]
+                  ]
+               )
+           )
+         )
       )
     )
   pure []
