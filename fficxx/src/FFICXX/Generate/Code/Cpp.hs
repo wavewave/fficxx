@@ -3,40 +3,57 @@
 
 module FFICXX.Generate.Code.Cpp where
 
-import Data.Char
-import Data.List                             (intercalate)
-import Data.Monoid                           ((<>))
+import Data.Char                             ( toUpper )
+import Data.List                             ( intercalate )
+import Data.Monoid                           ( (<>) )
 --
-import qualified FFICXX.Runtime.CodeGen.C as R
+import qualified FFICXX.Runtime.CodeGen.Cxx as R
 --
-import FFICXX.Generate.Code.Primitive        ( accessorCFunSig
-                                             , argsToCallString
-                                             , argsToCTypVar
-                                             , argsToCTypVarNoSelf
-                                             , castCpp2C
-                                             , castC2Cpp
-                                             , CFunSig(..)
-                                             , genericFuncArgs
-                                             , genericFuncRet
-                                             , rettypeToString
-                                             , tmplMemFuncArgToCTypVar
-                                             , tmplMemFuncRetTypeToString
-                                             , tmplAllArgsToCallString
-                                             , tmplAllArgsToCTypVar
-                                             , tmplRetTypeToString
-                                             )
-import FFICXX.Generate.Name                  ( aliasedFuncName
-                                             , cppFuncName
-                                             , ffiClassName
-                                             , ffiTmplFuncName
-                                             , hsTemplateMemberFunctionName
-                                             )
-import FFICXX.Generate.Type.Class
-import FFICXX.Generate.Type.Module
-import FFICXX.Generate.Util                  ( context
-                                             , subst
-                                             , toUppers
-                                             )
+import FFICXX.Generate.Code.Primitive
+                                    ( accessorCFunSig
+                                    , argsToCallString
+                                    , argsToCTypVar
+                                    , argsToCTypVarNoSelf
+                                    , castCpp2C
+                                    , castC2Cpp
+                                    , CFunSig(..)
+                                    , genericFuncArgs
+                                    , genericFuncRet
+                                    , rettypeToString
+                                    , tmplMemFuncArgToCTypVar
+                                    , tmplMemFuncRetTypeToString
+                                    , tmplAllArgsToCallString
+                                    , tmplAllArgsToCTypVar
+                                    , tmplRetTypeToString
+                                    )
+import FFICXX.Generate.Name         ( aliasedFuncName
+                                    , cppFuncName
+                                    , ffiClassName
+                                    , ffiTmplFuncName
+                                    , hsTemplateMemberFunctionName
+                                    )
+import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
+                                    , Arg(..)
+                                    , Class(..)
+                                    , CPPTypes(..)
+                                    , CTypes(..)
+                                    , Function(..)
+                                    , Selfness(NoSelf,Self)
+                                    , TemplateAppInfo(..)
+                                    , TemplateClass(..)
+                                    , TemplateFunction(..)
+                                    , TemplateMemberFunction(..)
+                                    , TopLevelFunction(..)
+                                    , Types(..)
+                                    , Variable(unVariable)
+                                    , isDeleteFunc
+                                    , isNewFunc
+                                    , isStaticFunc
+                                    , isVirtualFunc
+                                    , virtualFuncs
+                                    )
+import FFICXX.Generate.Type.Module  ( ClassImportHeader(..) )
+import FFICXX.Generate.Util         ( context, subst, toUppers )
 
 --
 --

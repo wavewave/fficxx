@@ -14,7 +14,7 @@ import qualified Data.Text.Lazy as TL (toStrict)
 import qualified Data.Text.IO as TIO (writeFile)
 import System.FilePath             ((<.>),(</>))
 --
-import FFICXX.Runtime.CodeGen.C    ( HeaderName(..) )
+import FFICXX.Runtime.CodeGen.Cxx  ( HeaderName(..) )
 --
 import FFICXX.Generate.Type.Cabal  ( AddCInc(..)
                                    , AddCSrc(..)

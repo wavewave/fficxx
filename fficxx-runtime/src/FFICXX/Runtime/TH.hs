@@ -2,10 +2,14 @@
 
 module FFICXX.Runtime.TH where
 
-import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
+import Language.Haskell.TH        ( forImpD, safe, varE )
+import Language.Haskell.TH.Syntax ( Body(NormalB), Callconv(CCall)
+                                  , Clause(..), Cxt, Dec(..)
+                                  , Exp(..), Pat(..), Q, Type(..)
+                                  , addTopDecls, mkNameS, newName
+                                  )
 --
-import FFICXX.Runtime.CodeGen.C
+import FFICXX.Runtime.CodeGen.Cxx ( HeaderName, Namespace)
 
 
 -- |

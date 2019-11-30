@@ -16,8 +16,8 @@ import Language.Haskell.Exts.Syntax           ( Module(..)
                                               )
 import System.FilePath
 --
-import FFICXX.Runtime.CodeGen.C               ( HeaderName(..) )
-import qualified FFICXX.Runtime.CodeGen.C as R
+import FFICXX.Runtime.CodeGen.Cxx             ( HeaderName(..) )
+import qualified FFICXX.Runtime.CodeGen.Cxx as R
 --
 import FFICXX.Generate.Code.Cpp               ( genAllCppHeaderInclude
                                               , genCppDefMacroAccessor
@@ -428,7 +428,7 @@ buildImplementationHs amap m =
                   , mkImport "Language.Haskell.TH.Syntax" -- for template member
                   , mkImport "System.IO.Unsafe"
                   , mkImport "FFICXX.Runtime.Cast"
-                  , mkImport "FFICXX.Runtime.CodeGen.C"   -- for template member
+                  , mkImport "FFICXX.Runtime.CodeGen.Cxx" -- for template member
                   , mkImport "FFICXX.Runtime.TH"          -- for template member
                   ]
                   <> genImportInImplementation m
@@ -455,7 +455,7 @@ buildProxyHs m =
       , mkImport "FFICXX.Runtime.Cast"
       , mkImport "Language.Haskell.TH"
       , mkImport "Language.Haskell.TH.Syntax"
-      , mkImport "FFICXX.Runtime.CodeGen.C"
+      , mkImport "FFICXX.Runtime.CodeGen.Cxx"
       ]
       body
   where
@@ -492,7 +492,7 @@ buildTHHs m =
         , mkImport "Foreign.Ptr"
         , mkImport "Language.Haskell.TH"
         , mkImport "Language.Haskell.TH.Syntax"
-        , mkImport "FFICXX.Runtime.CodeGen.C"
+        , mkImport "FFICXX.Runtime.CodeGen.Cxx"
         , mkImport "FFICXX.Runtime.TH"
         ]
      <> imports
@@ -503,9 +503,7 @@ buildTHHs m =
     imports = [ mkImport (tcmModule m <.> "Template") ]
     body = tmplImpls <> tmplInsts
     tmplImpls = genTmplImplementation t
-    tmplInsts = do
-      let tcih = tcmTCIH m
-      genTmplInstance tcih -- (tclass_funcs t)
+    tmplInsts = genTmplInstance (tcmTCIH m)
 
 -- |
 buildInterfaceHSBOOT :: String -> Module ()

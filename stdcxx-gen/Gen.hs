@@ -7,10 +7,15 @@ import Data.Monoid                 ( mempty )
 import System.Directory            ( getCurrentDirectory )
 import System.FilePath             ( (</>) )
 --
-import FFICXX.Runtime.CodeGen.C    ( HeaderName(..), Namespace(..) )
+import FFICXX.Runtime.CodeGen.Cxx  ( HeaderName(..), Namespace(..) )
 --
-import FFICXX.Generate.Builder
+import FFICXX.Generate.Builder     ( simpleBuilder )
 import FFICXX.Generate.Code.Primitive
+                                   ( cppclassref, cppclassref_
+                                   , cstring, cstring_
+                                   , int, int_
+                                   , void_
+                                   )
 import FFICXX.Generate.Config      ( FFICXXConfig(..)
                                    , SimpleBuilderConfig(..)
                                    )
@@ -19,9 +24,13 @@ import FFICXX.Generate.Type.Cabal  ( BuildType(Simple)
                                    , CabalName(..)
                                    )
 import FFICXX.Generate.Type.Config ( ModuleUnitImports(..), ModuleUnitMap(..), ModuleUnit(..), modImports )
-import FFICXX.Generate.Type.Class
-import FFICXX.Generate.Type.Module
-import FFICXX.Generate.Type.PackageInterface
+import FFICXX.Generate.Type.Class  ( Arg(..), Class(..), ClassAlias(..)
+                                   , Function(..)
+                                   , TemplateClass(..)
+                                   , TemplateFunction(..), Types(..)
+                                   )
+import FFICXX.Generate.Type.Module ( TemplateClassImportHeader(..) )
+import FFICXX.Generate.Type.PackageInterface ()
 
 
 cabal = Cabal { cabal_pkgname = CabalName "stdcxx"

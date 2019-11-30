@@ -2,7 +2,6 @@
 
 module FFICXX.Generate.Dependency where
 
---
 -- fficxx generates one module per one C++ class, and C++ class depends on other classes,
 -- so we need to import other modules corresponding to C++ classes in the dependency list.
 -- Calculating the import list from dependency graph is what this module does.
@@ -18,29 +17,49 @@ module FFICXX.Generate.Dependency where
 -- of a class or a template class, we get a list of `Dep4Func`s and then we deduplicate the
 -- dependency class list and finally get the import list for the module corresponding to
 -- a given class.
---
 
-import           Data.Either                (rights)
-import           Data.Function              (on)
+import           Data.Either       ( rights )
+import           Data.Function     ( on )
 import qualified Data.HashMap.Strict as HM
-import           Data.List
-import qualified Data.Map            as M
-import           Data.Maybe
-import           Data.Monoid                ((<>))
-import           System.FilePath
+import           Data.List         ( find, foldl', nub, nubBy )
+import qualified Data.Map as M
+import           Data.Maybe        ( catMaybes, fromMaybe )
+import           Data.Monoid       ( (<>) )
+import           System.FilePath   ( (<.>) )
 --
-import FFICXX.Runtime.CodeGen.C ( HeaderName(..) )
+import FFICXX.Runtime.CodeGen.Cxx  ( HeaderName(..) )
 --
-import FFICXX.Generate.Name       (ffiClassName,hsClassName,hsTemplateClassName)
-import FFICXX.Generate.Type.Cabal (AddCInc,AddCSrc,CabalName(..)
-                                  ,cabal_moduleprefix,cabal_pkgname
-                                  ,cabal_cheaderprefix,unCabalName)
-import FFICXX.Generate.Type.Class
-import FFICXX.Generate.Type.Config (ModuleUnit(..)
-                                   ,ModuleUnitImports(..),emptyModuleUnitImports
-                                   ,ModuleUnitMap(..))
-import FFICXX.Generate.Type.Module
--- import FFICXX.Generate.Type.PackageInterface
+import FFICXX.Generate.Name        ( ffiClassName, hsClassName, hsTemplateClassName )
+import FFICXX.Generate.Type.Cabal  ( AddCInc,AddCSrc,CabalName(..)
+                                   , cabal_moduleprefix, cabal_pkgname
+                                   , cabal_cheaderprefix, unCabalName
+                                   )
+import FFICXX.Generate.Type.Class  ( Arg(..)
+                                   , Class(..)
+                                   , CPPTypes(..)
+                                   , DaughterMap
+                                   , Function(..)
+                                   , TemplateAppInfo(..)
+                                   , TemplateArgType(TArg_Class)
+                                   , TemplateClass(..)
+                                   , TemplateFunction(..)
+                                   , TemplateMemberFunction(..)
+                                   , TopLevelFunction(..)
+                                   , Types(..)
+                                   , Variable(unVariable)
+                                   )
+import FFICXX.Generate.Type.Config ( ModuleUnit(..)
+                                   , ModuleUnitImports(..)
+                                   , emptyModuleUnitImports
+                                   , ModuleUnitMap(..)
+                                   )
+import FFICXX.Generate.Type.Module ( ClassImportHeader(..)
+                                   , ClassModule(..)
+                                   , PackageConfig(..)
+                                   , TemplateClassImportHeader(..)
+                                   , TemplateClassModule(..)
+                                   , TopLevelImportHeader(..)
+                                   )
 
 
 -- utility functions

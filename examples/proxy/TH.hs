@@ -9,7 +9,7 @@ import FFICXX.Runtime.Cast
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 --
-import FFICXX.Runtime.CodeGen.C
+import FFICXX.Runtime.CodeGen.Cxx
 import FFICXX.Runtime.TH          ( FunctionParamInfo(..), IsCPrimitive(..), TemplateParamInfo(..) )
 import FFICXX.Runtime.Function.Template
 import FFICXX.Runtime.Function.TH ( genFunctionInstanceFor )

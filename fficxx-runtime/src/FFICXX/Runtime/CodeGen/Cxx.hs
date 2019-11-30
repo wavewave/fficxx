@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module FFICXX.Runtime.CodeGen.C where
+module FFICXX.Runtime.CodeGen.Cxx where
 
 import Data.Hashable  ( Hashable )
 import Data.List      ( intercalate )

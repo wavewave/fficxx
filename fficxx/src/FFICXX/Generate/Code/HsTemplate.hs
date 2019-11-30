@@ -10,8 +10,8 @@ import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       )
 import Language.Haskell.Exts.Syntax   ( Decl(..) )
 --
-import FFICXX.Runtime.CodeGen.C       ( HeaderName(..) )
-import qualified FFICXX.Runtime.CodeGen.C as R
+import FFICXX.Runtime.CodeGen.Cxx     ( HeaderName(..) )
+import qualified FFICXX.Runtime.CodeGen.Cxx as R
 --
 import FFICXX.Generate.Code.Primitive ( functionSignatureT
                                       , functionSignatureTT

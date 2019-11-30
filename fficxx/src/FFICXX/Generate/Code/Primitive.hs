@@ -1,16 +1,41 @@
 {-# LANGUAGE RecordWildCards #-}
 module FFICXX.Generate.Code.Primitive where
 
-import           Control.Monad.Trans.State    ( runState, put, get )
-import           Data.Monoid                  ( (<>) )
-import           Language.Haskell.Exts.Syntax ( Asst(..), Context, Type(..) )
+import Control.Monad.Trans.State    ( runState, put, get )
+import Data.Monoid                  ( (<>) )
+import Language.Haskell.Exts.Syntax ( Asst(..), Context, Type(..) )
 --
-import qualified FFICXX.Runtime.CodeGen.C as R
+import qualified FFICXX.Runtime.CodeGen.Cxx as R
 --
-import           FFICXX.Generate.Name
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Util
-import           FFICXX.Generate.Util.HaskellSrcExts
+import FFICXX.Generate.Name         ( ffiClassName
+                                    , hsClassName
+                                    , hsClassNameForTArg
+                                    , hsTemplateClassName
+                                    , typeclassName
+                                    , typeclassNameFromStr
+                                    )
+import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
+                                    , Arg(..)
+                                    , Class(..)
+                                    , CPPTypes(..)
+                                    , CTypes(..)
+                                    , Function(..)
+                                    , IsConst(Const,NoConst)
+                                    , Selfness(NoSelf,Self)
+                                    , TemplateAppInfo(..)
+                                    , TemplateArgType(TArg_TypeParam)
+                                    , TemplateClass(..)
+                                    , TemplateFunction(..)
+                                    , TemplateMemberFunction(..)
+                                    , Types(..)
+                                    , Variable(unVariable)
+                                    , isNonVirtualFunc
+                                    , isVirtualFunc
+                                    )
+import FFICXX.Generate.Util         ( conncomma, intercalateWith )
+import FFICXX.Generate.Util.HaskellSrcExts
+       ( classA, cxTuple, mkTVar, mkVar, parenSplice, tyapp, tycon, tyfun, tyPtr, tySplice
+       , unit_tycon, unqual )
 
 
 data CFunSig = CFunSig { cArgTypes :: [Arg]

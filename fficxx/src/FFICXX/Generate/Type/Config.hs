@@ -5,7 +5,7 @@ import Data.Hashable            ( Hashable(..) )
 import Data.HashMap.Strict      ( HashMap )
 import GHC.Generics             ( Generic )
 --
-import FFICXX.Runtime.CodeGen.C ( HeaderName(..), Namespace(..) )
+import FFICXX.Runtime.CodeGen.Cxx ( HeaderName(..), Namespace(..) )
 
 
 data ModuleUnit = MU_TopLevel 

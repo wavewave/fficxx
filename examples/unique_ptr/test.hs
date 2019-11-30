@@ -8,8 +8,8 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.C.String
 
-import FFICXX.Runtime.CodeGen.C ( HeaderName(..), Namespace(..) )
-import FFICXX.Runtime.TH        ( IsCPrimitive(..), TemplateParamInfo(..) )
+import FFICXX.Runtime.CodeGen.Cxx ( HeaderName(..), Namespace(..) )
+import FFICXX.Runtime.TH          ( IsCPrimitive(..), TemplateParamInfo(..) )
 import STD.CppString
 import STD.UniquePtr.Template
 import qualified STD.UniquePtr.TH as TH

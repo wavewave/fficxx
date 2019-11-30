@@ -27,7 +27,7 @@ Library
 
   Exposed-Modules:
                    FFICXX.Runtime.Cast
-                   FFICXX.Runtime.CodeGen.C
+                   FFICXX.Runtime.CodeGen.Cxx
                    FFICXX.Runtime.Function.Template
                    FFICXX.Runtime.Function.TH
                    FFICXX.Runtime.TH
