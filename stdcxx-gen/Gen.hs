@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import qualified Data.HashMap.Strict as HM
@@ -16,7 +18,7 @@ import FFICXX.Generate.Type.Cabal  ( BuildType(Simple)
                                    , Cabal(..)
                                    , CabalName(..)
                                    )
-import FFICXX.Generate.Type.Config ( ModuleUnitImports(..), ModuleUnitMap(..), ModuleUnit(..) )
+import FFICXX.Generate.Type.Config ( ModuleUnitImports(..), ModuleUnitMap(..), ModuleUnit(..), modImports )
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
@@ -59,13 +61,16 @@ string =
     ]
     []
     []
+    False
 
 ostream :: Class
-ostream = Class cabal "ostream" [] mempty
-                (Just (ClassAlias { caHaskellName = "Ostream", caFFIName = "ostream" }))
-                []
-                []
-                []
+ostream =
+  Class cabal "ostream" [] mempty
+    (Just (ClassAlias { caHaskellName = "Ostream", caFFIName = "ostream" }))
+    []
+    []
+    []
+    False
 
 classes = [ deletable
           --
@@ -108,16 +113,8 @@ templates = [ TCIH t_vector     (HdrName "Vector.h")    [HdrName "vector"]
             , TCIH t_shared_ptr (HdrName "SharedPtr.h") [HdrName "memory"]
             ]
 
-headerMap =
-  ModuleUnitMap $
-    HM.fromList [
-      (MU_Class "string",
-       ModuleUnitImports {
-         muimports_namespaces = [NS "std"]
-       , muimports_headers = [ HdrName "string" ]
-       }
-      )
-    ]
+headers =
+  [ modImports "string" ["std"] ["string"] ]
 
 main :: IO ()
 main = do
@@ -129,7 +126,7 @@ main = do
             }
       sbc = SimpleBuilderConfig {
               sbcTopModule  = "STD"
-            , sbcModUnitMap = headerMap
+            , sbcModUnitMap = ModuleUnitMap (HM.fromList headers)
             , sbcCabal      = cabal
             , sbcClasses    = classes
             , sbcTopLevels  = toplevelfunctions

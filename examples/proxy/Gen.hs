@@ -104,7 +104,7 @@ string =
     ]
     []
     []
-
+    False
 
 t_vector :: TemplateClass
 t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t"
@@ -161,21 +161,8 @@ impl cabal =
   , class_funcs = [ Constructor [ ] Nothing ]
   , class_vars  = [ ]
   , class_tmpl_funcs = []
+  , class_has_proxy = False
   }
-
-{-
-implSub cabal =
-  Class {
-    class_cabal = cabal
-  , class_name = "ImplSub"
-  , class_parents = [ impl cabal ]
-  , class_protected = mempty
-  , class_alias = Nothing
-  , class_funcs = [ Constructor [ voidp "fp" ] Nothing ]
-  , class_vars  = [ ]
-  , class_tmpl_funcs = []
-  }
--}
 
 loader cabal =
   Class {
@@ -188,11 +175,12 @@ loader cabal =
       [ Constructor [ cppclass (impl cabal) "m" ] Nothing
       , NonVirtual void_ "invoke" [] Nothing
       ]
-  , class_vars = [ ]
-  , class_tmpl_funcs = [ ]
+  , class_vars = []
+  , class_tmpl_funcs = []
+  , class_has_proxy = False
   }
 
-classes cabal = [ impl cabal {-, implSub cabal -}, loader cabal ]
+classes cabal = [ impl cabal, loader cabal ]
 
 toplevelfunctions = [ ]
 

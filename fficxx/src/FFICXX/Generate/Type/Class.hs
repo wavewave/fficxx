@@ -226,6 +226,7 @@ data Class = Class {
              , class_funcs :: [Function]
              , class_vars :: [Variable]
              , class_tmpl_funcs :: [TemplateMemberFunction]
+             , class_has_proxy :: Bool
              }
            | AbstractClass {
                class_cabal :: Cabal
