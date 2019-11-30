@@ -19,21 +19,61 @@ import System.FilePath
 import FFICXX.Runtime.CodeGen.C               ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.C as R
 --
-import FFICXX.Generate.Code.Cpp
-import FFICXX.Generate.Code.HsCast            (genHsFrontInstCastable
-                                              ,genHsFrontInstCastableSelf)
-import FFICXX.Generate.Code.HsFFI             (genHsFFI
-                                              ,genImportInFFI
-                                              ,genTopLevelFuncFFI)
-import FFICXX.Generate.Code.HsFrontEnd
-import FFICXX.Generate.Code.HsTemplate        (genTemplateMemberFunctions
-                                              ,genTmplInstance
-                                              ,genTmplInterface
-                                              ,genTmplImplementation
+import FFICXX.Generate.Code.Cpp               ( genAllCppHeaderInclude
+                                              , genCppDefMacroAccessor
+                                              , genCppDefMacroNonVirtual
+                                              , genCppDefMacroTemplateMemberFunction
+                                              , genCppDefMacroVirtual
+                                              , genCppDefInstAccessor
+                                              , genCppDefInstNonVirtual
+                                              , genCppDefInstVirtual
+                                              , genCppHeaderInstAccessor
+                                              , genCppHeaderInstNonVirtual
+                                              , genCppHeaderInstVirtual
+                                              , genCppHeaderMacroAccessor
+                                              , genCppHeaderMacroType
+                                              , genCppHeaderMacroVirtual
+                                              , genCppHeaderMacroNonVirtual
+                                              , genTmplClassCpp
+                                              , genTmplFunCpp
+                                              , genTopLevelFuncCppDefinition
+                                              , topLevelFunDecl
+                                              )
+import FFICXX.Generate.Code.HsCast            ( genHsFrontInstCastable
+                                              , genHsFrontInstCastableSelf
+                                              )
+import FFICXX.Generate.Code.HsFFI             ( genHsFFI
+                                              , genImportInFFI
+                                              , genTopLevelFuncFFI
+                                              )
+import FFICXX.Generate.Code.HsFrontEnd        ( genExport
+                                              , genExtraImport
+                                              , genHsFrontDecl
+                                              , genHsFrontDowncastClass
+                                              , genHsFrontInst
+                                              , genHsFrontInstNew
+                                              , genHsFrontInstNonVirtual
+                                              , genHsFrontInstStatic
+                                              , genHsFrontInstVariables
+                                              , genHsFrontUpcastClass
+                                              , genImportInCast
+                                              , genImportInImplementation
+                                              , genImportInInterface
+                                              , genImportInModule
+                                              , genImportInTopLevel
+                                              , genTopLevelFuncDef
+                                              , hsClassRawType
+                                              )
+import FFICXX.Generate.Code.HsProxy           ( genProxyInstance )
+import FFICXX.Generate.Code.HsTemplate        ( genTemplateMemberFunctions
+                                              , genTmplInstance
+                                              , genTmplInterface
+                                              , genTmplImplementation
                                               )
 import FFICXX.Generate.Dependency
-import FFICXX.Generate.Name                   (ffiClassName,hsClassName
-                                              ,hsFrontNameForTopLevelFunction)
+import FFICXX.Generate.Name                   ( ffiClassName, hsClassName
+                                              , hsFrontNameForTopLevelFunction
+                                              )
 import FFICXX.Generate.Type.Annotate
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
@@ -362,43 +402,63 @@ buildCastHs m = mkModule (cmModule m <.> "Cast")
 
 -- |
 buildImplementationHs :: AnnotateMap -> ClassModule -> Module ()
-buildImplementationHs amap m = mkModule (cmModule m <.> "Implementation")
-                                 [ lang [ "EmptyDataDecls"
-                                        , "FlexibleContexts"
-                                        , "FlexibleInstances"
-                                        , "ForeignFunctionInterface"
-                                        , "IncoherentInstances"
-                                        , "MultiParamTypeClasses"
-                                        , "OverlappingInstances"
-                                        , "TemplateHaskell"
-                                        , "TypeFamilies"
-                                        , "TypeSynonymInstances"
-                                        ] ]
-                                 implImports implBody
-  where classes = [ cihClass (cmCIH m) ]
-        implImports = [ mkImport "Data.Monoid"                -- for template member
-                      , mkImport "Data.Word"
-                      , mkImport "Data.Int"
-                      , mkImport "Foreign.C"
-                      , mkImport "Foreign.Ptr"
-                      , mkImport "Language.Haskell.TH"        -- for template member
-                      , mkImport "Language.Haskell.TH.Syntax" -- for template member
-                      , mkImport "System.IO.Unsafe"
-                      , mkImport "FFICXX.Runtime.Cast"
-                      , mkImport "FFICXX.Runtime.CodeGen.C"   -- for template member
-                      , mkImport "FFICXX.Runtime.TH"          -- for template member
-                      ]
-                      <> genImportInImplementation m
-                      <> genExtraImport m
-        f :: Class -> [Decl ()]
-        f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
+buildImplementationHs amap m =
+    mkModule (cmModule m <.> "Implementation")
+      [ lang [ "EmptyDataDecls"
+             , "FlexibleContexts"
+             , "FlexibleInstances"
+             , "ForeignFunctionInterface"
+             , "IncoherentInstances"
+             , "MultiParamTypeClasses"
+             , "OverlappingInstances"
+             , "TemplateHaskell"
+             , "TypeFamilies"
+             , "TypeSynonymInstances"
+             ]
+      ]
+      implImports implBody
+  where
+    classes = [ cihClass (cmCIH m) ]
+    implImports = [ mkImport "Data.Monoid"                -- for template member
+                  , mkImport "Data.Word"
+                  , mkImport "Data.Int"
+                  , mkImport "Foreign.C"
+                  , mkImport "Foreign.Ptr"
+                  , mkImport "Language.Haskell.TH"        -- for template member
+                  , mkImport "Language.Haskell.TH.Syntax" -- for template member
+                  , mkImport "System.IO.Unsafe"
+                  , mkImport "FFICXX.Runtime.Cast"
+                  , mkImport "FFICXX.Runtime.CodeGen.C"   -- for template member
+                  , mkImport "FFICXX.Runtime.TH"          -- for template member
+                  ]
+                  <> genImportInImplementation m
+                  <> genExtraImport m
+    f :: Class -> [Decl ()]
+    f y = concatMap (flip genHsFrontInst y) (y:class_allparents y)
 
-        implBody =    concatMap f classes
-                   <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
-                   <> concatMap genHsFrontInstNonVirtual classes
-                   <> concatMap genHsFrontInstStatic classes
-                   <> concatMap genHsFrontInstVariables classes
-                   <> genTemplateMemberFunctions (cmCIH m)
+    implBody =    concatMap f classes
+               <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
+               <> concatMap genHsFrontInstNonVirtual classes
+               <> concatMap genHsFrontInstStatic classes
+               <> concatMap genHsFrontInstVariables classes
+               <> genTemplateMemberFunctions (cmCIH m)
+
+buildProxyHs :: ClassModule -> Module ()
+buildProxyHs m =
+    mkModule (cmModule m <.> "Proxy")
+      [ lang [ "FlexibleInstances"
+             , "OverloadedStrings"
+             , "TemplateHaskell"
+             ]
+      ]
+      [ mkImport "Foreign.Ptr"
+      , mkImport "FFICXX.Runtime.Cast"
+      ]
+      body
+  where
+    body = genProxyInstance
+
+
 
 buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m =
