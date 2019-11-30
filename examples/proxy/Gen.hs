@@ -161,7 +161,7 @@ impl cabal =
   , class_funcs = [ Constructor [ ] Nothing ]
   , class_vars  = [ ]
   , class_tmpl_funcs = []
-  , class_has_proxy = False
+  , class_has_proxy = True
   }
 
 loader cabal =
@@ -188,7 +188,6 @@ templates = [  ]
 
 headers =
   [ modImports "Impl"    [] ["test.h"]
-  -- , modImports "ImplSub" [] ["test.h"]
   , modImports "Loader"  [] ["test.h"]
   ]
 

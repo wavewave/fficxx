@@ -23,6 +23,7 @@ import FFICXX.Generate.Type.Cabal  ( AddCInc(..)
                                    , Cabal(..)
                                    , GeneratedCabalInfo(..)
                                    )
+import FFICXX.Generate.Type.Class  ( hasProxy )
 import FFICXX.Generate.Type.Module
 -- import FFICXX.Generate.Type.PackageInterface
 import FFICXX.Generate.Util
@@ -94,15 +95,27 @@ genCppFiles (tih,cmods) acsrcs =
 -- | generate exposed module list in cabal file
 genExposedModules :: String -> ([ClassModule],[TemplateClassModule]) -> [String]
 genExposedModules summarymod (cmods,tmods) =
-  let cmodstrs = map cmModule cmods
-      rawType = map ((\x -> x <> ".RawType").cmModule) cmods
-      ffi = map ((\x -> x <> ".FFI").cmModule) cmods
-      interface= map ((\x-> x <> ".Interface").cmModule) cmods
-      cast = map ((\x-> x <> ".Cast").cmModule) cmods
-      implementation = map ((\x-> x <> ".Implementation").cmModule) cmods
-      template = map ((\x-> x <> ".Template").tcmModule) tmods
-      th = map ((\x-> x <> ".TH").tcmModule) tmods
-  in [summarymod]<>cmodstrs<>rawType<>ffi<>interface<>cast<>implementation<>template<>th
+  let cmodstrs       = map cmModule cmods
+      rawType        = map ((<>".RawType")        . cmModule) cmods
+      ffi            = map (( <>".FFI")           . cmModule) cmods
+      interface      = map ((<>".Interface")      . cmModule) cmods
+      cast           = map ((<>".Cast")           . cmModule) cmods
+      implementation = map ((<>".Implementation") . cmModule) cmods
+      proxy          = map ((<>".Proxy")          . cmModule)
+                     . filter (hasProxy . cihClass . cmCIH)
+                     $ cmods
+      template       = map ((<>".Template")       . tcmModule) tmods
+      th             = map ((<>".TH")             . tcmModule) tmods
+  in    [summarymod]
+     <> cmodstrs
+     <> rawType
+     <> ffi
+     <> interface
+     <> cast
+     <> implementation
+     <> proxy
+     <> template
+     <> th
 
 -- | generate other modules in cabal file
 genOtherModules :: [ClassModule] -> [String]

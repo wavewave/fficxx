@@ -453,6 +453,9 @@ buildProxyHs m =
       ]
       [ mkImport "Foreign.Ptr"
       , mkImport "FFICXX.Runtime.Cast"
+      , mkImport "Language.Haskell.TH"
+      , mkImport "Language.Haskell.TH.Syntax"
+      , mkImport "FFICXX.Runtime.CodeGen.C"
       ]
       body
   where

@@ -293,12 +293,14 @@ data Selfness = Self | NoSelf
 
 
 -- | Check abstract class
-
 isAbstractClass :: Class -> Bool
 isAbstractClass Class{}         = False
 isAbstractClass AbstractClass{} = True
 
-
+-- | Check having Proxy
+hasProxy :: Class -> Bool
+hasProxy c@Class{} = class_has_proxy c
+hasProxy AbstractClass{} = False
 
 type DaughterMap = M.Map String [Class]
 

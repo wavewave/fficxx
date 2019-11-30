@@ -104,7 +104,7 @@ string =
     ]
     []
     []
-
+    False
 
 t_vector :: TemplateClass
 t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t"
@@ -188,6 +188,7 @@ classA cabal =
         , tmf_alias = Nothing
         }
       ]
+  , class_has_proxy = False
   }
 
 classT1 cabal =
@@ -198,11 +199,12 @@ classT1 cabal =
   , class_protected = mempty
   , class_alias = Nothing
   , class_funcs =
-      [ Constructor [ ] Nothing
-      , NonVirtual void_ "print" [ ] Nothing
+      [ Constructor [] Nothing
+      , NonVirtual void_ "print" [] Nothing
       ]
-  , class_vars = [ ]
-  , class_tmpl_funcs = [ ]
+  , class_vars = []
+  , class_tmpl_funcs = []
+  , class_has_proxy = False
   }
 
 classT2 cabal =
@@ -213,11 +215,12 @@ classT2 cabal =
   , class_protected = mempty
   , class_alias = Nothing
   , class_funcs =
-      [ Constructor [ ] Nothing
-      , NonVirtual void_ "print" [ ] Nothing
+      [ Constructor [] Nothing
+      , NonVirtual void_ "print" [] Nothing
       ]
-  , class_vars = [ ]
-  , class_tmpl_funcs = [ ]
+  , class_vars = []
+  , class_tmpl_funcs = []
+  , class_has_proxy = False
   }
 
 classes cabal = [ classA cabal, classT1 cabal, classT2 cabal ]

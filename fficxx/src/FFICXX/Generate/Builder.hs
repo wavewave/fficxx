@@ -36,8 +36,15 @@ import           FFICXX.Generate.Type.Cabal              ( Cabal(..)
                                                          , AddCInc(..)
                                                          , AddCSrc(..)
                                                          )
-import           FFICXX.Generate.Type.Module
-import           FFICXX.Generate.Util
+import           FFICXX.Generate.Type.Class              ( hasProxy )
+import           FFICXX.Generate.Type.Module             ( ClassImportHeader(..)
+                                                         , ClassModule(..)
+                                                         , PackageConfig(..)
+                                                         , TemplateClassImportHeader(..)
+                                                         , TemplateClassModule(..)
+                                                         , TopLevelImportHeader(..)
+                                                         )
+import           FFICXX.Generate.Util                    ( moduleDirFile )
 --
 
 macrofy :: String -> String
@@ -141,6 +148,11 @@ simpleBuilder cfg sbc = do
   for_ mods $ \m -> gen
                       (cmModule m <.> "Implementation" <.> "hs")
                       (prettyPrint (buildImplementationHs mempty m))
+ --
+  putStrLn "Generating Proxy.hs"
+  for_ mods $ \m ->
+    when (hasProxy . cihClass . cmCIH $ m) $
+      gen (cmModule m <.> "Proxy" <.> "hs") (prettyPrint (buildProxyHs m))
   --
   putStrLn "Generating Template.hs"
   for_ tcms $ \m -> gen
@@ -250,6 +262,8 @@ copyModule wdir ddir m = do
   moduleFileCopy wdir ddir $ modbase <> ".Cast.hs"
   moduleFileCopy wdir ddir $ modbase <> ".Implementation.hs"
   moduleFileCopy wdir ddir $ modbase <> ".Interface.hs-boot"
+  when (hasProxy . cihClass . cmCIH $ m) $
+    moduleFileCopy wdir ddir $ modbase <> ".Proxy.hs"
 
 
 copyTemplateModule :: FilePath -> FilePath -> TemplateClassModule -> IO ()
