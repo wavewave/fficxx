@@ -2,6 +2,7 @@
 module FFICXX.Generate.Code.Primitive where
 
 import Control.Monad.Trans.State    ( runState, put, get )
+import Data.Functor.Identity        ( Identity )
 import Data.Monoid                  ( (<>) )
 import Language.Haskell.Exts.Syntax ( Asst(..), Context, Type(..) )
 --
@@ -289,7 +290,7 @@ cppclassmove :: Class -> String -> Arg
 cppclassmove c vname = Arg (cppclassmove_ c) vname
 
 
-argToCTypVar :: Arg -> (R.CType,R.CName)
+argToCTypVar :: Arg -> (R.CType Identity, R.CName Identity)
 argToCTypVar (Arg (CT ctyp isconst) varname) =
   (R.CTVerbatim (ctypToStr ctyp isconst), R.sname varname)
 argToCTypVar (Arg SelfType varname) =
@@ -319,12 +320,12 @@ argToCTypVar (Arg (TemplateAppRef  _) varname) = (R.CTVerbatim "void*", R.sname 
 argToCTypVar (Arg (TemplateAppMove _) varname) = (R.CTVerbatim "void*", R.sname varname)
 argToCTypVar t = error ("argToCTypVar: " <> show t)
 
-argsToCTypVar :: [Arg] -> [(R.CType,R.CName)]
+argsToCTypVar :: [Arg] -> [ (R.CType Identity, R.CName Identity) ]
 argsToCTypVar args =
   let args' = (Arg SelfType "p") : args
   in map argToCTypVar args'
 
-argsToCTypVarNoSelf :: [Arg] -> [(R.CType,R.CName)]
+argsToCTypVarNoSelf :: [Arg] -> [ (R.CType Identity, R.CName Identity) ]
 argsToCTypVarNoSelf = map argToCTypVar
 
 
@@ -406,7 +407,7 @@ castCpp2C t e =
                               -- if b then "(" <> callstr <> ");"
                               --      else "to_nonconst<Type ## _t, Type>(" <> e <> ") ;"
 
-tmplArgToCTypVar :: Bool -> TemplateClass -> Arg -> (R.CType,R.CName)
+tmplArgToCTypVar :: Bool -> TemplateClass -> Arg -> (R.CType Identity, R.CName Identity)
 tmplArgToCTypVar _ _  (Arg (CT ctyp isconst) varname) =
   (R.CTVerbatim (ctypToStr ctyp isconst), R.sname varname)
 tmplArgToCTypVar _ t (Arg SelfType varname) =
@@ -438,7 +439,7 @@ tmplAllArgsToCTypVar ::
   -> Selfness
   -> TemplateClass
   -> [Arg]
-  -> [(R.CType,R.CName)]
+  -> [ (R.CType Identity, R.CName Identity) ]
 tmplAllArgsToCTypVar b s t args =
   let args' = case s of
                 Self   -> (Arg (TemplateType t) "p") : args
@@ -519,7 +520,7 @@ tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## 
 -- Template Member Function --
 -- ---------------------------
 
-tmplMemFuncArgToCTypVar :: Class -> Arg -> (R.CType, R.CName)
+tmplMemFuncArgToCTypVar :: Class -> Arg -> (R.CType Identity, R.CName Identity)
 tmplMemFuncArgToCTypVar _ (Arg (CT ctyp isconst) varname) =
   (R.CTVerbatim (ctypToStr ctyp isconst), R.sname varname)
 tmplMemFuncArgToCTypVar c (Arg SelfType varname) =

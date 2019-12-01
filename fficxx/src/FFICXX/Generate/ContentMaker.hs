@@ -6,6 +6,7 @@ module FFICXX.Generate.ContentMaker where
 import Control.Lens                           ( (&), (.~), at )
 import Control.Monad.Trans.Reader
 import Data.Either                            ( rights )
+import Data.Functor.Identity                  ( Identity )
 import qualified Data.Map as M
 import Data.Maybe                             ( mapMaybe  )
 import Data.Monoid                            ( (<>) )
@@ -14,7 +15,7 @@ import Data.List.Split                        ( splitOn )
 import Language.Haskell.Exts.Syntax           ( Module(..)
                                               , Decl(..)
                                               )
-import System.FilePath
+import System.FilePath                        ( (<.>), (</>) )
 --
 import FFICXX.Runtime.CodeGen.Cxx             ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
@@ -74,9 +75,20 @@ import FFICXX.Generate.Dependency
 import FFICXX.Generate.Name                   ( ffiClassName, hsClassName
                                               , hsFrontNameForTopLevelFunction
                                               )
-import FFICXX.Generate.Type.Annotate
-import FFICXX.Generate.Type.Class
-import FFICXX.Generate.Type.Module
+import FFICXX.Generate.Type.Annotate          ( AnnotateMap )
+import FFICXX.Generate.Type.Class             ( Class(..)
+                                              , ClassGlobal(..)
+                                              , DaughterMap
+                                              , ProtectedMethod(..)
+                                              , TemplateClass(..)
+                                              , isAbstractClass
+                                              )
+import FFICXX.Generate.Type.Module            ( ClassImportHeader(..)
+                                              , ClassModule(..)
+                                              , TemplateClassImportHeader(..)
+                                              , TemplateClassModule(..)
+                                              , TopLevelImportHeader(..)
+                                              )
 import FFICXX.Generate.Type.PackageInterface  ( ClassName(..)
                                               , PackageInterface
                                               , PackageName(..)
@@ -108,11 +120,11 @@ buildDaughterDef f m =
     in (concatMap f' lst)
 
 -- |
-buildParentDef :: ((Class,Class) -> [R.CStatement]) -> Class -> [R.CStatement]
+buildParentDef :: ((Class,Class) -> [R.CStatement Identity]) -> Class -> [R.CStatement Identity]
 buildParentDef f cls = concatMap (\p -> f (p,cls)) . class_allparents $ cls
 
 -- |
-mkProtectedFunctionList :: Class -> [R.CMacro]
+mkProtectedFunctionList :: Class -> [R.CMacro Identity]
 mkProtectedFunctionList c =
     map (\x-> R.Define (R.sname ("IS_" <> class_name c <> "_" <> x <> "_PROTECTED")) [] [R.CVerbatim "()"])
   . unProtected

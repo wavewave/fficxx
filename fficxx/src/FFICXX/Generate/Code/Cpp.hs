@@ -3,9 +3,10 @@
 
 module FFICXX.Generate.Code.Cpp where
 
-import Data.Char                             ( toUpper )
-import Data.List                             ( intercalate )
-import Data.Monoid                           ( (<>) )
+import Data.Char             ( toUpper )
+import Data.Functor.Identity ( Identity )
+import Data.List             ( intercalate )
+import Data.Monoid           ( (<>) )
 --
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 --
@@ -66,22 +67,27 @@ import FFICXX.Generate.Util         ( context, subst, toUppers )
 
 ---- "Class Type Declaration" Instances
 
-genCppHeaderMacroType :: Class -> [R.CStatement]
-genCppHeaderMacroType c =
-    [ R.Comment "Opaque type definition for $classname"
-    , R.TypeDef (R.CTVerbatim ("struct " <> classname_tag)) (R.sname classname_t)
+typedefStmts :: String -> [R.CStatement Identity]
+typedefStmts classname =
+    [ R.TypeDef (R.CTVerbatim ("struct " <> classname_tag)) (R.sname classname_t)
     , R.TypeDef (R.CTVerbatim (classname_t <> " *"))        (R.sname classname_p)
     , R.TypeDef (R.CTVerbatim (classname_t <> " const*"))   (R.sname ("const_" <> classname_p))
     ]
   where
-    classname = ffiClassName c
     classname_tag = classname <> "_tag"
     classname_t   = classname <> "_t"
     classname_p   = classname <> "_p"
 
+
+genCppHeaderMacroType :: Class -> [R.CStatement Identity]
+genCppHeaderMacroType c =
+    [ R.Comment "Opaque type definition for $classname" ]
+    <> typedefStmts (ffiClassName c)
+
+
 ---- "Class Declaration Virtual" Declaration
 
-genCppHeaderMacroVirtual :: Class -> R.CMacro
+genCppHeaderMacroVirtual :: Class -> R.CMacro Identity
 genCppHeaderMacroVirtual aclass =
   let funcDecls = map R.CDeclaration
                 . map (funcToDecl aclass)
@@ -92,7 +98,7 @@ genCppHeaderMacroVirtual aclass =
       macroname = macrocname <> "_DECL_VIRT"
   in R.Define (R.sname macroname) [R.sname "Type"] funcDecls
 
-genCppHeaderMacroNonVirtual :: Class -> R.CMacro
+genCppHeaderMacroNonVirtual :: Class -> R.CMacro Identity
 genCppHeaderMacroNonVirtual c =
   let funcDecls = map R.CDeclaration
                 . map (funcToDecl c)
@@ -106,7 +112,7 @@ genCppHeaderMacroNonVirtual c =
 
 ---- "Class Declaration Accessor" Declaration
 
-genCppHeaderMacroAccessor :: Class -> R.CMacro
+genCppHeaderMacroAccessor :: Class -> R.CMacro Identity
 genCppHeaderMacroAccessor c =
   let funcDecls  = map R.CDeclaration $ accessorsToDecls (class_vars c)
       macrocname = map toUpper (ffiClassName c)
@@ -116,17 +122,17 @@ genCppHeaderMacroAccessor c =
 
 ---- "Class Declaration Virtual/NonVirtual/Accessor" Instances
 
-genCppHeaderInstVirtual :: (Class,Class) -> R.CStatement
+genCppHeaderInstVirtual :: (Class,Class) -> R.CStatement Identity
 genCppHeaderInstVirtual (p,c) =
   let macroname = map toUpper (ffiClassName p) <> "_DECL_VIRT"
   in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
-genCppHeaderInstNonVirtual :: Class -> R.CStatement
+genCppHeaderInstNonVirtual :: Class -> R.CStatement Identity
 genCppHeaderInstNonVirtual c =
   let macroname = map toUpper (ffiClassName c) <> "_DECL_NONVIRT"
   in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
-genCppHeaderInstAccessor :: Class -> R.CStatement
+genCppHeaderInstAccessor :: Class -> R.CStatement Identity
 genCppHeaderInstAccessor c =
   let macroname = map toUpper (ffiClassName c) <> "_DECL_ACCESSOR"
   in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
@@ -137,7 +143,7 @@ genCppHeaderInstAccessor c =
 
 ---- "Class Definition Virtual" Declaration
 
-genCppDefMacroVirtual :: Class -> R.CMacro
+genCppDefMacroVirtual :: Class -> R.CMacro Identity
 genCppDefMacroVirtual aclass =
   let funcDefStr = intercalate "\n"
                  . map (R.renderCStmt . funcToDef aclass)
@@ -150,7 +156,7 @@ genCppDefMacroVirtual aclass =
 
 ---- "Class Definition NonVirtual" Declaration
 
-genCppDefMacroNonVirtual :: Class -> R.CMacro
+genCppDefMacroNonVirtual :: Class -> R.CMacro Identity
 genCppDefMacroNonVirtual aclass =
   let funcDefStr = intercalate "\n"
                  . map (R.renderCStmt . funcToDef aclass)
@@ -163,7 +169,7 @@ genCppDefMacroNonVirtual aclass =
 
 ---- Define Macro to provide Accessor C-C++ shim code for a class
 
-genCppDefMacroAccessor :: Class -> R.CMacro
+genCppDefMacroAccessor :: Class -> R.CMacro Identity
 genCppDefMacroAccessor c =
   let funcDefStr = accessorsToDefs (class_vars c)
       macrocname = map toUpper (ffiClassName c)
@@ -175,7 +181,7 @@ genCppDefMacroAccessor c =
 genCppDefMacroTemplateMemberFunction ::
      Class
   -> TemplateMemberFunction
-  -> R.CMacro
+  -> R.CMacro Identity
 genCppDefMacroTemplateMemberFunction c f =
    R.Define (R.sname macroname) [R.sname "Type"]
      [ R.CVerbatim (subst tmpl ctxt) ]
@@ -195,24 +201,24 @@ genCppDefMacroTemplateMemberFunction c f =
 
 ---- Invoke Macro to define Virtual/NonVirtual method for a class
 
-genCppDefInstVirtual :: (Class,Class) -> R.CStatement
+genCppDefInstVirtual :: (Class, Class) -> R.CStatement Identity
 genCppDefInstVirtual (p,c) =
   let macroname = map toUpper (ffiClassName p) <> "_DEF_VIRT"
   in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
-genCppDefInstNonVirtual :: Class -> R.CStatement
+genCppDefInstNonVirtual :: Class -> R.CStatement Identity
 genCppDefInstNonVirtual c =
   let macroname = toUppers (ffiClassName c) <> "_DEF_NONVIRT"
   in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
-genCppDefInstAccessor :: Class -> R.CStatement
+genCppDefInstAccessor :: Class -> R.CStatement Identity
 genCppDefInstAccessor c =
   let macroname = toUppers (ffiClassName c) <> "_DEF_ACCESSOR"
   in R.CMacroApp (R.sname macroname) [R.sname (ffiClassName c)]
 
 -----------------
 
-genAllCppHeaderInclude :: ClassImportHeader -> [R.CMacro]
+genAllCppHeaderInclude :: ClassImportHeader -> [R.CMacro Identity]
 genAllCppHeaderInclude header =
   map R.Include (cihIncludedHPkgHeadersInCPP header <> cihIncludedCPkgHeaders header)
 
@@ -222,7 +228,7 @@ genAllCppHeaderInclude header =
 -- TOP LEVEL FUNCTIONS --
 -------------------------
 
-topLevelFunDecl :: TopLevelFunction -> R.CFunDecl
+topLevelFunDecl :: TopLevelFunction -> R.CFunDecl Identity
 topLevelFunDecl TopLevelFunction {..} = R.CFunDecl ret func args
   where
     ret  = R.CTVerbatim (rettypeToString toplevelfunc_ret)
@@ -233,7 +239,7 @@ topLevelFunDecl TopLevelVariable {..} = R.CFunDecl ret func []
     ret  = R.CTVerbatim (rettypeToString toplevelvar_ret)
     func = R.sname ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
 
-genTopLevelFuncCppDefinition :: TopLevelFunction -> R.CStatement
+genTopLevelFuncCppDefinition :: TopLevelFunction -> R.CStatement Identity
 genTopLevelFuncCppDefinition tf@TopLevelFunction {..} =
   let decl = topLevelFunDecl tf
       callstr = toplevelfunc_name <> "("
@@ -247,10 +253,11 @@ genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
       body = returnCpp False (toplevelvar_ret) callstr
   in R.CDefinition decl body
 
-genTmplFunCpp :: Bool -- ^ is for simple type?
-              -> TemplateClass
-              -> TemplateFunction
-              -> R.CMacro
+genTmplFunCpp ::
+     Bool -- ^ is for simple type? -- TODO: change this to IsCPrimitive
+  -> TemplateClass
+  -> TemplateFunction
+  -> R.CMacro Identity
 genTmplFunCpp b t@TmplCls {..} f =
     R.Define (R.sname macroname) [R.sname "Type"] [R.CVerbatim defn]
  where
@@ -270,10 +277,11 @@ genTmplFunCpp b t@TmplCls {..} f =
            , ("defn"   , R.renderCStmt (tmplFunToDef b t f) )
            ]
 
-genTmplClassCpp :: Bool -- ^ is for simple type
-                -> TemplateClass
-                -> [TemplateFunction]
-                -> R.CMacro
+genTmplClassCpp ::
+     Bool -- ^ is for simple type -- TODO: change this to IsCPrimitive
+  -> TemplateClass
+  -> [TemplateFunction]
+  -> R.CMacro Identity
 genTmplClassCpp b TmplCls {..} fs =
     R.Define (R.sname macroname) [R.sname "Type"] [R.CVerbatim macro]
  where
@@ -286,10 +294,11 @@ genTmplClassCpp b TmplCls {..} fs =
   macro1 TFunDelete     = "  " <> tname<> "_delete(Type)"
   macro = intercalate "\n" $ map macro1 fs
 
-returnCpp :: Bool  -- ^ for simple type
-          -> Types
-          -> String -- ^ call string
-          -> [R.CStatement]
+returnCpp ::
+     Bool  -- ^ for simple type -- TODO: change this to IsCPrimitive
+  -> Types
+  -> String -- ^ call string
+  -> [R.CStatement Identity]
 returnCpp b ret callstr =
   case ret of
     Void                    -> [R.CVerbatim (callstr <> ";")]
@@ -337,7 +346,7 @@ returnCpp b ret callstr =
 
 -- Function Declaration and Definition
 
-funcToDecl :: Class -> Function -> R.CFunDecl
+funcToDecl :: Class -> Function -> R.CFunDecl Identity
 funcToDecl c func
   | isNewFunc func || isStaticFunc func =
     let ret   = R.CTVerbatim $ rettypeToString (genericFuncRet func)
@@ -352,7 +361,7 @@ funcToDecl c func
         args  = argsToCTypVar (genericFuncArgs func)
     in R.CFunDecl ret fname args
 
-funcToDef :: Class -> Function -> R.CStatement
+funcToDef :: Class -> Function -> R.CStatement Identity
 funcToDef c func
   | isNewFunc func =
     let callstr = "(" <> argsToCallString (genericFuncArgs func) <> ")"
@@ -379,7 +388,11 @@ funcToDef c func
         body = returnCpp False (genericFuncRet func) callstr
     in R.CDefinition (funcToDecl c func) body
 
-tmplFunToDecl :: Bool -> TemplateClass -> TemplateFunction -> R.CFunDecl
+tmplFunToDecl ::
+     Bool -- TODO: change this to IsCPrimitive
+  -> TemplateClass
+  -> TemplateFunction
+  -> R.CFunDecl Identity
 tmplFunToDecl b t@TmplCls {..} f@TFun {..}    = R.CFunDecl ret func args
   where
     ret  = R.CTVerbatim (tmplRetTypeToString b tfun_ret)
@@ -396,10 +409,11 @@ tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.CFunDecl ret func args
     func = R.CName [R.NamePart (tclass_name <> "_delete_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b Self t []
 
-tmplFunToDef :: Bool -- ^ for simple type
-             -> TemplateClass
-             -> TemplateFunction
-             -> R.CStatement
+tmplFunToDef ::
+     Bool -- ^ for simple type -- TODO: change this to IsCPrimitive
+  -> TemplateClass
+  -> TemplateFunction
+  -> R.CStatement Identity
 tmplFunToDef b t@TmplCls {..} f =
     R.CDefinition (tmplFunToDecl b t f) body
   where
@@ -423,7 +437,7 @@ tmplFunToDef b t@TmplCls {..} f =
 
 -- Accessor Declaration and Definition
 
-accessorToDecl :: Variable -> Accessor -> R.CFunDecl
+accessorToDecl :: Variable -> Accessor -> R.CFunDecl Identity
 accessorToDecl v a =
   let csig = accessorCFunSig (arg_type (unVariable v)) a
       ret = R.CTVerbatim $ rettypeToString (cRetType csig)
@@ -438,11 +452,11 @@ accessorToDecl v a =
       args = argsToCTypVar (cArgTypes csig)
   in R.CFunDecl ret fname args
 
-accessorsToDecls :: [Variable] -> [R.CFunDecl]
+accessorsToDecls :: [Variable] -> [R.CFunDecl Identity]
 accessorsToDecls vs =
   concatMap (\v -> [accessorToDecl v Getter,accessorToDecl v Setter]) vs
 
-accessorToDef :: Variable -> Accessor -> R.CStatement
+accessorToDef :: Variable -> Accessor -> R.CStatement Identity
 accessorToDef v a =
   let varexp = "to_nonconst<Type,Type ## _t>(p)->" <> arg_name (unVariable v)
       body Getter = R.CReturn $ R.CEVerbatim $ "(" <> castCpp2C (arg_type (unVariable v)) varexp <> ")"
@@ -453,6 +467,7 @@ accessorToDef v a =
                       <> ";"
   in R.CDefinition (accessorToDecl v a) [ body a ]
 
+-- TODO: Remove this function
 accessorsToDefs :: [Variable] -> String
 accessorsToDefs vs =
   let defs = concatMap (\v -> [accessorToDef v Getter,accessorToDef v Setter]) vs
@@ -461,7 +476,7 @@ accessorsToDefs vs =
 -- Template Member Function Declaration and Definition
 
 -- TODO: Handle simple type
-tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> R.CFunDecl
+tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> R.CFunDecl Identity
 tmplMemberFunToDecl c f =
   let ret = R.CTVerbatim $ tmplMemFuncRetTypeToString c (tmf_ret f)
       fname =
@@ -472,7 +487,7 @@ tmplMemberFunToDecl c f =
   in R.CFunDecl ret fname args
 
 -- TODO: Handle simple type
-tmplMemberFunToDef :: Class -> TemplateMemberFunction -> R.CStatement
+tmplMemberFunToDef :: Class -> TemplateMemberFunction -> R.CStatement Identity
 tmplMemberFunToDef c f =
     R.CDefinition (tmplMemberFunToDecl c f) body
   where

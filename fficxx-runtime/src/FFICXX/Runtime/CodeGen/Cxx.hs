@@ -1,7 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE KindSignatures #-}
 
 module FFICXX.Runtime.CodeGen.Cxx where
 
+import Data.Functor.Identity (Identity)
 import Data.Hashable  ( Hashable )
 import Data.List      ( intercalate )
 import Data.Semigroup ( (<>) )
@@ -25,71 +27,73 @@ instance IsString Namespace where
 
 data PragmaParam = Once
 
-data CType = CTVerbatim String
+data CType (f :: * -> *) = CTVerbatim String
 
 -- | parts for interpolation
-newtype NamePart = NamePart String
+newtype NamePart (f :: * -> *) = NamePart String
 
-newtype CName = CName [NamePart]
+newtype CName (f :: * -> *) = CName [NamePart f]
 
-sname :: String -> CName
+sname :: String -> CName Identity
 sname s = CName [NamePart s]
 
-renderCName :: CName -> String
+renderCName :: CName Identity -> String
 renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
-data CExp = CEVerbatim String
+data CExp (f :: * -> *) = CEVerbatim String
 
-data CFunDecl =
-    CFunDecl CType CName [(CType,CName)] -- ^ type func( type1 arg1, type2 arg2, ... )
+data CFunDecl (f :: * -> *) =
+  CFunDecl (CType f) (CName f) [(CType f,CName f)] -- ^ type func( type1 arg1, type2 arg2, ... )
 
-data CVarDecl =
-    CVarDecl CType CName                 -- ^ type var
+data CVarDecl (f :: * -> *) =
+  CVarDecl
+    (CType f)  -- ^ type
+    (CName f)  -- ^ variable name
 
-data CStatement =
-    UsingNamespace Namespace -- ^ using namespace <namespace>;
-  | TypeDef CType CName      -- ^ typedef origtype newname;
-  | CDeclaration CFunDecl    -- ^ function declaration;
-  | CDefinition CFunDecl [CStatement] -- ^ function definition;
-  | CInit CVarDecl CExp      -- ^ variable initialization;
-  | CReturn CExp             -- ^ return statement;
-  | CDelete CExp             -- ^ delete statement;
-  | CMacroApp CName [CName]  -- ^ C Macro application at statement level (temporary)
-  | Comment String           -- ^ comment
-  | CEmptyLine               -- ^ for convenience
-  | CVerbatim String         -- ^ temporary verbatim
+data CStatement (f :: * -> *) =
+    UsingNamespace Namespace                -- ^ using namespace <namespace>;
+  | TypeDef (CType f) (CName f)             -- ^ typedef origtype newname;
+  | CDeclaration (CFunDecl f)               -- ^ function declaration;
+  | CDefinition (CFunDecl f) [CStatement f] -- ^ function definition;
+  | CInit (CVarDecl f) (CExp f)             -- ^ variable initialization;
+  | CReturn (CExp f)                        -- ^ return statement;
+  | CDelete (CExp f)                        -- ^ delete statement;
+  | CMacroApp (CName f) [CName f]           -- ^ C Macro application at statement level (temporary)
+  | Comment String                          -- ^ comment
+  | CEmptyLine                              -- ^ for convenience
+  | CVerbatim String                        -- ^ temporary verbatim
 
-data CMacro =
-    CRegular CStatement
-  | Include HeaderName       -- ^ #include "<header>"
-  | Pragma PragmaParam       -- ^ #pragma
-  | Undef CName              -- ^ #undef name
-  | Define CName [CName] [CStatement] -- ^ #define macro (type) definition
-  | EmptyLine                -- ^ just for convenience
-  | Verbatim String          -- ^ temporary verbatim
+data CMacro (f :: * -> *) =
+    CRegular (CStatement f)                   -- ^ regular C++ statement
+  | Include HeaderName                        -- ^ #include "<header>"
+  | Pragma PragmaParam                        -- ^ #pragma
+  | Undef (CName f)                           -- ^ #undef name
+  | Define (CName f) [CName f] [CStatement f] -- ^ #define macro (type) definition
+  | EmptyLine                                 -- ^ just for convenience
+  | Verbatim String                           -- ^ temporary verbatim
 
-data CBlock = ExternC [CMacro]
+data CBlock (f :: * -> *) = ExternC [CMacro f]
 
 renderPragmaParam :: PragmaParam -> String
 renderPragmaParam Once = "once"
 
-renderCType :: CType -> String
+renderCType :: CType Identity -> String
 renderCType (CTVerbatim t) = t
 
-renderCExp :: CExp -> String
+renderCExp :: CExp Identity -> String
 renderCExp (CEVerbatim e) = e
 
-renderCFDecl :: CFunDecl -> String
+renderCFDecl :: CFunDecl Identity -> String
 renderCFDecl (CFunDecl typ fname args) =
     renderCType typ <> " " <> renderCName fname <> " ( " <> intercalate ", " (map mkArgStr args) <> " )"
   where
     mkArgStr (t, a) = renderCType t <> " " <> renderCName a
 
-renderCVDecl :: CVarDecl -> String
+renderCVDecl :: CVarDecl Identity -> String
 renderCVDecl (CVarDecl typ vname) = renderCType typ <> " " <> renderCName vname
 
 -- | render CStatement in a regular environment
-renderCStmt :: CStatement -> String
+renderCStmt :: CStatement Identity -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 renderCStmt (TypeDef typ n)          = "typedef " <> renderCType typ <> " " <> renderCName n <> ";"
 renderCStmt (CDeclaration e)         = renderCFDecl e <> ";"
@@ -104,7 +108,7 @@ renderCStmt CEmptyLine               = "\n"
 renderCStmt (CVerbatim str)          = str
 
 -- | render CStatement in a macro definition environment
-renderCStmtInMacro :: CStatement -> [String]
+renderCStmtInMacro :: CStatement Identity -> [String]
 renderCStmtInMacro (CDefinition d body) =
      [ renderCFDecl d <> " {" ]
   <> map renderCStmt body
@@ -114,7 +118,7 @@ renderCStmtInMacro CEmptyLine      = [""]
 renderCStmtInMacro (CVerbatim str) = lines str
 renderCStmtInMacro s               = [renderCStmt s]
 
-renderCMacro :: CMacro -> String
+renderCMacro :: CMacro Identity -> String
 renderCMacro (CRegular stmt)          = renderCStmt stmt
 renderCMacro (Include (HdrName hdr))  = "\n#include \"" <> hdr <> "\"\n"
 renderCMacro (Pragma param)           = "\n#pragma " <> renderPragmaParam param <> "\n"
@@ -130,7 +134,7 @@ renderCMacro EmptyLine                = "\n"
 renderCMacro (Verbatim str)           = str
 
 
-renderBlock :: CBlock -> String
+renderBlock :: CBlock Identity -> String
 renderBlock (ExternC ms) =
      "\n#ifdef __cplusplus\n\
      \extern \"C\" {\n\
