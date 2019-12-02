@@ -25,6 +25,38 @@ newtype Namespace =
 instance IsString Namespace where
   fromString = NS
 
+-- | Dummy ~ Identity. For testing now.
+data Dummy a = Dummy { unDummy :: a }
+
+-- data Op = Add | Mul
+
+-- | embedded DSL for C++ code generation via interpretation
+data HExp =
+    Val Int
+  | Add HExp HExp
+  | Lam (HExp -> HExp)
+  | App HExp HExp
+--   deriving Show
+
+-- data HEval =
+--     EVal Int
+--   | ELam String HEval
+
+-- data Evaluated =
+--     EValue   Int                  -- ^ fully evaluated
+--   | EClosure (HExp -> Evaluated)  -- ^ closure
+
+-- pprint :: Evaluated -> String
+-- pprint (EValue n) = show n
+-- pprint (EClosure f) = "closure"
+
+eval :: HExp -> Int
+eval (Val v)   = v
+eval (Add x y) = eval x + eval y
+eval (Lam _)   = error "lambda"
+eval (App (Lam f) x) = eval (f x)
+
+
 data PragmaParam = Once
 
 data CType (f :: * -> *) = CTVerbatim String
@@ -39,6 +71,7 @@ sname s = CName [NamePart s]
 
 renderCName :: CName Identity -> String
 renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
+
 
 data CExp (f :: * -> *) = CEVerbatim String
 
