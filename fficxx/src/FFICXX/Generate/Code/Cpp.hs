@@ -172,10 +172,10 @@ genCppDefMacroNonVirtual aclass =
 
 genCppDefMacroAccessor :: Class -> R.CMacro Identity
 genCppDefMacroAccessor c =
-  let funcDefStr = accessorsToDefs (class_vars c)
+  let funcDefs = concatMap (\v -> [accessorToDef v Getter,accessorToDef v Setter]) (class_vars c)
       macrocname = map toUpper (ffiClassName c)
       macroname = macrocname <> "_DEF_ACCESSOR"
-  in R.Define (R.sname macroname) [R.sname "Type"] [ R.CVerbatim funcDefStr ]
+  in R.Define (R.sname macroname) [R.sname "Type"] funcDefs
 
 ---- Define Macro to provide TemplateMemberFunction C-C++ shim code for a class
 
@@ -466,11 +466,6 @@ accessorToDef v a =
                       <> ";"
   in R.CDefinition Nothing (accessorToDecl v a) [ body a ]
 
--- TODO: Remove this function
-accessorsToDefs :: [Variable] -> String
-accessorsToDefs vs =
-  let defs = concatMap (\v -> [accessorToDef v Getter,accessorToDef v Setter]) vs
-  in intercalate "; \n" $ map R.renderCStmt defs
 
 -- Template Member Function Declaration and Definition
 
