@@ -9,6 +9,7 @@ import Data.List             ( intercalate )
 import Data.Monoid           ( (<>) )
 --
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
+import FFICXX.Runtime.TH     ( IsCPrimitive(CPrim, NonCPrim) )
 --
 import FFICXX.Generate.Code.Primitive
                                     ( accessorCFunSig
@@ -243,16 +244,16 @@ genTopLevelFuncCppDefinition tf@TopLevelFunction {..} =
       callstr = toplevelfunc_name <> "("
                 <> argsToCallString toplevelfunc_args
                 <> ")"
-      body = returnCpp False (toplevelfunc_ret) callstr
+      body = returnCpp NonCPrim (toplevelfunc_ret) callstr
   in R.CDefinition Nothing decl body
 genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
   let decl = topLevelFunDecl tv
       callstr = toplevelvar_name
-      body = returnCpp False (toplevelvar_ret) callstr
+      body = returnCpp NonCPrim (toplevelvar_ret) callstr
   in R.CDefinition Nothing decl body
 
 genTmplFunCpp ::
-     Bool -- ^ is for simple type? -- TODO: change this to IsCPrimitive
+     IsCPrimitive
   -> TemplateClass
   -> TemplateFunction
   -> R.CMacro Identity
@@ -263,7 +264,7 @@ genTmplFunCpp b t@TmplCls {..} f =
       , autoinst
       ]
  where
-  suffix = if b then "_s" else ""
+  suffix = case b of { CPrim -> "_s"; NonCPrim -> "" }
   macroname = tclass_name <> "_" <> ffiTmplFuncName f <> suffix
   decl = tmplFunToDecl b t f
   autoinst =
@@ -275,14 +276,14 @@ genTmplFunCpp b t@TmplCls {..} f =
       (R.CVar (R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]))
 
 genTmplClassCpp ::
-     Bool -- ^ is for simple type -- TODO: change this to IsCPrimitive
+     IsCPrimitive -- Bool -- ^ is for simple type -- TODO: change this to IsCPrimitive
   -> TemplateClass
   -> [TemplateFunction]
   -> R.CMacro Identity
 genTmplClassCpp b TmplCls {..} fs =
     R.Define (R.sname macroname) [R.sname "Type"] [R.CVerbatim macro]
  where
-  suffix = if b then "_s" else ""
+  suffix = case b of { CPrim -> "_s";  _ -> "" }
   tname = tclass_name
   macroname = tname <> "_instance" <> suffix
   macro1 f@TFun {..}    = "  " <> tname<> "_" <> ffiTmplFuncName f <> suffix <> "(Type)"
@@ -291,7 +292,7 @@ genTmplClassCpp b TmplCls {..} fs =
   macro = intercalate "\n" $ map macro1 fs
 
 returnCpp ::
-     Bool  -- ^ for simple type -- TODO: change this to IsCPrimitive
+     IsCPrimitive
   -> Types
   -> String -- ^ call string
   -> [R.CStatement Identity]
@@ -331,13 +332,15 @@ returnCpp b ret callstr =
     TemplateType _          -> error "returnCpp: TemplateType"
     TemplateParam _         ->
       [ R.CReturn $ R.CEVerbatim $
-          if b then "(" <> callstr <> ")"
-               else "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
+          case b of
+            CPrim    -> "(" <> callstr <> ")"
+            NonCPrim -> "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
       ]
     TemplateParamPointer _  ->
       [ R.CReturn $ R.CEVerbatim $
-          if b then "(" <> callstr <> ")"
-               else "to_nonconst<Type ## _t, Type>(" <> callstr <> ")"
+          case b of
+            CPrim    -> "(" <> callstr <> ")"
+            NonCPrim -> "to_nonconst<Type ## _t, Type>(" <> callstr <> ")"
       ]
 
 -- Function Declaration and Definition
@@ -374,18 +377,18 @@ funcToDef c func
     let callstr = cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
-        body = returnCpp False (genericFuncRet func) callstr
+        body = returnCpp NonCPrim (genericFuncRet func) callstr
     in R.CDefinition Nothing (funcToDecl c func) body
   | otherwise =
     let callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
                   <> cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
-        body = returnCpp False (genericFuncRet func) callstr
+        body = returnCpp NonCPrim (genericFuncRet func) callstr
     in R.CDefinition Nothing (funcToDecl c func) body
 
 tmplFunToDecl ::
-     Bool -- TODO: change this to IsCPrimitive
+     IsCPrimitive
   -> TemplateClass
   -> TemplateFunction
   -> R.CFunDecl Identity
@@ -406,7 +409,7 @@ tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.CFunDecl ret func args
     args = tmplAllArgsToCTypVar b Self t []
 
 tmplFunToDef ::
-     Bool -- ^ for simple type -- TODO: change this to IsCPrimitive
+     IsCPrimitive
   -> TemplateClass
   -> TemplateFunction
   -> R.CStatement Identity
@@ -491,5 +494,5 @@ tmplMemberFunToDef c f =
               <> "->"
               <> tmf_name f
               <> "<Type>"
-              <> "(" <> tmplAllArgsToCallString False (tmf_args f) <> ")"
-    body = returnCpp False (tmf_ret f) callstr
+              <> "(" <> tmplAllArgsToCallString NonCPrim (tmf_args f) <> ")"
+    body = returnCpp NonCPrim (tmf_ret f) callstr

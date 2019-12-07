@@ -7,6 +7,7 @@ import Data.Monoid                  ( (<>) )
 import Language.Haskell.Exts.Syntax ( Asst(..), Context, Type(..) )
 --
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
+import FFICXX.Runtime.TH            ( IsCPrimitive(CPrim,NonCPrim) )
 --
 import FFICXX.Generate.Name         ( ffiClassName
                                     , hsClassName
@@ -407,7 +408,11 @@ castCpp2C t e =
                               -- if b then "(" <> callstr <> ");"
                               --      else "to_nonconst<Type ## _t, Type>(" <> e <> ") ;"
 
-tmplArgToCTypVar :: Bool -> TemplateClass -> Arg -> (R.CType Identity, R.CName Identity)
+tmplArgToCTypVar ::
+     IsCPrimitive
+  -> TemplateClass
+  -> Arg
+  -> (R.CType Identity, R.CName Identity)
 tmplArgToCTypVar _ _  (Arg (CT ctyp isconst) varname) =
   (R.CTVerbatim (ctypToStr ctyp isconst), R.sname varname)
 tmplArgToCTypVar _ t (Arg SelfType varname) =
@@ -428,14 +433,14 @@ tmplArgToCTypVar _ _ (Arg (TemplateApp     _) v) = (R.CTVerbatim "void*", R.snam
 tmplArgToCTypVar _ _ (Arg (TemplateAppRef  _) v) = (R.CTVerbatim "void*", R.sname v)
 tmplArgToCTypVar _ _ (Arg (TemplateAppMove _) v) = (R.CTVerbatim "void*", R.sname v)
 tmplArgToCTypVar _ _ (Arg (TemplateType    _) v) = (R.CTVerbatim "void*", R.sname v)
-tmplArgToCTypVar True  _ (Arg (TemplateParam _) v) = (R.CTVerbatim "Type", R.sname v)
-tmplArgToCTypVar False _ (Arg (TemplateParam _) v) = (R.CTVerbatim "Type ## _p", R.sname v)
-tmplArgToCTypVar True  _ (Arg (TemplateParamPointer _) v) = (R.CTVerbatim "Type", R.sname v)
-tmplArgToCTypVar False _ (Arg (TemplateParamPointer _) v) = (R.CTVerbatim "Type ## _p", R.sname v)
+tmplArgToCTypVar CPrim    _ (Arg (TemplateParam _) v) = (R.CTVerbatim "Type", R.sname v)
+tmplArgToCTypVar NonCPrim _ (Arg (TemplateParam _) v) = (R.CTVerbatim "Type ## _p", R.sname v)
+tmplArgToCTypVar CPrim    _ (Arg (TemplateParamPointer _) v) = (R.CTVerbatim "Type", R.sname v)
+tmplArgToCTypVar NonCPrim _ (Arg (TemplateParamPointer _) v) = (R.CTVerbatim "Type ## _p", R.sname v)
 tmplArgToCTypVar _ _ _ = error "tmplArgToCTypVar: undefined"
 
 tmplAllArgsToCTypVar ::
-     Bool
+     IsCPrimitive
   -> Selfness
   -> TemplateClass
   -> [Arg]
@@ -446,10 +451,8 @@ tmplAllArgsToCTypVar b s t args =
                 NoSelf -> args
   in map (tmplArgToCTypVar b t) args'
 
-
-
 tmplArgToCallString
-  :: Bool  -- ^ is primitive type?
+  :: IsCPrimitive
   -> Arg
   -> String
 tmplArgToCallString _ (Arg (CPT (CPTClass c) _) varname) =
@@ -479,25 +482,26 @@ tmplArgToCallString _ (Arg (TemplateAppMove x) varname) =
          error "tmplArgToCallString: TemplateAppMove"
 tmplArgToCallString b (Arg (TemplateParam _) varname) =
   case b of
-    True  -> varname
-    False -> "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
+    CPrim    -> varname
+    NonCPrim -> "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
 tmplArgToCallString b (Arg (TemplateParamPointer _) varname) =
   case b of
-    True  -> varname
-    False -> "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
+    CPrim    -> varname
+    NonCPrim -> "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
 tmplArgToCallString _ (Arg _ varname) = varname
 
-tmplAllArgsToCallString
-  :: Bool  -- ^ is primitive type?
+tmplAllArgsToCallString ::
+     IsCPrimitive
   -> [Arg]
   -> String
 tmplAllArgsToCallString b = intercalateWith conncomma (tmplArgToCallString b)
 
 
 
-tmplRetTypeToString :: Bool   -- ^ is primitive type?
-                    -> Types
-                    -> String
+tmplRetTypeToString ::
+     IsCPrimitive
+  -> Types
+  -> String
 tmplRetTypeToString _ (CT ctyp isconst)        = ctypToStr ctyp isconst
 tmplRetTypeToString _ Void                     = "void"
 tmplRetTypeToString _ SelfType                 = "void*"
@@ -509,8 +513,12 @@ tmplRetTypeToString _ (TemplateApp     _)      = "void*"
 tmplRetTypeToString _ (TemplateAppRef  _)      = "void*"
 tmplRetTypeToString _ (TemplateAppMove _)      = "void*"
 tmplRetTypeToString _ (TemplateType _)         = "void*"
-tmplRetTypeToString b (TemplateParam _)        = if b then "Type" else "Type ## _p"
-tmplRetTypeToString b (TemplateParamPointer _) = if b then "Type" else "Type ## _p"
+tmplRetTypeToString b (TemplateParam _)        = case b of
+                                                   CPrim    -> "Type"
+                                                   NonCPrim -> "Type ## _p"
+tmplRetTypeToString b (TemplateParamPointer _) = case b of
+                                                   CPrim    -> "Type"
+                                                   NonCPrim -> "Type ## _p"
 
 
 

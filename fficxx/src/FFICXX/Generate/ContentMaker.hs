@@ -19,6 +19,7 @@ import System.FilePath                        ( (<.>), (</>) )
 --
 import FFICXX.Runtime.CodeGen.Cxx             ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
+import FFICXX.Runtime.TH                      ( IsCPrimitive(CPrim,NonCPrim) )
 --
 import FFICXX.Generate.Code.Cpp               ( genAllCppHeaderInclude
                                               , genCppDefMacroAccessor
@@ -307,13 +308,13 @@ buildTemplateHeader tcih =
       fs = tclass_funcs t
       headerStmts = map R.Include (tcihCxxHeaders tcih)
       deffunc =    intercalate "\n"
-                     (map (R.renderCMacro . genTmplFunCpp False t) fs)
+                     (map (R.renderCMacro . genTmplFunCpp NonCPrim t) fs)
                 ++ "\n\n"
                 ++ intercalate "\n"
-                     (map (R.renderCMacro . genTmplFunCpp True t) fs)
-      classlevel =    R.renderCMacro (genTmplClassCpp False t fs)
+                     (map (R.renderCMacro . genTmplFunCpp CPrim    t) fs)
+      classlevel =    R.renderCMacro (genTmplClassCpp NonCPrim t fs)
                    ++ "\n\n"
-                   ++ R.renderCMacro (genTmplClassCpp True t fs)
+                   ++ R.renderCMacro (genTmplClassCpp CPrim    t fs)
   in concatMap R.renderCMacro $
           [ R.Pragma R.Once
           , R.EmptyLine
