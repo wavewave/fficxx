@@ -137,7 +137,7 @@ renderCStmt :: CStatement Identity -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 renderCStmt (TypeDef typ n)          = "typedef " <> renderCType typ <> " " <> renderCName n <> ";"
 renderCStmt (CDeclaration e)         = renderCFDecl e <> ";"
-renderCStmt (CDefinition mq d body)  =    maybe "" renderCQual mq
+renderCStmt (CDefinition mq d body)  =    maybe "" (\q -> renderCQual q <> " ") mq
                                        <> renderCFDecl d
                                        <> " {\n"
                                        <> concatMap renderCStmt body
