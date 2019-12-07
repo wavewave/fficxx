@@ -186,17 +186,18 @@ genCppDefMacroTemplateMemberFunction c f =
    R.Define (R.sname macroname) [R.sname "Type"]
      [ R.CExtern [R.CDeclaration decl]
      , R.CVerbatim (subst tmpl ctxt)
+     , autoinst
      ]
   where
     macroname = hsTemplateMemberFunctionName c f
     decl = tmplMemberFunToDecl c f
+    tmpl = "inline $defn \n"
+    autoinst =
+      R.CInit
+        (R.CVarDecl (R.CTVerbatim "auto") (R.CName [R.NamePart ("a_" <> macroname <> "_"), R.NamePart "Type"]))
+        (R.CEVerbatim (macroname <> "_##Type"))
+    ctxt = context [ ("defn", R.renderCStmt (tmplMemberFunToDef c f)) ]
 
-    tmpl = "inline $defn \n\
-           \auto a_${macroname}_##Type = ${macroname}_##Type;\n"
-    ctxt = context
-             [ ("macroname", macroname)
-             , ("defn"     , R.renderCStmt (tmplMemberFunToDef c f))
-             ]
 
 
 ---- Invoke Macro to define Virtual/NonVirtual method for a class
@@ -262,21 +263,22 @@ genTmplFunCpp b t@TmplCls {..} f =
     R.Define (R.sname macroname) [R.sname "Type"]
       [ R.CExtern [R.CDeclaration decl]
       , R.CVerbatim defn
+      , autoinst
       ]
  where
   suffix = if b then "_s" else ""
   macroname = tclass_name <> "_" <> ffiTmplFuncName f <> suffix
   decl = tmplFunToDecl b t f
-
   defn = subst tmpl ctxt
-  tmpl = "inline $defn \n\
-         \auto a_${tname}_${fname}_ ## Type = ${tname}_${fname}_ ## Type;\n"
-
-  ctxt = context
-           [ ("tname"  , tclass_name )
-           , ("fname"  , ffiTmplFuncName f)
-           , ("defn"   , R.renderCStmt (tmplFunToDef b t f) )
-           ]
+  tmpl = "inline $defn \n"
+  autoinst =
+    R.CInit
+      (R.CVarDecl
+         (R.CTVerbatim "auto")
+         (R.CName [R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"])
+      )
+      (R.CEVerbatim (tclass_name <> "_" <> ffiTmplFuncName f <> "_ ## Type"))
+  ctxt = context  [ ("defn", R.renderCStmt (tmplFunToDef b t f) ) ]
 
 genTmplClassCpp ::
      Bool -- ^ is for simple type -- TODO: change this to IsCPrimitive
