@@ -60,6 +60,7 @@ genImplProxy = do
                   , CMacroApp (sname "DELETABLE_DEF_VIRT") [sname "ImplProxy"]
                   , CMacroApp (sname "IMPL_DEF_VIRT")      [sname "ImplProxy"]
                   , CDefinition
+                      Nothing
                       (CFunDecl
                         (CTVerbatim "ImplProxy_p")
                         (sname "ImplProxy_newImplProxy")
