@@ -92,6 +92,7 @@ data CStatement (f :: * -> *) =
   | CReturn (CExp f)                        -- ^ return statement;
   | CDelete (CExp f)                        -- ^ delete statement;
   | CMacroApp (CName f) [CName f]           -- ^ C Macro application at statement level (temporary)
+  | CExtern [CStatement f]                  -- ^ extern "C" {..}
   | Comment String                          -- ^ comment
   | CEmptyLine                              -- ^ for convenience
   | CVerbatim String                        -- ^ temporary verbatim
@@ -136,6 +137,9 @@ renderCStmt (CInit d e)              = renderCVDecl d <> "=" <> renderCExp e <> 
 renderCStmt (CReturn e)              = "return " <> renderCExp e <> ";"
 renderCStmt (CDelete e)              = "delete " <> renderCExp e <> ";"
 renderCStmt (CMacroApp n as)         = renderCName n <> "(" <> intercalate ", " (map renderCName as) <> ")" -- NOTE: no semicolon.
+renderCStmt (CExtern body)           =   "extern \"C\" {\n"
+                                       <> concatMap renderCStmt body
+                                       <> "}\n"
 renderCStmt (Comment str)            = "// " <> str <> "\n"
 renderCStmt CEmptyLine               = "\n"
 renderCStmt (CVerbatim str)          = str
@@ -149,7 +153,7 @@ renderCStmtInMacro (CDefinition d body) =
 renderCStmtInMacro (Comment _str)  = [""] -- Comment cannot exist in Macro
 renderCStmtInMacro CEmptyLine      = [""]
 renderCStmtInMacro (CVerbatim str) = lines str
-renderCStmtInMacro s               = [renderCStmt s]
+renderCStmtInMacro s               = lines (renderCStmt s)
 
 renderCMacro :: CMacro Identity -> String
 renderCMacro (CRegular stmt)          = renderCStmt stmt

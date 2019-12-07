@@ -184,17 +184,17 @@ genCppDefMacroTemplateMemberFunction ::
   -> R.CMacro Identity
 genCppDefMacroTemplateMemberFunction c f =
    R.Define (R.sname macroname) [R.sname "Type"]
-     [ R.CVerbatim (subst tmpl ctxt) ]
+     [ R.CExtern [R.CDeclaration decl]
+     , R.CVerbatim (subst tmpl ctxt)
+     ]
   where
     macroname = hsTemplateMemberFunctionName c f
-    tmpl = "extern \"C\" { \n\
-           \  $decl; \n\
-           \} \n\
-           \inline $defn \n\
+    decl = tmplMemberFunToDecl c f
+
+    tmpl = "inline $defn \n\
            \auto a_${macroname}_##Type = ${macroname}_##Type;\n"
     ctxt = context
              [ ("macroname", macroname)
-             , ("decl"     , R.renderCFDecl (tmplMemberFunToDecl c f))
              , ("defn"     , R.renderCStmt (tmplMemberFunToDef c f))
              ]
 
@@ -259,21 +259,22 @@ genTmplFunCpp ::
   -> TemplateFunction
   -> R.CMacro Identity
 genTmplFunCpp b t@TmplCls {..} f =
-    R.Define (R.sname macroname) [R.sname "Type"] [R.CVerbatim defn]
+    R.Define (R.sname macroname) [R.sname "Type"]
+      [ R.CExtern [R.CDeclaration decl]
+      , R.CVerbatim defn
+      ]
  where
   suffix = if b then "_s" else ""
   macroname = tclass_name <> "_" <> ffiTmplFuncName f <> suffix
+  decl = tmplFunToDecl b t f
+
   defn = subst tmpl ctxt
-  tmpl = "extern \"C\" { \n\
-         \  $decl; \n\
-         \} \n\
-         \inline $defn \n\
+  tmpl = "inline $defn \n\
          \auto a_${tname}_${fname}_ ## Type = ${tname}_${fname}_ ## Type;\n"
 
   ctxt = context
            [ ("tname"  , tclass_name )
            , ("fname"  , ffiTmplFuncName f)
-           , ("decl"   , R.renderCFDecl (tmplFunToDecl b t f) )
            , ("defn"   , R.renderCStmt (tmplFunToDef b t f) )
            ]
 
