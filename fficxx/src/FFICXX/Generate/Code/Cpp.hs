@@ -194,7 +194,7 @@ genCppDefMacroTemplateMemberFunction c f =
     autoinst =
       R.CInit
         (R.CVarDecl (R.CTVerbatim "auto") (R.CName [R.NamePart ("a_" <> macroname <> "_"), R.NamePart "Type"]))
-        (R.CEVerbatim (macroname <> "_##Type"))
+        (R.CVar (R.CName [R.NamePart (macroname <> "_"), R.NamePart "Type"]))
 
 
 ---- Invoke Macro to define Virtual/NonVirtual method for a class
@@ -259,7 +259,6 @@ genTmplFunCpp ::
 genTmplFunCpp b t@TmplCls {..} f =
     R.Define (R.sname macroname) [R.sname "Type"]
       [ R.CExtern [R.CDeclaration decl]
-      -- , R.CVerbatim defn
       , tmplFunToDef b t f
       , autoinst
       ]
@@ -273,7 +272,7 @@ genTmplFunCpp b t@TmplCls {..} f =
          (R.CTVerbatim "auto")
          (R.CName [R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"])
       )
-      (R.CEVerbatim (tclass_name <> "_" <> ffiTmplFuncName f <> "_ ## Type"))
+      (R.CVar (R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]))
 
 genTmplClassCpp ::
      Bool -- ^ is for simple type -- TODO: change this to IsCPrimitive
@@ -287,7 +286,6 @@ genTmplClassCpp b TmplCls {..} fs =
   tname = tclass_name
   macroname = tname <> "_instance" <> suffix
   macro1 f@TFun {..}    = "  " <> tname<> "_" <> ffiTmplFuncName f <> suffix <> "(Type)"
-
   macro1 f@TFunNew {..} = "  " <> tname<> "_" <> ffiTmplFuncName f <> "(Type)"
   macro1 TFunDelete     = "  " <> tname<> "_delete(Type)"
   macro = intercalate "\n" $ map macro1 fs

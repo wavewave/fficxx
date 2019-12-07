@@ -73,7 +73,9 @@ renderCName :: CName Identity -> String
 renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
 
-data CExp (f :: * -> *) = CEVerbatim String
+data CExp (f :: * -> *) =
+    CVar (CName f)
+  | CEVerbatim String
 
 data CFunDecl (f :: * -> *) =
   CFunDecl (CType f) (CName f) [(CType f,CName f)] -- ^ type func( type1 arg1, type2 arg2, ... )
@@ -118,6 +120,7 @@ renderCType :: CType Identity -> String
 renderCType (CTVerbatim t) = t
 
 renderCExp :: CExp Identity -> String
+renderCExp (CVar n)       = renderCName n
 renderCExp (CEVerbatim e) = e
 
 renderCQual :: CQual -> String
