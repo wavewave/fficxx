@@ -247,12 +247,12 @@ genTopLevelFuncCppDefinition tf@TopLevelFunction {..} =
                 <> argsToCallString toplevelfunc_args
                 <> ")"
       body = returnCpp False (toplevelfunc_ret) callstr
-  in R.CDefinition decl body
+  in R.CDefinition Nothing decl body
 genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
   let decl = topLevelFunDecl tv
       callstr = toplevelvar_name
       body = returnCpp False (toplevelvar_ret) callstr
-  in R.CDefinition decl body
+  in R.CDefinition Nothing decl body
 
 genTmplFunCpp ::
      Bool -- ^ is for simple type? -- TODO: change this to IsCPrimitive
@@ -373,23 +373,23 @@ funcToDef c func
                    (R.CEVerbatim $ "new Type " <> callstr)
                , R.CReturn $ R.CEVerbatim "to_nonconst<Type ## _t, Type >(newp);"
                ]
-    in R.CDefinition (funcToDecl c func) body
+    in R.CDefinition Nothing (funcToDecl c func) body
   | isDeleteFunc func =
     let body = [ R.CDelete $ R.CEVerbatim "(to_nonconst<Type,Type ## _t>(p))" ]
-    in R.CDefinition (funcToDecl c func) body
+    in R.CDefinition Nothing (funcToDecl c func) body
   | isStaticFunc func =
     let callstr = cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
         body = returnCpp False (genericFuncRet func) callstr
-    in R.CDefinition (funcToDecl c func) body
+    in R.CDefinition Nothing (funcToDecl c func) body
   | otherwise =
     let callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
                   <> cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
         body = returnCpp False (genericFuncRet func) callstr
-    in R.CDefinition (funcToDecl c func) body
+    in R.CDefinition Nothing (funcToDecl c func) body
 
 tmplFunToDecl ::
      Bool -- TODO: change this to IsCPrimitive
@@ -418,7 +418,7 @@ tmplFunToDef ::
   -> TemplateFunction
   -> R.CStatement Identity
 tmplFunToDef b t@TmplCls {..} f =
-    R.CDefinition (tmplFunToDecl b t f) body
+    R.CDefinition Nothing (tmplFunToDecl b t f) body
   where
     body =
       case f of
@@ -468,7 +468,7 @@ accessorToDef v a =
                       <> " = "
                       <> castC2Cpp (arg_type (unVariable v)) "x"  -- TODO: clean up this hard-coded "x".
                       <> ";"
-  in R.CDefinition (accessorToDecl v a) [ body a ]
+  in R.CDefinition Nothing (accessorToDecl v a) [ body a ]
 
 -- TODO: Remove this function
 accessorsToDefs :: [Variable] -> String
@@ -492,7 +492,7 @@ tmplMemberFunToDecl c f =
 -- TODO: Handle simple type
 tmplMemberFunToDef :: Class -> TemplateMemberFunction -> R.CStatement Identity
 tmplMemberFunToDef c f =
-    R.CDefinition (tmplMemberFunToDecl c f) body
+    R.CDefinition Nothing (tmplMemberFunToDecl c f) body
   where
     callstr =    "(to_nonconst<" <> ffiClassName c  <> "," <> ffiClassName c <> "_t" <> ">(p))"
               <> "->"

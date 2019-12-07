@@ -83,11 +83,14 @@ data CVarDecl (f :: * -> *) =
     (CType f)  -- ^ type
     (CName f)  -- ^ variable name
 
+data CQual = Inline
+
 data CStatement (f :: * -> *) =
     UsingNamespace Namespace                -- ^ using namespace <namespace>;
   | TypeDef (CType f) (CName f)             -- ^ typedef origtype newname;
   | CDeclaration (CFunDecl f)               -- ^ function declaration;
-  | CDefinition (CFunDecl f) [CStatement f] -- ^ function definition;
+  | CDefinition (Maybe CQual) (CFunDecl f) [CStatement f]
+                                            -- ^ function definition;
   | CInit (CVarDecl f) (CExp f)             -- ^ variable initialization;
   | CReturn (CExp f)                        -- ^ return statement;
   | CDelete (CExp f)                        -- ^ delete statement;
@@ -117,6 +120,9 @@ renderCType (CTVerbatim t) = t
 renderCExp :: CExp Identity -> String
 renderCExp (CEVerbatim e) = e
 
+renderCQual :: CQual -> String
+renderCQual Inline = "inline"
+
 renderCFDecl :: CFunDecl Identity -> String
 renderCFDecl (CFunDecl typ fname args) =
     renderCType typ <> " " <> renderCName fname <> " ( " <> intercalate ", " (map mkArgStr args) <> " )"
@@ -131,12 +137,18 @@ renderCStmt :: CStatement Identity -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 renderCStmt (TypeDef typ n)          = "typedef " <> renderCType typ <> " " <> renderCName n <> ";"
 renderCStmt (CDeclaration e)         = renderCFDecl e <> ";"
-renderCStmt (CDefinition d body)     =
-  renderCFDecl d <> " {\n" <> concatMap renderCStmt body <> "\n}\n"
+renderCStmt (CDefinition mq d body)  =    maybe "" renderCQual mq
+                                       <> renderCFDecl d
+                                       <> " {\n"
+                                       <> concatMap renderCStmt body
+                                       <> "\n}\n"
 renderCStmt (CInit d e)              = renderCVDecl d <> "=" <> renderCExp e <> ";"
 renderCStmt (CReturn e)              = "return " <> renderCExp e <> ";"
 renderCStmt (CDelete e)              = "delete " <> renderCExp e <> ";"
-renderCStmt (CMacroApp n as)         = renderCName n <> "(" <> intercalate ", " (map renderCName as) <> ")" -- NOTE: no semicolon.
+renderCStmt (CMacroApp n as)         =    renderCName n
+                                       <> "("
+                                       <> intercalate ", " (map renderCName as)
+                                       <> ")" -- NOTE: no semicolon.
 renderCStmt (CExtern body)           =   "extern \"C\" {\n"
                                        <> concatMap renderCStmt body
                                        <> "}\n"
@@ -146,10 +158,6 @@ renderCStmt (CVerbatim str)          = str
 
 -- | render CStatement in a macro definition environment
 renderCStmtInMacro :: CStatement Identity -> [String]
-renderCStmtInMacro (CDefinition d body) =
-     [ renderCFDecl d <> " {" ]
-  <> map renderCStmt body
-  <> [ "}" ]
 renderCStmtInMacro (Comment _str)  = [""] -- Comment cannot exist in Macro
 renderCStmtInMacro CEmptyLine      = [""]
 renderCStmtInMacro (CVerbatim str) = lines str
