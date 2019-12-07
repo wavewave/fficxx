@@ -111,7 +111,7 @@ data CMacro (f :: * -> *) =
   | EmptyLine                                 -- ^ just for convenience
   | Verbatim String                           -- ^ temporary verbatim
 
-data CBlock (f :: * -> *) = ExternC [CMacro f]
+data CBlock (f :: * -> *) = ExternC [CMacro f] -- extern "C" with #ifdef __cplusplus guard.
 
 renderPragmaParam :: PragmaParam -> String
 renderPragmaParam Once = "once"
