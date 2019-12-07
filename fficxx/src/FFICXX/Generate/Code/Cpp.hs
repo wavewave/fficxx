@@ -276,7 +276,7 @@ genTmplFunCpp b t@TmplCls {..} f =
       (R.CVar (R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]))
 
 genTmplClassCpp ::
-     IsCPrimitive -- Bool -- ^ is for simple type -- TODO: change this to IsCPrimitive
+     IsCPrimitive
   -> TemplateClass
   -> [TemplateFunction]
   -> R.CMacro Identity
@@ -298,15 +298,44 @@ returnCpp ::
 returnCpp b ret callstr =
   case ret of
     Void                    -> [R.CVerbatim (callstr <> ";")]
-    SelfType                -> [R.CReturn $ R.CEVerbatim $ "to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ")"]
+    SelfType ->
+      [R.CReturn $
+        R.CTApp
+          (R.sname "to_nonconst")
+          [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
+          [ R.CEVerbatim ("(Type *)" <> callstr) ]
+      ]
+    -- "to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ")"]
+
     CT (CRef _) _           -> [R.CReturn $ R.CEVerbatim $ "(&("<>callstr<>"))"]
     CT _ _                  -> [R.CReturn $ R.CEVerbatim $ callstr]
-    CPT (CPTClass c') _     -> [R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(("<>str<>"*)"<>callstr<>")"]
-                               where str = ffiClassName c'
-    CPT (CPTClassRef c') _  -> [R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>"))"]
-                               where str = ffiClassName c'
-    CPT (CPTClassCopy c') _ -> [R.CReturn $ R.CEVerbatim $ "to_nonconst<"<>str<>"_t,"<>str<>">(new "<>str<>"("<>callstr<>"))"]
-                               where str = ffiClassName c'
+    CPT (CPTClass c') _ ->
+      [R.CReturn $
+        R.CTApp
+          (R.sname "to_nonconst")
+          [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
+          [ R.CEVerbatim ("(" <> str <> "*)" <> callstr) ]
+      ]
+      where str = ffiClassName c'
+    -- "to_nonconst<"<>str<>"_t,"<>str<>">(("<>str<>"*)"<>callstr<>")"]
+    CPT (CPTClassRef c') _ ->
+      [R.CReturn $
+        R.CTApp
+          (R.sname "to_nonconst")
+          [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
+          [ R.CEVerbatim ("&("<>callstr<>")") ]
+      ]
+      where str = ffiClassName c'
+    -- "to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>"))"]
+    CPT (CPTClassCopy c') _ ->
+      [R.CReturn $
+        R.CTApp
+          (R.sname "to_nonconst")
+          [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
+          [ R.CEVerbatim ("new "<>str<>"("<>callstr<>")") ]
+      ]
+      where str = ffiClassName c'
+    -- "to_nonconst<"<>str<>"_t,"<>str<>">(new "<>str<>"("<>callstr<>"))"]
     CPT (CPTClassMove c') _ -> -- TODO: check whether this is working or not.
                                [R.CReturn $ R.CEVerbatim $ "std::move(to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>")))"]
                                where str = ffiClassName c'

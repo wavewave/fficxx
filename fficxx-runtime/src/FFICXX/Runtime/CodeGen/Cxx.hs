@@ -74,8 +74,10 @@ renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
 
 data CExp (f :: * -> *) =
-    CVar (CName f)
-  | CEVerbatim String
+    CVar (CName f)                      -- ^ variable
+  | CApp (CName f) [CExp f]             -- ^ C function app:  f(a1,a2,..)
+  | CTApp (CName f ) [CType f] [CExp f] -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
+  | CEVerbatim String                   -- ^ verbatim
 
 data CFunDecl (f :: * -> *) =
   CFunDecl (CType f) (CName f) [(CType f,CName f)] -- ^ type func( type1 arg1, type2 arg2, ... )
@@ -120,8 +122,19 @@ renderCType :: CType Identity -> String
 renderCType (CTVerbatim t) = t
 
 renderCExp :: CExp Identity -> String
-renderCExp (CVar n)       = renderCName n
-renderCExp (CEVerbatim e) = e
+renderCExp (CVar n)        = renderCName n
+renderCExp (CApp f es)     =    renderCName f
+                             <> "("
+                             <> intercalate ", " (map renderCExp es) -- arguments
+                             <> ")"
+renderCExp (CTApp f ts es) =    renderCName f
+                             <> "<"
+                             <> intercalate ", " (map renderCType ts) -- type arguments
+                             <> ">"
+                             <> "("
+                             <> intercalate ", " (map renderCExp es) -- arguments
+                             <> ")"
+renderCExp (CEVerbatim e)  = e
 
 renderCQual :: CQual -> String
 renderCQual Inline = "inline"
