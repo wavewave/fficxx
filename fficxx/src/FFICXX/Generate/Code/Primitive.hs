@@ -381,7 +381,7 @@ c2Cxx t e =
                               where f = ffiClassName c
                               -- "*(to_nonconst<" <> f <> "," <> f <> "_t>(" <> e <> "))"
     CPT (CPTClassMove c) _ -> R.CApp
-                                (R.sname "std::move")
+                                (R.CVar (R.sname "std::move"))
                                 [ R.CTApp
                                     (R.sname "to_nonconstref")
                                     [ R.CTVerbatim f, R.CTVerbatim (f <> "_t")]
@@ -398,7 +398,7 @@ c2Cxx t e =
                                 R.CCast (R.CTVerbatim $ tapp_CppTypeForParam p <> "*") e
                               -- "*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> ")"
     TemplateAppMove p      -> R.CApp
-                                (R.sname "std::move")
+                                (R.CVar (R.sname "std::move"))
                                 [ R.CStar $
                                     R.CCast (R.CTVerbatim $ tapp_CppTypeForParam p <> "*") e
                                 ]

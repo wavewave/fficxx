@@ -242,19 +242,14 @@ topLevelFunDecl TopLevelVariable {..} = R.CFunDecl ret func []
 genTopLevelFuncCppDefinition :: TopLevelFunction -> R.CStatement Identity
 genTopLevelFuncCppDefinition tf@TopLevelFunction {..} =
   let decl = topLevelFunDecl tf
-      -- callstr = toplevelfunc_name <> "("
-      --           <> argsToCallString toplevelfunc_args
-      --           <> ")"
       body = returnCpp
                NonCPrim
                (toplevelfunc_ret)
-               (R.CApp (R.sname toplevelfunc_name) (map argToCallCExp toplevelfunc_args))
-               -- (R.CEVerbatim callstr)
+               (R.CApp (R.CVar (R.sname toplevelfunc_name)) (map argToCallCExp toplevelfunc_args))
   in R.CDefinition Nothing decl body
 genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
   let decl = topLevelFunDecl tv
-      -- callstr = toplevelvar_name
-      body = returnCpp NonCPrim (toplevelvar_ret) (R.CVar (R.sname toplevelvar_name)) -- (R.CEVerbatim callstr)
+      body = returnCpp NonCPrim (toplevelvar_ret) (R.CVar (R.sname toplevelvar_name))
   in R.CDefinition Nothing decl body
 
 genTmplFunCpp ::
@@ -346,7 +341,7 @@ returnCpp b ret caller =
     CPT (CPTClassMove c') _ -> -- TODO: check whether this is working or not.
       [R.CReturn $
         R.CApp
-          (R.sname "std::move")
+          (R.CVar (R.sname "std::move"))
           [R.CTApp
             (R.sname "to_nonconst")
             [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
@@ -381,7 +376,7 @@ returnCpp b ret caller =
           (R.CNew (R.sname cpptype) [ caller ])
       , R.CReturn $ -- std::move(static_cast<void*>(r))
           R.CApp
-            (R.sname "std::move")
+            (R.CVar (R.sname "std::move"))
             [R.CTApp
               (R.sname "staic_cast")
               [ R.CTVerbatim "void*" ]
@@ -453,7 +448,7 @@ funcToDef c func
     in R.CDefinition Nothing (funcToDecl c func) body
   | isStaticFunc func =
     let body = returnCpp NonCPrim (genericFuncRet func) $
-                 R.CApp (R.sname (cppFuncName c func)) (map argToCallCExp (genericFuncArgs func))
+                 R.CApp (R.CVar (R.sname (cppFuncName c func))) (map argToCallCExp (genericFuncArgs func))
     in R.CDefinition Nothing (funcToDecl c func) body
   | otherwise =
     let callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"

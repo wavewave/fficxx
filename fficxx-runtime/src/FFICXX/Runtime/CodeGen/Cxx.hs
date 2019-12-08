@@ -75,7 +75,7 @@ renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
 data CExp (f :: * -> *) =
     CVar (CName f)                      -- ^ variable
-  | CApp (CName f) [CExp f]             -- ^ C function app:  f(a1,a2,..)
+  | CApp (CExp f) {- (CName f) -} [CExp f]             -- ^ C function app:  f(a1,a2,..)
   | CTApp (CName f ) [CType f] [CExp f] -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
   | CCast (CType f) (CExp f)            -- ^ (type)exp
   | CAddr (CExp f)                      -- ^ &(exp)
@@ -128,7 +128,10 @@ renderCType (CTVerbatim t) = t
 
 renderCExp :: CExp Identity -> String
 renderCExp (CVar n)        = renderCName n
-renderCExp (CApp f es)     =    renderCName f
+renderCExp (CApp f es)     =    (case f of
+                                   CVar _ -> renderCExp f
+                                   _      -> "(" <> renderCExp f <> ")" -- compound expression like (*p)
+                                )
                              <> "("
                              <> intercalate ", " (map renderCExp es)  -- arguments
                              <> ")"
