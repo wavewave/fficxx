@@ -79,6 +79,7 @@ data CExp (f :: * -> *) =
   | CTApp (CName f ) [CType f] [CExp f] -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
   | CCast (CType f) (CExp f)            -- ^ (type)exp
   | CAddr (CExp f)                      -- ^ &(exp)
+  | CStar (CExp f)                      -- ^ *(exp)
   | CNew (CName f) [CExp f]             -- ^ new operator: new Cstr(a1,a2,...)
   | CEVerbatim String                   -- ^ verbatim
 
@@ -140,6 +141,7 @@ renderCExp (CTApp f ts es) =    renderCName f
                              <> ")"
 renderCExp (CCast t e)     = "(" <> renderCType t <> ")" <> renderCExp e
 renderCExp (CAddr e)       = "&(" <> renderCExp e <> ")"
+renderCExp (CStar e)       = "*(" <> renderCExp e <> ")"
 renderCExp (CNew n es)     =    "new "
                              <> renderCName n                         -- constructor name
                              <> "("
