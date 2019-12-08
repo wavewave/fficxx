@@ -297,7 +297,8 @@ returnCpp ::
   -> [R.CStatement Identity]
 returnCpp b ret callstr =
   case ret of
-    Void                    -> [R.CVerbatim (callstr <> ";")]
+    Void ->
+      [R.CVerbatim (callstr <> ";")]
     SelfType ->
       [R.CReturn $
         R.CTApp
@@ -306,9 +307,10 @@ returnCpp b ret callstr =
           [ R.CEVerbatim ("(Type *)" <> callstr) ]
       ]
     -- "to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ")"]
-
-    CT (CRef _) _           -> [R.CReturn $ R.CEVerbatim $ "(&("<>callstr<>"))"]
-    CT _ _                  -> [R.CReturn $ R.CEVerbatim $ callstr]
+    CT (CRef _) _ ->
+      [R.CReturn $ R.CEVerbatim $ "(&("<>callstr<>"))"]
+    CT _ _ ->
+      [R.CReturn $ R.CEVerbatim $ callstr]
     CPT (CPTClass c') _ ->
       [R.CReturn $
         R.CTApp
@@ -352,21 +354,37 @@ returnCpp b ret callstr =
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
           (R.CEVerbatim $ "new " <> cpptype <> "(" <> callstr <> ")")
-      , R.CReturn $ R.CEVerbatim "(static_cast<void*>(r))"
+      , R.CReturn $ -- static_cast<void*>(r)
+          R.CTApp
+            (R.sname "static_cast")
+            [ R.CTVerbatim "void*" ]
+            [ R.CVar (R.sname "r") ]
       ]
     TemplateAppRef (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
           (R.CEVerbatim $ "new " <> cpptype <> "(" <> callstr <> ")")
-      , R.CReturn $ R.CEVerbatim "(static_cast<void*>(r))"
+      , R.CReturn $ -- static_cast<void*>(r)
+          R.CTApp
+            (R.sname "static_cast")
+            [ R.CTVerbatim "void*" ]
+            [ R.CVar (R.sname "r") ]
       ]
     TemplateAppMove (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
           (R.CEVerbatim $ "new " <> cpptype <> "(" <> callstr <> ")")
-      , R.CReturn $ R.CEVerbatim "std::move(static_cast<void*>(r));"
+      , R.CReturn $ -- std::move(static_cast<void*>(r))
+          R.CApp
+            (R.sname "std::move")
+            [R.CTApp
+              (R.sname "staic_cast")
+              [ R.CTVerbatim "void*" ]
+              [ R.CVar (R.sname "r") ]
+            ]
       ]
-    TemplateType _          -> error "returnCpp: TemplateType"
+    TemplateType _ ->
+      error "returnCpp: TemplateType"
     TemplateParam _ ->
       [ R.CReturn $
           case b of
