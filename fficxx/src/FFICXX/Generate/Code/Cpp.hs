@@ -308,7 +308,9 @@ returnCpp b ret callstr =
       ]
     -- "to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ")"]
     CT (CRef _) _ ->
-      [R.CReturn $ R.CEVerbatim $ "(&("<>callstr<>"))"]
+      [R.CReturn $
+         R.CAddr $ R.CEVerbatim callstr
+      ]
     CT _ _ ->
       [R.CReturn $ R.CEVerbatim $ callstr]
     CPT (CPTClass c') _ ->
@@ -325,7 +327,7 @@ returnCpp b ret callstr =
         R.CTApp
           (R.sname "to_nonconst")
           [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
-          [ R.CEVerbatim ("&("<>callstr<>")") ]
+          [ R.CAddr $ R.CEVerbatim callstr ]
       ]
       where str = ffiClassName c'
     -- "to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>"))"]
@@ -345,7 +347,7 @@ returnCpp b ret callstr =
           [R.CTApp
             (R.sname "to_nonconst")
             [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
-            [ R.CEVerbatim ("&(" <> callstr <> ")") ]
+            [ R.CAddr $ R.CEVerbatim callstr ]
           ]
       ]
       where str = ffiClassName c'
@@ -393,7 +395,10 @@ returnCpp b ret callstr =
               R.CTApp
                 (R.sname "to_nonconst")
                 [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
-                [ R.CCast (R.CTVerbatim "Type*") (R.CEVerbatim ("&(" <> callstr <> ")")) ]
+                [ R.CCast (R.CTVerbatim "Type*") $
+                    R.CAddr $
+                      R.CEVerbatim callstr
+                ]
       ]
     -- "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
     TemplateParamPointer _  ->

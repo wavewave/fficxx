@@ -77,7 +77,8 @@ data CExp (f :: * -> *) =
     CVar (CName f)                      -- ^ variable
   | CApp (CName f) [CExp f]             -- ^ C function app:  f(a1,a2,..)
   | CTApp (CName f ) [CType f] [CExp f] -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
-  | CCast (CType f) (CExp f)
+  | CCast (CType f) (CExp f)            -- ^ (type)exp
+  | CAddr (CExp f)                      -- ^ &(exp)
   | CEVerbatim String                   -- ^ verbatim
 
 data CFunDecl (f :: * -> *) =
@@ -137,6 +138,7 @@ renderCExp (CTApp f ts es) =    renderCName f
                              <> intercalate ", " (map renderCExp es) -- arguments
                              <> ")"
 renderCExp (CCast t e)     = "(" <> renderCType t <> ")" <> renderCExp e
+renderCExp (CAddr e)       = "&(" <> renderCExp e <> ")"
 renderCExp (CEVerbatim e)  = e
 
 renderCQual :: CQual -> String
