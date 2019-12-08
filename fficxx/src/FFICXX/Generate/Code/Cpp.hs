@@ -13,7 +13,6 @@ import FFICXX.Runtime.TH     ( IsCPrimitive(CPrim, NonCPrim) )
 --
 import FFICXX.Generate.Code.Primitive
                                     ( accessorCFunSig
-                                    , argsToCallString
                                     , argToCallCExp
                                     , argsToCTypVar
                                     , argsToCTypVarNoSelf
@@ -451,11 +450,25 @@ funcToDef c func
                  R.CApp (R.CVar (R.sname (cppFuncName c func))) (map argToCallCExp (genericFuncArgs func))
     in R.CDefinition Nothing (funcToDecl c func) body
   | otherwise =
-    let callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
-                  <> cppFuncName c func <> "("
+    let caller =
+          R.CArr
+            (R.CApp
+              (R.CEMacroApp
+                (R.sname "TYPECASTMETHOD")
+                [ R.sname "Type", R.sname (aliasedFuncName c func), R.sname (class_name c) ]
+              )
+              [ R.CVar (R.sname "p") ]
+            )
+            (R.CApp (R.CVar (R.sname (cppFuncName c func))) (map argToCallCExp (genericFuncArgs func)))
+
+
+                 {-    "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
+
+                  <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
-        body = returnCpp NonCPrim (genericFuncRet func) (R.CEVerbatim callstr)
+                  -}
+        body = returnCpp NonCPrim (genericFuncRet func) caller -- (R.CEVerbatim callstr)
     in R.CDefinition Nothing (funcToDecl c func) body
 
 tmplFunToDecl ::

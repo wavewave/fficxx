@@ -75,12 +75,14 @@ renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
 data CExp (f :: * -> *) =
     CVar (CName f)                      -- ^ variable
-  | CApp (CExp f) {- (CName f) -} [CExp f]             -- ^ C function app:  f(a1,a2,..)
+  | CApp (CExp f) [CExp f]              -- ^ C function app:  f(a1,a2,..)
   | CTApp (CName f ) [CType f] [CExp f] -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
+  | CArr  (CExp f) (CExp f)             -- ^ arrow: x->e
   | CCast (CType f) (CExp f)            -- ^ (type)exp
   | CAddr (CExp f)                      -- ^ &(exp)
   | CStar (CExp f)                      -- ^ *(exp)
   | CNew (CName f) [CExp f]             -- ^ new operator: new Cstr(a1,a2,...)
+  | CEMacroApp (CName f) [CName f]      -- ^ macro function at expression level
   | CEVerbatim String                   -- ^ verbatim
 
 data CFunDecl (f :: * -> *) =
@@ -142,6 +144,7 @@ renderCExp (CTApp f ts es) =    renderCName f
                              <> "("
                              <> intercalate ", " (map renderCExp es)  -- arguments
                              <> ")"
+renderCExp (CArr x y)      = "(" <> renderCExp x <> ")->" <> renderCExp y
 renderCExp (CCast t e)     = "(" <> renderCType t <> ")" <> renderCExp e
 renderCExp (CAddr e)       = "&(" <> renderCExp e <> ")"
 renderCExp (CStar e)       = "*(" <> renderCExp e <> ")"
@@ -150,6 +153,10 @@ renderCExp (CNew n es)     =    "new "
                              <> "("
                              <> intercalate ", " (map renderCExp es)  -- arguments
                              <> ")"
+renderCExp (CEMacroApp n as) =  renderCName n
+                             <> "("
+                             <> intercalate ", " (map renderCName as)
+                             <> ")" -- NOTE: no semicolon.
 renderCExp (CEVerbatim e)  = e
 
 renderCQual :: CQual -> String
