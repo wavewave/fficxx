@@ -298,7 +298,7 @@ genTmplClassCpp b TmplCls {..} fs =
 returnCpp ::
      IsCPrimitive
   -> Types
-  -> R.CExp Identity -- String -- ^ call string
+  -> R.CExp Identity
   -> [R.CStatement Identity]
 returnCpp b ret caller =
   case ret of
@@ -433,21 +433,27 @@ funcToDecl c func
 funcToDef :: Class -> Function -> R.CStatement Identity
 funcToDef c func
   | isNewFunc func =
-    let callstr = "(" <> argsToCallString (genericFuncArgs func) <> ")"
-        body = [ R.CInit
+    let body = [ R.CInit
                    (R.CVarDecl (R.CTVerbatim "Type*") (R.sname "newp"))
-                   (R.CEVerbatim $ "new Type " <> callstr)
-               , R.CReturn $ R.CEVerbatim "to_nonconst<Type ## _t, Type >(newp);"
+                   (R.CNew (R.sname "Type") $ map argToCallCExp (genericFuncArgs func))
+               , R.CReturn $
+                   R.CTApp
+                     (R.sname "to_nonconst")
+                     [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
+                     [ R.CVar (R.sname "newp") ]
                ]
     in R.CDefinition Nothing (funcToDecl c func) body
   | isDeleteFunc func =
-    let body = [ R.CDelete $ R.CEVerbatim "(to_nonconst<Type,Type ## _t>(p))" ]
+    let body = [ R.CDelete $
+                   R.CTApp
+                     (R.sname "to_nonconst")
+                     [ R.CTVerbatim "Type", R.CTVerbatim "Type ## _t" ]
+                     [ R.CVar (R.sname "p") ]
+               ]
     in R.CDefinition Nothing (funcToDecl c func) body
   | isStaticFunc func =
-    let callstr = cppFuncName c func <> "("
-                  <> argsToCallString (genericFuncArgs func)
-                  <> ")"
-        body = returnCpp NonCPrim (genericFuncRet func) (R.CEVerbatim callstr)
+    let body = returnCpp NonCPrim (genericFuncRet func) $
+                 R.CApp (R.sname (cppFuncName c func)) (map argToCallCExp (genericFuncArgs func))
     in R.CDefinition Nothing (funcToDecl c func) body
   | otherwise =
     let callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
