@@ -332,13 +332,6 @@ argsToCTypVarNoSelf = map argToCTypVar
 argToCallCExp :: Arg -> R.CExp Identity
 argToCallCExp (Arg t e) = c2Cxx t (R.CVar (R.sname e))
 
--- TODO: remove this function
-argToCallString :: Arg -> String
-argToCallString (Arg t e) = castC2Cpp t e
-
-
-argsToCallString :: [Arg] -> String
-argsToCallString = intercalateWith conncomma argToCallString
 
 -- TODO: rename this function by castExpressionFrom/To or something like that.
 rettypeToString :: Types -> String
@@ -357,29 +350,26 @@ rettypeToString (TemplateParam _)        = "Type ## _p"
 rettypeToString (TemplateParamPointer _) = "Type ## _p"
 
 
-c2Cxx :: Types -> R.CExp Identity -> R.CExp Identity -- String -> String
+c2Cxx :: Types -> R.CExp Identity -> R.CExp Identity
 c2Cxx t e =
   case t of
-    CT  (CRef _)         _ -> R.CStar e -- "(*"<> e <> ")"
+    CT  (CRef _)         _ -> R.CStar e
     CPT (CPTClass     c) _ -> R.CTApp
                                 (R.sname "to_nonconst")
                                 [ R.CTVerbatim f, R.CTVerbatim (f <> "_t")]
                                 [ e ]
                               where f = ffiClassName c
-                              -- "to_nonconst<" <> f <> "," <> f <> "_t>(" <> e <> ")"
     CPT (CPTClassRef  c) _ -> R.CTApp
                                 (R.sname "to_nonconstref")
                                 [ R.CTVerbatim f, R.CTVerbatim (f <> "_t")]
                                 [ R.CStar e ]
                               where f = ffiClassName c
-                              -- "to_nonconstref<" <> f <> "," <> f <> "_t>(*" <> e <> ")"
     CPT (CPTClassCopy c) _ -> R.CStar $
                                 R.CTApp
                                   (R.sname "to_nonconst")
                                   [ R.CTVerbatim f, R.CTVerbatim (f <> "_t")]
                                   [ e ]
                               where f = ffiClassName c
-                              -- "*(to_nonconst<" <> f <> "," <> f <> "_t>(" <> e <> "))"
     CPT (CPTClassMove c) _ -> R.CApp
                                 (R.CVar (R.sname "std::move"))
                                 [ R.CTApp
@@ -388,21 +378,17 @@ c2Cxx t e =
                                     [ R.CStar e ]
                                 ]
                               where f = ffiClassName c
-                              -- "std::move(to_nonconstref<" <> f <> "," <> f<> "_t>(*" <> e <> "))"
     TemplateApp    p       -> R.CTApp
                                 (R.sname "to_nonconst")
                                 [ R.CTVerbatim (tapp_CppTypeForParam p), R.CTVerbatim "void" ]
                                 [ e ]
-                              -- "to_nonconst<" <> tapp_CppTypeForParam p <> ",void>(" <> e <> ")"
     TemplateAppRef p       -> R.CStar $
                                 R.CCast (R.CTVerbatim $ tapp_CppTypeForParam p <> "*") e
-                              -- "*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> ")"
     TemplateAppMove p      -> R.CApp
                                 (R.CVar (R.sname "std::move"))
                                 [ R.CStar $
                                     R.CCast (R.CTVerbatim $ tapp_CppTypeForParam p <> "*") e
                                 ]
-                              -- "std::move(*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> "))"
     _                      -> e
 
 

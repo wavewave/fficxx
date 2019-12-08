@@ -460,15 +460,7 @@ funcToDef c func
               [ R.CVar (R.sname "p") ]
             )
             (R.CApp (R.CVar (R.sname (cppFuncName c func))) (map argToCallCExp (genericFuncArgs func)))
-
-
-                 {-    "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
-
-                  <> "("
-                  <> argsToCallString (genericFuncArgs func)
-                  <> ")"
-                  -}
-        body = returnCpp NonCPrim (genericFuncRet func) caller -- (R.CEVerbatim callstr)
+        body = returnCpp NonCPrim (genericFuncRet func) caller
     in R.CDefinition Nothing (funcToDecl c func) body
 
 tmplFunToDecl ::
