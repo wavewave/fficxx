@@ -73,11 +73,16 @@ renderCName :: CName Identity -> String
 renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
 
+data COp = CArrow
+
+renderCOp :: COp -> String
+renderCOp CArrow = "->"
+
 data CExp (f :: * -> *) =
     CVar (CName f)                      -- ^ variable
   | CApp (CExp f) [CExp f]              -- ^ C function app:  f(a1,a2,..)
   | CTApp (CName f ) [CType f] [CExp f] -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
-  | CArr  (CExp f) (CExp f)             -- ^ arrow: x->e
+  | CBinOp COp (CExp f) (CExp f)             -- ^ arrow: x->e
   | CCast (CType f) (CExp f)            -- ^ (type)exp
   | CAddr (CExp f)                      -- ^ &(exp)
   | CStar (CExp f)                      -- ^ *(exp)
@@ -144,7 +149,7 @@ renderCExp (CTApp f ts es) =    renderCName f
                              <> "("
                              <> intercalate ", " (map renderCExp es)  -- arguments
                              <> ")"
-renderCExp (CArr x y)      = "(" <> renderCExp x <> ")->" <> renderCExp y
+renderCExp (CBinOp o x y)  = "(" <> renderCExp x <> ")" <> renderCOp o <> renderCExp y
 renderCExp (CCast t e)     = "(" <> renderCType t <> ")" <> renderCExp e
 renderCExp (CAddr e)       = "&(" <> renderCExp e <> ")"
 renderCExp (CStar e)       = "*(" <> renderCExp e <> ")"

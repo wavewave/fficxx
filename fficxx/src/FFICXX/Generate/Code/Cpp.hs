@@ -451,7 +451,8 @@ funcToDef c func
     in R.CDefinition Nothing (funcToDecl c func) body
   | otherwise =
     let caller =
-          R.CArr
+          R.CBinOp
+            R.CArrow
             (R.CApp
               (R.CEMacroApp
                 (R.sname "TYPECASTMETHOD")
