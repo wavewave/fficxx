@@ -329,7 +329,8 @@ argsToCTypVar args =
 argsToCTypVarNoSelf :: [Arg] -> [ (R.CType Identity, R.CName Identity) ]
 argsToCTypVarNoSelf = map argToCTypVar
 
-
+argToCallCExp :: Arg -> R.CExp Identity
+argToCallCExp (Arg t e) = c2Cxx t (R.CVar (R.sname e))
 
 -- TODO: remove this function
 argToCallString :: Arg -> String

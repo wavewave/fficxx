@@ -14,6 +14,7 @@ import FFICXX.Runtime.TH     ( IsCPrimitive(CPrim, NonCPrim) )
 import FFICXX.Generate.Code.Primitive
                                     ( accessorCFunSig
                                     , argsToCallString
+                                    , argToCallCExp
                                     , argsToCTypVar
                                     , argsToCTypVarNoSelf
                                     , castCpp2C
@@ -241,15 +242,19 @@ topLevelFunDecl TopLevelVariable {..} = R.CFunDecl ret func []
 genTopLevelFuncCppDefinition :: TopLevelFunction -> R.CStatement Identity
 genTopLevelFuncCppDefinition tf@TopLevelFunction {..} =
   let decl = topLevelFunDecl tf
-      callstr = toplevelfunc_name <> "("
-                <> argsToCallString toplevelfunc_args
-                <> ")"
-      body = returnCpp NonCPrim (toplevelfunc_ret) (R.CEVerbatim callstr)
+      -- callstr = toplevelfunc_name <> "("
+      --           <> argsToCallString toplevelfunc_args
+      --           <> ")"
+      body = returnCpp
+               NonCPrim
+               (toplevelfunc_ret)
+               (R.CApp (R.sname toplevelfunc_name) (map argToCallCExp toplevelfunc_args))
+               -- (R.CEVerbatim callstr)
   in R.CDefinition Nothing decl body
 genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
   let decl = topLevelFunDecl tv
-      callstr = toplevelvar_name
-      body = returnCpp NonCPrim (toplevelvar_ret) (R.CEVerbatim callstr)
+      -- callstr = toplevelvar_name
+      body = returnCpp NonCPrim (toplevelvar_ret) (R.CVar (R.sname toplevelvar_name)) -- (R.CEVerbatim callstr)
   in R.CDefinition Nothing decl body
 
 genTmplFunCpp ::
