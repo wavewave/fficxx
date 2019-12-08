@@ -293,18 +293,18 @@ genTmplClassCpp b TmplCls {..} fs =
 returnCpp ::
      IsCPrimitive
   -> Types
-  -> String -- ^ call string
+  -> String -- CExp Identity -- String -- ^ call string
   -> [R.CStatement Identity]
 returnCpp b ret callstr =
   case ret of
     Void ->
-      [R.CVerbatim (callstr <> ";")]
+      [ R.CVerbatim (callstr <> ";") ]
     SelfType ->
       [R.CReturn $
         R.CTApp
           (R.sname "to_nonconst")
           [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
-          [ R.CEVerbatim ("(Type *)" <> callstr) ]
+          [ R.CCast (R.CTVerbatim "Type*") (R.CEVerbatim callstr) ]
       ]
     -- "to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ")"]
     CT (CRef _) _ ->
@@ -316,7 +316,7 @@ returnCpp b ret callstr =
         R.CTApp
           (R.sname "to_nonconst")
           [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
-          [ R.CEVerbatim ("(" <> str <> "*)" <> callstr) ]
+          [ R.CCast (R.CTVerbatim (str <> "*")) (R.CEVerbatim callstr) ]
       ]
       where str = ffiClassName c'
     -- "to_nonconst<"<>str<>"_t,"<>str<>">(("<>str<>"*)"<>callstr<>")"]
@@ -393,7 +393,7 @@ returnCpp b ret callstr =
               R.CTApp
                 (R.sname "to_nonconst")
                 [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
-                [ R.CEVerbatim $ "(Type *)&(" <> callstr <> ")" ]
+                [ R.CCast (R.CTVerbatim "Type*") (R.CEVerbatim ("&(" <> callstr <> ")")) ]
       ]
     -- "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
     TemplateParamPointer _  ->

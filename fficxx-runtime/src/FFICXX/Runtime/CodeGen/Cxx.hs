@@ -77,6 +77,7 @@ data CExp (f :: * -> *) =
     CVar (CName f)                      -- ^ variable
   | CApp (CName f) [CExp f]             -- ^ C function app:  f(a1,a2,..)
   | CTApp (CName f ) [CType f] [CExp f] -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
+  | CCast (CType f) (CExp f)
   | CEVerbatim String                   -- ^ verbatim
 
 data CFunDecl (f :: * -> *) =
@@ -92,6 +93,7 @@ data CQual = Inline
 data CStatement (f :: * -> *) =
     UsingNamespace Namespace                -- ^ using namespace <namespace>;
   | TypeDef (CType f) (CName f)             -- ^ typedef origtype newname;
+  | CExpSA (CExp f)                         -- ^ C expression standalone;
   | CDeclaration (CFunDecl f)               -- ^ function declaration;
   | CDefinition (Maybe CQual) (CFunDecl f) [CStatement f]
                                             -- ^ function definition;
@@ -134,6 +136,7 @@ renderCExp (CTApp f ts es) =    renderCName f
                              <> "("
                              <> intercalate ", " (map renderCExp es) -- arguments
                              <> ")"
+renderCExp (CCast t e)     = "(" <> renderCType t <> ")" <> renderCExp e
 renderCExp (CEVerbatim e)  = e
 
 renderCQual :: CQual -> String
@@ -152,6 +155,7 @@ renderCVDecl (CVarDecl typ vname) = renderCType typ <> " " <> renderCName vname
 renderCStmt :: CStatement Identity -> String
 renderCStmt (UsingNamespace (NS ns)) = "using namespace " <> ns <> ";"
 renderCStmt (TypeDef typ n)          = "typedef " <> renderCType typ <> " " <> renderCName n <> ";"
+renderCStmt (CExpSA e)               = renderCExp e <> ";"
 renderCStmt (CDeclaration e)         = renderCFDecl e <> ";"
 renderCStmt (CDefinition mq d body)  =    maybe "" (\q -> renderCQual q <> " ") mq
                                        <> renderCFDecl d
