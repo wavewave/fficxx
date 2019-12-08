@@ -337,8 +337,17 @@ returnCpp b ret callstr =
       where str = ffiClassName c'
     -- "to_nonconst<"<>str<>"_t,"<>str<>">(new "<>str<>"("<>callstr<>"))"]
     CPT (CPTClassMove c') _ -> -- TODO: check whether this is working or not.
-                               [R.CReturn $ R.CEVerbatim $ "std::move(to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>")))"]
-                               where str = ffiClassName c'
+      [R.CReturn $
+        R.CApp
+          (R.sname "std::move")
+          [R.CTApp
+            (R.sname "to_nonconst")
+            [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
+            [ R.CEVerbatim ("&(" <> callstr <> ")") ]
+          ]
+      ]
+      where str = ffiClassName c'
+    -- ."std::move(to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>")))"
     TemplateApp (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
@@ -358,17 +367,27 @@ returnCpp b ret callstr =
       , R.CReturn $ R.CEVerbatim "std::move(static_cast<void*>(r));"
       ]
     TemplateType _          -> error "returnCpp: TemplateType"
-    TemplateParam _         ->
-      [ R.CReturn $ R.CEVerbatim $
+    TemplateParam _ ->
+      [ R.CReturn $
           case b of
-            CPrim    -> "(" <> callstr <> ")"
-            NonCPrim -> "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
+            CPrim    -> R.CEVerbatim $ "(" <> callstr <> ")"
+            NonCPrim ->
+              R.CTApp
+                (R.sname "to_nonconst")
+                [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
+                [ R.CEVerbatim $ "(Type *)&(" <> callstr <> ")" ]
       ]
+    -- "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
     TemplateParamPointer _  ->
-      [ R.CReturn $ R.CEVerbatim $
+      [ R.CReturn $
           case b of
-            CPrim    -> "(" <> callstr <> ")"
-            NonCPrim -> "to_nonconst<Type ## _t, Type>(" <> callstr <> ")"
+            CPrim    -> R.CEVerbatim $ "(" <> callstr <> ")"
+            NonCPrim ->
+              R.CTApp
+                (R.sname "to_nonconst")
+                [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
+                [ R.CEVerbatim callstr ]
+            -- "to_nonconst<Type ## _t, Type>(" <> callstr <> ")"
       ]
 
 -- Function Declaration and Definition
