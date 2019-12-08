@@ -244,12 +244,12 @@ genTopLevelFuncCppDefinition tf@TopLevelFunction {..} =
       callstr = toplevelfunc_name <> "("
                 <> argsToCallString toplevelfunc_args
                 <> ")"
-      body = returnCpp NonCPrim (toplevelfunc_ret) callstr
+      body = returnCpp NonCPrim (toplevelfunc_ret) (R.CEVerbatim callstr)
   in R.CDefinition Nothing decl body
 genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
   let decl = topLevelFunDecl tv
       callstr = toplevelvar_name
-      body = returnCpp NonCPrim (toplevelvar_ret) callstr
+      body = returnCpp NonCPrim (toplevelvar_ret) (R.CEVerbatim callstr)
   in R.CDefinition Nothing decl body
 
 genTmplFunCpp ::
@@ -293,32 +293,30 @@ genTmplClassCpp b TmplCls {..} fs =
 returnCpp ::
      IsCPrimitive
   -> Types
-  -> String -- CExp Identity -- String -- ^ call string
+  -> R.CExp Identity -- String -- ^ call string
   -> [R.CStatement Identity]
-returnCpp b ret callstr =
+returnCpp b ret caller =
   case ret of
     Void ->
-      [ R.CVerbatim (callstr <> ";") ]
+      [ R.CExpSA caller ]
     SelfType ->
       [R.CReturn $
         R.CTApp
           (R.sname "to_nonconst")
           [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
-          [ R.CCast (R.CTVerbatim "Type*") (R.CEVerbatim callstr) ]
+          [ R.CCast (R.CTVerbatim "Type*") caller ]
       ]
     -- "to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ")"]
     CT (CRef _) _ ->
-      [R.CReturn $
-         R.CAddr $ R.CEVerbatim callstr
-      ]
+      [R.CReturn $ R.CAddr caller ]
     CT _ _ ->
-      [R.CReturn $ R.CEVerbatim $ callstr]
+      [R.CReturn caller ]
     CPT (CPTClass c') _ ->
       [R.CReturn $
         R.CTApp
           (R.sname "to_nonconst")
           [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
-          [ R.CCast (R.CTVerbatim (str <> "*")) (R.CEVerbatim callstr) ]
+          [ R.CCast (R.CTVerbatim (str <> "*")) caller ]
       ]
       where str = ffiClassName c'
     -- "to_nonconst<"<>str<>"_t,"<>str<>">(("<>str<>"*)"<>callstr<>")"]
@@ -327,7 +325,7 @@ returnCpp b ret callstr =
         R.CTApp
           (R.sname "to_nonconst")
           [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
-          [ R.CAddr $ R.CEVerbatim callstr ]
+          [ R.CAddr caller ]
       ]
       where str = ffiClassName c'
     -- "to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>"))"]
@@ -336,7 +334,7 @@ returnCpp b ret callstr =
         R.CTApp
           (R.sname "to_nonconst")
           [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
-          [ R.CNew (R.sname str) [ R.CEVerbatim callstr ]  ]
+          [ R.CNew (R.sname str) [ caller ]  ]
       ]
       where str = ffiClassName c'
     -- "to_nonconst<"<>str<>"_t,"<>str<>">(new "<>str<>"("<>callstr<>"))"]
@@ -347,7 +345,7 @@ returnCpp b ret callstr =
           [R.CTApp
             (R.sname "to_nonconst")
             [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
-            [ R.CAddr $ R.CEVerbatim callstr ]
+            [ R.CAddr caller ]
           ]
       ]
       where str = ffiClassName c'
@@ -355,7 +353,7 @@ returnCpp b ret callstr =
     TemplateApp (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
-          (R.CNew (R.sname cpptype) [ R.CEVerbatim callstr ])
+          (R.CNew (R.sname cpptype) [ caller ])
       , R.CReturn $ -- static_cast<void*>(r)
           R.CTApp
             (R.sname "static_cast")
@@ -365,7 +363,7 @@ returnCpp b ret callstr =
     TemplateAppRef (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
-          (R.CNew (R.sname cpptype) [ R.CEVerbatim callstr ])
+          (R.CNew (R.sname cpptype) [ caller ])
       , R.CReturn $ -- static_cast<void*>(r)
           R.CTApp
             (R.sname "static_cast")
@@ -375,7 +373,7 @@ returnCpp b ret callstr =
     TemplateAppMove (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
-          (R.CNew (R.sname cpptype) [ R.CEVerbatim callstr ])
+          (R.CNew (R.sname cpptype) [ caller ])
       , R.CReturn $ -- std::move(static_cast<void*>(r))
           R.CApp
             (R.sname "std::move")
@@ -390,26 +388,23 @@ returnCpp b ret callstr =
     TemplateParam _ ->
       [ R.CReturn $
           case b of
-            CPrim    -> R.CEVerbatim $ "(" <> callstr <> ")"
+            CPrim    -> caller
             NonCPrim ->
               R.CTApp
                 (R.sname "to_nonconst")
                 [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
-                [ R.CCast (R.CTVerbatim "Type*") $
-                    R.CAddr $
-                      R.CEVerbatim callstr
-                ]
+                [ R.CCast (R.CTVerbatim "Type*") $ R.CAddr caller ]
       ]
     -- "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
     TemplateParamPointer _  ->
       [ R.CReturn $
           case b of
-            CPrim    -> R.CEVerbatim $ "(" <> callstr <> ")"
+            CPrim    -> caller
             NonCPrim ->
               R.CTApp
                 (R.sname "to_nonconst")
                 [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
-                [ R.CEVerbatim callstr ]
+                [ caller ]
             -- "to_nonconst<Type ## _t, Type>(" <> callstr <> ")"
       ]
 
@@ -447,14 +442,14 @@ funcToDef c func
     let callstr = cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
-        body = returnCpp NonCPrim (genericFuncRet func) callstr
+        body = returnCpp NonCPrim (genericFuncRet func) (R.CEVerbatim callstr)
     in R.CDefinition Nothing (funcToDecl c func) body
   | otherwise =
     let callstr = "TYPECASTMETHOD(Type,"<> aliasedFuncName c func <> "," <> class_name c <> ")(p)->"
                   <> cppFuncName c func <> "("
                   <> argsToCallString (genericFuncArgs func)
                   <> ")"
-        body = returnCpp NonCPrim (genericFuncRet func) callstr
+        body = returnCpp NonCPrim (genericFuncRet func) (R.CEVerbatim callstr)
     in R.CDefinition Nothing (funcToDecl c func) body
 
 tmplFunToDecl ::
@@ -502,7 +497,7 @@ tmplFunToDef b t@TmplCls {..} f =
                 <> tfun_oname <> "("
                 <> tmplAllArgsToCallString b tfun_args
                 <> ")"
-          in returnCpp b (tfun_ret) callstr
+          in returnCpp b (tfun_ret) (R.CEVerbatim callstr)
 
 -- Accessor Declaration and Definition
 
@@ -560,4 +555,4 @@ tmplMemberFunToDef c f =
               <> tmf_name f
               <> "<Type>"
               <> "(" <> tmplAllArgsToCallString NonCPrim (tmf_args f) <> ")"
-    body = returnCpp NonCPrim (tmf_ret f) callstr
+    body = returnCpp NonCPrim (tmf_ret f) (R.CEVerbatim callstr)
