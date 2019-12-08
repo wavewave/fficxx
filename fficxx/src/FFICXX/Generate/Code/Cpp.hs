@@ -336,7 +336,7 @@ returnCpp b ret callstr =
         R.CTApp
           (R.sname "to_nonconst")
           [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
-          [ R.CEVerbatim ("new "<>str<>"("<>callstr<>")") ]
+          [ R.CNew (R.sname str) [ R.CEVerbatim callstr ]  ]
       ]
       where str = ffiClassName c'
     -- "to_nonconst<"<>str<>"_t,"<>str<>">(new "<>str<>"("<>callstr<>"))"]
@@ -355,7 +355,7 @@ returnCpp b ret callstr =
     TemplateApp (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
-          (R.CEVerbatim $ "new " <> cpptype <> "(" <> callstr <> ")")
+          (R.CNew (R.sname cpptype) [ R.CEVerbatim callstr ])
       , R.CReturn $ -- static_cast<void*>(r)
           R.CTApp
             (R.sname "static_cast")
@@ -365,7 +365,7 @@ returnCpp b ret callstr =
     TemplateAppRef (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
-          (R.CEVerbatim $ "new " <> cpptype <> "(" <> callstr <> ")")
+          (R.CNew (R.sname cpptype) [ R.CEVerbatim callstr ])
       , R.CReturn $ -- static_cast<void*>(r)
           R.CTApp
             (R.sname "static_cast")
@@ -375,7 +375,7 @@ returnCpp b ret callstr =
     TemplateAppMove (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
-          (R.CEVerbatim $ "new " <> cpptype <> "(" <> callstr <> ")")
+          (R.CNew (R.sname cpptype) [ R.CEVerbatim callstr ])
       , R.CReturn $ -- std::move(static_cast<void*>(r))
           R.CApp
             (R.sname "std::move")
