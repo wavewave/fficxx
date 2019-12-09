@@ -587,56 +587,6 @@ tmplArgToCallCExp b (Arg (TemplateParamPointer _) varname) =
                   -- "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
 tmplArgToCallCExp _ (Arg _ varname) = R.CVar $ R.sname varname
 
-
--- TODO: remove this
-tmplArgToCallString
-  :: IsCPrimitive
-  -> Arg
-  -> String
-tmplArgToCallString _ (Arg (CPT (CPTClass c) _) varname) =
-  -- TODO: Rewrite this with static_cast.
-  "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")" where str = ffiClassName c
-tmplArgToCallString _ (Arg (CPT (CPTClassRef c) _) varname) =
-  -- TODO: Rewrite this with static_cast.
-  "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")" where str = ffiClassName c
-tmplArgToCallString _ (Arg (CPT (CPTClassMove c) _) varname) =
-  -- TODO: Rewrite this with static_cast.
-  "std::move(to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>"))" where str = ffiClassName c
-tmplArgToCallString _ (Arg (CT (CRef _) _) varname) = "(*"<> varname<> ")"
-tmplArgToCallString _ (Arg (TemplateApp x) varname) =
-  case tapp_tparam x of
-    TArg_TypeParam p -> "static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")"
-    _ -> -- TODO: Implement this.
-         error "tmplArgToCallString: TemplateApp"
-tmplArgToCallString _ (Arg (TemplateAppRef x) varname) =
-  case tapp_tparam x of
-    TArg_TypeParam p -> "*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> "))"
-    _ -> -- TODO: Implement this.
-         error "tmplArgToCallString: TemplateAppRef"
-tmplArgToCallString _ (Arg (TemplateAppMove x) varname) =
-  case tapp_tparam x of
-    TArg_TypeParam p -> "std::move(*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")))"
-    _ -> -- TODO: Implement this.
-         error "tmplArgToCallString: TemplateAppMove"
-tmplArgToCallString b (Arg (TemplateParam _) varname) =
-  case b of
-    CPrim    -> varname
-    NonCPrim -> "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
-tmplArgToCallString b (Arg (TemplateParamPointer _) varname) =
-  case b of
-    CPrim    -> varname
-    NonCPrim -> "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
-tmplArgToCallString _ (Arg _ varname) = varname
-
--- TODO: Remove this
-tmplAllArgsToCallString ::
-     IsCPrimitive
-  -> [Arg]
-  -> String
-tmplAllArgsToCallString b = intercalateWith conncomma (tmplArgToCallString b)
-
-
-
 tmplRetTypeToString ::
      IsCPrimitive
   -> Types
@@ -658,10 +608,6 @@ tmplRetTypeToString b (TemplateParam _)        = case b of
 tmplRetTypeToString b (TemplateParamPointer _) = case b of
                                                    CPrim    -> "Type"
                                                    NonCPrim -> "Type ## _p"
-
-
-
-
 
 -- ---------------------------
 -- Template Member Function --

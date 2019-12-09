@@ -24,7 +24,6 @@ import FFICXX.Generate.Code.Primitive
                                     , rettypeToString
                                     , tmplMemFuncArgToCTypVar
                                     , tmplMemFuncRetTypeToString
-                                    , tmplAllArgsToCallString
                                     , tmplAllArgsToCTypVar
                                     , tmplArgToCallCExp
                                     , tmplRetTypeToString
@@ -584,12 +583,6 @@ tmplMemberFunToDef :: Class -> TemplateMemberFunction -> R.CStatement Identity
 tmplMemberFunToDef c f =
     R.CDefinition (Just R.Inline) (tmplMemberFunToDecl c f) body
   where
-    {- callstr =    "(to_nonconst<" <> ffiClassName c  <> "," <> ffiClassName c <> "_t" <> ">(p))"
-              <> "->"
-              <> tmf_name f
-              <> "<Type>"
-              <> "(" <> tmplAllArgsToCallString NonCPrim (tmf_args f) <> ")"
-    -}
     body = returnCpp NonCPrim (tmf_ret f) $
              R.CBinOp
                R.CArrow
@@ -603,6 +596,3 @@ tmplMemberFunToDef c f =
                  [ R.CTVerbatim "Type" ]
                  (map (tmplArgToCallCExp NonCPrim) (tmf_args f))
                )
-
-
-      -- (R.CEVerbatim callstr)
