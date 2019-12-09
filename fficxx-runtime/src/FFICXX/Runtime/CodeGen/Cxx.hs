@@ -90,6 +90,7 @@ data CExp (f :: * -> *) =
   | CNew (CName f) [CExp f]             -- ^ new operator: new Cstr(a1,a2,...)
   | CEMacroApp (CName f) [CName f]      -- ^ macro function at expression level
   | CEVerbatim String                   -- ^ verbatim
+  | CNull                               -- ^ empty C expression. (for convenience)
 
 data CFunDecl (f :: * -> *) =
   CFunDecl (CType f) (CName f) [(CType f,CName f)] -- ^ type func( type1 arg1, type2 arg2, ... )
@@ -169,6 +170,7 @@ renderCExp (CEMacroApp n as) =  renderCName n
                              <> intercalate ", " (map renderCName as)
                              <> ")" -- NOTE: no semicolon.
 renderCExp (CEVerbatim e)  = e
+renderCExp CNull           = ""
 
 renderCQual :: CQual -> String
 renderCQual Inline = "inline"

@@ -548,16 +548,8 @@ accessorToDef v a =
       body Setter = R.CExpSA $
                       R.CBinOp
                         R.CAssign
-                        varexp' -- (R.CEVerbatim varexp)
+                        varexp'
                         (c2Cxx (arg_type (unVariable v)) (R.CVar (R.sname "x")))
-                        -- (R.CEVerbatim (castC2Cpp (arg_type (unVariable v)) "x"))
-
-{-
-        R.CVerbatim $
-                         varexp
-                      <> " = "
-                      <> castC2Cpp (arg_type (unVariable v)) "x"  -- TODO: clean up this hard-coded "x".
-                      <> ";" -}
   in R.CDefinition Nothing (accessorToDecl v a) [ body a ]
 
 

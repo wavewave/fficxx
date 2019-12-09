@@ -349,7 +349,7 @@ rettypeToString (TemplateType _)         = "void*"
 rettypeToString (TemplateParam _)        = "Type ## _p"
 rettypeToString (TemplateParamPointer _) = "Type ## _p"
 
-
+-- TODO: Rewrite this with static_cast
 c2Cxx :: Types -> R.CExp Identity -> R.CExp Identity
 c2Cxx t e =
   case t of
@@ -391,24 +391,74 @@ c2Cxx t e =
                                 ]
     _                      -> e
 
-
 -- TODO: Rewrite this with static_cast
-castC2Cpp :: Types -> String -> String
-castC2Cpp t e =
+-- TODO: Resolve all the error cases
+cxx2C :: Types -> R.CExp Identity -> R.CExp Identity
+cxx2C t e =
   case t of
-    CT  (CRef _)         _ -> "(*"<> e <> ")"
-    CPT (CPTClass     c) _ -> "to_nonconst<" <> f <> "," <> f <> "_t>(" <> e <> ")"
-                              where f = ffiClassName c
-    CPT (CPTClassRef  c) _ -> "to_nonconstref<" <> f <> "," <> f <> "_t>(*" <> e <> ")"
-                              where f = ffiClassName c
-    CPT (CPTClassCopy c) _ -> "*(to_nonconst<" <> f <> "," <> f <> "_t>(" <> e <> "))"
-                              where f = ffiClassName c
-    CPT (CPTClassMove c) _ -> "std::move(to_nonconstref<" <> f <> "," <> f<> "_t>(*" <> e <> "))"
-                              where f = ffiClassName c
-    TemplateApp    p  -> "to_nonconst<" <> tapp_CppTypeForParam p <> ",void>(" <> e <> ")"
-    TemplateAppRef p  -> "*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> ")"
-    TemplateAppMove p -> "std::move(*( (" <> tapp_CppTypeForParam p <> "*) " <> e <> "))"
-    _                 -> e
+    Void -> R.CNull
+    SelfType ->
+      R.CTApp
+        (R.sname "to_nonconst")
+        [ R.CTVerbatim "Type##_t", R.CTVerbatim "Type" ]
+        [ R.CCast (R.CTVerbatim "Type*") e ]
+      -- "to_nonconst<Type ## _t, Type>((Type *)" <> e <> ")"
+    CT (CRef _) _ -> R.CAddr e
+      -- "&(" <> e <> ")"
+    CT _ _ -> e
+      -- e
+    CPT (CPTClass c) _ ->
+      R.CTApp
+        (R.sname "to_nonconst")
+        [ R.CTVerbatim (f <> "_t"), R.CTVerbatim f ]
+        [ R.CCast (R.CTVerbatim (f <> "*")) e ]
+      where f = ffiClassName c
+      -- "to_nonconst<" <> f <> "_t," <> f <> ">((" <> f <> "*)" <> e <> ")"
+    CPT (CPTClassRef c) _  ->
+      R.CTApp
+        (R.sname "to_nonconst")
+        [ R.CTVerbatim (f <> "_t"), R.CTVerbatim f ]
+        [ R.CAddr e ]
+      where f = ffiClassName c
+      -- "to_nonconst<" <> f <> "_t," <> f <> ">(&(" <> e <> "))"
+    CPT (CPTClassCopy c) _ ->
+      R.CTApp
+        (R.sname "to_nonconst")
+        [ R.CTVerbatim (f <> "_t"), R.CTVerbatim f ]
+        [ R.CNew (R.sname f) [e] ]
+      where f = ffiClassName c
+      -- "to_nonconst<" <> f <> "_t," <> f <> ">(new " <> f <> "(" <> e <> "))"
+    CPT (CPTClassMove c) _ ->
+      R.CApp
+        (R.CVar (R.sname "std::move"))
+        [ R.CTApp
+            (R.sname "to_nonconst")
+            [ R.CTVerbatim (f <> "_t"), R.CTVerbatim f ]
+            [ R.CAddr e ]
+        ]
+      where f = ffiClassName c
+      -- "std::move(to_nonconst<" <> f <> "_t," <> f <>">(&(" <> e <> ")))"
+    TemplateApp _  ->
+      error "cxx2C: TemplateApp"
+                              -- g <> "* r = new " <> g <> "(" <> e <> "); "
+                              --  <> "return (static_cast<void*>(r));"
+    TemplateAppRef _ ->
+      error "cxx2C: TemplateAppRef"
+                              -- g <> "* r = new " <> g <> "(" <> e <> "); "
+                              -- <> "return (static_cast<void*>(r));"
+    TemplateAppMove _ ->
+      error "cxx2C: TemplateAppMove"
+    TemplateType _ ->
+      error "cxx2C: TemplateType"
+    TemplateParam _ ->
+      error "cxx2C: TemplateParam"
+                              -- if b then e
+                              --      else "to_nonconst<Type ## _t, Type>((Type *)&(" <> e <> "))"
+    TemplateParamPointer _ ->
+      error "cxx2C: TemplateParamPointer"
+                              -- if b then "(" <> callstr <> ");"
+                              --      else "to_nonconst<Type ## _t, Type>(" <> e <> ") ;"
+
 
 
 -- TODO: Rewrite this with static_cast
