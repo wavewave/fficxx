@@ -392,6 +392,7 @@ c2Cxx t e =
     _                      -> e
 
 -- TODO: Rewrite this with static_cast
+--       Merge this with returnCpp after Void and simple type adjustment
 -- TODO: Resolve all the error cases
 cxx2C :: Types -> R.CExp Identity -> R.CExp Identity
 cxx2C t e =
@@ -456,40 +457,6 @@ cxx2C t e =
                               --      else "to_nonconst<Type ## _t, Type>((Type *)&(" <> e <> "))"
     TemplateParamPointer _ ->
       error "cxx2C: TemplateParamPointer"
-                              -- if b then "(" <> callstr <> ");"
-                              --      else "to_nonconst<Type ## _t, Type>(" <> e <> ") ;"
-
-
-
--- TODO: Rewrite this with static_cast
---       Merge this with returnCpp after Void and simple type adjustment
-castCpp2C :: Types -> String -> String
-castCpp2C t e =
-  case t of
-    Void                   -> ""
-    SelfType               -> "to_nonconst<Type ## _t, Type>((Type *)" <> e <> ")"
-    CT (CRef _) _          -> "&(" <> e <> ")"
-    CT _ _                 -> e
-    CPT (CPTClass c) _     -> "to_nonconst<" <> f <> "_t," <> f <> ">((" <> f <> "*)" <> e <> ")"
-                               where f = ffiClassName c
-    CPT (CPTClassRef c) _  -> "to_nonconst<" <> f <> "_t," <> f <> ">(&(" <> e <> "))"
-                               where f = ffiClassName c
-    CPT (CPTClassCopy c) _ -> "to_nonconst<" <> f <> "_t," <> f <> ">(new " <> f <> "(" <> e <> "))"
-                               where f = ffiClassName c
-    CPT (CPTClassMove c) _ -> "std::move(to_nonconst<" <> f <> "_t," <> f <>">(&(" <> e <> ")))"
-                               where f = ffiClassName c
-    TemplateApp _          -> error "castCpp2C: TemplateApp"
-                              -- g <> "* r = new " <> g <> "(" <> e <> "); "
-                              --  <> "return (static_cast<void*>(r));"
-    TemplateAppRef _       -> error "castCpp2C: TemplateAppRef"
-                              -- g <> "* r = new " <> g <> "(" <> e <> "); "
-                              -- <> "return (static_cast<void*>(r));"
-    TemplateAppMove _      -> error "castCpp2C: TemplateAppMove"
-    TemplateType _         -> error "castCpp2C: TemplateType"
-    TemplateParam _        -> error "castCpp2C: TemplateParam"
-                              -- if b then e
-                              --      else "to_nonconst<Type ## _t, Type>((Type *)&(" <> e <> "))"
-    TemplateParamPointer _ -> error "castCpp2C: TemplateParamPointer"
                               -- if b then "(" <> callstr <> ");"
                               --      else "to_nonconst<Type ## _t, Type>(" <> e <> ") ;"
 

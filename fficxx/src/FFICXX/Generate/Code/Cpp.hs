@@ -17,7 +17,7 @@ import FFICXX.Generate.Code.Primitive
                                     , argsToCTypVar
                                     , argsToCTypVarNoSelf
                                     , c2Cxx
-                                    , castCpp2C
+                                    , cxx2C
                                     , CFunSig(..)
                                     , genericFuncArgs
                                     , genericFuncRet
@@ -534,8 +534,7 @@ accessorsToDecls vs =
 
 accessorToDef :: Variable -> Accessor -> R.CStatement Identity
 accessorToDef v a =
-  let varexp = "to_nonconst<Type,Type ## _t>(p)->" <> arg_name (unVariable v)
-      varexp' =
+  let varexp =
         R.CBinOp
           R.CArrow
           (R.CTApp
@@ -544,11 +543,11 @@ accessorToDef v a =
             [ R.CVar (R.sname "p") ]
           )
           (R.CVar (R.sname (arg_name (unVariable v))))
-      body Getter = R.CReturn $ R.CEVerbatim $ "(" <> castCpp2C (arg_type (unVariable v)) varexp <> ")"
+      body Getter = R.CReturn $ cxx2C (arg_type (unVariable v)) varexp
       body Setter = R.CExpSA $
                       R.CBinOp
                         R.CAssign
-                        varexp'
+                        varexp
                         (c2Cxx (arg_type (unVariable v)) (R.CVar (R.sname "x")))
   in R.CDefinition Nothing (accessorToDecl v a) [ body a ]
 
