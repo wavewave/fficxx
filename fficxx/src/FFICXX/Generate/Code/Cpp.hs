@@ -26,6 +26,7 @@ import FFICXX.Generate.Code.Primitive
                                     , tmplMemFuncRetTypeToString
                                     , tmplAllArgsToCallString
                                     , tmplAllArgsToCTypVar
+                                    , tmplArgToCallCExp
                                     , tmplRetTypeToString
                                     )
 import FFICXX.Generate.Name         ( aliasedFuncName
@@ -489,22 +490,40 @@ tmplFunToDef b t@TmplCls {..} f =
     body =
       case f of
         TFunNew {..} ->
-          let callstr =
-                  "new " <> tclass_oname <> "<Type>("
-                <> tmplAllArgsToCallString b tfun_new_args
-                <> ")"
-          in  [ R.CReturn $
-                 R.CEVerbatim $ "static_cast<void*>("<>callstr<>")"
-              ]
-        TFunDelete   ->
-          [ R.CDelete $ R.CEVerbatim $ "(static_cast<" <> tclass_oname <> "<Type>*>(p))" ]
+          let caller =
+                R.CTNew
+                  (R.sname tclass_oname)
+                  [ R.CTVerbatim "Type" ]
+                  (map (tmplArgToCallCExp b) tfun_new_args)
+                --   "new " <> tclass_oname <> "<Type>("
+                -- <> tmplAllArgsToCallString b tfun_new_args
+                -- <> ")"
+          in  [ R.CReturn $ R.CTApp (R.sname "static_cast") [R.CTVerbatim "void*"] [caller] ]
+                 -- R.CEVerbatim $ "static_cast<void*>("<>callstr<>")"
+        TFunDelete ->
+          [ R.CDelete $
+              R.CTApp
+                (R.sname "static_cast")
+                [ R.CTVerbatim (tclass_oname <> "<Type>*")]
+                [ R.CVar (R.sname "p") ]
+            -- R.CEVerbatim $ "(static_cast<" <> tclass_oname <> "<Type>*>(p))"
+          ]
         TFun {..}    ->
-          let callstr =
+          {- let callstr =
                    "(static_cast<" <> tclass_oname <> "<Type>*>(p))->"
                 <> tfun_oname <> "("
                 <> tmplAllArgsToCallString b tfun_args
                 <> ")"
-          in returnCpp b (tfun_ret) (R.CEVerbatim callstr)
+          in -}
+          returnCpp b (tfun_ret) $
+            R.CBinOp
+              R.CArrow
+              (R.CTApp (R.sname "static_cast") [R.CTVerbatim (tclass_oname <> "<Type>*")] [R.CVar $ R.sname "p"])
+              (R.CApp
+                (R.CVar (R.sname tfun_oname))
+                (map (tmplArgToCallCExp b) tfun_args)
+              )
+          -- (R.CEVerbatim callstr)
 
 -- Accessor Declaration and Definition
 
@@ -565,9 +584,25 @@ tmplMemberFunToDef :: Class -> TemplateMemberFunction -> R.CStatement Identity
 tmplMemberFunToDef c f =
     R.CDefinition (Just R.Inline) (tmplMemberFunToDecl c f) body
   where
-    callstr =    "(to_nonconst<" <> ffiClassName c  <> "," <> ffiClassName c <> "_t" <> ">(p))"
+    {- callstr =    "(to_nonconst<" <> ffiClassName c  <> "," <> ffiClassName c <> "_t" <> ">(p))"
               <> "->"
               <> tmf_name f
               <> "<Type>"
               <> "(" <> tmplAllArgsToCallString NonCPrim (tmf_args f) <> ")"
-    body = returnCpp NonCPrim (tmf_ret f) (R.CEVerbatim callstr)
+    -}
+    body = returnCpp NonCPrim (tmf_ret f) $
+             R.CBinOp
+               R.CArrow
+               (R.CTApp
+                 (R.sname "to_nonconst")
+                 [ R.CTVerbatim (ffiClassName c), R.CTVerbatim (ffiClassName c <> "_t") ]
+                 [ R.CVar $ R.sname "p" ]
+               )
+               (R.CTApp
+                 (R.sname (tmf_name f))
+                 [ R.CTVerbatim "Type" ]
+                 (map (tmplArgToCallCExp NonCPrim) (tmf_args f))
+               )
+
+
+      -- (R.CEVerbatim callstr)
