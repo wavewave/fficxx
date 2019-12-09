@@ -16,8 +16,8 @@ import FFICXX.Generate.Code.Primitive
                                     , argToCallCExp
                                     , argsToCTypVar
                                     , argsToCTypVarNoSelf
+                                    , c2Cxx
                                     , castCpp2C
-                                    , castC2Cpp
                                     , CFunSig(..)
                                     , genericFuncArgs
                                     , genericFuncRet
@@ -535,12 +535,29 @@ accessorsToDecls vs =
 accessorToDef :: Variable -> Accessor -> R.CStatement Identity
 accessorToDef v a =
   let varexp = "to_nonconst<Type,Type ## _t>(p)->" <> arg_name (unVariable v)
+      varexp' =
+        R.CBinOp
+          R.CArrow
+          (R.CTApp
+            (R.sname "to_nonconst")
+            [ R.CTVerbatim "Type", R.CTVerbatim "Type##_t" ]
+            [ R.CVar (R.sname "p") ]
+          )
+          (R.CVar (R.sname (arg_name (unVariable v))))
       body Getter = R.CReturn $ R.CEVerbatim $ "(" <> castCpp2C (arg_type (unVariable v)) varexp <> ")"
-      body Setter = R.CVerbatim $
+      body Setter = R.CExpSA $
+                      R.CBinOp
+                        R.CAssign
+                        varexp' -- (R.CEVerbatim varexp)
+                        (c2Cxx (arg_type (unVariable v)) (R.CVar (R.sname "x")))
+                        -- (R.CEVerbatim (castC2Cpp (arg_type (unVariable v)) "x"))
+
+{-
+        R.CVerbatim $
                          varexp
                       <> " = "
                       <> castC2Cpp (arg_type (unVariable v)) "x"  -- TODO: clean up this hard-coded "x".
-                      <> ";"
+                      <> ";" -}
   in R.CDefinition Nothing (accessorToDecl v a) [ body a ]
 
 

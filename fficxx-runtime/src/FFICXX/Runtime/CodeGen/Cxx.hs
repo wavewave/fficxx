@@ -73,10 +73,11 @@ renderCName :: CName Identity -> String
 renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
 
-data COp = CArrow
+data COp = CArrow | CAssign
 
 renderCOp :: COp -> String
-renderCOp CArrow = "->"
+renderCOp CArrow  = "->"
+renderCOp CAssign = "="
 
 data CExp (f :: * -> *) =
     CVar (CName f)                      -- ^ variable
@@ -149,7 +150,12 @@ renderCExp (CTApp f ts es) =    renderCName f
                              <> "("
                              <> intercalate ", " (map renderCExp es)  -- arguments
                              <> ")"
-renderCExp (CBinOp o x y)  = "(" <> renderCExp x <> ")" <> renderCOp o <> renderCExp y
+renderCExp (CBinOp o x y)  =    (case x of
+                                   CVar _ -> renderCExp x
+                                   _      -> "(" <> renderCExp x <> ")" -- compound expression like (*p)
+                                )
+                             <> renderCOp o
+                             <> renderCExp y
 renderCExp (CCast t e)     = "(" <> renderCType t <> ")" <> renderCExp e
 renderCExp (CAddr e)       = "&(" <> renderCExp e <> ")"
 renderCExp (CStar e)       = "*(" <> renderCExp e <> ")"
