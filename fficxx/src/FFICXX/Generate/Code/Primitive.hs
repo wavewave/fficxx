@@ -503,6 +503,8 @@ tmplAllArgsToCTypVar b s t args =
                 NoSelf -> args
   in map (tmplArgToCTypVar b t) args'
 
+
+-- TODO: remove this
 tmplArgToCallString
   :: IsCPrimitive
   -> Arg
@@ -542,6 +544,7 @@ tmplArgToCallString b (Arg (TemplateParamPointer _) varname) =
     NonCPrim -> "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
 tmplArgToCallString _ (Arg _ varname) = varname
 
+-- TODO: Remove this
 tmplAllArgsToCallString ::
      IsCPrimitive
   -> [Arg]

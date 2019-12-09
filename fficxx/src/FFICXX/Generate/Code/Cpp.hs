@@ -305,7 +305,6 @@ returnCpp b ret caller =
           [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
           [ R.CCast (R.CTVerbatim "Type*") caller ]
       ]
-    -- "to_nonconst<Type ## _t, Type>((Type *)" <> callstr <> ")"]
     CT (CRef _) _ ->
       [R.CReturn $ R.CAddr caller ]
     CT _ _ ->
@@ -318,7 +317,6 @@ returnCpp b ret caller =
           [ R.CCast (R.CTVerbatim (str <> "*")) caller ]
       ]
       where str = ffiClassName c'
-    -- "to_nonconst<"<>str<>"_t,"<>str<>">(("<>str<>"*)"<>callstr<>")"]
     CPT (CPTClassRef c') _ ->
       [R.CReturn $
         R.CTApp
@@ -327,7 +325,6 @@ returnCpp b ret caller =
           [ R.CAddr caller ]
       ]
       where str = ffiClassName c'
-    -- "to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>"))"]
     CPT (CPTClassCopy c') _ ->
       [R.CReturn $
         R.CTApp
@@ -336,7 +333,6 @@ returnCpp b ret caller =
           [ R.CNew (R.sname str) [ caller ]  ]
       ]
       where str = ffiClassName c'
-    -- "to_nonconst<"<>str<>"_t,"<>str<>">(new "<>str<>"("<>callstr<>"))"]
     CPT (CPTClassMove c') _ -> -- TODO: check whether this is working or not.
       [R.CReturn $
         R.CApp
@@ -348,12 +344,11 @@ returnCpp b ret caller =
           ]
       ]
       where str = ffiClassName c'
-    -- ."std::move(to_nonconst<"<>str<>"_t,"<>str<>">(&("<>callstr<>")))"
     TemplateApp (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
           (R.CNew (R.sname cpptype) [ caller ])
-      , R.CReturn $ -- static_cast<void*>(r)
+      , R.CReturn $
           R.CTApp
             (R.sname "static_cast")
             [ R.CTVerbatim "void*" ]
@@ -363,7 +358,7 @@ returnCpp b ret caller =
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
           (R.CNew (R.sname cpptype) [ caller ])
-      , R.CReturn $ -- static_cast<void*>(r)
+      , R.CReturn $
           R.CTApp
             (R.sname "static_cast")
             [ R.CTVerbatim "void*" ]
@@ -373,7 +368,7 @@ returnCpp b ret caller =
       [ R.CInit
           (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
           (R.CNew (R.sname cpptype) [ caller ])
-      , R.CReturn $ -- std::move(static_cast<void*>(r))
+      , R.CReturn $
           R.CApp
             (R.CVar (R.sname "std::move"))
             [R.CTApp
@@ -394,7 +389,6 @@ returnCpp b ret caller =
                 [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
                 [ R.CCast (R.CTVerbatim "Type*") $ R.CAddr caller ]
       ]
-    -- "to_nonconst<Type ## _t, Type>((Type *)&(" <> callstr <> "))"
     TemplateParamPointer _  ->
       [ R.CReturn $
           case b of
@@ -404,7 +398,6 @@ returnCpp b ret caller =
                 (R.sname "to_nonconst")
                 [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
                 [ caller ]
-            -- "to_nonconst<Type ## _t, Type>(" <> callstr <> ")"
       ]
 
 -- Function Declaration and Definition
@@ -500,7 +493,9 @@ tmplFunToDef b t@TmplCls {..} f =
                   "new " <> tclass_oname <> "<Type>("
                 <> tmplAllArgsToCallString b tfun_new_args
                 <> ")"
-          in  [ R.CReturn $ R.CEVerbatim $ "static_cast<void*>("<>callstr<>")" ]
+          in  [ R.CReturn $
+                 R.CEVerbatim $ "static_cast<void*>("<>callstr<>")"
+              ]
         TFunDelete   ->
           [ R.CDelete $ R.CEVerbatim $ "(static_cast<" <> tclass_oname <> "<Type>*>(p))" ]
         TFun {..}    ->

@@ -83,11 +83,12 @@ data CExp (f :: * -> *) =
     CVar (CName f)                      -- ^ variable
   | CApp (CExp f) [CExp f]              -- ^ C function app:  f(a1,a2,..)
   | CTApp (CName f ) [CType f] [CExp f] -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
-  | CBinOp COp (CExp f) (CExp f)             -- ^ arrow: x->e
+  | CBinOp COp (CExp f) (CExp f)        -- ^ binary operator: x `op` y
   | CCast (CType f) (CExp f)            -- ^ (type)exp
   | CAddr (CExp f)                      -- ^ &(exp)
   | CStar (CExp f)                      -- ^ *(exp)
   | CNew (CName f) [CExp f]             -- ^ new operator: new Cstr(a1,a2,...)
+  | CTNew (CName f) [CType f] [CExp f]  -- ^ new operator for template class: new Cstr<T1,T2,..>(a1,a2,..)
   | CEMacroApp (CName f) [CName f]      -- ^ macro function at expression level
   | CEVerbatim String                   -- ^ verbatim
   | CNull                               -- ^ empty C expression. (for convenience)
@@ -162,6 +163,14 @@ renderCExp (CAddr e)       = "&(" <> renderCExp e <> ")"
 renderCExp (CStar e)       = "*(" <> renderCExp e <> ")"
 renderCExp (CNew n es)     =    "new "
                              <> renderCName n                         -- constructor name
+                             <> "("
+                             <> intercalate ", " (map renderCExp es)  -- arguments
+                             <> ")"
+renderCExp (CTNew n ts es) =    "new "
+                             <> renderCName n                         -- constructor name
+                             <> "<"
+                             <> intercalate ", " (map renderCType ts) -- type arguments
+                             <> ">"
                              <> "("
                              <> intercalate ", " (map renderCExp es)  -- arguments
                              <> ")"
