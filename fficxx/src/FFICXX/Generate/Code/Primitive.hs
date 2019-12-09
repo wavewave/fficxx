@@ -503,6 +503,90 @@ tmplAllArgsToCTypVar b s t args =
                 NoSelf -> args
   in map (tmplArgToCTypVar b t) args'
 
+-- TODO: Rewrite this with static_cast.
+--       Implement missing cases.
+tmplArgToCallCExp
+  :: IsCPrimitive
+  -> Arg
+  -> R.CExp Identity
+tmplArgToCallCExp _ (Arg (CPT (CPTClass c) _) varname) =
+  R.CTApp
+    (R.sname "to_nonconst")
+    [ R.CTVerbatim str, R.CTVerbatim (str <> "_t") ]
+    [ R.CVar (R.sname varname) ]
+  where str = ffiClassName c
+  -- "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")"
+tmplArgToCallCExp _ (Arg (CPT (CPTClassRef c) _) varname) =
+  R.CTApp
+    (R.sname "to_nonconstref")
+    [ R.CTVerbatim str, R.CTVerbatim (str <> "_t") ]
+    [ R.CStar $ R.CVar $ R.sname varname ]
+  where str = ffiClassName c
+  -- "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")"
+tmplArgToCallCExp _ (Arg (CPT (CPTClassMove c) _) varname) =
+  R.CApp
+    (R.CVar (R.sname "std::move"))
+    [R.CTApp
+      (R.sname "to_nonconstref")
+      [ R.CTVerbatim str, R.CTVerbatim (str <> "_t") ]
+      [ R.CStar $ R.CVar $ R.sname varname ]
+    ]
+  where str = ffiClassName c
+  -- "std::move(to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>"))"
+tmplArgToCallCExp _ (Arg (CT (CRef _) _) varname) =
+  R.CStar $ R.CVar $ R.sname varname
+  -- "(*"<> varname<> ")"
+tmplArgToCallCExp _ (Arg (TemplateApp x) varname) =
+  case tapp_tparam x of
+    TArg_TypeParam p ->
+      R.CTApp
+        (R.sname "static_cast")
+        [ R.CTVerbatim (tclass_oname (tapp_tclass x) <> "<Type>*") ] -- TODO: AST for this
+        [ R.CVar $ R.sname varname ]
+      -- "static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")"
+    _ -> error "tmplArgToCallCExp: TemplateApp"
+tmplArgToCallCExp _ (Arg (TemplateAppRef x) varname) =
+  case tapp_tparam x of
+    TArg_TypeParam p ->
+      R.CStar $
+        R.CTApp
+          (R.sname "static_cast")
+          [ R.CTVerbatim (tclass_oname (tapp_tclass x) <> "<Type>*") ]
+          [ R.CVar $ R.sname varname ]
+      -- "*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> "))"
+    _ -> error "tmplArgToCallCExp: TemplateAppRef"
+tmplArgToCallCExp _ (Arg (TemplateAppMove x) varname) =
+  case tapp_tparam x of
+    TArg_TypeParam p ->
+      R.CApp
+        (R.CVar (R.sname "std::move"))
+        [ R.CStar $
+            R.CTApp
+              (R.sname "static_cast")
+              [ R.CTVerbatim (tclass_oname (tapp_tclass x) <> "<Type>*") ]
+              [ R.CVar $ R.sname varname ]
+        ]
+      -- "std::move(*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")))"
+    _ -> error "tmplArgToCallCExp: TemplateAppMove"
+tmplArgToCallCExp b (Arg (TemplateParam _) varname) =
+  case b of
+    CPrim    -> R.CVar $ R.sname varname
+    NonCPrim -> R.CStar $
+                  R.CTApp
+                    (R.sname "to_nonconst")
+                    [ R.CTVerbatim "Type", R.CTVerbatim "Type##_t" ]
+                    [ R.CVar $ R.sname varname ]
+                -- "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
+tmplArgToCallCExp b (Arg (TemplateParamPointer _) varname) =
+  case b of
+    CPrim    -> R.CVar $ R.sname varname
+    NonCPrim -> R.CTApp
+                  (R.sname "to_nonconst")
+                  [ R.CTVerbatim "Type", R.CTVerbatim "Type##_t" ]
+                  [ R.CVar $ R.sname varname ]
+                  -- "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
+tmplArgToCallCExp _ (Arg _ varname) = R.CVar $ R.sname varname
+
 
 -- TODO: remove this
 tmplArgToCallString
