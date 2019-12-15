@@ -48,57 +48,54 @@ data HsFunSig = HsFunSig { hsSigTypes :: [Type ()]
                          , hsSigConstraints :: [Asst ()]
                          }
 
-cvarToStr :: CTypes -> IsConst -> String -> String
-cvarToStr ctyp isconst varname = ctypToStr ctyp isconst <> " " <> varname
-
-ctypToStr :: CTypes -> IsConst -> String
-ctypToStr ctyp isconst =
-  let typword = case ctyp of
-        CTBool      -> "bool"
-        CTChar      -> "char"
-        CTClock     -> "clock_t"
-        CTDouble    -> "double"
-        CTFile      -> "FILE"
-        CTFloat     -> "float"
-        CTFpos      -> "fpos_t"
-        CTInt       -> "int"
-        CTIntMax    -> "intmax_t"
-        CTIntPtr    -> "intptr_t"
-        CTJmpBuf    -> "jmp_buf"
-        CTLLong     -> "long long"
-        CTLong      -> "long"
-        CTPtrdiff   -> "ptrdiff_t"
-        CTSChar     -> "sized char"
-        CTSUSeconds -> "suseconds_t"
-        CTShort     -> "short"
-        CTSigAtomic -> "sig_atomic_t"
-        CTSize      -> "size_t"
-        CTTime      -> "time_t"
-        CTUChar     -> "unsigned char"
-        CTUInt      -> "unsigned int"
-        CTUIntMax   -> "uintmax_t"
-        CTUIntPtr   -> "uintptr_t"
-        CTULLong    -> "unsigned long long"
-        CTULong     -> "unsigned long"
-        CTUSeconds  -> "useconds_t"
-        CTUShort    -> "unsigned short"
-        CTWchar     -> "wchar_t"
-        CTInt8      -> "int8_t"
-        CTInt16     -> "int16_t"
-        CTInt32     -> "int32_t"
-        CTInt64     -> "int64_t"
-        CTUInt8     -> "uint8_t"
-        CTUInt16    -> "uint16_t"
-        CTUInt32    -> "uint32_t"
-        CTUInt64    -> "uint64_t"
-        CTString    -> "char*"
-        CTVoidStar  -> "void*"
-        CEnum _ type_str -> type_str
-        CPointer s  -> ctypToStr s NoConst <> "*"
-        CRef s      -> ctypToStr s NoConst <> "*"
+ctypToCType :: CTypes -> IsConst -> R.CType Identity
+ctypToCType ctyp isconst =
+  let typ = case ctyp of
+        CTBool      -> R.CTSimple $ R.sname "bool"
+        CTChar      -> R.CTSimple $ R.sname "char"
+        CTClock     -> R.CTSimple $ R.sname "clock_t"
+        CTDouble    -> R.CTSimple $ R.sname "double"
+        CTFile      -> R.CTSimple $ R.sname "FILE"
+        CTFloat     -> R.CTSimple $ R.sname "float"
+        CTFpos      -> R.CTSimple $ R.sname "fpos_t"
+        CTInt       -> R.CTSimple $ R.sname "int"
+        CTIntMax    -> R.CTSimple $ R.sname "intmax_t"
+        CTIntPtr    -> R.CTSimple $ R.sname "intptr_t"
+        CTJmpBuf    -> R.CTSimple $ R.sname "jmp_buf"
+        CTLLong     -> R.CTSimple $ R.sname "long long"
+        CTLong      -> R.CTSimple $ R.sname "long"
+        CTPtrdiff   -> R.CTSimple $ R.sname "ptrdiff_t"
+        CTSChar     -> R.CTSimple $ R.sname "sized char"
+        CTSUSeconds -> R.CTSimple $ R.sname "suseconds_t"
+        CTShort     -> R.CTSimple $ R.sname "short"
+        CTSigAtomic -> R.CTSimple $ R.sname "sig_atomic_t"
+        CTSize      -> R.CTSimple $ R.sname "size_t"
+        CTTime      -> R.CTSimple $ R.sname "time_t"
+        CTUChar     -> R.CTSimple $ R.sname "unsigned char"
+        CTUInt      -> R.CTSimple $ R.sname "unsigned int"
+        CTUIntMax   -> R.CTSimple $ R.sname "uintmax_t"
+        CTUIntPtr   -> R.CTSimple $ R.sname "uintptr_t"
+        CTULLong    -> R.CTSimple $ R.sname "unsigned long long"
+        CTULong     -> R.CTSimple $ R.sname "unsigned long"
+        CTUSeconds  -> R.CTSimple $ R.sname "useconds_t"
+        CTUShort    -> R.CTSimple $ R.sname "unsigned short"
+        CTWchar     -> R.CTSimple $ R.sname "wchar_t"
+        CTInt8      -> R.CTSimple $ R.sname "int8_t"
+        CTInt16     -> R.CTSimple $ R.sname "int16_t"
+        CTInt32     -> R.CTSimple $ R.sname "int32_t"
+        CTInt64     -> R.CTSimple $ R.sname "int64_t"
+        CTUInt8     -> R.CTSimple $ R.sname "uint8_t"
+        CTUInt16    -> R.CTSimple $ R.sname "uint16_t"
+        CTUInt32    -> R.CTSimple $ R.sname "uint32_t"
+        CTUInt64    -> R.CTSimple $ R.sname "uint64_t"
+        CTString    -> R.CTStar $ R.CTSimple $ R.sname "char"
+        CTVoidStar  -> R.CTStar R.CTVoid
+        CEnum _ type_str -> R.CTVerbatim type_str
+        CPointer s  -> R.CTStar (ctypToCType s NoConst)
+        CRef s      -> R.CTStar (ctypToCType s NoConst)
   in case isconst of
-       Const   -> "const" <> " " <> typword
-       NoConst -> typword
+       Const   -> R.CTConst typ
+       NoConst -> typ
 
 self_ :: Types
 self_ = SelfType
@@ -293,32 +290,32 @@ cppclassmove c vname = Arg (cppclassmove_ c) vname
 
 argToCTypVar :: Arg -> (R.CType Identity, R.CName Identity)
 argToCTypVar (Arg (CT ctyp isconst) varname) =
-  (R.CTVerbatim (ctypToStr ctyp isconst), R.sname varname)
+  (ctypToCType ctyp isconst, R.sname varname)
 argToCTypVar (Arg SelfType varname) =
-  (R.CTVerbatim "Type ## _p", R.sname varname)
+  (R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p" ]), R.sname varname)
 argToCTypVar (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
-    Const   -> (R.CTVerbatim ("const_" <> cname <> "_p"), R.sname varname)
-    NoConst -> (R.CTVerbatim (cname <> "_p"), R.sname varname)
+    Const   -> (R.CTSimple (R.sname ("const_" <> cname <> "_p")), R.sname varname)
+    NoConst -> (R.CTSimple (R.sname (cname <> "_p")), R.sname varname)
   where cname = ffiClassName c
 argToCTypVar (Arg (CPT (CPTClassRef c) isconst) varname) =
   case isconst of
-    Const   -> (R.CTVerbatim ("const_" <> cname <> "_p"), R.sname varname)
-    NoConst -> (R.CTVerbatim (cname <> "_p"), R.sname varname)
+    Const   -> (R.CTSimple (R.sname ("const_" <> cname <> "_p")), R.sname varname)
+    NoConst -> (R.CTSimple (R.sname (cname <> "_p")), R.sname varname)
   where cname = ffiClassName c
 argToCTypVar (Arg (CPT (CPTClassCopy c) isconst) varname) =
   case isconst of
-    Const   -> (R.CTVerbatim ("const_" <> cname <> "_p"), R.sname varname)
-    NoConst -> (R.CTVerbatim (cname <> "_p"), R.sname varname)
+    Const   -> (R.CTSimple (R.sname ("const_" <> cname <> "_p")), R.sname varname)
+    NoConst -> (R.CTSimple (R.sname (cname <> "_p")), R.sname varname)
   where cname = ffiClassName c
 argToCTypVar (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
-    Const   -> (R.CTVerbatim ("const_" <> cname <> "_p"), R.sname varname)
-    NoConst -> (R.CTVerbatim (cname <> "_p"), R.sname varname)
+    Const   -> (R.CTSimple (R.sname ("const_" <> cname <> "_p")), R.sname varname)
+    NoConst -> (R.CTSimple (R.sname (cname <> "_p")), R.sname varname)
   where cname = ffiClassName c
-argToCTypVar (Arg (TemplateApp     _) varname) = (R.CTVerbatim "void*", R.sname varname)
-argToCTypVar (Arg (TemplateAppRef  _) varname) = (R.CTVerbatim "void*", R.sname varname)
-argToCTypVar (Arg (TemplateAppMove _) varname) = (R.CTVerbatim "void*", R.sname varname)
+argToCTypVar (Arg (TemplateApp     _) varname) = (R.CTStar R.CTVoid, R.sname varname)
+argToCTypVar (Arg (TemplateAppRef  _) varname) = (R.CTStar R.CTVoid, R.sname varname)
+argToCTypVar (Arg (TemplateAppMove _) varname) = (R.CTStar R.CTVoid, R.sname varname)
 argToCTypVar t = error ("argToCTypVar: " <> show t)
 
 argsToCTypVar :: [Arg] -> [ (R.CType Identity, R.CName Identity) ]
@@ -335,7 +332,7 @@ argToCallCExp (Arg t e) = c2Cxx t (R.CVar (R.sname e))
 
 -- TODO: rename this function by castExpressionFrom/To or something like that.
 returnCType :: Types -> R.CType Identity
-returnCType (CT ctyp isconst)        = R.CTVerbatim (ctypToStr ctyp isconst)
+returnCType (CT ctyp isconst)        = ctypToCType ctyp isconst
 returnCType Void                     = R.CTVoid
 returnCType SelfType                 = R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p" ])
 returnCType (CPT (CPTClass c) _)     = R.CTSimple (R.sname (ffiClassName c <> "_p"))
@@ -466,7 +463,7 @@ tmplArgToCTypVar ::
   -> Arg
   -> (R.CType Identity, R.CName Identity)
 tmplArgToCTypVar _ _  (Arg (CT ctyp isconst) varname) =
-  (R.CTVerbatim (ctypToStr ctyp isconst), R.sname varname)
+  (ctypToCType ctyp isconst, R.sname varname)
 tmplArgToCTypVar _ t (Arg SelfType varname) =
   (R.CTVerbatim (tclass_oname t <> "*"), R.sname varname)
 tmplArgToCTypVar _ _ (Arg (CPT (CPTClass c) isconst) varname) =
@@ -591,7 +588,7 @@ tmplRetTypeToString ::
      IsCPrimitive
   -> Types
   -> String
-tmplRetTypeToString _ (CT ctyp isconst)        = ctypToStr ctyp isconst
+tmplRetTypeToString _ (CT ctyp isconst)        = R.renderCType $ ctypToCType ctyp isconst
 tmplRetTypeToString _ Void                     = "void"
 tmplRetTypeToString _ SelfType                 = "void*"
 tmplRetTypeToString _ (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
@@ -615,33 +612,33 @@ tmplRetTypeToString b (TemplateParamPointer _) = case b of
 
 tmplMemFuncArgToCTypVar :: Class -> Arg -> (R.CType Identity, R.CName Identity)
 tmplMemFuncArgToCTypVar _ (Arg (CT ctyp isconst) varname) =
-  (R.CTVerbatim (ctypToStr ctyp isconst), R.sname varname)
+  (ctypToCType ctyp isconst, R.sname varname)
 tmplMemFuncArgToCTypVar c (Arg SelfType varname) =
-  (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
+  (R.CTSimple (R.sname (ffiClassName c <> "_p")), R.sname varname)
 tmplMemFuncArgToCTypVar _ (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
-    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
+    Const   -> (R.CTSimple (R.sname ("const_" <> ffiClassName c <> "_p")), R.sname varname)
+    NoConst -> (R.CTSimple (R.sname (ffiClassName c <> "_p")), R.sname varname)
 tmplMemFuncArgToCTypVar _ (Arg (CPT (CPTClassRef c) isconst) varname) =
   case isconst of
-    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
+    Const   -> (R.CTSimple (R.sname ("const_" <> ffiClassName c <> "_p")), R.sname varname)
+    NoConst -> (R.CTSimple (R.sname (ffiClassName c <> "_p")), R.sname varname)
 tmplMemFuncArgToCTypVar _ (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
-    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateApp     _) v) = (R.CTVerbatim "void*", R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateAppRef  _) v) = (R.CTVerbatim "void*", R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateAppMove _) v) = (R.CTVerbatim "void*", R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateType   _)  v) = (R.CTVerbatim "void*", R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateParam _) v) = (R.CTVerbatim "Type##_p", R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateParamPointer _) v) = (R.CTVerbatim "Type##_p", R.sname v)
+    Const   -> (R.CTSimple (R.sname ("const_" <> ffiClassName c <> "_p")), R.sname varname)
+    NoConst -> (R.CTSimple (R.sname (ffiClassName c <> "_p")), R.sname varname)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateApp     _) v) = (R.CTStar R.CTVoid, R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateAppRef  _) v) = (R.CTStar R.CTVoid, R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateAppMove _) v) = (R.CTStar R.CTVoid, R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateType   _)  v) = (R.CTStar R.CTVoid, R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateParam _) v) = (R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p" ]), R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateParamPointer _) v) = (R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p" ]), R.sname v)
 tmplMemFuncArgToCTypVar _ _ = error "tmplMemFuncArgToString: undefined"
 
 
 
 tmplMemFuncRetTypeToString :: Class -> Types -> String
-tmplMemFuncRetTypeToString _ (CT ctyp isconst)        = ctypToStr ctyp isconst
+tmplMemFuncRetTypeToString _ (CT ctyp isconst)        = R.renderCType $ ctypToCType ctyp isconst
 tmplMemFuncRetTypeToString _ Void                     = "void"
 tmplMemFuncRetTypeToString c SelfType                 = ffiClassName c <> "_p"
 tmplMemFuncRetTypeToString _ (CPT (CPTClass c) _)     = ffiClassName c <> "_p"

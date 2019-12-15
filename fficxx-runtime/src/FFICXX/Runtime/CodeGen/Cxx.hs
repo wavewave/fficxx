@@ -79,6 +79,7 @@ data CType (f :: * -> *) =
   | CTTApp        -- template type T<t1,t2,..>
       (CName f)   -- ^ template type name
       [ CType f ] -- ^ template parameters
+  | CTConst (CType f)
   | CTVerbatim String
 
 
@@ -148,6 +149,7 @@ renderCType (CTSimple n)   = renderCName n
 renderCType (CTStar t)     = renderCType t <> "*"
 renderCType CTAuto         = "auto"
 renderCType (CTTApp n ts)  = renderCName n <> "<" <> intercalate ", " (map renderCType ts) <> ">"
+renderCType (CTConst t)    = "const " <> renderCType t
 renderCType (CTVerbatim t) = t
 
 renderCExp :: CExp Identity -> String
