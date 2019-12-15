@@ -347,7 +347,7 @@ returnCpp b ret caller =
       where str = ffiClassName c'
     TemplateApp (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
-          (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
+          (R.CVarDecl (R.CTStar (R.CTVerbatim cpptype)) (R.sname "r"))
           (R.CNew (R.sname cpptype) [ caller ])
       , R.CReturn $
           R.CTApp
@@ -357,7 +357,7 @@ returnCpp b ret caller =
       ]
     TemplateAppRef (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
-          (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
+          (R.CVarDecl (R.CTStar (R.CTVerbatim cpptype)) (R.sname "r"))
           (R.CNew (R.sname cpptype) [ caller ])
       , R.CReturn $
           R.CTApp
@@ -367,7 +367,7 @@ returnCpp b ret caller =
       ]
     TemplateAppMove (TemplateAppInfo _ _ cpptype) ->
       [ R.CInit
-          (R.CVarDecl (R.CTVerbatim (cpptype <> "*")) (R.sname "r"))
+          (R.CVarDecl (R.CTStar (R.CTVerbatim cpptype)) (R.sname "r"))
           (R.CNew (R.sname cpptype) [ caller ])
       , R.CReturn $
           R.CApp
@@ -500,14 +500,18 @@ tmplFunToDef b t@TmplCls {..} f =
           [ R.CDelete $
               R.CTApp
                 (R.sname "static_cast")
-                [ R.CTVerbatim (tclass_oname <> "<Type>*")]
+                [ R.CTStar (R.CTTApp (R.sname tclass_oname) [ R.CTSimple (R.sname "Type") ]) ]
                 [ R.CVar (R.sname "p") ]
           ]
         TFun {..}    ->
           returnCpp b (tfun_ret) $
             R.CBinOp
               R.CArrow
-              (R.CTApp (R.sname "static_cast") [R.CTVerbatim (tclass_oname <> "<Type>*")] [R.CVar $ R.sname "p"])
+              (R.CTApp
+                 (R.sname "static_cast")
+                 [ R.CTStar (R.CTTApp (R.sname tclass_oname) [ R.CTSimple (R.sname "Type") ]) ]
+                 [ R.CVar $ R.sname "p" ]
+              )
               (R.CApp
                 (R.CVar (R.sname tfun_oname))
                 (map (tmplArgToCallCExp b) tfun_args)
