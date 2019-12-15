@@ -465,27 +465,27 @@ tmplArgToCTypVar ::
 tmplArgToCTypVar _ _  (Arg (CT ctyp isconst) varname) =
   (ctypToCType ctyp isconst, R.sname varname)
 tmplArgToCTypVar _ t (Arg SelfType varname) =
-  (R.CTVerbatim (tclass_oname t <> "*"), R.sname varname)
+  (R.CTStar (R.CTSimple (R.sname (tclass_oname t))), R.sname varname)
 tmplArgToCTypVar _ _ (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
-    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
+    Const   -> (R.CTSimple (R.sname ("const_" <> ffiClassName c <> "_p")), R.sname varname)
+    NoConst -> (R.CTSimple (R.sname (ffiClassName c <> "_p")), R.sname varname)
 tmplArgToCTypVar _ _ (Arg (CPT (CPTClassRef c) isconst) varname) =
   case isconst of
-    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
+    Const   -> (R.CTSimple (R.sname ("const_" <> ffiClassName c <> "_p")), R.sname varname)
+    NoConst -> (R.CTSimple (R.sname (ffiClassName c <> "_p")), R.sname varname)
 tmplArgToCTypVar _ _ (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
-    Const   -> (R.CTVerbatim ("const_" <> ffiClassName c <> "_p"), R.sname varname)
-    NoConst -> (R.CTVerbatim (ffiClassName c <> "_p"), R.sname varname)
-tmplArgToCTypVar _ _ (Arg (TemplateApp     _) v) = (R.CTVerbatim "void*", R.sname v)
-tmplArgToCTypVar _ _ (Arg (TemplateAppRef  _) v) = (R.CTVerbatim "void*", R.sname v)
-tmplArgToCTypVar _ _ (Arg (TemplateAppMove _) v) = (R.CTVerbatim "void*", R.sname v)
-tmplArgToCTypVar _ _ (Arg (TemplateType    _) v) = (R.CTVerbatim "void*", R.sname v)
-tmplArgToCTypVar CPrim    _ (Arg (TemplateParam _) v) = (R.CTVerbatim "Type", R.sname v)
-tmplArgToCTypVar NonCPrim _ (Arg (TemplateParam _) v) = (R.CTVerbatim "Type ## _p", R.sname v)
-tmplArgToCTypVar CPrim    _ (Arg (TemplateParamPointer _) v) = (R.CTVerbatim "Type", R.sname v)
-tmplArgToCTypVar NonCPrim _ (Arg (TemplateParamPointer _) v) = (R.CTVerbatim "Type ## _p", R.sname v)
+    Const   -> (R.CTSimple (R.sname ("const_" <> ffiClassName c <> "_p")), R.sname varname)
+    NoConst -> (R.CTSimple (R.sname (ffiClassName c <> "_p")), R.sname varname)
+tmplArgToCTypVar _ _ (Arg (TemplateApp     _) v) = (R.CTStar R.CTVoid, R.sname v)
+tmplArgToCTypVar _ _ (Arg (TemplateAppRef  _) v) = (R.CTStar R.CTVoid, R.sname v)
+tmplArgToCTypVar _ _ (Arg (TemplateAppMove _) v) = (R.CTStar R.CTVoid, R.sname v)
+tmplArgToCTypVar _ _ (Arg (TemplateType    _) v) = (R.CTStar R.CTVoid, R.sname v)
+tmplArgToCTypVar CPrim    _ (Arg (TemplateParam _) v) = (R.CTSimple (R.sname "Type"), R.sname v)
+tmplArgToCTypVar NonCPrim _ (Arg (TemplateParam _) v) = (R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p" ]), R.sname v)
+tmplArgToCTypVar CPrim    _ (Arg (TemplateParamPointer _) v) = (R.CTSimple (R.sname "Type"), R.sname v)
+tmplArgToCTypVar NonCPrim _ (Arg (TemplateParamPointer _) v) = (R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p"]), R.sname v)
 tmplArgToCTypVar _ _ _ = error "tmplArgToCTypVar: undefined"
 
 tmplAllArgsToCTypVar ::
@@ -509,14 +509,14 @@ tmplArgToCallCExp
 tmplArgToCallCExp _ (Arg (CPT (CPTClass c) _) varname) =
   R.CTApp
     (R.sname "to_nonconst")
-    [ R.CTVerbatim str, R.CTVerbatim (str <> "_t") ]
+    [ R.CTSimple (R.sname str), R.CTSimple (R.sname (str <> "_t")) ]
     [ R.CVar (R.sname varname) ]
   where str = ffiClassName c
   -- "to_nonconst<"<>str<>","<>str<>"_t>("<>varname<>")"
 tmplArgToCallCExp _ (Arg (CPT (CPTClassRef c) _) varname) =
   R.CTApp
     (R.sname "to_nonconstref")
-    [ R.CTVerbatim str, R.CTVerbatim (str <> "_t") ]
+    [ R.CTSimple (R.sname str), R.CTSimple (R.sname (str <> "_t")) ]
     [ R.CStar $ R.CVar $ R.sname varname ]
   where str = ffiClassName c
   -- "to_nonconstref<"<>str<>","<>str<>"_t>(*"<>varname<>")"
@@ -525,7 +525,7 @@ tmplArgToCallCExp _ (Arg (CPT (CPTClassMove c) _) varname) =
     (R.CVar (R.sname "std::move"))
     [R.CTApp
       (R.sname "to_nonconstref")
-      [ R.CTVerbatim str, R.CTVerbatim (str <> "_t") ]
+      [ R.CTSimple (R.sname str), R.CTSimple (R.sname (str <> "_t")) ]
       [ R.CStar $ R.CVar $ R.sname varname ]
     ]
   where str = ffiClassName c
@@ -538,7 +538,7 @@ tmplArgToCallCExp _ (Arg (TemplateApp x) varname) =
     TArg_TypeParam p ->
       R.CTApp
         (R.sname "static_cast")
-        [ R.CTVerbatim (tclass_oname (tapp_tclass x) <> "<Type>*") ] -- TODO: AST for this
+        [ R.CTStar $ R.CTTApp (R.sname (tclass_oname (tapp_tclass x))) [ R.CTSimple (R.sname "Type") ] ]
         [ R.CVar $ R.sname varname ]
       -- "static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")"
     _ -> error "tmplArgToCallCExp: TemplateApp"
@@ -548,7 +548,7 @@ tmplArgToCallCExp _ (Arg (TemplateAppRef x) varname) =
       R.CStar $
         R.CTApp
           (R.sname "static_cast")
-          [ R.CTVerbatim (tclass_oname (tapp_tclass x) <> "<Type>*") ]
+          [ R.CTStar $ R.CTTApp (R.sname (tclass_oname (tapp_tclass x))) [ R.CTSimple (R.sname "Type") ] ]
           [ R.CVar $ R.sname varname ]
       -- "*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> "))"
     _ -> error "tmplArgToCallCExp: TemplateAppRef"
@@ -560,7 +560,7 @@ tmplArgToCallCExp _ (Arg (TemplateAppMove x) varname) =
         [ R.CStar $
             R.CTApp
               (R.sname "static_cast")
-              [ R.CTVerbatim (tclass_oname (tapp_tclass x) <> "<Type>*") ]
+              [ R.CTStar $ R.CTTApp (R.sname (tclass_oname (tapp_tclass x))) [ R.CTSimple (R.sname "Type") ] ]
               [ R.CVar $ R.sname varname ]
         ]
       -- "std::move(*" <> "(static_cast<" <> tclass_oname (tapp_tclass x) <> "<Type>*>(" <> varname <> ")))"
@@ -571,7 +571,7 @@ tmplArgToCallCExp b (Arg (TemplateParam _) varname) =
     NonCPrim -> R.CStar $
                   R.CTApp
                     (R.sname "to_nonconst")
-                    [ R.CTVerbatim "Type", R.CTVerbatim "Type##_t" ]
+                    [ R.CTSimple (R.sname "Type"), R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t"]) ]
                     [ R.CVar $ R.sname varname ]
                 -- "*(to_nonconst<Type,Type ## _t>(" <> varname <> "))"
 tmplArgToCallCExp b (Arg (TemplateParamPointer _) varname) =
@@ -579,7 +579,7 @@ tmplArgToCallCExp b (Arg (TemplateParamPointer _) varname) =
     CPrim    -> R.CVar $ R.sname varname
     NonCPrim -> R.CTApp
                   (R.sname "to_nonconst")
-                  [ R.CTVerbatim "Type", R.CTVerbatim "Type##_t" ]
+                  [ R.CTSimple (R.sname "Type"), R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t"]) ]
                   [ R.CVar $ R.sname varname ]
                   -- "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
 tmplArgToCallCExp _ (Arg _ varname) = R.CVar $ R.sname varname
