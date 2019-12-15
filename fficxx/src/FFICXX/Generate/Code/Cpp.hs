@@ -422,12 +422,12 @@ funcToDef :: Class -> Function -> R.CStatement Identity
 funcToDef c func
   | isNewFunc func =
     let body = [ R.CInit
-                   (R.CVarDecl (R.CTVerbatim "Type*") (R.sname "newp"))
+                   (R.CVarDecl (R.CTStar (R.CTSimple (R.sname "Type"))) (R.sname "newp"))
                    (R.CNew (R.sname "Type") $ map argToCallCExp (genericFuncArgs func))
                , R.CReturn $
                    R.CTApp
                      (R.sname "to_nonconst")
-                     [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
+                     [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t"]), R.CTSimple (R.sname "Type") ]
                      [ R.CVar (R.sname "newp") ]
                ]
     in R.CDefinition Nothing (funcToDecl c func) body
@@ -435,7 +435,7 @@ funcToDef c func
     let body = [ R.CDelete $
                    R.CTApp
                      (R.sname "to_nonconst")
-                     [ R.CTVerbatim "Type", R.CTVerbatim "Type ## _t" ]
+                     [ R.CTSimple (R.sname "Type"), R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t" ]) ]
                      [ R.CVar (R.sname "p") ]
                ]
     in R.CDefinition Nothing (funcToDecl c func) body
@@ -475,7 +475,7 @@ tmplFunToDecl b t@TmplCls {..} f@TFunNew {..} = R.CFunDecl ret func args
     args = tmplAllArgsToCTypVar b NoSelf t tfun_new_args
 tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.CFunDecl ret func args
   where
-    ret  = R.CTVerbatim "void"
+    ret  = R.CTVoid
     func = R.CName [R.NamePart (tclass_name <> "_delete_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b Self t []
 
@@ -493,9 +493,9 @@ tmplFunToDef b t@TmplCls {..} f =
           let caller =
                 R.CTNew
                   (R.sname tclass_oname)
-                  [ R.CTVerbatim "Type" ]
+                  [ R.CTSimple (R.sname "Type") ]
                   (map (tmplArgToCallCExp b) tfun_new_args)
-          in  [ R.CReturn $ R.CTApp (R.sname "static_cast") [R.CTVerbatim "void*"] [caller] ]
+          in  [ R.CReturn $ R.CTApp (R.sname "static_cast") [R.CTStar R.CTVoid] [caller] ]
         TFunDelete ->
           [ R.CDelete $
               R.CTApp
@@ -541,7 +541,7 @@ accessorToDef v a =
           R.CArrow
           (R.CTApp
             (R.sname "to_nonconst")
-            [ R.CTVerbatim "Type", R.CTVerbatim "Type##_t" ]
+            [ R.CTSimple (R.sname "Type"), R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t"]) ]
             [ R.CVar (R.sname "p") ]
           )
           (R.CVar (R.sname (arg_name (unVariable v))))
@@ -577,11 +577,11 @@ tmplMemberFunToDef c f =
                R.CArrow
                (R.CTApp
                  (R.sname "to_nonconst")
-                 [ R.CTVerbatim (ffiClassName c), R.CTVerbatim (ffiClassName c <> "_t") ]
+                 [ R.CTSimple (R.sname (ffiClassName c)), R.CTSimple (R.sname (ffiClassName c <> "_t")) ]
                  [ R.CVar $ R.sname "p" ]
                )
                (R.CTApp
                  (R.sname (tmf_name f))
-                 [ R.CTVerbatim "Type" ]
+                 [ R.CTSimple (R.sname "Type") ]
                  (map (tmplArgToCallCExp NonCPrim) (tmf_args f))
                )
