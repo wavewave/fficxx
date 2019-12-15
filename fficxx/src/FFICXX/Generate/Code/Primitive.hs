@@ -356,38 +356,38 @@ c2Cxx t e =
     CT  (CRef _)         _ -> R.CStar e
     CPT (CPTClass     c) _ -> R.CTApp
                                 (R.sname "to_nonconst")
-                                [ R.CTVerbatim f, R.CTVerbatim (f <> "_t")]
+                                [ R.CTSimple (R.sname f), R.CTSimple (R.sname (f <> "_t")) ]
                                 [ e ]
                               where f = ffiClassName c
     CPT (CPTClassRef  c) _ -> R.CTApp
                                 (R.sname "to_nonconstref")
-                                [ R.CTVerbatim f, R.CTVerbatim (f <> "_t")]
+                                [ R.CTSimple (R.sname f), R.CTSimple (R.sname (f <> "_t")) ]
                                 [ R.CStar e ]
                               where f = ffiClassName c
     CPT (CPTClassCopy c) _ -> R.CStar $
                                 R.CTApp
                                   (R.sname "to_nonconst")
-                                  [ R.CTVerbatim f, R.CTVerbatim (f <> "_t")]
+                                  [ R.CTSimple (R.sname f), R.CTSimple (R.sname (f <> "_t")) ]
                                   [ e ]
                               where f = ffiClassName c
     CPT (CPTClassMove c) _ -> R.CApp
                                 (R.CVar (R.sname "std::move"))
                                 [ R.CTApp
                                     (R.sname "to_nonconstref")
-                                    [ R.CTVerbatim f, R.CTVerbatim (f <> "_t")]
+                                    [ R.CTSimple (R.sname f), R.CTSimple (R.sname (f <> "_t")) ]
                                     [ R.CStar e ]
                                 ]
                               where f = ffiClassName c
     TemplateApp    p       -> R.CTApp
                                 (R.sname "to_nonconst")
-                                [ R.CTVerbatim (tapp_CppTypeForParam p), R.CTVerbatim "void" ]
+                                [ R.CTVerbatim (tapp_CppTypeForParam p), R.CTVoid ]
                                 [ e ]
     TemplateAppRef p       -> R.CStar $
-                                R.CCast (R.CTVerbatim $ tapp_CppTypeForParam p <> "*") e
+                                R.CCast (R.CTStar (R.CTVerbatim (tapp_CppTypeForParam p))) e
     TemplateAppMove p      -> R.CApp
                                 (R.CVar (R.sname "std::move"))
                                 [ R.CStar $
-                                    R.CCast (R.CTVerbatim $ tapp_CppTypeForParam p <> "*") e
+                                    R.CCast (R.CTStar (R.CTVerbatim (tapp_CppTypeForParam p))) e
                                 ]
     _                      -> e
 
@@ -401,8 +401,8 @@ cxx2C t e =
     SelfType ->
       R.CTApp
         (R.sname "to_nonconst")
-        [ R.CTVerbatim "Type##_t", R.CTVerbatim "Type" ]
-        [ R.CCast (R.CTVerbatim "Type*") e ]
+        [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t"]), R.CTSimple (R.sname "Type") ]
+        [ R.CCast (R.CTStar (R.CTSimple (R.sname "Type"))) e ]
       -- "to_nonconst<Type ## _t, Type>((Type *)" <> e <> ")"
     CT (CRef _) _ -> R.CAddr e
       -- "&(" <> e <> ")"
@@ -411,21 +411,21 @@ cxx2C t e =
     CPT (CPTClass c) _ ->
       R.CTApp
         (R.sname "to_nonconst")
-        [ R.CTVerbatim (f <> "_t"), R.CTVerbatim f ]
-        [ R.CCast (R.CTVerbatim (f <> "*")) e ]
+        [ R.CTSimple (R.sname (f <> "_t")), R.CTSimple (R.sname f) ]
+        [ R.CCast (R.CTStar (R.CTSimple (R.sname f))) e ]
       where f = ffiClassName c
       -- "to_nonconst<" <> f <> "_t," <> f <> ">((" <> f <> "*)" <> e <> ")"
     CPT (CPTClassRef c) _  ->
       R.CTApp
         (R.sname "to_nonconst")
-        [ R.CTVerbatim (f <> "_t"), R.CTVerbatim f ]
+        [ R.CTSimple (R.sname (f <> "_t")), R.CTSimple (R.sname f) ]
         [ R.CAddr e ]
       where f = ffiClassName c
       -- "to_nonconst<" <> f <> "_t," <> f <> ">(&(" <> e <> "))"
     CPT (CPTClassCopy c) _ ->
       R.CTApp
         (R.sname "to_nonconst")
-        [ R.CTVerbatim (f <> "_t"), R.CTVerbatim f ]
+        [ R.CTSimple (R.sname (f <> "_t")), R.CTSimple (R.sname f) ]
         [ R.CNew (R.sname f) [e] ]
       where f = ffiClassName c
       -- "to_nonconst<" <> f <> "_t," <> f <> ">(new " <> f <> "(" <> e <> "))"
@@ -434,7 +434,7 @@ cxx2C t e =
         (R.CVar (R.sname "std::move"))
         [ R.CTApp
             (R.sname "to_nonconst")
-            [ R.CTVerbatim (f <> "_t"), R.CTVerbatim f ]
+            [ R.CTSimple (R.sname (f <> "_t")), R.CTSimple (R.sname f) ]
             [ R.CAddr e ]
         ]
       where f = ffiClassName c
