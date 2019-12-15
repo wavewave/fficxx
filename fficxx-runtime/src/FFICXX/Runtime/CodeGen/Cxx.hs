@@ -59,8 +59,6 @@ eval (App (Lam f) x) = eval (f x)
 
 data PragmaParam = Once
 
-data CType (f :: * -> *) = CTVerbatim String
-
 -- | parts for interpolation
 newtype NamePart (f :: * -> *) = NamePart String
 
@@ -71,6 +69,14 @@ sname s = CName [NamePart s]
 
 renderCName :: CName Identity -> String
 renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
+
+
+data CType (f :: * -> *) =
+    CTVoid
+  | CTSimple (CName f)
+  | CTStar (CType f)
+  | CTAuto
+  | CTVerbatim String
 
 
 data COp = CArrow | CAssign
@@ -134,6 +140,10 @@ renderPragmaParam :: PragmaParam -> String
 renderPragmaParam Once = "once"
 
 renderCType :: CType Identity -> String
+renderCType CTVoid         = "void"
+renderCType (CTSimple n)   = renderCName n
+renderCType (CTStar t)     = renderCType t <> "*"
+renderCType CTAuto         = "auto"
 renderCType (CTVerbatim t) = t
 
 renderCExp :: CExp Identity -> String

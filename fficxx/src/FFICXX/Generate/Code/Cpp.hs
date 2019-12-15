@@ -194,7 +194,7 @@ genCppDefMacroTemplateMemberFunction c f =
     decl = tmplMemberFunToDecl c f
     autoinst =
       R.CInit
-        (R.CVarDecl (R.CTVerbatim "auto") (R.CName [R.NamePart ("a_" <> macroname <> "_"), R.NamePart "Type"]))
+        (R.CVarDecl R.CTAuto (R.CName [R.NamePart ("a_" <> macroname <> "_"), R.NamePart "Type"]))
         (R.CVar (R.CName [R.NamePart (macroname <> "_"), R.NamePart "Type"]))
 
 
@@ -269,7 +269,7 @@ genTmplFunCpp b t@TmplCls {..} f =
   autoinst =
     R.CInit
       (R.CVarDecl
-         (R.CTVerbatim "auto")
+         R.CTAuto
          (R.CName [R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"])
       )
       (R.CVar (R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]))
@@ -302,8 +302,9 @@ returnCpp b ret caller =
       [R.CReturn $
         R.CTApp
           (R.sname "to_nonconst")
-          [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
-          [ R.CCast (R.CTVerbatim "Type*") caller ]
+          [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t" ])
+          , R.CTSimple (R.sname "Type") ]
+          [ R.CCast (R.CTStar (R.CTSimple (R.sname "Type"))) caller ]
       ]
     CT (CRef _) _ ->
       [R.CReturn $ R.CAddr caller ]
@@ -313,15 +314,15 @@ returnCpp b ret caller =
       [R.CReturn $
         R.CTApp
           (R.sname "to_nonconst")
-          [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
-          [ R.CCast (R.CTVerbatim (str <> "*")) caller ]
+          [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
+          [ R.CCast (R.CTStar (R.CTSimple (R.sname str))) caller ]
       ]
       where str = ffiClassName c'
     CPT (CPTClassRef c') _ ->
       [R.CReturn $
         R.CTApp
           (R.sname "to_nonconst")
-          [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
+          [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CAddr caller ]
       ]
       where str = ffiClassName c'
@@ -329,7 +330,7 @@ returnCpp b ret caller =
       [R.CReturn $
         R.CTApp
           (R.sname "to_nonconst")
-          [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
+          [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CNew (R.sname str) [ caller ]  ]
       ]
       where str = ffiClassName c'
@@ -339,7 +340,7 @@ returnCpp b ret caller =
           (R.CVar (R.sname "std::move"))
           [R.CTApp
             (R.sname "to_nonconst")
-            [ R.CTVerbatim (str <> "_t"), R.CTVerbatim str ]
+            [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
             [ R.CAddr caller ]
           ]
       ]
@@ -351,7 +352,7 @@ returnCpp b ret caller =
       , R.CReturn $
           R.CTApp
             (R.sname "static_cast")
-            [ R.CTVerbatim "void*" ]
+            [ R.CTStar R.CTVoid ]
             [ R.CVar (R.sname "r") ]
       ]
     TemplateAppRef (TemplateAppInfo _ _ cpptype) ->
@@ -361,7 +362,7 @@ returnCpp b ret caller =
       , R.CReturn $
           R.CTApp
             (R.sname "static_cast")
-            [ R.CTVerbatim "void*" ]
+            [ R.CTStar R.CTVoid ]
             [ R.CVar (R.sname "r") ]
       ]
     TemplateAppMove (TemplateAppInfo _ _ cpptype) ->
@@ -373,7 +374,7 @@ returnCpp b ret caller =
             (R.CVar (R.sname "std::move"))
             [R.CTApp
               (R.sname "staic_cast")
-              [ R.CTVerbatim "void*" ]
+              [ R.CTStar R.CTVoid ]
               [ R.CVar (R.sname "r") ]
             ]
       ]
@@ -386,8 +387,8 @@ returnCpp b ret caller =
             NonCPrim ->
               R.CTApp
                 (R.sname "to_nonconst")
-                [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
-                [ R.CCast (R.CTVerbatim "Type*") $ R.CAddr caller ]
+                [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t" ]), R.CTSimple (R.sname "Type") ]
+                [ R.CCast (R.CTStar (R.CTSimple (R.sname "Type"))) $ R.CAddr caller ]
       ]
     TemplateParamPointer _  ->
       [ R.CReturn $
@@ -396,7 +397,7 @@ returnCpp b ret caller =
             NonCPrim ->
               R.CTApp
                 (R.sname "to_nonconst")
-                [ R.CTVerbatim "Type ## _t", R.CTVerbatim "Type" ]
+                [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t"]), R.CTSimple (R.sname "Type") ]
                 [ caller ]
       ]
 
@@ -494,26 +495,15 @@ tmplFunToDef b t@TmplCls {..} f =
                   (R.sname tclass_oname)
                   [ R.CTVerbatim "Type" ]
                   (map (tmplArgToCallCExp b) tfun_new_args)
-                --   "new " <> tclass_oname <> "<Type>("
-                -- <> tmplAllArgsToCallString b tfun_new_args
-                -- <> ")"
           in  [ R.CReturn $ R.CTApp (R.sname "static_cast") [R.CTVerbatim "void*"] [caller] ]
-                 -- R.CEVerbatim $ "static_cast<void*>("<>callstr<>")"
         TFunDelete ->
           [ R.CDelete $
               R.CTApp
                 (R.sname "static_cast")
                 [ R.CTVerbatim (tclass_oname <> "<Type>*")]
                 [ R.CVar (R.sname "p") ]
-            -- R.CEVerbatim $ "(static_cast<" <> tclass_oname <> "<Type>*>(p))"
           ]
         TFun {..}    ->
-          {- let callstr =
-                   "(static_cast<" <> tclass_oname <> "<Type>*>(p))->"
-                <> tfun_oname <> "("
-                <> tmplAllArgsToCallString b tfun_args
-                <> ")"
-          in -}
           returnCpp b (tfun_ret) $
             R.CBinOp
               R.CArrow
@@ -522,7 +512,6 @@ tmplFunToDef b t@TmplCls {..} f =
                 (R.CVar (R.sname tfun_oname))
                 (map (tmplArgToCallCExp b) tfun_args)
               )
-          -- (R.CEVerbatim callstr)
 
 -- Accessor Declaration and Definition
 
