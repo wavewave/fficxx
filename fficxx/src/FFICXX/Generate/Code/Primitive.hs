@@ -334,20 +334,20 @@ argToCallCExp (Arg t e) = c2Cxx t (R.CVar (R.sname e))
 
 
 -- TODO: rename this function by castExpressionFrom/To or something like that.
-rettypeToString :: Types -> String
-rettypeToString (CT ctyp isconst)        = ctypToStr ctyp isconst
-rettypeToString Void                     = "void"
-rettypeToString SelfType                 = "Type ## _p"
-rettypeToString (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
-rettypeToString (CPT (CPTClassRef c) _)  = ffiClassName c <> "_p"
-rettypeToString (CPT (CPTClassCopy c) _) = ffiClassName c <> "_p"
-rettypeToString (CPT (CPTClassMove c) _) = ffiClassName c <> "_p"
-rettypeToString (TemplateApp     _)      = "void*"
-rettypeToString (TemplateAppRef  _)      = "void*"
-rettypeToString (TemplateAppMove _)      = "void*"
-rettypeToString (TemplateType _)         = "void*"
-rettypeToString (TemplateParam _)        = "Type ## _p"
-rettypeToString (TemplateParamPointer _) = "Type ## _p"
+returnCType :: Types -> R.CType Identity
+returnCType (CT ctyp isconst)        = R.CTVerbatim (ctypToStr ctyp isconst)
+returnCType Void                     = R.CTVerbatim $ "void"
+returnCType SelfType                 = R.CTVerbatim "Type ## _p"
+returnCType (CPT (CPTClass c) _)     = R.CTVerbatim $ ffiClassName c <> "_p"
+returnCType (CPT (CPTClassRef c) _)  = R.CTVerbatim $ ffiClassName c <> "_p"
+returnCType (CPT (CPTClassCopy c) _) = R.CTVerbatim $ ffiClassName c <> "_p"
+returnCType (CPT (CPTClassMove c) _) = R.CTVerbatim $ ffiClassName c <> "_p"
+returnCType (TemplateApp     _)      = R.CTVerbatim $ "void*"
+returnCType (TemplateAppRef  _)      = R.CTVerbatim $ "void*"
+returnCType (TemplateAppMove _)      = R.CTVerbatim $ "void*"
+returnCType (TemplateType _)         = R.CTVerbatim $ "void*"
+returnCType (TemplateParam _)        = R.CTVerbatim $ "Type ## _p"
+returnCType (TemplateParamPointer _) = R.CTVerbatim $ "Type ## _p"
 
 -- TODO: Rewrite this with static_cast
 c2Cxx :: Types -> R.CExp Identity -> R.CExp Identity

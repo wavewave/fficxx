@@ -21,7 +21,7 @@ import FFICXX.Generate.Code.Primitive
                                     , CFunSig(..)
                                     , genericFuncArgs
                                     , genericFuncRet
-                                    , rettypeToString
+                                    , returnCType
                                     , tmplMemFuncArgToCTypVar
                                     , tmplMemFuncRetTypeToString
                                     , tmplAllArgsToCTypVar
@@ -230,12 +230,12 @@ genAllCppHeaderInclude header =
 topLevelFunDecl :: TopLevelFunction -> R.CFunDecl Identity
 topLevelFunDecl TopLevelFunction {..} = R.CFunDecl ret func args
   where
-    ret  = R.CTVerbatim (rettypeToString toplevelfunc_ret)
+    ret  = returnCType toplevelfunc_ret
     func = R.sname ("TopLevel_" <> maybe toplevelfunc_name id toplevelfunc_alias)
     args = argsToCTypVarNoSelf toplevelfunc_args
 topLevelFunDecl TopLevelVariable {..} = R.CFunDecl ret func []
   where
-    ret  = R.CTVerbatim (rettypeToString toplevelvar_ret)
+    ret  = returnCType toplevelvar_ret
     func = R.sname ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
 
 genTopLevelFuncCppDefinition :: TopLevelFunction -> R.CStatement Identity
@@ -406,13 +406,13 @@ returnCpp b ret caller =
 funcToDecl :: Class -> Function -> R.CFunDecl Identity
 funcToDecl c func
   | isNewFunc func || isStaticFunc func =
-    let ret   = R.CTVerbatim $ rettypeToString (genericFuncRet func)
+    let ret   = returnCType (genericFuncRet func)
         fname =
           R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
         args  = argsToCTypVarNoSelf (genericFuncArgs func)
     in R.CFunDecl ret fname args
   | otherwise =
-    let ret   = R.CTVerbatim $ rettypeToString (genericFuncRet func)
+    let ret   = returnCType (genericFuncRet func)
         fname =
           R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
         args  = argsToCTypVar (genericFuncArgs func)
@@ -518,7 +518,7 @@ tmplFunToDef b t@TmplCls {..} f =
 accessorToDecl :: Variable -> Accessor -> R.CFunDecl Identity
 accessorToDecl v a =
   let csig = accessorCFunSig (arg_type (unVariable v)) a
-      ret = R.CTVerbatim $ rettypeToString (cRetType csig)
+      ret = returnCType (cRetType csig)
       fname =
         R.CName [ R.NamePart "Type"
                 , R.NamePart (   "_"
