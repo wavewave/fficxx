@@ -584,27 +584,27 @@ tmplArgToCallCExp b (Arg (TemplateParamPointer _) varname) =
                   -- "to_nonconst<Type,Type ## _t>(" <> varname <> ")"
 tmplArgToCallCExp _ (Arg _ varname) = R.CVar $ R.sname varname
 
-tmplRetTypeToString ::
+tmplReturnCType ::
      IsCPrimitive
   -> Types
-  -> String
-tmplRetTypeToString _ (CT ctyp isconst)        = R.renderCType $ ctypToCType ctyp isconst
-tmplRetTypeToString _ Void                     = "void"
-tmplRetTypeToString _ SelfType                 = "void*"
-tmplRetTypeToString _ (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
-tmplRetTypeToString _ (CPT (CPTClassRef c) _)  = ffiClassName c <> "_p"
-tmplRetTypeToString _ (CPT (CPTClassCopy c) _) = ffiClassName c <> "_p"
-tmplRetTypeToString _ (CPT (CPTClassMove c) _) = ffiClassName c <> "_p"
-tmplRetTypeToString _ (TemplateApp     _)      = "void*"
-tmplRetTypeToString _ (TemplateAppRef  _)      = "void*"
-tmplRetTypeToString _ (TemplateAppMove _)      = "void*"
-tmplRetTypeToString _ (TemplateType _)         = "void*"
-tmplRetTypeToString b (TemplateParam _)        = case b of
-                                                   CPrim    -> "Type"
-                                                   NonCPrim -> "Type ## _p"
-tmplRetTypeToString b (TemplateParamPointer _) = case b of
-                                                   CPrim    -> "Type"
-                                                   NonCPrim -> "Type ## _p"
+  -> R.CType Identity
+tmplReturnCType _ (CT ctyp isconst)        = ctypToCType ctyp isconst
+tmplReturnCType _ Void                     = R.CTVoid
+tmplReturnCType _ SelfType                 = R.CTStar R.CTVoid
+tmplReturnCType _ (CPT (CPTClass c) _)     = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+tmplReturnCType _ (CPT (CPTClassRef c) _)  = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+tmplReturnCType _ (CPT (CPTClassCopy c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+tmplReturnCType _ (CPT (CPTClassMove c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+tmplReturnCType _ (TemplateApp     _)      = R.CTStar R.CTVoid
+tmplReturnCType _ (TemplateAppRef  _)      = R.CTStar R.CTVoid
+tmplReturnCType _ (TemplateAppMove _)      = R.CTStar R.CTVoid
+tmplReturnCType _ (TemplateType _)         = R.CTStar R.CTVoid
+tmplReturnCType b (TemplateParam _)        = case b of
+                                                   CPrim    -> R.CTSimple $ R.sname "Type"
+                                                   NonCPrim -> R.CTSimple $ R.CName [ R.NamePart "Type", R.NamePart "_p" ]
+tmplReturnCType b (TemplateParamPointer _) = case b of
+                                                   CPrim    -> R.CTSimple $ R.sname "Type"
+                                                   NonCPrim -> R.CTSimple $ R.CName [ R.NamePart "Type", R.NamePart "_p" ]
 
 -- ---------------------------
 -- Template Member Function --

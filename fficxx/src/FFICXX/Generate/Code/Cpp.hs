@@ -26,7 +26,7 @@ import FFICXX.Generate.Code.Primitive
                                     , tmplMemFuncRetTypeToString
                                     , tmplAllArgsToCTypVar
                                     , tmplArgToCallCExp
-                                    , tmplRetTypeToString
+                                    , tmplReturnCType
                                     )
 import FFICXX.Generate.Name         ( aliasedFuncName
                                     , cppFuncName
@@ -465,12 +465,12 @@ tmplFunToDecl ::
   -> R.CFunDecl Identity
 tmplFunToDecl b t@TmplCls {..} f@TFun {..}    = R.CFunDecl ret func args
   where
-    ret  = R.CTVerbatim (tmplRetTypeToString b tfun_ret)
+    ret  = tmplReturnCType b tfun_ret
     func = R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b Self t tfun_args
 tmplFunToDecl b t@TmplCls {..} f@TFunNew {..} = R.CFunDecl ret func args
   where
-    ret  = R.CTVerbatim (tmplRetTypeToString b (TemplateType t))
+    ret  = tmplReturnCType b (TemplateType t)
     func = R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b NoSelf t tfun_new_args
 tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.CFunDecl ret func args
