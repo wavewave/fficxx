@@ -336,18 +336,18 @@ argToCallCExp (Arg t e) = c2Cxx t (R.CVar (R.sname e))
 -- TODO: rename this function by castExpressionFrom/To or something like that.
 returnCType :: Types -> R.CType Identity
 returnCType (CT ctyp isconst)        = R.CTVerbatim (ctypToStr ctyp isconst)
-returnCType Void                     = R.CTVerbatim $ "void"
-returnCType SelfType                 = R.CTVerbatim "Type ## _p"
-returnCType (CPT (CPTClass c) _)     = R.CTVerbatim $ ffiClassName c <> "_p"
-returnCType (CPT (CPTClassRef c) _)  = R.CTVerbatim $ ffiClassName c <> "_p"
-returnCType (CPT (CPTClassCopy c) _) = R.CTVerbatim $ ffiClassName c <> "_p"
-returnCType (CPT (CPTClassMove c) _) = R.CTVerbatim $ ffiClassName c <> "_p"
-returnCType (TemplateApp     _)      = R.CTVerbatim $ "void*"
-returnCType (TemplateAppRef  _)      = R.CTVerbatim $ "void*"
-returnCType (TemplateAppMove _)      = R.CTVerbatim $ "void*"
-returnCType (TemplateType _)         = R.CTVerbatim $ "void*"
-returnCType (TemplateParam _)        = R.CTVerbatim $ "Type ## _p"
-returnCType (TemplateParamPointer _) = R.CTVerbatim $ "Type ## _p"
+returnCType Void                     = R.CTVoid
+returnCType SelfType                 = R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p" ])
+returnCType (CPT (CPTClass c) _)     = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+returnCType (CPT (CPTClassRef c) _)  = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+returnCType (CPT (CPTClassCopy c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+returnCType (CPT (CPTClassMove c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+returnCType (TemplateApp     _)      = R.CTStar R.CTVoid
+returnCType (TemplateAppRef  _)      = R.CTStar R.CTVoid
+returnCType (TemplateAppMove _)      = R.CTStar R.CTVoid
+returnCType (TemplateType _)         = R.CTStar R.CTVoid
+returnCType (TemplateParam _)        = R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p" ])
+returnCType (TemplateParamPointer _) = R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p" ])
 
 -- TODO: Rewrite this with static_cast
 c2Cxx :: Types -> R.CExp Identity -> R.CExp Identity
