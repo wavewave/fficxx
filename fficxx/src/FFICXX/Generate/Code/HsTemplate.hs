@@ -5,7 +5,8 @@ module FFICXX.Generate.Code.HsTemplate where
 import Data.Monoid                    ( (<>) )
 import qualified Data.List as L       ( foldr1 )
 import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
-                                      , letE, letStmt, name, pApp, paren
+                                      , letE, letStmt, name
+                                      , pApp, paren, pTuple
                                       , qualStmt, strE, tuple
                                       )
 import Language.Haskell.Exts.Syntax   ( Boxed(Boxed), Decl(..), Type(TyTuple) )
@@ -56,7 +57,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
 
 genTemplateMemberFunctions :: ClassImportHeader -> [Decl ()]
 genTemplateMemberFunctions cih =
-  let c = cihClass cih 
+  let c = cihClass cih
   in concatMap (\f -> genTMFExp c f <> genTMFInstance cih f) (class_tmpl_funcs c)
 
 
@@ -171,21 +172,22 @@ genTmplInterface t =
 genTmplImplementation :: TemplateClass -> [Decl ()]
 genTmplImplementation t = concatMap gen (tclass_funcs t)
   where
-    gen f = mkFun nh sig (map p tvars ++ [p "suffix"]) rhs (Just bstmts)
+    gen f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
       where nh = hsTmplFuncNameTH t f
             nc = ffiTmplFuncName f
-            sig = let nparams = length itps
-                      tparams = if nparams == 1 then tycon "Type" else TyTuple () Boxed (replicate nparams (tycon "Type"))
-                  in foldr1 tyfun [tparams , tycon "String", tyapp (tycon "Q") (tycon "Exp") ]
             v = mkVar
             p = mkPVar
             itps = zip ([1..]::[Int]) (tclass_params t)
             tvars = map (\(i,_) -> "typ" ++ show i) itps
+            nparams = length itps
+            tparams = if nparams == 1 then tycon "Type" else TyTuple () Boxed (replicate nparams (tycon "Type"))
+            sig = foldr1 tyfun [tparams , tycon "String", tyapp (tycon "Q") (tycon "Exp") ]
+            tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
             prefix = tclass_name t
             lit' = strE (prefix<>"_"<>nc<>"_")
             lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
             rhs = app (v "mkTFunc") $
-                    let typs = if length tvars < 2 then map v tvars else [tuple (map v tvars)]
+                    let typs = if nparams == 1 then map v tvars else [tuple (map v tvars)]
                     in tuple (typs ++ [ v "suffix", lam, v "tyf"])
             sig' = functionSignatureTT t f
             tassgns = map (\(i,tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i)))) itps
@@ -200,43 +202,51 @@ genTmplInstance ::
      TemplateClassImportHeader
   -> [Decl ()]
 genTmplInstance tcih =
-    mkFun fname sig [p "isCprim", p "qtyp", p "param"] rhs Nothing
+    mkFun fname sig ([p "isCprim"] ++ map p qtvars ++ [p "param"]) rhs Nothing
   where t = tcihTClass tcih
         fs = tclass_funcs t
         tname = tclass_name t
         fname = "gen" <> tname <> "InstanceFor"
         p = mkPVar
         v = mkVar
-        sig =         tycon "IsCPrimitive"
-              `tyfun` (tycon "Q" `tyapp` tycon "Type")
-              `tyfun` tycon "TemplateParamInfo"
-              `tyfun` (tycon "Q" `tyapp` tylist (tycon "Dec"))
+        itps = zip ([1..]::[Int]) (tclass_params t)
+        tvars = map (\(i,_) -> "typ" ++ show i) itps
+        qtvars = map (\(i,_) -> "qtyp" ++ show i) itps
+        nparams = length itps
+        typs_v = if nparams == 1 then v (tvars !! 0) else tuple (map v tvars)
+        sig = foldr1 tyfun $
+                   [ tycon "IsCPrimitive" ]
+                ++ replicate nparams (tycon "Q" `tyapp` tycon "Type")
+                ++ [ tycon "TemplateParamInfo"
+                   , tycon "Q" `tyapp` tylist (tycon "Dec")
+                   ]
         nfs = zip ([1..] :: [Int]) fs
-        rhs = doE (   [ suffixstmt, qtypstmt ]
+        rhs = doE (   [ suffixstmt ]
+                   <> map genqtypstmt (zip tvars qtvars)
                    <> map genstmt nfs
                    <> [foreignSrcStmt, letStmt (lststmt nfs), qualStmt retstmt]
                   )
         suffixstmt = letStmt [ pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param" ) ]
-        qtypstmt = generator (p "typ") (v "qtyp")
+        genqtypstmt (tvar,qtvar) = generator (p tvar) (v qtvar)
         genstmt (n,f@TFun    {..}) = generator
                                        (p ("f"<>show n))
                                        (v "mkMember" `app` strE (hsTmplFuncName t f)
                                                      `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` v    "typ"
+                                                     `app` typs_v
                                                      `app` v    "suffix"
                                        )
         genstmt (n,f@TFunNew {..}) = generator
                                        (p ("f"<>show n))
                                        (v "mkNew"    `app` strE (hsTmplFuncName t f)
                                                      `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` v    "typ"
+                                                     `app` typs_v
                                                      `app` v    "suffix"
                                        )
         genstmt (n,f@TFunDelete)   = generator
                                        (p ("f"<>show n))
                                        (v "mkDelete" `app` strE (hsTmplFuncName t f)
                                                      `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` v    "typ"
+                                                     `app` typs_v
                                                      `app` v    "suffix"
                                        )
         lststmt xs = [ pbind_ (p "lst") (list (map (v . (\n->"f"<>show n) . fst) xs)) ]
@@ -288,9 +298,8 @@ genTmplInstance tcih =
         retstmt = v "pure"
                   `app` list [ v "mkInstance"
                                `app` list []
-                               `app` (con "AppT"
-                                      `app` (v "con" `app` strE (typeclassNameT t))
-                                      `app` (v "typ")
-                                     )
+                               `app` foldl1
+                                       (\f x -> con "AppT" `app` f `app` x)
+                                       (v "con" `app` strE (typeclassNameT t) : map v tvars)
                                `app` (v "lst")
                              ]
