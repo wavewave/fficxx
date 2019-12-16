@@ -701,26 +701,24 @@ convertC2HS (CRef t)     = tyapp (tycon "Ptr") (convertC2HS t)
 
 -- |
 convertCpp2HS :: Maybe Class -> Types -> Type ()
-convertCpp2HS _c Void                  = unit_tycon
-convertCpp2HS (Just c) SelfType        = tycon ((fst.hsClassName) c)
-convertCpp2HS Nothing SelfType         = error "convertCpp2HS : SelfType but no class "
-convertCpp2HS _c (CT t _)              = convertC2HS t
+convertCpp2HS _c Void                      = unit_tycon
+convertCpp2HS (Just c) SelfType            = tycon ((fst.hsClassName) c)
+convertCpp2HS Nothing SelfType             = error "convertCpp2HS : SelfType but no class "
+convertCpp2HS _c (CT t _)                  = convertC2HS t
 convertCpp2HS _c (CPT (CPTClass c') _)     = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassRef c') _)  = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (TemplateApp x)     = tyapp
-                                         (tycon (tclass_name (tapp_tclass x)))
-                                         (tycon (hsClassNameForTArg (tapp_tparam x)))
-convertCpp2HS _c (TemplateAppRef x)  = tyapp
-                                         (tycon (tclass_name (tapp_tclass x)))
-                                         (tycon (hsClassNameForTArg (tapp_tparam x)))
-convertCpp2HS _c (TemplateAppMove x) = tyapp
-                                         (tycon (tclass_name (tapp_tclass x)))
-                                         (tycon (hsClassNameForTArg (tapp_tparam x)))
-convertCpp2HS _c (TemplateType t)    = tyapp
-                                         (tycon (tclass_name t))
-                                         (mkTVar (tclass_param t))
+convertCpp2HS _c (TemplateApp x)           = tyapp
+                                               (tycon (tclass_name (tapp_tclass x)))
+                                               (tycon (hsClassNameForTArg (tapp_tparam x)))
+convertCpp2HS _c (TemplateAppRef x)        = tyapp
+                                               (tycon (tclass_name (tapp_tclass x)))
+                                               (tycon (hsClassNameForTArg (tapp_tparam x)))
+convertCpp2HS _c (TemplateAppMove x)       = tyapp
+                                               (tycon (tclass_name (tapp_tclass x)))
+                                               (tycon (hsClassNameForTArg (tapp_tparam x)))
+convertCpp2HS _c (TemplateType t)          = foldl1 tyapp (tycon (tclass_name t) : map mkTVar (tclass_params t))
 convertCpp2HS _c (TemplateParam p)         = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
 
@@ -728,7 +726,7 @@ convertCpp2HS _c (TemplateParamPointer p)  = mkTVar p
 convertCpp2HS4Tmpl
   :: Type ()    -- ^ self
   -> Maybe Class
-  -> Type ()    -- ^ type paramemter splice
+  -> [Type ()]    -- ^ type paramemter splice
   -> Types
   -> Type ()
 convertCpp2HS4Tmpl _ _c _ Void                  = unit_tycon
@@ -739,27 +737,27 @@ convertCpp2HS4Tmpl _ _c _ (CPT (CPTClass c') _)     = (tycon . fst . hsClassName
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassRef c') _)  = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS4Tmpl e c s x@(TemplateApp p) =
+convertCpp2HS4Tmpl e c ss x@(TemplateApp p) =
   case tapp_tparam p of
     TArg_TypeParam _ -> let t = tapp_tclass p
                             (hname,_) = hsTemplateClassName t
-                        in tyapp (tycon hname) s
+                        in foldl1 tyapp (tycon hname : ss)
     _ -> convertCpp2HS c x
-convertCpp2HS4Tmpl e c s x@(TemplateAppRef p) =
+convertCpp2HS4Tmpl e c ss x@(TemplateAppRef p) =
   case tapp_tparam p of
     TArg_TypeParam _ -> let t = tapp_tclass p
                             (hname,_) = hsTemplateClassName t
-                        in tyapp (tycon hname) s
+                        in foldl1 tyapp (tycon hname : ss)
     _ -> convertCpp2HS c x
-convertCpp2HS4Tmpl e c s x@(TemplateAppMove p) =
+convertCpp2HS4Tmpl e c ss x@(TemplateAppMove p) =
   case tapp_tparam p of
     TArg_TypeParam _ -> let t = tapp_tclass p
                             (hname,_) = hsTemplateClassName t
-                        in tyapp (tycon hname) s
+                        in foldl1 tyapp (tycon hname : ss)
     _ -> convertCpp2HS c x
 convertCpp2HS4Tmpl e _c _ (TemplateType _)          = e
-convertCpp2HS4Tmpl _ _c s (TemplateParam _)         = s
-convertCpp2HS4Tmpl _ _c s (TemplateParamPointer _)  = s
+convertCpp2HS4Tmpl _ _c (s:_) (TemplateParam _)         = s  -- TODO: need to be fixed
+convertCpp2HS4Tmpl _ _c (s:_) (TemplateParamPointer _)  = s  -- TODO: need to be fixed
 
 
 hsFuncXformer :: Function -> String
@@ -836,9 +834,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
                                      (tycon (tclass_name (tapp_tclass x)))
                                      (tycon (hsClassNameForTArg (tapp_tparam x)))
            (TemplateType t)   -> pure $
-                                   tyapp
-                                     (tycon (tclass_name t))
-                                     (mkTVar (tclass_param t))
+                                   foldl1 tyapp (tycon (tclass_name t) : map mkTVar (tclass_params t))
            (TemplateParam p)      -> return (mkTVar p)
            Void -> return unit_tycon
            _ -> error ("No such c type : " <> show typ)
@@ -859,10 +855,9 @@ functionSignature c f =
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureT t TFun {..} =
   let (hname,_) = hsTemplateClassName t
-      tp = tclass_param t
+      self = foldl1 tyapp (tycon hname : map mkTVar (tclass_params t))
       ctyp = convertCpp2HS Nothing tfun_ret
-      arg0 =  (tyapp (tycon hname) (mkTVar tp) :)
-      lst = arg0 (map (convertCpp2HS Nothing . arg_type) tfun_args)
+      lst = self : map (convertCpp2HS Nothing . arg_type) tfun_args
   in foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
 functionSignatureT t TFunNew {..} =
   let ctyp = convertCpp2HS Nothing (TemplateType t)
@@ -880,25 +875,25 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
  where
   (hname,_) = hsTemplateClassName t
   ctyp = case f of
-           TFun {..}    -> convertCpp2HS4Tmpl e Nothing spl tfun_ret
-           TFunNew {..} -> convertCpp2HS4Tmpl e Nothing spl (TemplateType t)
+           TFun {..}    -> convertCpp2HS4Tmpl e Nothing spls tfun_ret
+           TFunNew {..} -> convertCpp2HS4Tmpl e Nothing spls (TemplateType t)
            TFunDelete   -> unit_tycon
-  e = tyapp (tycon hname) spl
-  spl = tySplice (parenSplice (mkVar (tclass_param t)))
+  e = foldl1 tyapp (tycon hname : spls)
+  spls = map (tySplice . parenSplice . mkVar) $ tclass_params t
   lst =
     case f of
-      TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spl . arg_type) tfun_args
-      TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spl . arg_type) tfun_new_args
+      TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) tfun_args
+      TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spls . arg_type) tfun_new_args
       TFunDelete -> [e]
 
 -- TODO: rename this and combine this with functionSignatureTT
 functionSignatureTMF :: Class -> TemplateMemberFunction -> Type ()
 functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
   where
-    ctyp = convertCpp2HS4Tmpl e Nothing spl (tmf_ret f)
+    ctyp = convertCpp2HS4Tmpl e Nothing [spl] (tmf_ret f)                      -- TODO: update with multiple template parameters
     e = tycon (fst (hsClassName c))
-    spl = tySplice (parenSplice (mkVar (tmf_param f)))
-    lst = e : map (convertCpp2HS4Tmpl e Nothing spl . arg_type) (tmf_args f)
+    spl = tySplice (parenSplice (mkVar (tmf_param f)))                         -- TODO: update with multiple template parameters
+    lst = e : map (convertCpp2HS4Tmpl e Nothing [spl] . arg_type) (tmf_args f) -- TODO: update with multiple template parameters
 
 
 accessorCFunSig :: Types -> Accessor -> CFunSig
@@ -957,7 +952,7 @@ hsFFIFuncTyp msc (CFunSig args ret) =
                                             (tycon rawname)
                                             (tycon (hsClassNameForTArg (tapp_tparam x))))
           where rawname = snd (hsTemplateClassName (tapp_tclass x))
-        hsargtype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
+        hsargtype (TemplateType t)           = tyapp tyPtr $ foldl1 tyapp (tycon rawname : map mkTVar (tclass_params t))
           where rawname = snd (hsTemplateClassName t)
         hsargtype (TemplateParam p)          = mkTVar p
         hsargtype SelfType                   = selftyp
@@ -992,7 +987,8 @@ hsFFIFuncTyp msc (CFunSig args ret) =
                                             (tycon rawname)
                                             (tycon (hsClassNameForTArg (tapp_tparam x))))
           where rawname = snd (hsTemplateClassName (tapp_tclass x))
-        hsrettype (TemplateType t)           = tyapp tyPtr (tyapp (tycon rawname) (mkTVar (tclass_param t)))
+        hsrettype (TemplateType t)           = tyapp tyPtr $
+                                                 foldl1 tyapp (tycon rawname : map mkTVar (tclass_params t))
           where rawname = snd (hsTemplateClassName t)
         hsrettype (TemplateParam p)          = mkTVar p
         hsrettype (TemplateParamPointer p)   = mkTVar p

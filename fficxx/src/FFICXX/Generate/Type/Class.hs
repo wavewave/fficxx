@@ -270,16 +270,16 @@ data TemplateFunction =
 
 data TemplateClass =
   TmplCls {
-    tclass_cabal :: Cabal
-  , tclass_name  :: String
-  , tclass_oname :: String
-  , tclass_param :: String
-  , tclass_funcs :: [TemplateFunction]
+    tclass_cabal  :: Cabal
+  , tclass_name   :: String
+  , tclass_oname  :: String
+  , tclass_params :: [String]
+  , tclass_funcs  :: [TemplateFunction]
   }
 
 -- TODO: we had better not override standard definitions
 instance Show TemplateClass where
-  show x = show (tclass_name x <> " " <> tclass_param x) -- intercalate " " (tclass_params x))
+  show x = show (tclass_name x <> " " <> intercalate " " (tclass_params x))
 
 -- TODO: we had better not override standard definitions
 instance Eq TemplateClass where

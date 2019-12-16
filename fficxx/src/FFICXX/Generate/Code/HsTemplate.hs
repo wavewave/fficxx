@@ -156,10 +156,10 @@ genTmplInterface t =
   , mkInstance cxEmpty "Castable" [ hightype, tyapp tyPtr rawtype ] castBody
   ]
  where (hname,rname) = hsTemplateClassName t
-       tp = tclass_param t
+       tps = tclass_params t
        fs = tclass_funcs t
-       rawtype = tyapp (tycon rname) (mkTVar tp)
-       hightype = tyapp (tycon hname) (mkTVar tp)
+       rawtype  = foldl1 tyapp (tycon rname : map mkTVar tps)
+       hightype = foldl1 tyapp (tycon hname : map mkTVar tps)
        sigdecl f = mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
        methods = map (clsDecl . sigdecl) fs
        fptrbody = [ insType (tyapp (tycon "Raw") hightype) rawtype
@@ -177,7 +177,7 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
             sig = tycon "Type" `tyfun` (tycon "String" `tyfun` (tyapp (tycon "Q") (tycon "Exp")))
             v = mkVar
             p = mkPVar
-            tp = tclass_param t
+            tps = tclass_params t
             prefix = tclass_name t
             lit' = strE (prefix<>"_"<>nc<>"_")
             lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
