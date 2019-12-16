@@ -99,7 +99,7 @@ toplevelfunctions = [ ]
 
 t_vector :: TemplateClass
 t_vector =
-  TmplCls cabal "Vector" "std::vector" "t"
+  TmplCls cabal "Vector" "std::vector" ["t"]
     [ TFunNew [] Nothing
     , TFun void_ "push_back" "push_back" [Arg (TemplateParam "t") "x"] Nothing
     , TFun void_ "pop_back"  "pop_back"  []                        Nothing
@@ -110,7 +110,7 @@ t_vector =
 
 t_unique_ptr :: TemplateClass
 t_unique_ptr =
-  TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
+  TmplCls cabal "UniquePtr" "std::unique_ptr" ["t"]
     [ TFunNew [] (Just "newUniquePtr0")
     , TFunNew [Arg (TemplateParamPointer "t") "p"] Nothing
     , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
@@ -121,7 +121,7 @@ t_unique_ptr =
 
 t_shared_ptr :: TemplateClass
 t_shared_ptr =
-  TmplCls cabal "SharedPtr" "std::shared_ptr" "t"
+  TmplCls cabal "SharedPtr" "std::shared_ptr" ["t"]
     [ TFunNew [] (Just "newSharedPtr0")
     , TFunNew [Arg (TemplateParamPointer "t") "p"] Nothing
     , TFun (TemplateParamPointer "t") "get" "get" [] Nothing

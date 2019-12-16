@@ -148,10 +148,10 @@ genTMFInstance cih f = mkFun fname sig [p "isCprim", p "qtyp", p "param"] rhs No
 
 genTmplInterface :: TemplateClass -> [Decl ()]
 genTmplInterface t =
-  [ mkData rname [mkTBind tp] [] Nothing
-  , mkNewtype hname [mkTBind tp]
+  [ mkData rname (map mkTBind tps) [] Nothing
+  , mkNewtype hname (map mkTBind tps)
       [ qualConDecl Nothing Nothing (conDecl hname [tyapp tyPtr rawtype]) ] Nothing
-  , mkClass cxEmpty (typeclassNameT t) [mkTBind tp] methods
+  , mkClass cxEmpty (typeclassNameT t) (map mkTBind tps) methods
   , mkInstance cxEmpty "FPtr" [ hightype ] fptrbody
   , mkInstance cxEmpty "Castable" [ hightype, tyapp tyPtr rawtype ] castBody
   ]
@@ -171,20 +171,22 @@ genTmplInterface t =
 genTmplImplementation :: TemplateClass -> [Decl ()]
 genTmplImplementation t = concatMap gen (tclass_funcs t)
   where
-    gen f = mkFun nh sig [p "typ", p "suffix"] rhs (Just bstmts)
+    gen f = mkFun nh sig (map p tvars ++ [p "suffix"]) rhs (Just bstmts)
       where nh = hsTmplFuncNameTH t f
             nc = ffiTmplFuncName f
-            sig = tycon "Type" `tyfun` (tycon "String" `tyfun` (tyapp (tycon "Q") (tycon "Exp")))
+            sig = foldr1 tyfun (replicate (length itps) (tycon "Type") ++ [ tycon "String", tyapp (tycon "Q") (tycon "Exp") ])
             v = mkVar
             p = mkPVar
-            tps = tclass_params t
+            itps = zip ([1..]::[Int]) (tclass_params t)
+            tvars = map (\(i,_) -> "typ" ++ show i) itps
             prefix = tclass_name t
             lit' = strE (prefix<>"_"<>nc<>"_")
             lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
-            rhs = app (v "mkTFunc") (tuple [v "typ", v "suffix", lam, v "tyf"])
+            rhs = app (v "mkTFunc") (tuple (map v tvars ++ [ v "suffix", lam, v "tyf"]))
             sig' = functionSignatureTT t f
+            tassgns = map (\(i,tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i)))) itps
             bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
-                               (letE [ pbind_ (p tp) (v "pure" `app` (v "typ")) ]
+                               (letE tassgns
                                   (bracketExp (typeBracket sig')))
                                Nothing
                            ]
