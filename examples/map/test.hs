@@ -11,11 +11,11 @@ import Foreign.C.String
 import FFICXX.Runtime.CodeGen.Cxx ( HeaderName(..), Namespace(..) )
 import FFICXX.Runtime.TH          ( IsCPrimitive(..), TemplateParamInfo(..) )
 import STD.CppString
-import STD.Vector.Template
-import qualified STD.Vector.TH as TH
+import STD.Map.Template
+import qualified STD.Map.TH as TH
 
 
-TH.genVectorInstanceFor
+TH.genMapInstanceFor
   CPrim
   [t|CInt|]
   (TPInfo { tpinfoCxxType       = "int"
@@ -24,6 +24,12 @@ TH.genVectorInstanceFor
           , tpinfoSuffix        = "int"
           }
   )
+  (TPInfo { tpinfoCxxType       = "int"
+          , tpinfoCxxHeaders    = []
+          , tpinfoCxxNamespaces = []
+          , tpinfoSuffix        = "int"
+          }
+
 
 TH.genVectorInstanceFor
   NonCPrim

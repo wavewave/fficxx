@@ -3,7 +3,7 @@
 module FFICXX.Generate.Code.HsTemplate where
 
 import Data.Monoid                    ( (<>) )
-import qualified Data.List as L       ( foldr1 )
+import qualified Data.List as L       ( foldr1, intercalate )
 import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       , letE, letStmt, name
                                       , pApp, paren, pTuple
@@ -13,7 +13,10 @@ import Language.Haskell.Exts.Syntax   ( Boxed(Boxed), Decl(..), Type(TyTuple) )
 --
 import FFICXX.Runtime.CodeGen.Cxx     ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
+import FFICXX.Runtime.TH              ( IsCPrimitive(CPrim,NonCPrim) )
 --
+import FFICXX.Generate.Code.Cpp       ( genTmplClassCpp, genTmplFunCpp )
+
 import FFICXX.Generate.Code.Primitive ( functionSignatureT
                                       , functionSignatureTT
                                       , functionSignatureTMF
@@ -197,7 +200,6 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
                                Nothing
                            ]
 
-
 genTmplInstance ::
      TemplateClassImportHeader
   -> [Decl ()]
@@ -274,11 +276,24 @@ genTmplInstance tcih =
                          )
                   )
           where
+            -- temporary
+
+            deffunc = let
+                        t = tcihTClass tcih
+                        fs = tclass_funcs t
+                      in    map (R.renderCMacro . genTmplFunCpp NonCPrim t) fs
+                         ++ map (R.renderCMacro . genTmplFunCpp CPrim    t) fs
+                         ++ [ R.renderCMacro (genTmplClassCpp NonCPrim t fs)
+                            , R.renderCMacro (genTmplClassCpp CPrim    t fs)
+                            ]
+
             includeStatic =
               strE $ concatMap (<> "\n")
-                [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h"))
-                , R.renderCMacro (R.Include (tcihSelfHeader tcih))
-                ]
+                       (   [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h"))
+                           , R.renderCMacro (R.Include (tcihSelfHeader tcih))
+                           ]
+                        ++ deffunc
+                       )
             includeDynamic =
               letE
                 [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param" )

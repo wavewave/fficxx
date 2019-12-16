@@ -307,11 +307,11 @@ buildTemplateHeader tcih =
   let t = tcihTClass tcih
       fs = tclass_funcs t
       headerStmts = map R.Include (tcihCxxHeaders tcih)
-      deffunc =    intercalate "\n"
-                     (map (R.renderCMacro . genTmplFunCpp NonCPrim t) fs)
-                ++ "\n\n"
-                ++ intercalate "\n"
-                     (map (R.renderCMacro . genTmplFunCpp CPrim    t) fs)
+      -- deffunc =    intercalate "\n"
+      --                (map (R.renderCMacro . genTmplFunCpp NonCPrim t) fs)
+      --          ++ "\n\n"
+      --          ++ intercalate "\n"
+      --               (map (R.renderCMacro . genTmplFunCpp CPrim    t) fs)
       classlevel =    R.renderCMacro (genTmplClassCpp NonCPrim t fs)
                    ++ "\n\n"
                    ++ R.renderCMacro (genTmplClassCpp CPrim    t fs)
@@ -320,11 +320,11 @@ buildTemplateHeader tcih =
           , R.EmptyLine
           ]
        <> headerStmts
-       <> [ R.EmptyLine
-          , R.Verbatim deffunc
-          , R.EmptyLine
-          , R.Verbatim classlevel
-          ]
+       -- <> [ R.EmptyLine
+       --   -- , R.Verbatim deffunc
+       --   -- , R.EmptyLine
+       --   , R.Verbatim classlevel
+       --   ]
 
 -- |
 buildFFIHsc :: ClassModule -> Module ()

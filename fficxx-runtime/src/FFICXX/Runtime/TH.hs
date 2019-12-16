@@ -12,27 +12,31 @@ import Language.Haskell.TH.Syntax ( Body(NormalB), Callconv(CCall)
 import FFICXX.Runtime.CodeGen.Cxx ( HeaderName, Namespace)
 
 
--- |
+-- | Primitive C type like int, double should be treated differently than
+--   Non-primitive type. The primitive type detection is not yet automatic.
+--   So we manually mark template instantiation with this boolean parameter.
+data IsCPrimitive =
+    CPrim
+  | NonCPrim
+  deriving Show
+
+
+-- | template parameter: A,B,.. in T<A,B..>
 data TemplateParamInfo =
   TPInfo {
     tpinfoCxxType       :: String
+  -- , tpinfoIsCPrimitive  :: IsCPrimitive  -- ^ whether the parameter is C-primitive type
   , tpinfoCxxHeaders    :: [HeaderName]
   , tpinfoCxxNamespaces :: [Namespace]
   , tpinfoSuffix        :: String
   }
   deriving Show
 
--- | Primitive C type like int, double should be treated differently than
---   Non-primitive type. The primitive type detection is not yet automatic.
---   So we manually mark template instantiation with this boolean parameter.
-data IsCPrimitive = CPrim | NonCPrim
-
-
--- | function pointer parameter for std::function
+-- | function pointer parameter A(B,C,..) in std::function<A(B,C,..)>
 data FunctionParamInfo =
   FPInfo {
     fpinfoCxxArgTypes   :: [(String,String)]
-  , fpinfoCxxRetType    :: Maybe String -- Nothing = void
+  , fpinfoCxxRetType    :: Maybe String
   , fpinfoCxxHeaders    :: [HeaderName]
   , fpinfoCxxNamespaces :: [Namespace]
   , fpinfoSuffix        :: String
