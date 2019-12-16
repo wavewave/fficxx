@@ -24,15 +24,20 @@ import FFICXX.Generate.Type.Cabal  ( BuildType(Simple)
                                    , CabalName(..)
                                    )
 import FFICXX.Generate.Type.Config ( ModuleUnitImports(..), ModuleUnitMap(..), ModuleUnit(..), modImports )
-import FFICXX.Generate.Type.Class  ( Arg(..), Class(..), ClassAlias(..)
+import FFICXX.Generate.Type.Class  ( Arg(..)
+                                   , Class(..)
+                                   , ClassAlias(..)
                                    , Function(..)
                                    , TemplateClass(..)
-                                   , TemplateFunction(..), Types(..)
+                                   , TemplateFunction(..)
+                                   , TopLevelFunction
+                                   , Types(..)
                                    )
 import FFICXX.Generate.Type.Module ( TemplateClassImportHeader(..) )
 import FFICXX.Generate.Type.PackageInterface ()
 
 
+cabal :: Cabal
 cabal = Cabal { cabal_pkgname = CabalName "stdcxx"
               , cabal_version = "0.6"
               , cabal_cheaderprefix = "STD"
@@ -49,6 +54,7 @@ cabal = Cabal { cabal_pkgname = CabalName "stdcxx"
               , cabal_buildType = Simple
               }
 
+extraDep :: [(String,[String])]
 extraDep = [ ]
 
 
@@ -81,47 +87,57 @@ ostream =
     []
     False
 
+classes :: [Class]
 classes = [ deletable
           --
           , ostream
           , string
           ]
 
+toplevelfunctions :: [TopLevelFunction]
 toplevelfunctions = [ ]
 
-t_vector = TmplCls cabal "Vector" "std::vector" "t"
-             [ TFunNew [] Nothing
-             , TFun void_ "push_back" "push_back" [Arg (TemplateParam "t") "x"] Nothing
-             , TFun void_ "pop_back"  "pop_back"  []                        Nothing
-             , TFun (TemplateParam "t") "at" "at" [int "n"]                 Nothing
-             , TFun int_  "size"      "size"      []                        Nothing
-             , TFunDelete
-             ]
+t_vector :: TemplateClass
+t_vector =
+  TmplCls cabal "Vector" "std::vector" "t"
+    [ TFunNew [] Nothing
+    , TFun void_ "push_back" "push_back" [Arg (TemplateParam "t") "x"] Nothing
+    , TFun void_ "pop_back"  "pop_back"  []                        Nothing
+    , TFun (TemplateParam "t") "at" "at" [int "n"]                 Nothing
+    , TFun int_  "size"      "size"      []                        Nothing
+    , TFunDelete
+    ]
 
-t_unique_ptr = TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
-             [ TFunNew [] (Just "newUniquePtr0")
-             , TFunNew [Arg (TemplateParamPointer "t") "p"] Nothing
-             , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
-             , TFun (TemplateParamPointer "t") "release" "release" [] Nothing
-             , TFun void_ "reset" "reset" [] Nothing
-             , TFunDelete
-             ]
+t_unique_ptr :: TemplateClass
+t_unique_ptr =
+  TmplCls cabal "UniquePtr" "std::unique_ptr" "t"
+    [ TFunNew [] (Just "newUniquePtr0")
+    , TFunNew [Arg (TemplateParamPointer "t") "p"] Nothing
+    , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
+    , TFun (TemplateParamPointer "t") "release" "release" [] Nothing
+    , TFun void_ "reset" "reset" [] Nothing
+    , TFunDelete
+    ]
 
+t_shared_ptr :: TemplateClass
+t_shared_ptr =
+  TmplCls cabal "SharedPtr" "std::shared_ptr" "t"
+    [ TFunNew [] (Just "newSharedPtr0")
+    , TFunNew [Arg (TemplateParamPointer "t") "p"] Nothing
+    , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
+    , TFun void_ "reset" "reset" [] Nothing
+    , TFun int_ "use_count" "use_count" [] Nothing
+    , TFunDelete
+    ]
 
-t_shared_ptr = TmplCls cabal "SharedPtr" "std::shared_ptr" "t"
-             [ TFunNew [] (Just "newSharedPtr0")
-             , TFunNew [Arg (TemplateParamPointer "t") "p"] Nothing
-             , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
-             , TFun void_ "reset" "reset" [] Nothing
-             , TFun int_ "use_count" "use_count" [] Nothing
-             , TFunDelete
-             ]
+templates :: [TemplateClassImportHeader]
+templates =
+  [ TCIH t_vector     (HdrName "Vector.h")    [HdrName "vector"]
+  , TCIH t_unique_ptr (HdrName "UniquePtr.h") [HdrName "memory"]
+  , TCIH t_shared_ptr (HdrName "SharedPtr.h") [HdrName "memory"]
+  ]
 
-templates = [ TCIH t_vector     (HdrName "Vector.h")    [HdrName "vector"]
-            , TCIH t_unique_ptr (HdrName "UniquePtr.h") [HdrName "memory"]
-            , TCIH t_shared_ptr (HdrName "SharedPtr.h") [HdrName "memory"]
-            ]
-
+headers :: [ (ModuleUnit, ModuleUnitImports) ]
 headers =
   [ modImports "string" ["std"] ["string"] ]
 
