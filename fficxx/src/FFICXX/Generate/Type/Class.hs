@@ -5,11 +5,12 @@
 
 module FFICXX.Generate.Type.Class where
 
+import           Data.List                         ( intercalate )
 import qualified Data.Map                     as M
-import           Data.Monoid                       (Monoid(..))
-import           Data.Semigroup                    (Semigroup(..),(<>))
+import           Data.Monoid                       ( Monoid(..) )
+import           Data.Semigroup                    ( Semigroup(..), (<>) )
 --
-import           FFICXX.Generate.Type.Cabal
+import           FFICXX.Generate.Type.Cabal        ( Cabal )
 
 
 -- | C types
@@ -252,27 +253,33 @@ instance Ord Class where
   compare x y = compare (class_name x) (class_name y)
 
 
-data TemplateFunction = TFun { tfun_ret :: Types
-                             , tfun_name :: String
-                             , tfun_oname :: String
-                             , tfun_args :: [Arg]
-                             , tfun_alias :: Maybe String }
-                      | TFunNew { tfun_new_args :: [Arg]
-                                , tfun_new_alias :: Maybe String
-                                }
-                      | TFunDelete
+data TemplateFunction =
+    TFun {
+      tfun_ret :: Types
+    , tfun_name :: String
+    , tfun_oname :: String
+    , tfun_args :: [Arg]
+    , tfun_alias :: Maybe String
+    }
+  | TFunNew {
+      tfun_new_args :: [Arg]
+    , tfun_new_alias :: Maybe String
+    }
+  | TFunDelete
 
 
-data TemplateClass = TmplCls { tclass_cabal :: Cabal
-                             , tclass_name :: String
-                             , tclass_oname :: String
-                             , tclass_param :: String
-                             , tclass_funcs :: [TemplateFunction]
-                             }
+data TemplateClass =
+  TmplCls {
+    tclass_cabal :: Cabal
+  , tclass_name  :: String
+  , tclass_oname :: String
+  , tclass_param :: String
+  , tclass_funcs :: [TemplateFunction]
+  }
 
 -- TODO: we had better not override standard definitions
 instance Show TemplateClass where
-  show x = show (tclass_name x <> " " <> tclass_param x)
+  show x = show (tclass_name x <> " " <> tclass_param x) -- intercalate " " (tclass_params x))
 
 -- TODO: we had better not override standard definitions
 instance Eq TemplateClass where
