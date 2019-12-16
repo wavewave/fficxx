@@ -107,7 +107,7 @@ string =
     False
 
 t_vector :: TemplateClass
-t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t"
+t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" ["t"]
              [ TFunNew [] Nothing
              , TFun void_ "push_back" "push_back" [Arg (TemplateParam "t") "x"] Nothing
              , TFun void_ "pop_back"  "pop_back"  []                        Nothing
@@ -117,7 +117,7 @@ t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t"
              ]
 
 t_unique_ptr :: TemplateClass
-t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" "t"
+t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" ["t"]
              [ TFunNew [] (Just "newUniquePtr0")
              , TFunNew [Arg (TemplateParamPointer "t") "p"] Nothing
              , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
