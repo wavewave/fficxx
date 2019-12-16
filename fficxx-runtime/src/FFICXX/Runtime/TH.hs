@@ -48,17 +48,17 @@ mkInstance :: Cxt -> Type -> [Dec] -> Dec
 mkInstance = InstanceD Nothing
 
 
-mkTFunc :: (Type, String, String -> String, Type -> Q Type) -> Q Exp
-mkTFunc (typ, suffix, nf, tyf)
+mkTFunc :: (types, String, String -> String, types -> Q Type) -> Q Exp
+mkTFunc (typs, suffix, nf, tyf)
   = do let fn = nf suffix
        let fn' = "c_" <> fn
        n <- newName fn'
-       d <- forImpD CCall safe fn n (tyf typ)
+       d <- forImpD CCall safe fn n (tyf typs)
        addTopDecls [d]
        [| $( varE n ) |]
 
 
-mkMember :: String -> (Type -> String -> Q Exp) -> Type -> String -> Q Dec
+mkMember :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
 mkMember fname f typ suffix = do
   let x = mkNameS "x"
   e <- f typ suffix
@@ -66,7 +66,7 @@ mkMember fname f typ suffix = do
     FunD (mkNameS fname) [ Clause [VarP x] (NormalB (AppE e (VarE x))) [] ]
 
 
-mkNew :: String -> (Type -> String -> Q Exp) -> Type -> String -> Q Dec
+mkNew :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
 mkNew fname f typ suffix = do
   e <- f typ suffix
   pure $
@@ -74,5 +74,5 @@ mkNew fname f typ suffix = do
       [ Clause [] (NormalB e) [] ]
 
 
-mkDelete :: String -> (Type -> String -> Q Exp) -> Type -> String -> Q Dec
+mkDelete :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
 mkDelete = mkMember

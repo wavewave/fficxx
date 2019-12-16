@@ -97,6 +97,14 @@ classes = [ deletable
 toplevelfunctions :: [TopLevelFunction]
 toplevelfunctions = [ ]
 
+t_map :: TemplateClass
+t_map =
+  TmplCls cabal "Map" "std::map" ["k","v"]
+    [ TFunNew [] Nothing
+    , TFun int_  "size" "size" [] Nothing
+    , TFunDelete
+    ]
+
 t_vector :: TemplateClass
 t_vector =
   TmplCls cabal "Vector" "std::vector" ["t"]
@@ -132,9 +140,10 @@ t_shared_ptr =
 
 templates :: [TemplateClassImportHeader]
 templates =
-  [ TCIH t_vector     (HdrName "Vector.h")    [HdrName "vector"]
-  , TCIH t_unique_ptr (HdrName "UniquePtr.h") [HdrName "memory"]
-  , TCIH t_shared_ptr (HdrName "SharedPtr.h") [HdrName "memory"]
+  [ TCIH t_map        "Map.h"       ["map"]
+  , TCIH t_vector     "Vector.h"    ["vector"]
+  , TCIH t_unique_ptr "UniquePtr.h" ["memory"]
+  , TCIH t_shared_ptr "SharedPtr.h" ["memory"]
   ]
 
 headers :: [ (ModuleUnit, ModuleUnitImports) ]

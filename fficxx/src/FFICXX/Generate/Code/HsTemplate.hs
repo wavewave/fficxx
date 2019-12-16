@@ -8,7 +8,7 @@ import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       , letE, letStmt, name, pApp, paren
                                       , qualStmt, strE, tuple
                                       )
-import Language.Haskell.Exts.Syntax   ( Decl(..) )
+import Language.Haskell.Exts.Syntax   ( Boxed(Boxed), Decl(..), Type(TyTuple) )
 --
 import FFICXX.Runtime.CodeGen.Cxx     ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
@@ -174,7 +174,9 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
     gen f = mkFun nh sig (map p tvars ++ [p "suffix"]) rhs (Just bstmts)
       where nh = hsTmplFuncNameTH t f
             nc = ffiTmplFuncName f
-            sig = foldr1 tyfun (replicate (length itps) (tycon "Type") ++ [ tycon "String", tyapp (tycon "Q") (tycon "Exp") ])
+            sig = let nparams = length itps
+                      tparams = if nparams == 1 then tycon "Type" else TyTuple () Boxed (replicate nparams (tycon "Type"))
+                  in foldr1 tyfun [tparams , tycon "String", tyapp (tycon "Q") (tycon "Exp") ]
             v = mkVar
             p = mkPVar
             itps = zip ([1..]::[Int]) (tclass_params t)
@@ -182,7 +184,9 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
             prefix = tclass_name t
             lit' = strE (prefix<>"_"<>nc<>"_")
             lam = lambda [p "n"] ( lit' `app` v "<>" `app` v "n")
-            rhs = app (v "mkTFunc") (tuple (map v tvars ++ [ v "suffix", lam, v "tyf"]))
+            rhs = app (v "mkTFunc") $
+                    let typs = if length tvars < 2 then map v tvars else [tuple (map v tvars)]
+                    in tuple (typs ++ [ v "suffix", lam, v "tyf"])
             sig' = functionSignatureTT t f
             tassgns = map (\(i,tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i)))) itps
             bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
