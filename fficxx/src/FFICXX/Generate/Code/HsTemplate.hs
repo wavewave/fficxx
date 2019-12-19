@@ -278,21 +278,21 @@ genTmplInstance tcih =
           where
             -- temporary
 
-            deffunc = let
-                        t = tcihTClass tcih
-                        fs = tclass_funcs t
-                      in    map (R.renderCMacro . genTmplFunCpp NonCPrim t) fs
-                         ++ map (R.renderCMacro . genTmplFunCpp CPrim    t) fs
-                         ++ [ R.renderCMacro (genTmplClassCpp NonCPrim t fs)
-                            , R.renderCMacro (genTmplClassCpp CPrim    t fs)
-                            ]
+            body = let
+                     t = tcihTClass tcih
+                     fs = tclass_funcs t
+                   in map R.renderCMacro $
+                           map R.Include (tcihCxxHeaders tcih)
+                        ++ map (genTmplFunCpp NonCPrim t) fs
+                        ++ map (genTmplFunCpp CPrim    t) fs
+                        ++ [ genTmplClassCpp NonCPrim t fs
+                           , genTmplClassCpp CPrim    t fs
+                           ]
 
             includeStatic =
               strE $ concatMap (<> "\n")
-                       (   [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h"))
-                           , R.renderCMacro (R.Include (tcihSelfHeader tcih))
-                           ]
-                        ++ deffunc
+                       (   [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h")) ]
+                        ++ body
                        )
             includeDynamic =
               letE

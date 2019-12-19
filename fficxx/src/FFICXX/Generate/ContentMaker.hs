@@ -300,33 +300,6 @@ buildTopLevelCppDef tih =
        )
 
 -- |
-buildTemplateHeader ::
-     TemplateClassImportHeader
-  -> String
-buildTemplateHeader tcih =
-  let t = tcihTClass tcih
-      fs = tclass_funcs t
-      headerStmts = map R.Include (tcihCxxHeaders tcih)
-      -- deffunc =    intercalate "\n"
-      --                (map (R.renderCMacro . genTmplFunCpp NonCPrim t) fs)
-      --          ++ "\n\n"
-      --          ++ intercalate "\n"
-      --               (map (R.renderCMacro . genTmplFunCpp CPrim    t) fs)
-      classlevel =    R.renderCMacro (genTmplClassCpp NonCPrim t fs)
-                   ++ "\n\n"
-                   ++ R.renderCMacro (genTmplClassCpp CPrim    t fs)
-  in concatMap R.renderCMacro $
-          [ R.Pragma R.Once
-          , R.EmptyLine
-          ]
-       <> headerStmts
-       -- <> [ R.EmptyLine
-       --   -- , R.Verbatim deffunc
-       --   -- , R.EmptyLine
-       --   , R.Verbatim classlevel
-       --   ]
-
--- |
 buildFFIHsc :: ClassModule -> Module ()
 buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody
   where mname = cmModule m

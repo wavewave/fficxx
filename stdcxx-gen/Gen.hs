@@ -140,10 +140,10 @@ t_shared_ptr =
 
 templates :: [TemplateClassImportHeader]
 templates =
-  [ TCIH t_map        "Map.h"       ["map"]
-  , TCIH t_vector     "Vector.h"    ["vector"]
-  , TCIH t_unique_ptr "UniquePtr.h" ["memory"]
-  , TCIH t_shared_ptr "SharedPtr.h" ["memory"]
+  [ TCIH t_map        ["map"]
+  , TCIH t_vector     ["vector"]
+  , TCIH t_unique_ptr ["memory"]
+  , TCIH t_shared_ptr ["memory"]
   ]
 
 headers :: [ (ModuleUnit, ModuleUnitImports) ]

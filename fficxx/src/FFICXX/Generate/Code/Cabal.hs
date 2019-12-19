@@ -70,7 +70,7 @@ genIncludeFiles :: String        -- ^ package name
                 -> [AddCInc]
                 -> [String]
 genIncludeFiles pkgname (cih,tcih) acincs =
-  let selfheaders = map cihSelfHeader cih <> map tcihSelfHeader tcih
+  let selfheaders = map cihSelfHeader cih --  <> map tcihSelfHeader tcih
       includeFileStrs = map unHdrName (selfheaders ++ map (\(AddCInc hdr _) -> HdrName hdr) acincs)
   in (pkgname<>"Type.h") : includeFileStrs
 
