@@ -21,6 +21,7 @@ import FFICXX.Generate.Code.Primitive
                                     , CFunSig(..)
                                     , genericFuncArgs
                                     , genericFuncRet
+                                    -- , mkTmplTypeParams
                                     , returnCType
                                     , tmplMemFuncArgToCTypVar
                                     , tmplMemFuncRetTypeToString
@@ -257,13 +258,13 @@ genTmplFunCpp ::
   -> TemplateFunction
   -> R.CMacro Identity
 genTmplFunCpp b t@TmplCls {..} f =
-    R.Define (R.sname macroname) (map R.sname (mkTmplTypeParams "P" t))
+    R.Define (R.sname macroname) (map R.sname tclass_params)
       [ R.CExtern [R.CDeclaration decl]
       , tmplFunToDef b t f
       , autoinst
       ]
  where
-  nsuffix = intersperse (R.NamePart "_") $ map R.NamePart (mkTmplTypeParams "P" t)
+  nsuffix = intersperse (R.NamePart "_") $ map R.NamePart tclass_params
   suffix = case b of { CPrim -> "_s"; NonCPrim -> "" }
   macroname = tclass_name <> "_" <> ffiTmplFuncName f <> suffix
   decl = tmplFunToDecl b t f
@@ -381,24 +382,24 @@ returnCpp b ret caller =
       ]
     TemplateType _ ->
       error "returnCpp: TemplateType"
-    TemplateParam _ ->
+    TemplateParam typ ->
       [ R.CReturn $
           case b of
             CPrim    -> caller
             NonCPrim ->
               R.CTApp
                 (R.sname "to_nonconst")
-                [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t" ]), R.CTSimple (R.sname "Type") ]
-                [ R.CCast (R.CTStar (R.CTSimple (R.sname "Type"))) $ R.CAddr caller ]
+                [ R.CTSimple (R.CName [ R.NamePart typ, R.NamePart "_t" ]), R.CTSimple (R.sname typ) ]
+                [ R.CCast (R.CTStar (R.CTSimple (R.sname typ))) $ R.CAddr caller ]
       ]
-    TemplateParamPointer _  ->
+    TemplateParamPointer typ ->
       [ R.CReturn $
           case b of
             CPrim    -> caller
             NonCPrim ->
               R.CTApp
                 (R.sname "to_nonconst")
-                [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t"]), R.CTSimple (R.sname "Type") ]
+                [ R.CTSimple (R.CName [ R.NamePart typ, R.NamePart "_t"]), R.CTSimple (R.sname typ) ]
                 [ caller ]
       ]
 
@@ -461,9 +462,6 @@ funcToDef c func
 
 -- template function declaration and definition
 
-mkTmplTypeParams :: String -> TemplateClass -> [String]
-mkTmplTypeParams prefix t =
-  map (\(i,_) -> prefix <> show i) $ zip ([1..] :: [Int]) (tclass_params t)
 
 tmplFunToDecl ::
      IsCPrimitive
@@ -471,7 +469,7 @@ tmplFunToDecl ::
   -> TemplateFunction
   -> R.CFunDecl Identity
 tmplFunToDecl b t@TmplCls {..} f =
-  let nsuffix = intersperse (R.NamePart "_") $ map R.NamePart (mkTmplTypeParams "P" t)
+  let nsuffix = intersperse (R.NamePart "_") $ map R.NamePart tclass_params
   in case f of
     TFun {..} ->
       let ret  = tmplReturnCType b tfun_ret
@@ -480,13 +478,11 @@ tmplFunToDecl b t@TmplCls {..} f =
       in R.CFunDecl ret func args
     TFunNew {..} ->
       let ret  = tmplReturnCType b (TemplateType t)
-          nsuffix = intersperse (R.NamePart "_") $ map R.NamePart (mkTmplTypeParams "P" t)
           func = R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix)
           args = tmplAllArgsToCTypVar b NoSelf t tfun_new_args
       in R.CFunDecl ret func args
     TFunDelete ->
       let ret  = R.CTVoid
-          nsuffix = intersperse (R.NamePart "_") $ map R.NamePart (mkTmplTypeParams "P" t)
           func = R.CName (R.NamePart (tclass_name <> "_delete_") : nsuffix)
           args = tmplAllArgsToCTypVar b Self t []
       in R.CFunDecl ret func args
@@ -499,7 +495,7 @@ tmplFunToDef ::
 tmplFunToDef b t@TmplCls {..} f =
     R.CDefinition (Just R.Inline) (tmplFunToDecl b t f) body
   where
-    typparams = map (R.CTSimple . R.sname) (mkTmplTypeParams "P" t)
+    typparams = map (R.CTSimple . R.sname) tclass_params
     body =
       case f of
         TFunNew {..} ->
