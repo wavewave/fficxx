@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module FFICXX.Generate.Code.Cpp where
 
@@ -257,7 +257,7 @@ genTmplFunCpp ::
   -> TemplateFunction
   -> R.CMacro Identity
 genTmplFunCpp b t@TmplCls {..} f =
-    R.Define (R.sname macroname) [R.sname "Type"]
+    R.Define (R.sname macroname) (mkTmplTypeParams "P" t) -- [R.sname "Type"]
       [ R.CExtern [R.CDeclaration decl]
       , tmplFunToDef b t f
       , autoinst
@@ -479,6 +479,10 @@ tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.CFunDecl ret func args
     func = R.CName [R.NamePart (tclass_name <> "_delete_"), R.NamePart "Type"]
     args = tmplAllArgsToCTypVar b Self t []
 
+mkTmplTypeParams :: String -> TemplateClass -> [ R.CName Identity ]
+mkTmplTypeParams prefix t =
+  map (\(i,_) -> R.sname (prefix <> show i)) $ zip ([1..] :: [Int]) (tclass_params t)
+
 tmplFunToDef ::
      IsCPrimitive
   -> TemplateClass
@@ -487,20 +491,21 @@ tmplFunToDef ::
 tmplFunToDef b t@TmplCls {..} f =
     R.CDefinition (Just R.Inline) (tmplFunToDecl b t f) body
   where
+    typparams = map R.CTSimple (mkTmplTypeParams "P" t)
     body =
       case f of
         TFunNew {..} ->
           let caller =
                 R.CTNew
                   (R.sname tclass_oname)
-                  [ R.CTSimple (R.sname "Type") ]
+                  typparams
                   (map (tmplArgToCallCExp b) tfun_new_args)
           in  [ R.CReturn $ R.CTApp (R.sname "static_cast") [R.CTStar R.CTVoid] [caller] ]
         TFunDelete ->
           [ R.CDelete $
               R.CTApp
                 (R.sname "static_cast")
-                [ R.CTStar (R.CTTApp (R.sname tclass_oname) [ R.CTSimple (R.sname "Type") ]) ]
+                [ R.CTStar (R.CTTApp (R.sname tclass_oname) typparams) ]
                 [ R.CVar (R.sname "p") ]
           ]
         TFun {..}    ->
@@ -509,7 +514,7 @@ tmplFunToDef b t@TmplCls {..} f =
               R.CArrow
               (R.CTApp
                  (R.sname "static_cast")
-                 [ R.CTStar (R.CTTApp (R.sname tclass_oname) [ R.CTSimple (R.sname "Type") ]) ]
+                 [ R.CTStar (R.CTTApp (R.sname tclass_oname) typparams) ]
                  [ R.CVar $ R.sname "p" ]
               )
               (R.CApp

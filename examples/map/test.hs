@@ -18,22 +18,19 @@ import qualified STD.Map.TH as TH
 
 TH.genMapInstanceFor
   CPrim
-  [t|CInt|]
-  [t|CDouble|]
-  (TPInfo { tpinfoCxxType       = "int"
-          , tpinfoCxxHeaders    = []
-          , tpinfoCxxNamespaces = []
-          , tpinfoSuffix        = "int"
-          }
+  ( [t|CInt|], TPInfo { tpinfoCxxType       = "int"
+                      , tpinfoCxxHeaders    = []
+                      , tpinfoCxxNamespaces = []
+                      , tpinfoSuffix        = "int"
+                      }
   )
-{-
-  (TPInfo { tpinfoCxxType       = "double"
-          , tpinfoCxxHeaders    = []
-          , tpinfoCxxNamespaces = []
-          , tpinfoSuffix        = "double"
-          }
+  ( [t|CDouble|], TPInfo { tpinfoCxxType       = "double"
+                         , tpinfoCxxHeaders    = []
+                         , tpinfoCxxNamespaces = []
+                         , tpinfoSuffix        = "double"
+                         }
   )
--}
+
 
 test1 :: IO ()
 test1 = do

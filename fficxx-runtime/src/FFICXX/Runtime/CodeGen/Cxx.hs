@@ -90,14 +90,14 @@ renderCOp CArrow  = "->"
 renderCOp CAssign = "="
 
 data CExp (f :: * -> *) =
-    CVar (CName f)                      -- ^ variable
-  | CApp (CExp f) [CExp f]              -- ^ C function app:  f(a1,a2,..)
-  | CTApp (CName f ) [CType f] [CExp f] -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
+    CVar  (CName f)                     -- ^ variable
+  | CApp  (CExp  f) [CExp f]            -- ^ C function app:  f(a1,a2,..)
+  | CTApp (CName f) [CType f] [CExp f]  -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
   | CBinOp COp (CExp f) (CExp f)        -- ^ binary operator: x `op` y
   | CCast (CType f) (CExp f)            -- ^ (type)exp
   | CAddr (CExp f)                      -- ^ &(exp)
   | CStar (CExp f)                      -- ^ *(exp)
-  | CNew (CName f) [CExp f]             -- ^ new operator: new Cstr(a1,a2,...)
+  | CNew (CName f)  [CExp f]            -- ^ new operator: new Cstr(a1,a2,...)
   | CTNew (CName f) [CType f] [CExp f]  -- ^ new operator for template class: new Cstr<T1,T2,..>(a1,a2,..)
   | CEMacroApp (CName f) [CName f]      -- ^ macro function at expression level
   | CEVerbatim String                   -- ^ verbatim
