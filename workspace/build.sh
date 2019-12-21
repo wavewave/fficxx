@@ -41,6 +41,6 @@ cabal new-build proxy-test
 cabal new-exec -- runhaskell -- -iproxy -fobject-code -O0 proxy/app.hs
 
 # map
-rm map/test.o map/test
-cabal new-exec -- ghc map/test.hs
-./map/test
+#rm map/test.o map/test
+#cabal new-exec -- ghc map/test.hs
+#./map/test

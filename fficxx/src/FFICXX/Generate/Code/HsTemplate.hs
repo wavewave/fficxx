@@ -83,15 +83,20 @@ genTMFExp c f = mkFun nh sig [p "typ", p "suffix"] rhs (Just bstmts)
                    ]
 
 genTMFInstance :: ClassImportHeader -> TemplateMemberFunction -> [Decl ()]
-genTMFInstance cih f = mkFun fname sig [p "isCprim", p "qtyp", p "param"] rhs Nothing
+genTMFInstance cih f =
+    mkFun
+      fname
+      sig
+      [p "isCprim", pTuple [p "qtyp", p "param"]]
+      rhs
+      Nothing
   where
     c = cihClass cih
     fname = "genInstanceFor_" <> hsTemplateMemberFunctionName c f
     p = mkPVar
     v = mkVar
     sig =         tycon "IsCPrimitive"
-          `tyfun` (tycon "Q" `tyapp` tycon "Type")
-          `tyfun` tycon "TemplateParamInfo"
+          `tyfun` TyTuple () Boxed [tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo"]
           `tyfun` (tycon "Q" `tyapp` tylist (tycon "Dec"))
     rhs = doE [suffixstmt, qtypstmt, genstmt, foreignSrcStmt, letStmt lststmt, qualStmt retstmt]
     suffixstmt = letStmt [ pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param" ) ]
@@ -204,7 +209,12 @@ genTmplInstance ::
      TemplateClassImportHeader
   -> [Decl ()]
 genTmplInstance tcih =
-    mkFun fname sig ([p "isCprim"] ++ map p qtvars ++ [p "param"]) rhs Nothing
+    mkFun
+      fname
+      sig
+      (p "isCprim" : zipWith (\x y -> pTuple [p x,p y]) qtvars pvars)
+      rhs
+      Nothing
   where t = tcihTClass tcih
         fs = tclass_funcs t
         tname = tclass_name t
@@ -212,23 +222,24 @@ genTmplInstance tcih =
         p = mkPVar
         v = mkVar
         itps = zip ([1..]::[Int]) (tclass_params t)
-        tvars = map (\(i,_) -> "typ" ++ show i) itps
-        qtvars = map (\(i,_) -> "qtyp" ++ show i) itps
+        tvars  = map (\(i,_) -> "typ"   ++ show i) itps
+        qtvars = map (\(i,_) -> "qtyp"  ++ show i) itps
+        pvars  = map (\(i,_) -> "param" ++ show i) itps
         nparams = length itps
         typs_v = if nparams == 1 then v (tvars !! 0) else tuple (map v tvars)
         sig = foldr1 tyfun $
                    [ tycon "IsCPrimitive" ]
-                ++ replicate nparams (tycon "Q" `tyapp` tycon "Type")
-                ++ [ tycon "TemplateParamInfo"
-                   , tycon "Q" `tyapp` tylist (tycon "Dec")
-                   ]
+                ++ replicate
+                     nparams
+                     (TyTuple () Boxed [ tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo" ])
+                ++ [ tycon "Q" `tyapp` tylist (tycon "Dec") ]
         nfs = zip ([1..] :: [Int]) fs
         rhs = doE (   [ suffixstmt ]
                    <> map genqtypstmt (zip tvars qtvars)
                    <> map genstmt nfs
                    <> [foreignSrcStmt, letStmt (lststmt nfs), qualStmt retstmt]
                   )
-        suffixstmt = letStmt [ pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param" ) ]
+        suffixstmt = letStmt [ pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param1" ) ] -- temporary hard-code
         genqtypstmt (tvar,qtvar) = generator (p tvar) (v qtvar)
         genstmt (n,f@TFun    {..}) = generator
                                        (p ("f"<>show n))
@@ -296,14 +307,14 @@ genTmplInstance tcih =
                        )
             includeDynamic =
               letE
-                [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param" )
+                [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param1" ) -- temporary hard-code
                 , pbind_ (pApp (name "f") [p "x"])
                     (v "renderCMacro" `app` (con "Include" `app` v "x"))
                 ]
                 (v "concatMap" `app` v "f" `app` v "headers")
             namespaceStr =
               letE
-                [ pbind_ (p "nss") (v "tpinfoCxxNamespaces" `app` v "param" )
+                [ pbind_ (p "nss") (v "tpinfoCxxNamespaces" `app` v "param1" ) -- temporary hard-code
                 , pbind_ (pApp (name "f") [p "x"])
                     (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
                 ]

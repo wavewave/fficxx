@@ -1,6 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings        #-}
+{-# LANGUAGE ScopedTypeVariables      #-}
+{-# LANGUAGE TemplateHaskell          #-}
 
 module Main where
 
@@ -19,12 +20,11 @@ import qualified STD.SharedPtr.TH as TH
 
 TH.genSharedPtrInstanceFor
   NonCPrim
-  [t|CppString|]
-  (TPInfo { tpinfoCxxType       = "std::string"
-          , tpinfoCxxHeaders    = [ HdrName "string", HdrName "stdcxxType.h" ]
-          , tpinfoCxxNamespaces = [ NS "std" ]
-          , tpinfoSuffix        = "string"
-          }
+  ( [t|CppString|], TPInfo { tpinfoCxxType       = "std::string"
+                           , tpinfoCxxHeaders    = [ "string", "stdcxxType.h" ]
+                           , tpinfoCxxNamespaces = [ "std" ]
+                           , tpinfoSuffix        = "string"
+                           }
   )
 
 

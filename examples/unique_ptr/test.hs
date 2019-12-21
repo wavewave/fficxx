@@ -1,6 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings        #-}
+{-# LANGUAGE ScopedTypeVariables      #-}
+{-# LANGUAGE TemplateHaskell          #-}
 
 import qualified Data.ByteString.Char8 as B
 
@@ -16,12 +17,11 @@ import qualified STD.UniquePtr.TH as TH
 
 TH.genUniquePtrInstanceFor
   NonCPrim
-  [t|CppString|]
-  (TPInfo { tpinfoCxxType       = "std::string"
-          , tpinfoCxxHeaders    = [ HdrName "string", HdrName "stdcxxType.h" ]
-          , tpinfoCxxNamespaces = [ NS "std" ]
-          , tpinfoSuffix        = "string"
-          }
+  ( [t|CppString|], TPInfo { tpinfoCxxType       = "std::string"
+                           , tpinfoCxxHeaders    = [ HdrName "string", HdrName "stdcxxType.h" ]
+                           , tpinfoCxxNamespaces = [ NS "std" ]
+                           , tpinfoSuffix        = "string"
+                           }
   )
 
 main :: IO ()

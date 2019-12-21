@@ -14,45 +14,39 @@ import TMFTest.T2
 
 genUniquePtrInstanceFor
   NonCPrim
-  [t|T1|]
-  TPInfo {
-    tpinfoCxxType       = "T1"
-  , tpinfoCxxHeaders    = [ "TMFTestT1.h"
-                          , "test.h"
-                          ]
-  , tpinfoCxxNamespaces = []
-  , tpinfoSuffix        = "T1"
-  }
+  ( [t|T1|], TPInfo { tpinfoCxxType       = "T1"
+                    , tpinfoCxxHeaders    = [ "TMFTestT1.h", "test.h" ]
+                    , tpinfoCxxNamespaces = []
+                    , tpinfoSuffix        = "T1"
+                    }
+  )
 
 genInstanceFor_a_method
   NonCPrim
-  [t|T1|]
-  TPInfo {
-    tpinfoCxxType       = "T1"
-  , tpinfoCxxHeaders    = [ "TMFTestT1.h" ]
-  , tpinfoCxxNamespaces = []
-  , tpinfoSuffix        = "T1"
-  }
+  ( [t|T1|], TPInfo { tpinfoCxxType       = "T1"
+                    , tpinfoCxxHeaders    = [ "TMFTestT1.h" ]
+                    , tpinfoCxxNamespaces = []
+                    , tpinfoSuffix        = "T1"
+                    }
+  )
 
 genInstanceFor_a_method
   NonCPrim
-  [t|T2|]
-  TPInfo {
-    tpinfoCxxType       = "T2"
-  , tpinfoCxxHeaders    = [ "TMFTestT2.h" ]
-  , tpinfoCxxNamespaces = []
-  , tpinfoSuffix        = "T2"
-  }
+  ( [t|T2|], TPInfo { tpinfoCxxType       = "T2"
+                    , tpinfoCxxHeaders    = [ "TMFTestT2.h" ]
+                    , tpinfoCxxNamespaces = []
+                    , tpinfoSuffix        = "T2"
+                    }
+  )
 
 genInstanceFor_a_method2
   NonCPrim
-  [t|T1|]
-  TPInfo {
-    tpinfoCxxType       = "T1"
-  , tpinfoCxxHeaders    = [ "TMFTestT1.h" ]
-  , tpinfoCxxNamespaces = []
-  , tpinfoSuffix        = "T1"
-  }
+  ( [t|T1|], TPInfo { tpinfoCxxType       = "T1"
+                    , tpinfoCxxHeaders    = [ "TMFTestT1.h" ]
+                    , tpinfoCxxNamespaces = []
+                    , tpinfoSuffix        = "T1"
+                    }
+  )
 
 main :: IO ()
 main = do

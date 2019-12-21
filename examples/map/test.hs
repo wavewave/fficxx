@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -18,22 +19,25 @@ import qualified STD.Map.TH as TH
 TH.genMapInstanceFor
   CPrim
   [t|CInt|]
+  [t|CDouble|]
   (TPInfo { tpinfoCxxType       = "int"
           , tpinfoCxxHeaders    = []
           , tpinfoCxxNamespaces = []
           , tpinfoSuffix        = "int"
           }
   )
-  (TPInfo { tpinfoCxxType       = "int"
+{-
+  (TPInfo { tpinfoCxxType       = "double"
           , tpinfoCxxHeaders    = []
           , tpinfoCxxNamespaces = []
-          , tpinfoSuffix        = "int"
+          , tpinfoSuffix        = "double"
           }
   )
+-}
 
 test1 :: IO ()
 test1 = do
-  m :: Map CInt CInt <- newMap
+  m :: Map CInt CDouble <- newMap
   pure ()
 
 main :: IO ()
