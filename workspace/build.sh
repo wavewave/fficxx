@@ -39,3 +39,8 @@ cabal new-exec -- runhaskell -- -fobject-code -O0 template-member/app.hs
 runhaskell ./proxy/Gen.hs ./proxy/template
 cabal new-build proxy-test
 cabal new-exec -- runhaskell -- -iproxy -fobject-code -O0 proxy/app.hs
+
+# map
+rm map/test.o map/test
+cabal new-exec -- ghc map/test.hs
+./map/test

@@ -29,52 +29,13 @@ TH.genMapInstanceFor
           , tpinfoCxxNamespaces = []
           , tpinfoSuffix        = "int"
           }
-
-
-TH.genVectorInstanceFor
-  NonCPrim
-  [t|CppString|]
-  (TPInfo { tpinfoCxxType       = "std::string"
-          , tpinfoCxxHeaders    = [ HdrName "string", HdrName "stdcxxType.h"]
-          , tpinfoCxxNamespaces = [ NS "std" ]
-          , tpinfoSuffix        = "string"
-          }
   )
 
 test1 :: IO ()
 test1 = do
-  v :: Vector CInt <- newVector
-  n <- size v
-  print =<< size v
-
-  push_back v 1
-  print =<< size v
-  mapM_ (push_back v) [1..100]
-  print =<< size v
-  pop_back v
-  print =<< size v
-
-  print =<< at v 5
-  deleteVector v
-
-
-test2 = do
-  withCString "hello" $ \cstr -> do
-    v :: Vector CppString <- newVector
-    cppstr <- newCppString cstr
-    push_back v cppstr
-    print =<< size v
-    cppstr' <- at v 0
-    cstr' <- cppString_c_str cppstr'
-    bstr <- B.packCString cstr'
-    print bstr
-    print =<< size v
-    pop_back v
-    print =<< size v
-    deleteVector v
-
+  m :: Map CInt CInt <- newMap
+  pure ()
 
 main :: IO ()
 main = do
   test1
-  test2
