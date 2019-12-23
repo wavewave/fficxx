@@ -21,7 +21,6 @@ import FFICXX.Generate.Code.Primitive
                                     , CFunSig(..)
                                     , genericFuncArgs
                                     , genericFuncRet
-                                    -- , mkTmplTypeParams
                                     , returnCType
                                     , tmplMemFuncArgToCTypVar
                                     , tmplMemFuncRetTypeToString
