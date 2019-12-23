@@ -19,7 +19,6 @@ import System.FilePath                        ( (<.>), (</>) )
 --
 import FFICXX.Runtime.CodeGen.Cxx             ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
-import FFICXX.Runtime.TH                      ( IsCPrimitive(CPrim,NonCPrim) )
 --
 import FFICXX.Generate.Code.Cpp               ( genAllCppHeaderInclude
                                               , genCppDefMacroAccessor
@@ -36,8 +35,6 @@ import FFICXX.Generate.Code.Cpp               ( genAllCppHeaderInclude
                                               , genCppHeaderMacroType
                                               , genCppHeaderMacroVirtual
                                               , genCppHeaderMacroNonVirtual
-                                              , genTmplClassCpp
-                                              , genTmplFunCpp
                                               , genTopLevelFuncCppDefinition
                                               , topLevelFunDecl
                                               )
@@ -81,7 +78,6 @@ import FFICXX.Generate.Type.Class             ( Class(..)
                                               , ClassGlobal(..)
                                               , DaughterMap
                                               , ProtectedMethod(..)
-                                              , TemplateClass(..)
                                               , isAbstractClass
                                               )
 import FFICXX.Generate.Type.Module            ( ClassImportHeader(..)
@@ -300,33 +296,6 @@ buildTopLevelCppDef tih =
        )
 
 -- |
-buildTemplateHeader ::
-     TemplateClassImportHeader
-  -> String
-buildTemplateHeader tcih =
-  let t = tcihTClass tcih
-      fs = tclass_funcs t
-      headerStmts = map R.Include (tcihCxxHeaders tcih)
-      deffunc =    intercalate "\n"
-                     (map (R.renderCMacro . genTmplFunCpp NonCPrim t) fs)
-                ++ "\n\n"
-                ++ intercalate "\n"
-                     (map (R.renderCMacro . genTmplFunCpp CPrim    t) fs)
-      classlevel =    R.renderCMacro (genTmplClassCpp NonCPrim t fs)
-                   ++ "\n\n"
-                   ++ R.renderCMacro (genTmplClassCpp CPrim    t fs)
-  in concatMap R.renderCMacro $
-          [ R.Pragma R.Once
-          , R.EmptyLine
-          ]
-       <> headerStmts
-       <> [ R.EmptyLine
-          , R.Verbatim deffunc
-          , R.EmptyLine
-          , R.Verbatim classlevel
-          ]
-
--- |
 buildFFIHsc :: ClassModule -> Module ()
 buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody
   where mname = cmModule m
@@ -500,6 +469,7 @@ buildTHHs m =
   mkModule (tcmModule m <.> "TH")
     [ lang  ["TemplateHaskell"] ]
     (   [ mkImport "Data.Char"
+        , mkImport "Data.List"
         , mkImport "Data.Monoid"
         , mkImport "Foreign.C.Types"
         , mkImport "Foreign.Ptr"

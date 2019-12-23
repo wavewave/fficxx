@@ -17,22 +17,20 @@ import qualified STD.Vector.TH as TH
 
 TH.genVectorInstanceFor
   CPrim
-  [t|CInt|]
-  (TPInfo { tpinfoCxxType       = "int"
-          , tpinfoCxxHeaders    = []
-          , tpinfoCxxNamespaces = []
-          , tpinfoSuffix        = "int"
-          }
+  ( [t|CInt|], TPInfo { tpinfoCxxType       = "int"
+                      , tpinfoCxxHeaders    = []
+                      , tpinfoCxxNamespaces = []
+                      , tpinfoSuffix        = "int"
+                      }
   )
 
 TH.genVectorInstanceFor
   NonCPrim
-  [t|CppString|]
-  (TPInfo { tpinfoCxxType       = "std::string"
-          , tpinfoCxxHeaders    = [ HdrName "string", HdrName "stdcxxType.h"]
-          , tpinfoCxxNamespaces = [ NS "std" ]
-          , tpinfoSuffix        = "string"
-          }
+  ( [t|CppString|], TPInfo { tpinfoCxxType       = "std::string"
+                           , tpinfoCxxHeaders    = [ HdrName "string", HdrName "stdcxxType.h"]
+                           , tpinfoCxxNamespaces = [ NS "std" ]
+                           , tpinfoSuffix        = "string"
+                           }
   )
 
 test1 :: IO ()

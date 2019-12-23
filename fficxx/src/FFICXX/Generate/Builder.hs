@@ -40,7 +40,6 @@ import           FFICXX.Generate.Type.Class              ( hasProxy )
 import           FFICXX.Generate.Type.Module             ( ClassImportHeader(..)
                                                          , ClassModule(..)
                                                          , PackageConfig(..)
-                                                         , TemplateClassImportHeader(..)
                                                          , TemplateClassModule(..)
                                                          , TopLevelImportHeader(..)
                                                          )
@@ -111,11 +110,7 @@ simpleBuilder cfg sbc = do
   gen
     (tihHeaderFileName tih <.> "h")
     (buildTopLevelHeader (unCabalName pkgname) tih)
-  for_ tcms $ \m ->
-    let tcih = tcmTCIH m
-        hdr = unHdrName (tcihSelfHeader tcih)
-    in gen hdr (buildTemplateHeader tcih)
-  --
+
   putStrLn "Generating Cpp file"
   for_ cihs (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr))
   gen (tihHeaderFileName tih <.> "cpp") (buildTopLevelCppDef tih)
@@ -213,7 +208,7 @@ copyFileWithMD5Check src tgt = do
 
 
 copyCppFiles :: FilePath -> FilePath -> String -> PackageConfig -> IO ()
-copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ tcihs acincs acsrcs) = do
+copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ _tcihs acincs acsrcs) = do
   let thfile = cprefix <> "Type.h"
       tlhfile = tihHeaderFileName tih <.> "h"
       tlcppfile = tihHeaderFileName tih <.> "cpp"
@@ -227,10 +222,6 @@ copyCppFiles wdir ddir cprefix (PkgConfig _ cihs tih _ tcihs acincs acsrcs) = do
         cppfile = cihSelfCpp header
     copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile)
     copyFileWithMD5Check (wdir </> cppfile) (ddir </> cppfile)
-
-  for_ tcihs $ \header-> do
-    let hfile = unHdrName (tcihSelfHeader header)
-    copyFileWithMD5Check (wdir </> hfile) (ddir </> hfile)
 
   for_ acincs $ \(AddCInc header _) ->
     copyFileWithMD5Check (wdir </> header) (ddir </> header)

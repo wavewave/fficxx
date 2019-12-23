@@ -64,22 +64,26 @@ genFunctionInstanceFor qtyp param
        wrap <- mkWrapper (typ,suffix)
        addModFinalizer
          (addForeignSource LangCxx
-            ("\n#include \"functional\"\n\n\n#include \"Function.h\"\n\n"
-             ++ let headers = fpinfoCxxHeaders param
+           ("\n#include \"functional\"\n\n\n#include \"Function.h\"\n\n"
+            ++ (let headers = fpinfoCxxHeaders param
                     f x = renderCMacro (Include x)
                 in concatMap f headers
-             ++ let nss = fpinfoCxxNamespaces param
+               )
+            ++ (let nss = fpinfoCxxNamespaces param
                     f x = renderCStmt (UsingNamespace x)
                 in concatMap f nss
-             ++ let retstr = fromMaybe "void" (fpinfoCxxRetType param)
+               )
+            ++ (let retstr = fromMaybe "void" (fpinfoCxxRetType param)
                     argstr = let args = fpinfoCxxArgTypes param
                                  vs = case args of
                                         [] -> "(,)"
                                         _ -> intercalate "," $
                                                map (\(t,x) -> "(" ++ t ++ "," ++ x ++ ")") args
                              in "(" ++ vs ++ ")"
-                in "Function(" ++ suffix ++ "," ++ retstr ++ "," ++ argstr ++ ")\n"))
-
+                in "Function(" ++ suffix ++ "," ++ retstr ++ "," ++ argstr ++ ")\n"
+               )
+           )
+         )
        let lst = [f1,f2,f3]
        return [ mkInstance [] (AppT (con "IFunction") typ) lst
               , mkInstance [] (AppT (con "FunPtrWrapper") typ) [wrap]

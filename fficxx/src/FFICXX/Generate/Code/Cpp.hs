@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module FFICXX.Generate.Code.Cpp where
 
 import Data.Char             ( toUpper )
 import Data.Functor.Identity ( Identity )
-import Data.List             ( intercalate )
+import Data.List             ( intercalate, intersperse )
 import Data.Monoid           ( (<>) )
 --
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
@@ -257,12 +257,13 @@ genTmplFunCpp ::
   -> TemplateFunction
   -> R.CMacro Identity
 genTmplFunCpp b t@TmplCls {..} f =
-    R.Define (R.sname macroname) [R.sname "Type"]
+    R.Define (R.sname macroname) (map R.sname tclass_params)
       [ R.CExtern [R.CDeclaration decl]
       , tmplFunToDef b t f
       , autoinst
       ]
  where
+  nsuffix = intersperse (R.NamePart "_") $ map R.NamePart tclass_params
   suffix = case b of { CPrim -> "_s"; NonCPrim -> "" }
   macroname = tclass_name <> "_" <> ffiTmplFuncName f <> suffix
   decl = tmplFunToDecl b t f
@@ -270,9 +271,9 @@ genTmplFunCpp b t@TmplCls {..} f =
     R.CInit
       (R.CVarDecl
          R.CTAuto
-         (R.CName [R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"])
+         (R.CName (R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix ))
       )
-      (R.CVar (R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]))
+      (R.CVar (R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix )))
 
 genTmplClassCpp ::
      IsCPrimitive
@@ -280,14 +281,15 @@ genTmplClassCpp ::
   -> [TemplateFunction]
   -> R.CMacro Identity
 genTmplClassCpp b TmplCls {..} fs =
-    R.Define (R.sname macroname) [R.sname "Type"] (map macro1 fs)
+    R.Define (R.sname macroname) params (map macro1 fs)
  where
+  params = map R.sname tclass_params
   suffix = case b of { CPrim -> "_s"; NonCPrim -> "" }
   tname = tclass_name
   macroname = tname <> "_instance" <> suffix
-  macro1 f@TFun {..}    = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) [R.sname "Type"]
-  macro1 f@TFunNew {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f))           [R.sname "Type"]
-  macro1 TFunDelete     = R.CMacroApp (R.sname (tname <> "_delete"))                          [R.sname "Type"]
+  macro1 f@TFun {..}    = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
+  macro1 f@TFunNew {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f))           params
+  macro1 TFunDelete     = R.CMacroApp (R.sname (tname <> "_delete"))                          params
 
 returnCpp ::
      IsCPrimitive
@@ -380,24 +382,24 @@ returnCpp b ret caller =
       ]
     TemplateType _ ->
       error "returnCpp: TemplateType"
-    TemplateParam _ ->
+    TemplateParam typ ->
       [ R.CReturn $
           case b of
             CPrim    -> caller
             NonCPrim ->
               R.CTApp
                 (R.sname "to_nonconst")
-                [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t" ]), R.CTSimple (R.sname "Type") ]
-                [ R.CCast (R.CTStar (R.CTSimple (R.sname "Type"))) $ R.CAddr caller ]
+                [ R.CTSimple (R.CName [ R.NamePart typ, R.NamePart "_t" ]), R.CTSimple (R.sname typ) ]
+                [ R.CCast (R.CTStar (R.CTSimple (R.sname typ))) $ R.CAddr caller ]
       ]
-    TemplateParamPointer _  ->
+    TemplateParamPointer typ ->
       [ R.CReturn $
           case b of
             CPrim    -> caller
             NonCPrim ->
               R.CTApp
                 (R.sname "to_nonconst")
-                [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t"]), R.CTSimple (R.sname "Type") ]
+                [ R.CTSimple (R.CName [ R.NamePart typ, R.NamePart "_t"]), R.CTSimple (R.sname typ) ]
                 [ caller ]
       ]
 
@@ -458,26 +460,32 @@ funcToDef c func
         body = returnCpp NonCPrim (genericFuncRet func) caller
     in R.CDefinition Nothing (funcToDecl c func) body
 
+-- template function declaration and definition
+
+
 tmplFunToDecl ::
      IsCPrimitive
   -> TemplateClass
   -> TemplateFunction
   -> R.CFunDecl Identity
-tmplFunToDecl b t@TmplCls {..} f@TFun {..}    = R.CFunDecl ret func args
-  where
-    ret  = tmplReturnCType b tfun_ret
-    func = R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]
-    args = tmplAllArgsToCTypVar b Self t tfun_args
-tmplFunToDecl b t@TmplCls {..} f@TFunNew {..} = R.CFunDecl ret func args
-  where
-    ret  = tmplReturnCType b (TemplateType t)
-    func = R.CName [R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_"), R.NamePart "Type"]
-    args = tmplAllArgsToCTypVar b NoSelf t tfun_new_args
-tmplFunToDecl b t@TmplCls {..} TFunDelete     = R.CFunDecl ret func args
-  where
-    ret  = R.CTVoid
-    func = R.CName [R.NamePart (tclass_name <> "_delete_"), R.NamePart "Type"]
-    args = tmplAllArgsToCTypVar b Self t []
+tmplFunToDecl b t@TmplCls {..} f =
+  let nsuffix = intersperse (R.NamePart "_") $ map R.NamePart tclass_params
+  in case f of
+    TFun {..} ->
+      let ret  = tmplReturnCType b tfun_ret
+          func = R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix)
+          args = tmplAllArgsToCTypVar b Self t tfun_args
+      in R.CFunDecl ret func args
+    TFunNew {..} ->
+      let ret  = tmplReturnCType b (TemplateType t)
+          func = R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix)
+          args = tmplAllArgsToCTypVar b NoSelf t tfun_new_args
+      in R.CFunDecl ret func args
+    TFunDelete ->
+      let ret  = R.CTVoid
+          func = R.CName (R.NamePart (tclass_name <> "_delete_") : nsuffix)
+          args = tmplAllArgsToCTypVar b Self t []
+      in R.CFunDecl ret func args
 
 tmplFunToDef ::
      IsCPrimitive
@@ -487,20 +495,21 @@ tmplFunToDef ::
 tmplFunToDef b t@TmplCls {..} f =
     R.CDefinition (Just R.Inline) (tmplFunToDecl b t f) body
   where
+    typparams = map (R.CTSimple . R.sname) tclass_params
     body =
       case f of
         TFunNew {..} ->
           let caller =
                 R.CTNew
                   (R.sname tclass_oname)
-                  [ R.CTSimple (R.sname "Type") ]
+                  typparams
                   (map (tmplArgToCallCExp b) tfun_new_args)
           in  [ R.CReturn $ R.CTApp (R.sname "static_cast") [R.CTStar R.CTVoid] [caller] ]
         TFunDelete ->
           [ R.CDelete $
               R.CTApp
                 (R.sname "static_cast")
-                [ R.CTStar (R.CTTApp (R.sname tclass_oname) [ R.CTSimple (R.sname "Type") ]) ]
+                [ R.CTStar (R.CTTApp (R.sname tclass_oname) typparams) ]
                 [ R.CVar (R.sname "p") ]
           ]
         TFun {..}    ->
@@ -509,7 +518,7 @@ tmplFunToDef b t@TmplCls {..} f =
               R.CArrow
               (R.CTApp
                  (R.sname "static_cast")
-                 [ R.CTStar (R.CTTApp (R.sname tclass_oname) [ R.CTSimple (R.sname "Type") ]) ]
+                 [ R.CTStar (R.CTTApp (R.sname tclass_oname) typparams) ]
                  [ R.CVar $ R.sname "p" ]
               )
               (R.CApp

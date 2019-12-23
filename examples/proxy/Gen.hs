@@ -107,21 +107,21 @@ string =
     False
 
 t_vector :: TemplateClass
-t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" "t"
+t_vector = TmplCls stdcxx_cabal "Vector" "std::vector" ["tp1"]
              [ TFunNew [] Nothing
-             , TFun void_ "push_back" "push_back" [Arg (TemplateParam "t") "x"] Nothing
-             , TFun void_ "pop_back"  "pop_back"  []                        Nothing
-             , TFun (TemplateParam "t") "at" "at" [int "n"]                 Nothing
-             , TFun int_  "size"      "size"      []                        Nothing
+             , TFun void_ "push_back" "push_back"   [Arg (TemplateParam "tp1") "x"] Nothing
+             , TFun void_ "pop_back"  "pop_back"    []                        Nothing
+             , TFun (TemplateParam "tp1") "at" "at" [int "n"]                 Nothing
+             , TFun int_  "size"      "size"        []                        Nothing
              , TFunDelete
              ]
 
 t_unique_ptr :: TemplateClass
-t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" "t"
+t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" ["tp1"]
              [ TFunNew [] (Just "newUniquePtr0")
-             , TFunNew [Arg (TemplateParamPointer "t") "p"] Nothing
-             , TFun (TemplateParamPointer "t") "get" "get" [] Nothing
-             , TFun (TemplateParamPointer "t") "release" "release" [] Nothing
+             , TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing
+             , TFun (TemplateParamPointer "tp1") "get" "get" [] Nothing
+             , TFun (TemplateParamPointer "tp1") "release" "release" [] Nothing
              , TFun void_ "reset" "reset" [] Nothing
              , TFunDelete
              ]

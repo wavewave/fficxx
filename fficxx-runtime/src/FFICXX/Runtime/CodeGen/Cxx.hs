@@ -25,38 +25,6 @@ newtype Namespace =
 instance IsString Namespace where
   fromString = NS
 
--- | Dummy ~ Identity. For testing now.
-data Dummy a = Dummy { unDummy :: a }
-
--- data Op = Add | Mul
-
--- | embedded DSL for C++ code generation via interpretation
-data HExp =
-    Val Int
-  | Add HExp HExp
-  | Lam (HExp -> HExp)
-  | App HExp HExp
---   deriving Show
-
--- data HEval =
---     EVal Int
---   | ELam String HEval
-
--- data Evaluated =
---     EValue   Int                  -- ^ fully evaluated
---   | EClosure (HExp -> Evaluated)  -- ^ closure
-
--- pprint :: Evaluated -> String
--- pprint (EValue n) = show n
--- pprint (EClosure f) = "closure"
-
-eval :: HExp -> Int
-eval (Val v)   = v
-eval (Add x y) = eval x + eval y
-eval (Lam _)   = error "lambda"
-eval (App (Lam f) x) = eval (f x)
-
-
 data PragmaParam = Once
 
 -- | parts for interpolation
@@ -90,14 +58,14 @@ renderCOp CArrow  = "->"
 renderCOp CAssign = "="
 
 data CExp (f :: * -> *) =
-    CVar (CName f)                      -- ^ variable
-  | CApp (CExp f) [CExp f]              -- ^ C function app:  f(a1,a2,..)
-  | CTApp (CName f ) [CType f] [CExp f] -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
+    CVar  (CName f)                     -- ^ variable
+  | CApp  (CExp  f) [CExp f]            -- ^ C function app:  f(a1,a2,..)
+  | CTApp (CName f) [CType f] [CExp f]  -- ^ template app  :  f<T1,T2,..>(a1,a2,..)
   | CBinOp COp (CExp f) (CExp f)        -- ^ binary operator: x `op` y
   | CCast (CType f) (CExp f)            -- ^ (type)exp
   | CAddr (CExp f)                      -- ^ &(exp)
   | CStar (CExp f)                      -- ^ *(exp)
-  | CNew (CName f) [CExp f]             -- ^ new operator: new Cstr(a1,a2,...)
+  | CNew (CName f)  [CExp f]            -- ^ new operator: new Cstr(a1,a2,...)
   | CTNew (CName f) [CType f] [CExp f]  -- ^ new operator for template class: new Cstr<T1,T2,..>(a1,a2,..)
   | CEMacroApp (CName f) [CName f]      -- ^ macro function at expression level
   | CEVerbatim String                   -- ^ verbatim

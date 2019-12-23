@@ -41,8 +41,7 @@ genCsrcFiles :: (TopLevelImportHeader,[ClassModule])
              -> [AddCSrc]
              -> [String]
 genCsrcFiles (tih,cmods) acincs acsrcs =
-  let -- indent = cabalIndentation
-      selfheaders' = do
+  let selfheaders' = do
         x <- cmods
         let y = cmCIH x
         return (cihSelfHeader y)
@@ -69,12 +68,10 @@ genIncludeFiles :: String        -- ^ package name
                 -> ([ClassImportHeader],[TemplateClassImportHeader])
                 -> [AddCInc]
                 -> [String]
-genIncludeFiles pkgname (cih,tcih) acincs =
-  let selfheaders = map cihSelfHeader cih <> map tcihSelfHeader tcih
+genIncludeFiles pkgname (cih,_tcih) acincs =
+  let selfheaders = map cihSelfHeader cih
       includeFileStrs = map unHdrName (selfheaders ++ map (\(AddCInc hdr _) -> HdrName hdr) acincs)
   in (pkgname<>"Type.h") : includeFileStrs
-
-
 
 -- for library
 genCppFiles :: (TopLevelImportHeader,[ClassModule])
