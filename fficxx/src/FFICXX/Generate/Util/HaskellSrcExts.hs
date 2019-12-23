@@ -194,10 +194,8 @@ emodule nm = EModuleContents () (ModuleName () nm)
 
 nonamespace = NoNamespace ()
 
-list = List ()
-lambda = Lambda ()
-
 insType = InsType ()
+
 insDecl = InsDecl ()
 
 generator = Generator ()
