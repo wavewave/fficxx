@@ -281,14 +281,15 @@ genTmplClassCpp ::
   -> [TemplateFunction]
   -> R.CMacro Identity
 genTmplClassCpp b TmplCls {..} fs =
-    R.Define (R.sname macroname) [R.sname "Type"] (map macro1 fs)
+    R.Define (R.sname macroname) params (map macro1 fs)
  where
+  params = map R.sname tclass_params
   suffix = case b of { CPrim -> "_s"; NonCPrim -> "" }
   tname = tclass_name
   macroname = tname <> "_instance" <> suffix
-  macro1 f@TFun {..}    = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) [R.sname "Type"]
-  macro1 f@TFunNew {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f))           [R.sname "Type"]
-  macro1 TFunDelete     = R.CMacroApp (R.sname (tname <> "_delete"))                          [R.sname "Type"]
+  macro1 f@TFun {..}    = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
+  macro1 f@TFunNew {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f))           params
+  macro1 TFunDelete     = R.CMacroApp (R.sname (tname <> "_delete"))                          params
 
 returnCpp ::
      IsCPrimitive

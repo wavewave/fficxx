@@ -3,7 +3,7 @@
 module FFICXX.Generate.Code.HsTemplate where
 
 import Data.Monoid                    ( (<>) )
-import qualified Data.List as L       ( foldr1, intercalate )
+import qualified Data.List as L       ( foldr1 )
 import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       , lamE, letE, letStmt, listE, name
                                       , pApp, paren, pTuple
@@ -191,7 +191,7 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
             sig = foldr1 tyfun [tparams , tycon "String", tyapp (tycon "Q") (tycon "Exp") ]
             tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
             prefix = tclass_name t
-            lit' = strE (prefix<>"_"<>nc) -- <>"_")
+            lit' = strE (prefix<>"_"<>nc)
             lam = lamE [p "n"] ( lit' `app` v "<>" `app` v "n")
             rhs = app (v "mkTFunc") $
                     let typs = if nparams == 1 then map v tvars else [tuple (map v tvars)]
@@ -299,17 +299,13 @@ genTmplInstance tcih =
                   )
           where
             -- temporary
-            body = let
-                     t = tcihTClass tcih
-                     fs = tclass_funcs t
-                   in map R.renderCMacro $
-                           map R.Include (tcihCxxHeaders tcih)
-                        ++ map (genTmplFunCpp NonCPrim t) fs
-                        ++ map (genTmplFunCpp CPrim    t) fs
-                        ++ [ genTmplClassCpp NonCPrim t fs
-                           , genTmplClassCpp CPrim    t fs
-                           ]
-
+            body = map R.renderCMacro $
+                        map R.Include (tcihCxxHeaders tcih)
+                     ++ map (genTmplFunCpp NonCPrim t) fs
+                     ++ map (genTmplFunCpp CPrim    t) fs
+                     ++ [ genTmplClassCpp NonCPrim t fs
+                        , genTmplClassCpp CPrim    t fs
+                        ]
             includeStatic =
               strE $ concatMap (<> "\n")
                        (   [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h")) ]
@@ -331,7 +327,6 @@ genTmplInstance tcih =
                     (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
                 ]
                 (v "concatMap" `app` v "f" `app` v "nss")
-
 
         retstmt = v "pure"
                   `app` listE [ v "mkInstance"
