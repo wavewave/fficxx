@@ -34,7 +34,6 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , isNonVirtualFunc
                                     , isVirtualFunc
                                     )
-import FFICXX.Generate.Util         ( conncomma, intercalateWith )
 import FFICXX.Generate.Util.HaskellSrcExts
        ( classA, cxTuple, mkTVar, mkVar, parenSplice, tyapp, tycon, tyfun, tyPtr, tySplice
        , unit_tycon, unqual )
@@ -538,7 +537,8 @@ tmplArgToCallCExp _ (Arg (CT (CRef _) _) varname) =
   R.CStar $ R.CVar $ R.sname varname
 tmplArgToCallCExp _ (Arg (TemplateApp x) varname) =
   case tapp_tparam x of
-    TArg_TypeParam p ->
+    -- TODO: need to use param
+    TArg_TypeParam _p ->
       R.CTApp
         (R.sname "static_cast")
         [ R.CTStar $ R.CTTApp (R.sname (tclass_oname (tapp_tclass x))) [ R.CTSimple (R.sname "Type") ] ]
@@ -546,7 +546,8 @@ tmplArgToCallCExp _ (Arg (TemplateApp x) varname) =
     _ -> error "tmplArgToCallCExp: TemplateApp"
 tmplArgToCallCExp _ (Arg (TemplateAppRef x) varname) =
   case tapp_tparam x of
-    TArg_TypeParam p ->
+    -- TODO: need to use param
+    TArg_TypeParam _p ->
       R.CStar $
         R.CTApp
           (R.sname "static_cast")
@@ -555,7 +556,8 @@ tmplArgToCallCExp _ (Arg (TemplateAppRef x) varname) =
     _ -> error "tmplArgToCallCExp: TemplateAppRef"
 tmplArgToCallCExp _ (Arg (TemplateAppMove x) varname) =
   case tapp_tparam x of
-    TArg_TypeParam p ->
+    -- TODO: need to use param
+    TArg_TypeParam _p ->
       R.CApp
         (R.CVar (R.sname "std::move"))
         [ R.CStar $
@@ -735,19 +737,19 @@ convertCpp2HS4Tmpl _ _c _ (CPT (CPTClass c') _)     = (tycon . fst . hsClassName
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassRef c') _)  = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS4Tmpl _ _c _ (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS4Tmpl e c ss x@(TemplateApp p) =
+convertCpp2HS4Tmpl _e c ss x@(TemplateApp p) =
   case tapp_tparam p of
     TArg_TypeParam _ -> let t = tapp_tclass p
                             (hname,_) = hsTemplateClassName t
                         in foldl1 tyapp (tycon hname : ss)
     _ -> convertCpp2HS c x
-convertCpp2HS4Tmpl e c ss x@(TemplateAppRef p) =
+convertCpp2HS4Tmpl _e c ss x@(TemplateAppRef p) =
   case tapp_tparam p of
     TArg_TypeParam _ -> let t = tapp_tclass p
                             (hname,_) = hsTemplateClassName t
                         in foldl1 tyapp (tycon hname : ss)
     _ -> convertCpp2HS c x
-convertCpp2HS4Tmpl e c ss x@(TemplateAppMove p) =
+convertCpp2HS4Tmpl _e c ss x@(TemplateAppMove p) =
   case tapp_tparam p of
     TArg_TypeParam _ -> let t = tapp_tclass p
                             (hname,_) = hsTemplateClassName t
@@ -756,6 +758,7 @@ convertCpp2HS4Tmpl e c ss x@(TemplateAppMove p) =
 convertCpp2HS4Tmpl e _c _ (TemplateType _)          = e
 convertCpp2HS4Tmpl _ _c (s:_) (TemplateParam _)         = s  -- TODO: need to be fixed
 convertCpp2HS4Tmpl _ _c (s:_) (TemplateParamPointer _)  = s  -- TODO: need to be fixed
+convertCpp2HS4Tmpl _ _ _ _ = error "convertCppHS4Tmpl: not yet implemented"
 
 
 hsFuncXformer :: Function -> String
@@ -853,9 +856,9 @@ functionSignature c f =
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureT t TFun {..} =
   let (hname,_) = hsTemplateClassName t
-      self = foldl1 tyapp (tycon hname : map mkTVar (tclass_params t))
+      slf = foldl1 tyapp (tycon hname : map mkTVar (tclass_params t))
       ctyp = convertCpp2HS Nothing tfun_ret
-      lst = self : map (convertCpp2HS Nothing . arg_type) tfun_args
+      lst = slf : map (convertCpp2HS Nothing . arg_type) tfun_args
   in foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
 functionSignatureT t TFunNew {..} =
   let ctyp = convertCpp2HS Nothing (TemplateType t)

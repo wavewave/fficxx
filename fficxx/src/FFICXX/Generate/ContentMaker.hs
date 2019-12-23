@@ -19,7 +19,6 @@ import System.FilePath                        ( (<.>), (</>) )
 --
 import FFICXX.Runtime.CodeGen.Cxx             ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
-import FFICXX.Runtime.TH                      ( IsCPrimitive(CPrim,NonCPrim) )
 --
 import FFICXX.Generate.Code.Cpp               ( genAllCppHeaderInclude
                                               , genCppDefMacroAccessor
@@ -36,8 +35,6 @@ import FFICXX.Generate.Code.Cpp               ( genAllCppHeaderInclude
                                               , genCppHeaderMacroType
                                               , genCppHeaderMacroVirtual
                                               , genCppHeaderMacroNonVirtual
-                                              , genTmplClassCpp
-                                              , genTmplFunCpp
                                               , genTopLevelFuncCppDefinition
                                               , topLevelFunDecl
                                               )
@@ -81,7 +78,6 @@ import FFICXX.Generate.Type.Class             ( Class(..)
                                               , ClassGlobal(..)
                                               , DaughterMap
                                               , ProtectedMethod(..)
-                                              , TemplateClass(..)
                                               , isAbstractClass
                                               )
 import FFICXX.Generate.Type.Module            ( ClassImportHeader(..)

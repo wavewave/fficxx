@@ -8,7 +8,7 @@ import Language.Haskell.Exts.Syntax   ( Decl(..) )
 --
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Generate.Util.HaskellSrcExts
-                                      ( con, inapp, mkFun, mkPVar, mkVar
+                                      ( con, inapp, mkFun, mkVar
                                       , op, qualifier
                                       , tyapp, tycon, tylist
                                       )
@@ -18,7 +18,6 @@ genProxyInstance :: [Decl ()]
 genProxyInstance =
     mkFun fname sig [] rhs Nothing
   where fname = "genImplProxy"
-        p = mkPVar
         v = mkVar
         sig = tycon "Q" `tyapp` tylist (tycon "Dec")
         rhs = doE [foreignSrcStmt, qualStmt retstmt]
