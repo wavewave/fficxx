@@ -458,13 +458,6 @@ cxx2C t e =
                               -- if b then "(" <> callstr <> ");"
                               --      else "to_nonconst<Type ## _t, Type>(" <> e <> ") ;"
 
-{-
-mkTmplTypeParams :: String -> TemplateClass -> [String]
-mkTmplTypeParams prefix t =
-  map (\p -> prefix <> p) $ tclass_params t
--}
-
-
 tmplArgToCTypVar ::
      IsCPrimitive
   -> TemplateClass
@@ -543,10 +536,6 @@ tmplArgToCallCExp _ (Arg (TemplateApp x) varname) =
        (R.sname "static_cast")
        [ R.CTStar $ R.CTTApp (R.sname (tclass_oname (tapp_tclass x))) targs ]
        [ R.CVar $ R.sname varname ]
-  -- case tapp_tparam x of
-  --   -- TODO: need to use param
-  --   TArg_TypeParam _p ->
-  --   _ -> error "tmplArgToCallCExp: TemplateApp"
 tmplArgToCallCExp _ (Arg (TemplateAppRef x) varname) =
   let targs = map (R.CTSimple . R.sname . hsClassNameForTArg) (tapp_tparams x)
   in R.CStar $
@@ -728,46 +717,29 @@ convertCpp2HS4Tmpl
   -> [Type ()]    -- ^ type paramemter splice
   -> Types
   -> Type ()
-convertCpp2HS4Tmpl _ c _ Void                  = convertCpp2HS c Void
-convertCpp2HS4Tmpl _ (Just c) _ SelfType       = convertCpp2HS (Just c) SelfType
-convertCpp2HS4Tmpl _ Nothing _ SelfType        = convertCpp2HS Nothing SelfType
-convertCpp2HS4Tmpl _ c _ x@(CT t _)            = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClass c') _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassRef c') _)  = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassCopy c') _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassMove c') _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _e c ss (TemplateApp info) =
+convertCpp2HS4Tmpl _ c _ Void                          = convertCpp2HS c Void
+convertCpp2HS4Tmpl _ (Just c) _ SelfType               = convertCpp2HS (Just c) SelfType
+convertCpp2HS4Tmpl _ Nothing _ SelfType                = convertCpp2HS Nothing SelfType
+convertCpp2HS4Tmpl _ c _ x@(CT _ _)                    = convertCpp2HS c x
+convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClass _) _)        = convertCpp2HS c x
+convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassRef _) _)     = convertCpp2HS c x
+convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassCopy _) _)    = convertCpp2HS c x
+convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassMove _) _)    = convertCpp2HS c x
+convertCpp2HS4Tmpl _ _ ss (TemplateApp info) =
   let pss = zip (tapp_tparams info) ss
   in foldl1 tyapp $
        tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _,s) -> s; (p,_) -> tycon (hsClassNameForTArg p)) pss
-  -- case tapp_tparam p of
-  --  TArg_TypeParam _ -> let t = tapp_tclass p
-  --                          (hname,_) = hsTemplateClassName t
-  --                      in foldl1 tyapp (tycon hname : ss)
-  --  _ -> convertCpp2HS c x
-convertCpp2HS4Tmpl _e c ss (TemplateAppRef info) =
+convertCpp2HS4Tmpl _ _ ss (TemplateAppRef info) =
   let pss = zip (tapp_tparams info) ss
   in foldl1 tyapp $
        tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _,s) -> s; (p,_) -> tycon (hsClassNameForTArg p)) pss
-
-  --case tapp_tparam p of
-  --  TArg_TypeParam _ -> let t = tapp_tclass p
-  --                          (hname,_) = hsTemplateClassName t
-  --                      in foldl1 tyapp (tycon hname : ss)
-  --  _ -> convertCpp2HS c x
-convertCpp2HS4Tmpl _e c ss (TemplateAppMove info) =
+convertCpp2HS4Tmpl _ _ ss (TemplateAppMove info) =
   let pss = zip (tapp_tparams info) ss
   in foldl1 tyapp $
        tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _,s) -> s; (p,_) -> tycon (hsClassNameForTArg p)) pss
-
-  --case tapp_tparam p of
-  --  TArg_TypeParam _ -> let t = tapp_tclass p
-  --                          (hname,_) = hsTemplateClassName t
-  --                      in foldl1 tyapp (tycon hname : ss)
-  --  _ -> convertCpp2HS c x
-convertCpp2HS4Tmpl e _c _ (TemplateType _)          = e
-convertCpp2HS4Tmpl _ _c (s:_) (TemplateParam _)         = s  -- TODO: need to be fixed
-convertCpp2HS4Tmpl _ _c (s:_) (TemplateParamPointer _)  = s  -- TODO: need to be fixed
+convertCpp2HS4Tmpl e _ _ (TemplateType _)              = e
+convertCpp2HS4Tmpl _ _ (s:_) (TemplateParam _)         = s  -- TODO: need to be fixed
+convertCpp2HS4Tmpl _ _ (s:_) (TemplateParamPointer _)  = s  -- TODO: need to be fixed
 convertCpp2HS4Tmpl _ _ _ _ = error "convertCppHS4Tmpl: not yet implemented"
 
 
@@ -834,19 +806,10 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
            -- it is not clear whether the following is okay or not.
            (TemplateApp x)    -> pure $
                                    convertCpp2HS Nothing (TemplateApp x)
-                                   -- tyapp
-                                   --   (tycon (tclass_name (tapp_tclass x)))
-                                   --   (tycon (hsClassNameForTArg (tapp_tparams x)))
            (TemplateAppRef x) -> pure $
                                    convertCpp2HS Nothing (TemplateAppRef x)
-                                   -- tyapp
-                                   --   (tycon (tclass_name (tapp_tclass x)))
-                                   --   (tycon (hsClassNameForTArg (tapp_tparams x)))
            (TemplateAppMove x)-> pure $
                                    convertCpp2HS Nothing (TemplateAppMove x)
-                                   -- tyapp
-                                   --   (tycon (tclass_name (tapp_tclass x)))
-                                   --   (tycon (hsClassNameForTArg (tapp_tparams x)))
            (TemplateType t)   -> pure $
                                    foldl1 tyapp (tycon (tclass_name t) : map mkTVar (tclass_params t))
            (TemplateParam p)      -> return (mkTVar p)
