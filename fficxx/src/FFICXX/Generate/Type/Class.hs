@@ -148,7 +148,7 @@ newtype Variable =
 -- | Member functions of a template class.
 data TemplateMemberFunction =
   TemplateMemberFunction {
-    tmf_param :: String  -- TODO: multiparameter
+    tmf_params :: [String]
   , tmf_ret :: Types
   , tmf_name :: String
   , tmf_args :: [Arg]

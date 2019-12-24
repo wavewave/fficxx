@@ -184,13 +184,13 @@ genCppDefMacroTemplateMemberFunction ::
   -> TemplateMemberFunction
   -> R.CMacro Identity
 genCppDefMacroTemplateMemberFunction c f =
-   R.Define (R.sname macroname) (map R.sname [tmf_param f]) -- [R.sname "Type"]
+   R.Define (R.sname macroname) (map R.sname (tmf_params f))
      [ R.CExtern [R.CDeclaration decl]
      , tmplMemberFunToDef c f
      , autoinst
      ]
   where
-    nsuffix = intersperse (R.NamePart "_") $ map R.NamePart [tmf_param f]
+    nsuffix = intersperse (R.NamePart "_") $ map R.NamePart (tmf_params f)
     macroname = hsTemplateMemberFunctionName c f
     decl = tmplMemberFunToDecl c f
     autoinst =
@@ -576,7 +576,7 @@ accessorToDef v a =
 -- TODO: Handle simple type
 tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> R.CFunDecl Identity
 tmplMemberFunToDecl c f =
-  let nsuffix = intersperse (R.NamePart "_") $ map R.NamePart [tmf_param f]
+  let nsuffix = intersperse (R.NamePart "_") $ map R.NamePart (tmf_params f)
       ret = tmplMemFuncReturnCType c (tmf_ret f)
       fname =
         R.CName (R.NamePart (hsTemplateMemberFunctionName c f <> "_") : nsuffix)
@@ -588,7 +588,7 @@ tmplMemberFunToDef :: Class -> TemplateMemberFunction -> R.CStatement Identity
 tmplMemberFunToDef c f =
     R.CDefinition (Just R.Inline) (tmplMemberFunToDecl c f) body
   where
-    tparams = map (R.CTSimple . R.sname) [tmf_param f]
+    tparams = map (R.CTSimple . R.sname) (tmf_params f)
     body = returnCpp NonCPrim (tmf_ret f) $
              R.CBinOp
                R.CArrow

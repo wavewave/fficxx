@@ -864,10 +864,10 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
 functionSignatureTMF :: Class -> TemplateMemberFunction -> Type ()
 functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
   where
-    ctyp = convertCpp2HS4Tmpl e Nothing [spl] (tmf_ret f)                      -- TODO: update with multiple template parameters
+    spls = map (tySplice . parenSplice . mkVar) (tmf_params f)
+    ctyp = convertCpp2HS4Tmpl e Nothing spls (tmf_ret f)
     e = tycon (fst (hsClassName c))
-    spl = tySplice (parenSplice (mkVar (tmf_param f)))                         -- TODO: update with multiple template parameters
-    lst = e : map (convertCpp2HS4Tmpl e Nothing [spl] . arg_type) (tmf_args f) -- TODO: update with multiple template parameters
+    lst = e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (tmf_args f)
 
 
 accessorCFunSig :: Types -> Accessor -> CFunSig

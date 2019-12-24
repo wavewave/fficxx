@@ -165,14 +165,14 @@ classA cabal =
   , class_vars  = [ ]
   , class_tmpl_funcs =
       [ TemplateMemberFunction {
-          tmf_param = "tp1"
+          tmf_params = ["tp1"]
         , tmf_ret = void_
         , tmf_name = "method"
         , tmf_args = [ Arg (TemplateParamPointer "tp1") "x" ]
         , tmf_alias = Nothing
         }
       , TemplateMemberFunction {
-          tmf_param = "tp1"
+          tmf_params = ["tp1"]
         , tmf_ret = void_
         , tmf_name = "method2"
         , tmf_args = [ Arg
