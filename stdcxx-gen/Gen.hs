@@ -23,7 +23,11 @@ import FFICXX.Generate.Type.Cabal  ( BuildType(Simple)
                                    , Cabal(..)
                                    , CabalName(..)
                                    )
-import FFICXX.Generate.Type.Config ( ModuleUnitImports(..), ModuleUnitMap(..), ModuleUnit(..), modImports )
+import FFICXX.Generate.Type.Config ( ModuleUnitImports(..)
+                                   , ModuleUnitMap(..)
+                                   , ModuleUnit(..)
+                                   , modImports
+                                   )
 import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , Class(..)
                                    , ClassAlias(..)
@@ -97,10 +101,18 @@ classes = [ deletable
 toplevelfunctions :: [TopLevelFunction]
 toplevelfunctions = [ ]
 
+t_pair :: TemplateClass
+t_pair =
+  TmplCls cabal "Pair" "std::pair" ["tp1","tp2"]
+    [ TFunNew [Arg (TemplateParam "tp1") "x", Arg (TemplateParam "tp2") "y"] Nothing
+    , TFunDelete
+    ]
+
 t_map :: TemplateClass
 t_map =
   TmplCls cabal "Map" "std::map" ["tpk","tpv"]
     [ TFunNew [] Nothing
+    -- , TFun void_ {- temporary until iterator support -} "insert" "insert" [] Nothing
     , TFun int_  "size" "size" [] Nothing
     , TFunDelete
     ]
@@ -140,7 +152,8 @@ t_shared_ptr =
 
 templates :: [TemplateClassImportHeader]
 templates =
-  [ TCIH t_map        ["map"]
+  [ TCIH t_pair       ["utility"]
+  , TCIH t_map        ["map"]
   , TCIH t_vector     ["vector"]
   , TCIH t_unique_ptr ["memory"]
   , TCIH t_shared_ptr ["memory"]

@@ -82,7 +82,7 @@ data TemplateArgType =
 data TemplateAppInfo =
   TemplateAppInfo {
     tapp_tclass :: TemplateClass
-  , tapp_tparam :: TemplateArgType
+  , tapp_tparams :: [TemplateArgType]
   , tapp_CppTypeForParam :: String
   }
   deriving Show
@@ -148,7 +148,7 @@ newtype Variable =
 -- | Member functions of a template class.
 data TemplateMemberFunction =
   TemplateMemberFunction {
-    tmf_param :: String
+    tmf_params :: [String]
   , tmf_ret :: Types
   , tmf_name :: String
   , tmf_args :: [Arg]

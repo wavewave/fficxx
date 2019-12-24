@@ -62,21 +62,28 @@ genTemplateMemberFunctions cih =
   let c = cihClass cih
   in concatMap (\f -> genTMFExp c f <> genTMFInstance cih f) (class_tmpl_funcs c)
 
-
+-- TODO: combine this with genTmplInstance
 genTMFExp :: Class -> TemplateMemberFunction -> [Decl ()]
-genTMFExp c f = mkFun nh sig [p "typ", p "suffix"] rhs (Just bstmts)
+genTMFExp c f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
   where
     nh = hsTemplateMemberFunctionNameTH c f
-    sig = tycon "Type" `tyfun` (tycon "String" `tyfun` (tyapp (tycon "Q") (tycon "Exp")))
     v = mkVar
     p = mkPVar
-    tp = tmf_param f
+    itps = zip ([1..]::[Int]) (tmf_params f)
+    tvars = map (\(i,_) -> "typ" ++ show i) itps
+    nparams = length itps
+    tparams = if nparams == 1 then tycon "Type" else TyTuple () Boxed (replicate nparams (tycon "Type"))
+    sig = foldr1 tyfun [tparams , tycon "String", tyapp (tycon "Q") (tycon "Exp") ]
+    tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
     lit' = strE (hsTemplateMemberFunctionName c f <> "_")
     lam = lamE [p "n"] ( lit' `app` v "<>" `app` v "n")
-    rhs = app (v "mkTFunc") (tuple [v "typ", v "suffix", lam, v "tyf"])
+    rhs = app (v "mkTFunc") $
+            let typs = if nparams == 1 then map v tvars else [tuple (map v tvars)]
+            in tuple (typs ++ [ v "suffix", lam, v "tyf"])
     sig' = functionSignatureTMF c f
+    tassgns = map (\(i,tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i)))) itps
     bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
-                       (letE [ pbind_ (p tp) (v "pure" `app` (v "typ")) ]
+                       (letE tassgns
                           (bracketExp (typeBracket sig')))
                        Nothing
                    ]
