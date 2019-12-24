@@ -624,21 +624,20 @@ tmplMemFuncArgToCTypVar _ _ = error "tmplMemFuncArgToString: undefined"
 
 
 -- |
-tmplMemFuncRetTypeToString :: Class -> Types -> String
-tmplMemFuncRetTypeToString _ (CT ctyp isconst)        = R.renderCType $ ctypToCType ctyp isconst
-tmplMemFuncRetTypeToString _ Void                     = "void"
-tmplMemFuncRetTypeToString c SelfType                 = ffiClassName c <> "_p"
-tmplMemFuncRetTypeToString _ (CPT (CPTClass c) _)     = ffiClassName c <> "_p"
-tmplMemFuncRetTypeToString _ (CPT (CPTClassRef c) _)  = ffiClassName c <> "_p"
-tmplMemFuncRetTypeToString _ (CPT (CPTClassCopy c) _) = ffiClassName c <> "_p"
-tmplMemFuncRetTypeToString _ (CPT (CPTClassMove c) _) = ffiClassName c <> "_p"
-tmplMemFuncRetTypeToString _ (TemplateApp     _)      = "void*"
-tmplMemFuncRetTypeToString _ (TemplateAppRef  _)      = "void*"
-tmplMemFuncRetTypeToString _ (TemplateAppMove _)      = "void*"
-tmplMemFuncRetTypeToString _ (TemplateType _)         = "void*"
-tmplMemFuncRetTypeToString _ (TemplateParam _)        = "Type##_p"
-tmplMemFuncRetTypeToString _ (TemplateParamPointer _) = "Type##_p"
-
+tmplMemFuncReturnCType :: Class -> Types -> R.CType Identity
+tmplMemFuncReturnCType _ (CT ctyp isconst)        = ctypToCType ctyp isconst
+tmplMemFuncReturnCType _ Void                     = R.CTVoid
+tmplMemFuncReturnCType c SelfType                 = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+tmplMemFuncReturnCType _ (CPT (CPTClass c) _)     = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+tmplMemFuncReturnCType _ (CPT (CPTClassRef c) _)  = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+tmplMemFuncReturnCType _ (CPT (CPTClassCopy c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+tmplMemFuncReturnCType _ (CPT (CPTClassMove c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+tmplMemFuncReturnCType _ (TemplateApp     _)      = R.CTStar R.CTVoid
+tmplMemFuncReturnCType _ (TemplateAppRef  _)      = R.CTStar R.CTVoid
+tmplMemFuncReturnCType _ (TemplateAppMove _)      = R.CTStar R.CTVoid
+tmplMemFuncReturnCType _ (TemplateType _)         = R.CTStar R.CTVoid
+tmplMemFuncReturnCType _ (TemplateParam t)        = R.CTSimple $ R.CName [ R.NamePart t, R.NamePart "_p" ]
+tmplMemFuncReturnCType _ (TemplateParamPointer t) = R.CTSimple $ R.CName [ R.NamePart t, R.NamePart "_p" ]
 
 -- |
 convertC2HS :: CTypes -> Type ()

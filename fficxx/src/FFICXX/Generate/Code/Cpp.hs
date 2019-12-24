@@ -23,7 +23,7 @@ import FFICXX.Generate.Code.Primitive
                                     , genericFuncRet
                                     , returnCType
                                     , tmplMemFuncArgToCTypVar
-                                    , tmplMemFuncRetTypeToString
+                                    , tmplMemFuncReturnCType
                                     , tmplAllArgsToCTypVar
                                     , tmplArgToCallCExp
                                     , tmplReturnCType
@@ -577,7 +577,7 @@ accessorToDef v a =
 tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> R.CFunDecl Identity
 tmplMemberFunToDecl c f =
   let nsuffix = intersperse (R.NamePart "_") $ map R.NamePart [tmf_param f]
-      ret = R.CTVerbatim $ tmplMemFuncRetTypeToString c (tmf_ret f)
+      ret = tmplMemFuncReturnCType c (tmf_ret f)
       fname =
         R.CName (R.NamePart (hsTemplateMemberFunctionName c f <> "_") : nsuffix)
       args = map (tmplMemFuncArgToCTypVar c) ((Arg SelfType "p"):tmf_args f)
