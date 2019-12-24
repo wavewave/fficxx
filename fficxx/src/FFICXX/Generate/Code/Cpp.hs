@@ -184,18 +184,22 @@ genCppDefMacroTemplateMemberFunction ::
   -> TemplateMemberFunction
   -> R.CMacro Identity
 genCppDefMacroTemplateMemberFunction c f =
-   R.Define (R.sname macroname) [R.sname "Type"]
+   R.Define (R.sname macroname) (map R.sname [tmf_param f]) -- [R.sname "Type"]
      [ R.CExtern [R.CDeclaration decl]
      , tmplMemberFunToDef c f
      , autoinst
      ]
   where
+    nsuffix = intersperse (R.NamePart "_") $ map R.NamePart [tmf_param f]
     macroname = hsTemplateMemberFunctionName c f
     decl = tmplMemberFunToDecl c f
     autoinst =
       R.CInit
-        (R.CVarDecl R.CTAuto (R.CName [R.NamePart ("a_" <> macroname <> "_"), R.NamePart "Type"]))
-        (R.CVar (R.CName [R.NamePart (macroname <> "_"), R.NamePart "Type"]))
+        (R.CVarDecl
+          R.CTAuto
+          (R.CName (R.NamePart ("a_" <> macroname <> "_") : nsuffix))
+        )
+        (R.CVar (R.CName (R.NamePart (macroname <> "_") : nsuffix)))
 
 
 ---- Invoke Macro to define Virtual/NonVirtual method for a class
@@ -270,8 +274,8 @@ genTmplFunCpp b t@TmplCls {..} f =
   autoinst =
     R.CInit
       (R.CVarDecl
-         R.CTAuto
-         (R.CName (R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix ))
+        R.CTAuto
+        (R.CName (R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix ))
       )
       (R.CVar (R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix )))
 
@@ -572,11 +576,10 @@ accessorToDef v a =
 -- TODO: Handle simple type
 tmplMemberFunToDecl :: Class -> TemplateMemberFunction -> R.CFunDecl Identity
 tmplMemberFunToDecl c f =
-  let ret = R.CTVerbatim $ tmplMemFuncRetTypeToString c (tmf_ret f)
+  let nsuffix = intersperse (R.NamePart "_") $ map R.NamePart [tmf_param f]
+      ret = R.CTVerbatim $ tmplMemFuncRetTypeToString c (tmf_ret f)
       fname =
-        R.CName [ R.NamePart (hsTemplateMemberFunctionName c f <> "_")
-                , R.NamePart "Type"
-                ]
+        R.CName (R.NamePart (hsTemplateMemberFunctionName c f <> "_") : nsuffix)
       args = map (tmplMemFuncArgToCTypVar c) ((Arg SelfType "p"):tmf_args f)
   in R.CFunDecl ret fname args
 
@@ -585,6 +588,7 @@ tmplMemberFunToDef :: Class -> TemplateMemberFunction -> R.CStatement Identity
 tmplMemberFunToDef c f =
     R.CDefinition (Just R.Inline) (tmplMemberFunToDecl c f) body
   where
+    tparams = map (R.CTSimple . R.sname) [tmf_param f]
     body = returnCpp NonCPrim (tmf_ret f) $
              R.CBinOp
                R.CArrow
@@ -595,6 +599,6 @@ tmplMemberFunToDef c f =
                )
                (R.CTApp
                  (R.sname (tmf_name f))
-                 [ R.CTSimple (R.sname "Type") ]
+                 tparams
                  (map (tmplArgToCallCExp NonCPrim) (tmf_args f))
                )

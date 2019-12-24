@@ -596,6 +596,7 @@ tmplReturnCType b (TemplateParamPointer t) = case b of
 -- Template Member Function --
 -- ---------------------------
 
+-- |
 tmplMemFuncArgToCTypVar :: Class -> Arg -> (R.CType Identity, R.CName Identity)
 tmplMemFuncArgToCTypVar _ (Arg (CT ctyp isconst) varname) =
   (ctypToCType ctyp isconst, R.sname varname)
@@ -613,16 +614,16 @@ tmplMemFuncArgToCTypVar _ (Arg (CPT (CPTClassMove c) isconst) varname) =
   case isconst of
     Const   -> (R.CTSimple (R.sname ("const_" <> ffiClassName c <> "_p")), R.sname varname)
     NoConst -> (R.CTSimple (R.sname (ffiClassName c <> "_p")), R.sname varname)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateApp     _) v) = (R.CTStar R.CTVoid, R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateAppRef  _) v) = (R.CTStar R.CTVoid, R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateAppMove _) v) = (R.CTStar R.CTVoid, R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateType   _)  v) = (R.CTStar R.CTVoid, R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateParam _) v) = (R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p" ]), R.sname v)
-tmplMemFuncArgToCTypVar _ (Arg (TemplateParamPointer _) v) = (R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_p" ]), R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateApp     _) v)      = (R.CTStar R.CTVoid, R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateAppRef  _) v)      = (R.CTStar R.CTVoid, R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateAppMove _) v)      = (R.CTStar R.CTVoid, R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateType   _)  v)      = (R.CTStar R.CTVoid, R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateParam t) v)        = (R.CTSimple (R.CName [ R.NamePart t, R.NamePart "_p" ]), R.sname v)
+tmplMemFuncArgToCTypVar _ (Arg (TemplateParamPointer t) v) = (R.CTSimple (R.CName [ R.NamePart t, R.NamePart "_p" ]), R.sname v)
 tmplMemFuncArgToCTypVar _ _ = error "tmplMemFuncArgToString: undefined"
 
 
-
+-- |
 tmplMemFuncRetTypeToString :: Class -> Types -> String
 tmplMemFuncRetTypeToString _ (CT ctyp isconst)        = R.renderCType $ ctypToCType ctyp isconst
 tmplMemFuncRetTypeToString _ Void                     = "void"
@@ -637,7 +638,6 @@ tmplMemFuncRetTypeToString _ (TemplateAppMove _)      = "void*"
 tmplMemFuncRetTypeToString _ (TemplateType _)         = "void*"
 tmplMemFuncRetTypeToString _ (TemplateParam _)        = "Type##_p"
 tmplMemFuncRetTypeToString _ (TemplateParamPointer _) = "Type##_p"
-
 
 
 -- |

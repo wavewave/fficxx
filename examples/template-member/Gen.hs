@@ -165,22 +165,22 @@ classA cabal =
   , class_vars  = [ ]
   , class_tmpl_funcs =
       [ TemplateMemberFunction {
-          tmf_param = "t"
+          tmf_param = "tp1"
         , tmf_ret = void_
         , tmf_name = "method"
-        , tmf_args = [ Arg (TemplateParamPointer "t") "x" ]
+        , tmf_args = [ Arg (TemplateParamPointer "tp1") "x" ]
         , tmf_alias = Nothing
         }
       , TemplateMemberFunction {
-          tmf_param = "t"
+          tmf_param = "tp1"
         , tmf_ret = void_
         , tmf_name = "method2"
         , tmf_args = [ Arg
                          (TemplateAppMove
                            TemplateAppInfo {
                              tapp_tclass = t_unique_ptr
-                           , tapp_tparam = TArg_TypeParam "t"
-                           , tapp_CppTypeForParam = "std::unique_ptr<Type>"
+                           , tapp_tparams = [ TArg_TypeParam "tp1" ]
+                           , tapp_CppTypeForParam = "std::unique_ptr<tp1>"
                            }
                          )
                          "x"
