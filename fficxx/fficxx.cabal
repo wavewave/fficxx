@@ -69,17 +69,3 @@ Library
                -fno-warn-missing-signatures
                -O2
   ghc-prof-options: -caf-all -auto-all
-
-test-suite hspec
-  type:          exitcode-stdio-1.0
-  main-is:       Main.hs
-  other-modules: TestSpec
-  build-depends: base
-               , directory
-               , fficxx
-               , fficxx-runtime
-               , filepath
-               , hspec
-               , temporary
-               , unordered-containers
-  hs-source-dirs: test

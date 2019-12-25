@@ -21,26 +21,14 @@ let
 
   newHaskellPackages = haskellPackages.override {
     overrides = self: super: {
-      "fficxx-runtime" = self.callCabal2nix "fficxx-runtime" ../fficxx-runtime {};
       "fficxx"         = self.callCabal2nix "fficxx"         ../fficxx         {};
+      "fficxx-runtime" = self.callCabal2nix "fficxx-runtime" ../fficxx-runtime {};
+      "fficxx-test"    = self.callCabal2nix "fficxx-test"    ./.               {};
       "stdcxx"         = self.callPackage stdcxxNix {};
     };
 
   };
 
-  hsenv = newHaskellPackages.ghcWithPackages (p: with p; [
-    fficxx
-    fficxx-runtime
-    stdcxx
-  ]);
-
 in
 
-stdenv.mkDerivation {
-  name = "fficxx-test-env";
-
-  buildInputs = [
-    hsenv
-  ];
-
-}
+newHaskellPackages.fficxx-test.env

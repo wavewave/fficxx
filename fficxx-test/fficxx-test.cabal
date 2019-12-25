@@ -1,0 +1,30 @@
+Name:           fficxx-test
+Version:        0.6
+Synopsis:       test for fficxx
+Description:    test for fficxx (with stdcxx)
+License:        BSD3
+License-file:   LICENSE
+Author:         Ian-Woo Kim
+Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>
+Build-Type:     Simple
+Category:       FFI Tools
+Cabal-Version:  >= 1.8
+
+Source-repository head
+  type: git
+  location: http://www.github.com/wavewave/fficxx
+
+test-suite hspec
+  type:          exitcode-stdio-1.0
+  main-is:       Main.hs
+  other-modules: TestSpec
+  build-depends: base
+               , directory
+               , fficxx
+               , fficxx-runtime
+               , filepath
+               , hspec
+               , stdcxx
+               , temporary
+               , unordered-containers
+  hs-source-dirs: test
