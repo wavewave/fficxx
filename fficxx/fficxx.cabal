@@ -40,34 +40,39 @@ Library
                , template-haskell
                , text
                , unordered-containers
-
-
   Exposed-Modules:
-                   FFICXX.Generate.Builder
-                   FFICXX.Generate.Config
-                   FFICXX.Generate.Code.Cpp
-                   FFICXX.Generate.Code.HsCast
-                   FFICXX.Generate.Code.HsFFI
-                   FFICXX.Generate.Code.HsFrontEnd
-                   FFICXX.Generate.Code.HsProxy
-                   FFICXX.Generate.Code.HsTemplate
-                   FFICXX.Generate.Code.Cabal
-                   FFICXX.Generate.Code.Primitive
-                   FFICXX.Generate.ContentMaker
-                   FFICXX.Generate.Dependency
-                   FFICXX.Generate.Name
-                   FFICXX.Generate.QQ.Verbatim
-                   FFICXX.Generate.Util
-                   FFICXX.Generate.Util.HaskellSrcExts
-                   FFICXX.Generate.Type.Annotate
-                   FFICXX.Generate.Type.Cabal
-                   FFICXX.Generate.Type.Config
-                   FFICXX.Generate.Type.Class
-                   FFICXX.Generate.Type.Module
-                   FFICXX.Generate.Type.PackageInterface
-  ghc-options:     -Wall
-                   -funbox-strict-fields
-                   -fno-warn-unused-do-bind
-                   -fno-warn-missing-signatures
-                   -O2
+               FFICXX.Generate.Builder
+               FFICXX.Generate.Config
+               FFICXX.Generate.Code.Cpp
+               FFICXX.Generate.Code.HsCast
+               FFICXX.Generate.Code.HsFFI
+               FFICXX.Generate.Code.HsFrontEnd
+               FFICXX.Generate.Code.HsProxy
+               FFICXX.Generate.Code.HsTemplate
+               FFICXX.Generate.Code.Cabal
+               FFICXX.Generate.Code.Primitive
+               FFICXX.Generate.ContentMaker
+               FFICXX.Generate.Dependency
+               FFICXX.Generate.Name
+               FFICXX.Generate.QQ.Verbatim
+               FFICXX.Generate.Util
+               FFICXX.Generate.Util.HaskellSrcExts
+               FFICXX.Generate.Type.Annotate
+               FFICXX.Generate.Type.Cabal
+               FFICXX.Generate.Type.Config
+               FFICXX.Generate.Type.Class
+               FFICXX.Generate.Type.Module
+               FFICXX.Generate.Type.PackageInterface
+  ghc-options: -Wall
+               -funbox-strict-fields
+               -fno-warn-unused-do-bind
+               -fno-warn-missing-signatures
+               -O2
   ghc-prof-options: -caf-all -auto-all
+
+test-suite test-foo
+  type:          exitcode-stdio-1.0
+  main-is:       test-foo.hs
+  build-depends: base
+               , hspec
+  hs-source-dir: test
