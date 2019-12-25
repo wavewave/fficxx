@@ -70,9 +70,10 @@ Library
                -O2
   ghc-prof-options: -caf-all -auto-all
 
-test-suite test-foo
+test-suite hspec
   type:          exitcode-stdio-1.0
-  main-is:       test-foo.hs
+  main-is:       Main.hs
+  other-modules: TestSpec
   build-depends: base
                , hspec
-  hs-source-dir: test
+  hs-source-dirs: test
