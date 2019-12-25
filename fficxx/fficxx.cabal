@@ -76,4 +76,6 @@ test-suite hspec
   other-modules: TestSpec
   build-depends: base
                , hspec
+               , temporary
+               , typed-process
   hs-source-dirs: test
