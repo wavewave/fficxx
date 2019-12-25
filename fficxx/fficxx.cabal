@@ -74,7 +74,6 @@ test-suite hspec
   type:          exitcode-stdio-1.0
   main-is:       Main.hs
   other-modules: TestSpec
-                 Gen
   build-depends: base
                , directory
                , fficxx
