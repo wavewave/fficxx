@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Main where
+module Gen where
 
 import qualified Data.HashMap.Strict as HM
 import Data.Monoid                 ( mempty )

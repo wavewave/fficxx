@@ -1,7 +1,8 @@
 module TestSpec ( spec ) where
 
 import System.IO.Temp ( withSystemTempDirectory )
-import System.Process.Typed ( readProcess_, proc )
+--
+import qualified Gen  ( main )
 --
 import Test.Hspec     ( Spec, describe, it, shouldBe )
 
@@ -10,6 +11,6 @@ spec = do
   describe "test spec" $ do
     it "should pass" $
       withSystemTempDirectory "fficxx-cabal-sandbox" $ \dir -> do
-        readProcess_ (proc "runhaskell" ["/home/ianwookim/repo/src/fficxx/stdcxx-gen/Gen.hs"])
+        Gen.main
 
         1 `shouldBe` (2-1)
