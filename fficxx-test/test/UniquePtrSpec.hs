@@ -40,4 +40,3 @@ spec =
         bstr <- B.packCString cstr'
         bstr `shouldBe` "hello"
         deleteUniquePtr ptr
-

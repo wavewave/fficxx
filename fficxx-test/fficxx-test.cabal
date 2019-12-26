@@ -17,7 +17,8 @@ Source-repository head
 test-suite hspec
   type:          exitcode-stdio-1.0
   main-is:       Main.hs
-  other-modules: SharedPtrSpec
+  other-modules: FunctionSpec
+                 SharedPtrSpec
                  UniquePtrSpec
                  VectorSpec
   build-depends: async
@@ -28,6 +29,7 @@ test-suite hspec
                , fficxx-runtime
                , filepath
                , hspec
+               , silently
                , stdcxx
                , temporary
                , unordered-containers
