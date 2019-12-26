@@ -13,7 +13,7 @@ let
     };
   };
 
-  stdcxxNix = import ../stdcxx-gen/default.nix {
+  stdcxxSrc = import ../stdcxx-gen/gen.nix {
     inherit stdenv;
     haskellPackages = newHaskellPackages0;
   };
@@ -23,7 +23,7 @@ let
       "fficxx"         = self.callCabal2nix "fficxx"         ../fficxx         {};
       "fficxx-runtime" = self.callCabal2nix "fficxx-runtime" ../fficxx-runtime {};
       "fficxx-test"    = self.callCabal2nix "fficxx-test"    ./.               {};
-      "stdcxx"         = self.callPackage stdcxxNix {};
+      "stdcxx"         = self.callCabal2nix "stdcxx"         stdcxxSrc         {};
     };
 
   };

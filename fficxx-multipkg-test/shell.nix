@@ -13,12 +13,12 @@ let
     };
   };
 
-  stdcxxNix = import ../stdcxx-gen/default.nix {
+  stdcxxSrc = import ../stdcxx-gen/gen.nix {
     inherit stdenv;
     haskellPackages = newHaskellPackages0;
   };
 
-  tmfTestNix = import ./template-member/default.nix {
+  tmfTestSrc = import ./template-member/gen.nix {
     inherit stdenv;
     haskellPackages = newHaskellPackages0;
   };
@@ -28,8 +28,8 @@ let
       "fficxx"               = self.callCabal2nix "fficxx"               ../fficxx         {};
       "fficxx-runtime"       = self.callCabal2nix "fficxx-runtime"       ../fficxx-runtime {};
       "fficxx-multipkg-test" = self.callCabal2nix "fficxx-multipkg-test" ./.               {};
-      "stdcxx"               = self.callPackage stdcxxNix {};
-      "tmf-test"             = self.callPacakge tmfTestNix {};
+      "stdcxx"               = self.callCabal2nix "stdcxx"               stdcxxSrc         {};
+      "tmf-test"             = self.callCabal2nix "tmf-test"             tmfTestSrc        {};
     };
 
   };

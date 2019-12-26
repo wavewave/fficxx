@@ -9,7 +9,7 @@ stdenv.mkDerivation {
   buildInputs = [ hsenv ];
   src = ./.;
   buildPhase = ''
-    runhaskell Gen.hs
+    runhaskell Gen.hs ./template
   '';
   installPhase = ''
     mkdir -p $out
