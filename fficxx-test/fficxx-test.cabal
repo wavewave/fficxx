@@ -18,7 +18,9 @@ test-suite hspec
   type:          exitcode-stdio-1.0
   main-is:       Main.hs
   other-modules: TestSpec
+                 VectorSpec
   build-depends: base
+               , bytestring
                , directory
                , fficxx
                , fficxx-runtime

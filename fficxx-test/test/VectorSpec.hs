@@ -2,16 +2,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+module VectorSpec ( spec ) where
+
 import qualified Data.ByteString.Char8 as B
 import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.C.String
-
+--
 import FFICXX.Runtime.CodeGen.Cxx ( HeaderName(..), Namespace(..) )
 import FFICXX.Runtime.TH          ( IsCPrimitive(..), TemplateParamInfo(..) )
 import STD.CppString
 import STD.Vector.Template
 import qualified STD.Vector.TH as TH
+--
+import Test.Hspec     ( Spec, describe, it, shouldBe )
 
 
 TH.genVectorInstanceFor
@@ -64,8 +68,26 @@ test2 = do
     print =<< size v
     deleteVector v
 
+spec :: Spec
+spec =
+  describe "FFI to vector<int>" $ do
+    it "should be initialized and store/remove items and retrieve an item" $ do
+      v :: Vector CInt <- newVector
+      n₀ <- size v
+      n₀ `shouldBe` 0
 
-main :: IO ()
-main = do
-  test1
-  test2
+      push_back v 1
+      n₁ <- size v
+      n₁ `shouldBe` 1
+
+      mapM_ (push_back v) [1..100]
+      n₂ <- size v
+      n₂ `shouldBe` 101
+
+      pop_back v
+      n₃ <- size v
+      n₃ `shouldBe` 100
+
+      item <- at v 5
+      item `shouldBe` 5
+      deleteVector v
