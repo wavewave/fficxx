@@ -14,6 +14,12 @@ Source-repository head
   type: git
   location: http://www.github.com/wavewave/fficxx
 
+executable dummy-binary
+  main-is:       Main.hs
+  other-modules:
+  build-depends: base
+  hs-source-dirs: app
+
 test-suite hspec
   type:          exitcode-stdio-1.0
   main-is:       Main.hs
