@@ -16,6 +16,11 @@ let
     haskellPackages = newHaskellPackages0;
   };
 
+  tmfTestSrc = import ./fficxx-multipkg-test/template-member/gen.nix {
+    inherit stdenv;
+    haskellPackages = newHaskellPackages0;
+  };
+
   newHaskellPackages = haskellPackages.override {
     overrides = self: super:
       {
@@ -23,6 +28,9 @@ let
         "fficxx"         = self.callCabal2nix "fficxx"         ./fficxx         {};
         "stdcxx"         = self.callCabal2nix "stdcxx"         stdcxxSrc        {};
         "fficxx-test"    = self.callCabal2nix "fficxx-test"    ./fficxx-test    {};
+        "fficxx-multipkg-test" = self.callCabal2nix "fficxx-multipkg-test" ./fficxx-multipkg-test {};
+        "tmf-test"       = self.callCabal2nix "tmf-test"       tmfTestSrc       {};
+
       };
   };
 
@@ -34,5 +42,6 @@ in
   "fficxx-runtime" = newHaskellPackages.fficxx-runtime;
   "stdcxx"         = newHaskellPackages.stdcxx;
   "fficxx-test"    = newHaskellPackages.fficxx-test;
+  "fficxx-multipkg-test" = newHaskellPackages.fficxx-multipkg-test;
 
 }

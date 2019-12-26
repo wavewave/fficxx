@@ -1,3 +1,3 @@
 main :: IO ()
-main = "dummy-fficxx-multipkg-test-binary"
+main = putStrLn "dummy-fficxx-multipkg-test-binary"
 
