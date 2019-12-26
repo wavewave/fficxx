@@ -267,12 +267,3 @@ main = do
                }
 
   simpleBuilder fficfg sbcfg
-
-{-
-  simpleBuilder
-    "TestPkg"
-    headerMap
-    (cabal,classes cabal,toplevelfunctions,templates)
-    [ ]
-    extraDep
--}
