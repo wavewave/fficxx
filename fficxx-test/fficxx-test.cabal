@@ -18,6 +18,7 @@ test-suite hspec
   type:          exitcode-stdio-1.0
   main-is:       Main.hs
   other-modules: TestSpec
+                 UniquePtrSpec
                  VectorSpec
   build-depends: base
                , bytestring

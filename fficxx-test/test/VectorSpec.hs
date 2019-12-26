@@ -32,8 +32,8 @@ TH.genVectorInstanceFor
 TH.genVectorInstanceFor
   NonCPrim
   ( [t|CppString|], TPInfo { tpinfoCxxType       = "std::string"
-                           , tpinfoCxxHeaders    = [ HdrName "string", HdrName "stdcxxType.h"]
-                           , tpinfoCxxNamespaces = [ NS "std" ]
+                           , tpinfoCxxHeaders    = [ "string", "stdcxxType.h"]
+                           , tpinfoCxxNamespaces = [ "std" ]
                            , tpinfoSuffix        = "string"
                            }
   )
@@ -63,7 +63,7 @@ spec =
           item `shouldBe` 5
     --
     beforeAll (newVector :: IO (Vector CppString)) . afterAll deleteVector $
-      describe "vector<string>" $ do
+      describe "vector<std::string>" $ do
         it "should create a C++-string and store it" $ \v -> do
           cppstr <- newCppString ("hello" :: B.ByteString)
           push_back v cppstr
