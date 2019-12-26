@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables      #-}
 {-# LANGUAGE TemplateHaskell          #-}
 
-module UniquePtrSpec where
+module UniquePtrSpec ( spec ) where
 
 import qualified Data.ByteString.Char8 as B
 import Foreign.C.Types
@@ -28,18 +28,6 @@ TH.genUniquePtrInstanceFor
                            }
   )
 
-main :: IO ()
-main = do
-  putStrLn "test"
-  withCString "hello" $ \cstr -> do
-    cppstr <- newCppString cstr
-    ptr <- newUniquePtr cppstr
-    cppstr' <- get ptr
-    cstr' <- cppString_c_str cppstr'
-    bstr <- B.packCString cstr'
-    print bstr
-    deleteUniquePtr ptr
-
 spec :: Spec
 spec =
   describe "FFI to unique_ptr" $ do
@@ -52,5 +40,4 @@ spec =
         bstr <- B.packCString cstr'
         bstr `shouldBe` "hello"
         deleteUniquePtr ptr
-    -- print bstr
-    --
+

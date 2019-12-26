@@ -17,10 +17,11 @@ Source-repository head
 test-suite hspec
   type:          exitcode-stdio-1.0
   main-is:       Main.hs
-  other-modules: TestSpec
+  other-modules: SharedPtrSpec
                  UniquePtrSpec
                  VectorSpec
-  build-depends: base
+  build-depends: async
+               , base
                , bytestring
                , directory
                , fficxx
