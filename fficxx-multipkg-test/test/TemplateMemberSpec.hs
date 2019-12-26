@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Main where
+module TemplateMemberSpec ( spec ) where
 
 import FFICXX.Runtime.TH ( IsCPrimitive(..), TemplateParamInfo(..) )
 import STD.UniquePtr.Template
@@ -11,6 +11,10 @@ import TMFTest.A
 import TMFTest.A.Implementation
 import TMFTest.T1
 import TMFTest.T2
+--
+import Test.Hspec     ( Spec, afterAll, around, beforeAll, describe, it, shouldBe )
+
+
 
 genUniquePtrInstanceFor
   NonCPrim
@@ -60,3 +64,6 @@ main = do
   ptr <- newUniquePtr t1
   a_method2_T1 a ptr
   pure ()
+
+spec :: Spec
+spec = pure ()

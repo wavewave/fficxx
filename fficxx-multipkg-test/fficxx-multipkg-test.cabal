@@ -23,20 +23,7 @@ executable dummy-binary
 test-suite hspec
   type:          exitcode-stdio-1.0
   main-is:       Main.hs
-  other-modules: FunctionSpec
-                 SharedPtrSpec
-                 UniquePtrSpec
-                 VectorSpec
-  build-depends: async
-               , base
-               , bytestring
-               , directory
-               , fficxx
-               , fficxx-runtime
-               , filepath
-               , hspec
-               , silently
-               , stdcxx
-               , temporary
-               , unordered-containers
+  other-modules: TemplateMemberSpec
+  build-depends: base
+               , tmf-test
   hs-source-dirs: test

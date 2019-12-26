@@ -10,11 +10,15 @@ let
     overrides = self: super: {
       "fficxx-runtime" = self.callCabal2nix "fficxx-runtime" ../fficxx-runtime {};
       "fficxx"         = self.callCabal2nix "fficxx"         ../fficxx         {};
-#      "stdcxx"         = self.callPackage stdcxxNix {};
     };
   };
 
   stdcxxNix = import ../stdcxx-gen/default.nix {
+    inherit stdenv;
+    haskellPackages = newHaskellPackages0;
+  };
+
+  tmfTestNix = import ./template-member/default.nix {
     inherit stdenv;
     haskellPackages = newHaskellPackages0;
   };
@@ -25,6 +29,7 @@ let
       "fficxx-runtime"       = self.callCabal2nix "fficxx-runtime"       ../fficxx-runtime {};
       "fficxx-multipkg-test" = self.callCabal2nix "fficxx-multipkg-test" ./.               {};
       "stdcxx"               = self.callPackage stdcxxNix {};
+      "tmf-test"             = self.callPacakge tmfTestNix {};
     };
 
   };

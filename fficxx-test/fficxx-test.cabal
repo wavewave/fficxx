@@ -37,6 +37,5 @@ test-suite hspec
                , hspec
                , silently
                , stdcxx
-               , temporary
                , unordered-containers
   hs-source-dirs: test
