@@ -42,8 +42,8 @@ worker ptr = do
 
 spec :: Spec
 spec =
-  describe "FFI to shared_ptr" $ do
-    describe "shared_ptr<std::string>" $ do
+  describe "FFI to shared_ptr" $
+    describe "shared_ptr<std::string>" $
       it "should pass content via shared_ptr" $ do
         cppstr <- newCppString ("hello" :: B.ByteString)
         ptr <- newSharedPtr cppstr

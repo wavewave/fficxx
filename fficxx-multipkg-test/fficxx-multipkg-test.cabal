@@ -1,4 +1,4 @@
-Name:           fficxx-test
+Name:           fficxx-multipkg-test
 Version:        0.6
 Synopsis:       test for fficxx
 Description:    test for fficxx (with stdcxx)
@@ -14,7 +14,7 @@ Source-repository head
   type: git
   location: http://www.github.com/wavewave/fficxx
 
-executable dummy-binary
+executable dummy-fficxx-multipkg-test
   main-is:       Main.hs
   other-modules:
   build-depends: base
@@ -25,5 +25,10 @@ test-suite hspec
   main-is:       Main.hs
   other-modules: TemplateMemberSpec
   build-depends: base
+               , fficxx
+               , fficxx-runtime
+               , hspec
+               , silently
+               , stdcxx
                , tmf-test
   hs-source-dirs: test
