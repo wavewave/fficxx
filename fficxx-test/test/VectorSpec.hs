@@ -1,9 +1,11 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings        #-}
+{-# LANGUAGE ScopedTypeVariables      #-}
+{-# LANGUAGE TemplateHaskell          #-}
 
 module VectorSpec ( spec ) where
 
+import Control.Exception          ( bracket )
 import qualified Data.ByteString.Char8 as B
 import Foreign.C.Types
 import Foreign.Ptr
@@ -15,7 +17,7 @@ import STD.CppString
 import STD.Vector.Template
 import qualified STD.Vector.TH as TH
 --
-import Test.Hspec     ( Spec, describe, it, shouldBe )
+import Test.Hspec     ( Spec, afterAll, around, beforeAll, describe, it, shouldBe )
 
 
 TH.genVectorInstanceFor
@@ -36,58 +38,43 @@ TH.genVectorInstanceFor
                            }
   )
 
-test1 :: IO ()
-test1 = do
-  v :: Vector CInt <- newVector
-  n <- size v
-  print =<< size v
-
-  push_back v 1
-  print =<< size v
-  mapM_ (push_back v) [1..100]
-  print =<< size v
-  pop_back v
-  print =<< size v
-
-  print =<< at v 5
-  deleteVector v
-
-
-test2 = do
-  withCString "hello" $ \cstr -> do
-    v :: Vector CppString <- newVector
-    cppstr <- newCppString cstr
-    push_back v cppstr
-    print =<< size v
-    cppstr' <- at v 0
-    cstr' <- cppString_c_str cppstr'
-    bstr <- B.packCString cstr'
-    print bstr
-    print =<< size v
-    pop_back v
-    print =<< size v
-    deleteVector v
-
 spec :: Spec
 spec =
-  describe "FFI to vector<int>" $ do
-    it "should be initialized and store/remove items and retrieve an item" $ do
-      v :: Vector CInt <- newVector
-      n₀ <- size v
-      n₀ `shouldBe` 0
-
-      push_back v 1
-      n₁ <- size v
-      n₁ `shouldBe` 1
-
-      mapM_ (push_back v) [1..100]
-      n₂ <- size v
-      n₂ `shouldBe` 101
-
-      pop_back v
-      n₃ <- size v
-      n₃ `shouldBe` 100
-
-      item <- at v 5
-      item `shouldBe` 5
-      deleteVector v
+  describe "FFI to vector" $ do
+    beforeAll (newVector :: IO (Vector CInt)) . afterAll deleteVector $
+      describe "vector<int>" $ do
+        it "should be initialized" $ \v -> do
+          n₀ <- size v
+          n₀ `shouldBe` 0
+        it "should add one item" $ \v -> do
+          push_back v 1
+          n₁ <- size v
+          n₁ `shouldBe` 1
+        it "should add 100 items" $ \v -> do
+          mapM_ (push_back v) [1..100]
+          n₂ <- size v
+          n₂ `shouldBe` 101
+        it "should remove one item" $ \v -> do
+          pop_back v
+          n₃ <- size v
+          n₃ `shouldBe` 100
+        it "should be able to retrieve an item" $ \v -> do
+          item <- at v 5
+          item `shouldBe` 5
+    --
+    beforeAll (newVector :: IO (Vector CppString)) . afterAll deleteVector $
+      describe "vector<string>" $ do
+        it "should create a C++-string and store it" $ \v -> do
+          cppstr <- newCppString ("hello" :: B.ByteString)
+          push_back v cppstr
+          n₁ <- size v
+          n₁ `shouldBe` 1
+        it "should retrieve the matched string" $ \v -> do
+          cppstr' <- at v 0
+          cstr' <- cppString_c_str cppstr'
+          bstr <- B.packCString cstr'
+          bstr `shouldBe` "hello"
+        it "should remove the string" $ \v -> do
+          pop_back v
+          n₂ <- size v
+          n₂ `shouldBe` 0
