@@ -5,7 +5,7 @@ let
 in
 
 stdenv.mkDerivation {
-  name = "template-member-src";
+  name = "template-dep-src";
   buildInputs = [ hsenv ];
   src = ./.;
   buildPhase = ''
@@ -13,6 +13,6 @@ stdenv.mkDerivation {
   '';
   installPhase = ''
     mkdir -p $out
-    cp -a tmf-test/* $out
+    cp -a tmpl-dep-test/* $out
   '';
 }

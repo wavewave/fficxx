@@ -31,4 +31,5 @@ test-suite hspec
                , silently
                , stdcxx
                , tmf-test
+               , tmpl-dep-test
   hs-source-dirs: test

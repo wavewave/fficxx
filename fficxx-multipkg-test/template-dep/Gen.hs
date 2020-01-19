@@ -56,6 +56,7 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 
+{-
 -- -------------------------------------------------------------------
 -- import from stdcxx
 -- -------------------------------------------------------------------
@@ -125,6 +126,7 @@ t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" ["tp1"]
              , TFun void_ "reset" "reset" [] Nothing
              , TFunDelete
              ]
+-}
 
 -- -------------------------------------------------------------------
 -- tmpl-dep-test
@@ -170,49 +172,20 @@ tT1 cabal =
     ]
   }
 
-classT1 cabal =
-  Class {
-    class_cabal = cabal
-  , class_name = "T1"
-  , class_parents = [ deletable ]
-  , class_protected = mempty
-  , class_alias = Nothing
-  , class_funcs =
-      [ Constructor [] Nothing
-      , NonVirtual void_ "print" [] Nothing
-      ]
-  , class_vars = []
-  , class_tmpl_funcs = []
-  , class_has_proxy = False
-  }
 
-classT2 cabal =
-  Class {
-    class_cabal = cabal
-  , class_name = "T2"
-  , class_parents = [ deletable ]
-  , class_protected = mempty
-  , class_alias = Nothing
-  , class_funcs =
-      [ Constructor [] Nothing
-      , NonVirtual void_ "print" [] Nothing
-      ]
-  , class_vars = []
-  , class_tmpl_funcs = []
-  , class_has_proxy = False
-  }
-
-classes cabal = [ classA cabal, classT1 cabal, classT2 cabal ]
+classes cabal = [ ]
 
 toplevelfunctions = [ ]
 
-templates = [  ]
+templates cabal =
+  [ TCIH (tT1 cabal) [] ]
 
 headers =
-  [ modImports "A"  [] ["test.h"]
-  , modImports "T1" [] ["test.h"]
-  , modImports "T2" [] ["test.h"]
-  ]
+  [ ]
+  -- modImports "A"  [] ["test.h"]
+  -- , modImports "T1" [] ["test.h"]
+  -- , modImports "T2" [] ["test.h"]
+
 
 main :: IO ()
 main = do
@@ -230,7 +203,7 @@ main = do
 
   let fficfg = FFICXXConfig {
                  fficxxconfig_workingDir     = cwd </> "tmp" </> "working"
-               , fficxxconfig_installBaseDir = cwd </> "tmf-test"
+               , fficxxconfig_installBaseDir = cwd </> "tmpl-dep-test"
                , fficxxconfig_staticFileDir  = tmpldir
                }
       sbcfg  = SimpleBuilderConfig {
@@ -239,7 +212,7 @@ main = do
                , sbcCabal      = cabal
                , sbcClasses    = classes cabal
                , sbcTopLevels  = toplevelfunctions
-               , sbcTemplates  = templates
+               , sbcTemplates  = templates cabal
                , sbcExtraLibs  = extraLib
                , sbcExtraDeps  = extraDep
                , sbcStaticFiles = []

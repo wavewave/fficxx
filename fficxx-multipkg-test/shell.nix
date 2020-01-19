@@ -23,6 +23,11 @@ let
     haskellPackages = newHaskellPackages0;
   };
 
+  tmplDepTestSrc = import ./template-dep/gen.nix {
+    inherit stdenv;
+    haskellPackages = newHaskellPackages0;
+  };
+
   newHaskellPackages = haskellPackages.override {
     overrides = self: super: {
       "fficxx"               = self.callCabal2nix "fficxx"               ../fficxx         {};
@@ -30,6 +35,7 @@ let
       "fficxx-multipkg-test" = self.callCabal2nix "fficxx-multipkg-test" ./.               {};
       "stdcxx"               = self.callCabal2nix "stdcxx"               stdcxxSrc         {};
       "tmf-test"             = self.callCabal2nix "tmf-test"             tmfTestSrc        {};
+      "tmpl-dep-test"        = self.callCabal2nix "tmpl-dep-test"        tmplDepTestSrc    {};
     };
 
   };
