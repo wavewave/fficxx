@@ -140,7 +140,7 @@ cabal_ testH testCpp =
         , cabal_moduleprefix       = "TmplDepTest"
         , cabal_additional_c_incs  = [ AddCInc "test.h" testH ]
         , cabal_additional_c_srcs  = [ AddCSrc "test.cpp" testCpp ]
-        , cabal_additional_pkgdeps = [ ]
+        , cabal_additional_pkgdeps = [ CabalName "stdcxx" ]
         , cabal_license            = Just "BSD3"
         , cabal_licensefile        = Just "LICENSE"
         , cabal_extraincludedirs   = []
@@ -162,13 +162,17 @@ tT1 cabal =
   , tclass_oname = "T1"
   , tclass_params = [ "p1" ]
   , tclass_funcs = [
-      TFun {
-        tfun_ret = Void
-      , tfun_name = "method"
-      , tfun_oname = "method"
-      , tfun_args = []
-      , tfun_alias = Nothing
-      }
+        TFunNew {
+          tfun_new_args = []
+        , tfun_new_alias = Nothing
+        }
+      , TFun {
+          tfun_ret = Void
+        , tfun_name = "method"
+        , tfun_oname = "method"
+        , tfun_args = []
+        , tfun_alias = Nothing
+        }
     ]
   }
 
@@ -178,7 +182,7 @@ classes cabal = [ ]
 toplevelfunctions = [ ]
 
 templates cabal =
-  [ TCIH (tT1 cabal) [] ]
+  [ TCIH (tT1 cabal) [ "test.h" ] ]
 
 headers =
   [ ]
@@ -207,7 +211,7 @@ main = do
                , fficxxconfig_staticFileDir  = tmpldir
                }
       sbcfg  = SimpleBuilderConfig {
-                 sbcTopModule  = "TMFTest"
+                 sbcTopModule  = "TmplDepTest"
                , sbcModUnitMap = ModuleUnitMap (HM.fromList headers)
                , sbcCabal      = cabal
                , sbcClasses    = classes cabal
