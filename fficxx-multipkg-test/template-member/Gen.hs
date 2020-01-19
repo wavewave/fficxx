@@ -56,6 +56,7 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 
+
 -- -------------------------------------------------------------------
 -- import from stdcxx
 -- -------------------------------------------------------------------
