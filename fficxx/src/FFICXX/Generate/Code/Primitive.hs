@@ -736,10 +736,9 @@ convertCpp2HS4Tmpl _ _ ss (TemplateAppMove info) =
   let pss = zip (tapp_tparams info) ss
   in foldl1 tyapp $
        tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _,s) -> s; (p,_) -> tycon (hsClassNameForTArg p)) pss
-convertCpp2HS4Tmpl e _ _ (TemplateType _)              = e
-convertCpp2HS4Tmpl _ _ (s:_) (TemplateParam _)         = s  -- TODO: need to be fixed
-convertCpp2HS4Tmpl _ _ (s:_) (TemplateParamPointer _)  = s  -- TODO: need to be fixed
-convertCpp2HS4Tmpl _ _ _ _ = error "convertCppHS4Tmpl: not yet implemented"
+convertCpp2HS4Tmpl e _ _ (TemplateType _)         = e
+convertCpp2HS4Tmpl _ _ _ (TemplateParam p)        = tySplice . parenSplice . mkVar $ p
+convertCpp2HS4Tmpl _ _ _ (TemplateParamPointer p) = tySplice . parenSplice . mkVar $ p
 
 
 hsFuncXformer :: Function -> String
