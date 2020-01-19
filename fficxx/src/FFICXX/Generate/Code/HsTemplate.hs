@@ -184,6 +184,7 @@ genImportInTemplate t =
              Right c -> mkImport (getClassModuleBase c <.>"Interface")
            )
 
+-- |
 genTmplInterface :: TemplateClass -> [Decl ()]
 genTmplInterface t =
   [ mkData rname (map mkTBind tps) [] Nothing
@@ -205,6 +206,22 @@ genTmplInterface t =
                   , insDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
                   ]
 
+-- |
+genImportInTH :: TemplateClass -> [ImportDecl ()]
+genImportInTH t =
+  let
+    deps_raw  = mkModuleDepRaw (Left t)
+    deps_high = mkModuleDepHighSource (Left t)
+  in     flip concatMap deps_raw
+           (\case
+             Left t  -> [mkImport (getTClassModuleBase t <.> "Template")]
+             Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType","Cast","Interface"]
+           )
+      <> flip concatMap deps_high
+           (\case
+             Left t  -> [mkImport (getTClassModuleBase t <.> "Template")]
+             Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType","Cast","Interface"]
+           )
 
 genTmplImplementation :: TemplateClass -> [Decl ()]
 genTmplImplementation t = concatMap gen (tclass_funcs t)

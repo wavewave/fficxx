@@ -65,6 +65,7 @@ import FFICXX.Generate.Code.HsFrontEnd        ( genExport
                                               )
 import FFICXX.Generate.Code.HsProxy           ( genProxyInstance )
 import FFICXX.Generate.Code.HsTemplate        ( genImportInTemplate
+                                              , genImportInTH
                                               , genTemplateMemberFunctions
                                               , genTmplInstance
                                               , genTmplInterface
@@ -486,7 +487,8 @@ buildTHHs m =
     body
   where
     t = tcihTClass $ tcmTCIH m
-    imports = [ mkImport (tcmModule m <.> "Template") ]
+    imports =    [ mkImport (tcmModule m <.> "Template") ]
+              <> genImportInTH t
     body = tmplImpls <> tmplInsts
     tmplImpls = genTmplImplementation t
     tmplInsts = genTmplInstance (tcmTCIH m)
