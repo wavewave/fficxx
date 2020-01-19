@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module FFICXX.Generate.Code.HsTemplate where
 
@@ -9,7 +10,8 @@ import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       , pApp, paren, pTuple
                                       , qualStmt, strE, tuple
                                       )
-import Language.Haskell.Exts.Syntax   ( Boxed(Boxed), Decl(..), Type(TyTuple) )
+import Language.Haskell.Exts.Syntax   ( Boxed(Boxed), Decl(..), ImportDecl(..), Type(TyTuple) )
+import System.FilePath                ( (<.>) )
 --
 import FFICXX.Runtime.CodeGen.Cxx     ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
@@ -22,6 +24,11 @@ import FFICXX.Generate.Code.Primitive ( functionSignatureT
                                       , functionSignatureTMF
                                       )
 import FFICXX.Generate.Code.HsCast    ( castBody )
+import FFICXX.Generate.Dependency     ( getClassModuleBase
+                                      , getTClassModuleBase
+                                      , mkModuleDepRaw
+                                      , mkModuleDepHighSource
+                                      )
 import FFICXX.Generate.Name           ( ffiTmplFuncName
                                       , hsTemplateClassName
                                       , hsTemplateMemberFunctionName
@@ -44,7 +51,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
                                       , generator
                                       , inapp, insDecl, insType
                                       , match, mkBind1, mkTBind, mkData, mkNewtype
-                                      , mkFun, mkFunSig, mkClass, mkInstance
+                                      , mkFun, mkFunSig, mkClass, mkImport, mkInstance
                                       , mkPVar, mkTVar, mkVar
                                       , op, pbind_
                                       , qualConDecl, qualifier
@@ -161,6 +168,23 @@ genTMFInstance cih f =
 -- Template Class --
 --------------------
 
+genImportInTemplate :: TemplateClass -> [ImportDecl ()]
+genImportInTemplate t0 =
+  let
+    deps_raw  = mkModuleDepRaw (Left t0)
+    deps_high = mkModuleDepHighSource (Left t0)
+  in     flip map deps_raw
+           (\case
+             Left t -> mkImport (getTClassModuleBase t <.> "Template")
+             Right c -> mkImport (getClassModuleBase c <.>"RawType")
+           )
+      <> flip map deps_high
+           (\case
+             Left t -> mkImport (getTClassModuleBase t <.> "Template")
+             Right c -> mkImport (getClassModuleBase c <.>"Interface")
+           )
+
+-- |
 genTmplInterface :: TemplateClass -> [Decl ()]
 genTmplInterface t =
   [ mkData rname (map mkTBind tps) [] Nothing
@@ -182,6 +206,22 @@ genTmplInterface t =
                   , insDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
                   ]
 
+-- |
+genImportInTH :: TemplateClass -> [ImportDecl ()]
+genImportInTH t0 =
+  let
+    deps_raw  = mkModuleDepRaw (Left t0)
+    deps_high = mkModuleDepHighSource (Left t0)
+  in     flip concatMap deps_raw
+           (\case
+             Left t  -> [mkImport (getTClassModuleBase t <.> "Template")]
+             Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType","Cast","Interface"]
+           )
+      <> flip concatMap deps_high
+           (\case
+             Left t  -> [mkImport (getTClassModuleBase t <.> "Template")]
+             Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType","Cast","Interface"]
+           )
 
 genTmplImplementation :: TemplateClass -> [Decl ()]
 genTmplImplementation t = concatMap gen (tclass_funcs t)

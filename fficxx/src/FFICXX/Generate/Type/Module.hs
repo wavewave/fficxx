@@ -52,7 +52,6 @@ data TemplateClassModule =
 data TemplateClassImportHeader =
   TCIH {
     tcihTClass :: TemplateClass
-  -- , tcihSelfHeader :: HeaderName   -- ^ fficxx-side main header
   , tcihCxxHeaders :: [HeaderName] -- ^ C++-side headers
   } deriving (Show)
 

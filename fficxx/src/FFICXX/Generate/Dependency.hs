@@ -154,7 +154,7 @@ extractClassDep (Static ret _ args _) =
 extractClassDep (Destructor _) =
     Dep4Func [] []
 
-
+-- |
 extractClassDepForTmplFun :: TemplateFunction -> Dep4Func
 extractClassDepForTmplFun (TFun ret  _ _ args _) =
     Dep4Func (extractClassFromType ret) (concatMap classFromArg args)
@@ -163,13 +163,12 @@ extractClassDepForTmplFun (TFunNew args _) =
 extractClassDepForTmplFun TFunDelete =
     Dep4Func [] []
 
-
+-- |
 extractClassDep4TmplMemberFun :: TemplateMemberFunction -> Dep4Func
 extractClassDep4TmplMemberFun (TemplateMemberFunction {..}) =
   Dep4Func (extractClassFromType tmf_ret) (concatMap classFromArg tmf_args)
 
-
-
+-- |
 extractClassDepForTopLevelFunction :: TopLevelFunction -> Dep4Func
 extractClassDepForTopLevelFunction f =
     Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType . arg_type) args)
@@ -196,8 +195,7 @@ mkModuleDepRaw x@(Right c) =
 mkModuleDepRaw x@(Left t) =
   (nub . filter (/= x) . concatMap (returnDependency.extractClassDepForTmplFun) . tclass_funcs) t
 
-
-
+-- |
 isNotInSamePackageWith
   :: Either TemplateClass Class
   -> Either TemplateClass Class
@@ -211,7 +209,6 @@ isInSamePackageButNotInheritedBy
   -> Bool
 isInSamePackageButNotInheritedBy x y =
   x /= y && not (x `elem` getparents y) && (getPkgName x == getPkgName y)
-
 
 -- TODO: Confirm the following answer
 -- NOTE: Q: why returnDependency is not considered?
@@ -228,7 +225,6 @@ mkModuleDepHighNonSource y@(Left t) =
       extclasses = filter (`isNotInSamePackageWith` y) $
                      concatMap (argumentDependency.extractClassDepForTmplFun) fs
   in  nub extclasses
-
 
 -- TODO: Confirm the following answer
 -- NOTE: Q: why returnDependency is not considered?
@@ -287,7 +283,7 @@ mkModuleDepFFI y@(Right c) =
   in nub (filter (/= y) alldeps')
 mkModuleDepFFI (Left _) = []
 
-
+-- |
 mkClassModule :: (ModuleUnit -> ModuleUnitImports)
               -> [(String,[String])]
               -> Class
@@ -308,12 +304,12 @@ mkClassModule getImports extra c =
         ffis            = mkModuleDepFFI (Right c)
         extraimports = fromMaybe [] (lookup (class_name c) extra)
 
-
+-- |
 findModuleUnitImports :: ModuleUnitMap -> ModuleUnit -> ModuleUnitImports
 findModuleUnitImports m u =
   fromMaybe emptyModuleUnitImports (HM.lookup u (unModuleUnitMap m))
 
-
+-- |
 mkTCM ::
      TemplateClassImportHeader
   -> TemplateClassModule
@@ -321,7 +317,7 @@ mkTCM tcih =
   let t = tcihTClass tcih
   in TCM (getTClassModuleBase t) tcih
 
-
+-- |
 mkPackageConfig
   :: (CabalName, ModuleUnit -> ModuleUnitImports) -- ^ (package name,getImports)
   -> ([Class],[TopLevelFunction],[TemplateClassImportHeader],[(String,[String])])
@@ -346,7 +342,6 @@ mkPackageConfig (pkgname,getImports) (cs,fs,ts,extra) acincs acsrcs =
      , pcfg_additional_c_srcs = acsrcs
      }
 
-
 -- TODO: change [String] to Set String
 mkHSBOOTCandidateList :: [ClassModule] -> [String]
 mkHSBOOTCandidateList ms =
@@ -355,8 +350,6 @@ mkHSBOOTCandidateList ms =
     cs = rights (concatMap cmImportedModulesHighSource ms)
   in
     nub (map getClassModuleBase cs)
-
-
 
 -- |
 mkPkgHeaderFileName ::Class -> HeaderName
@@ -381,12 +374,9 @@ mkPkgIncludeHeadersInH c =
         extheaders = nub . map ((<>"Type.h") . unCabalName . getPkgName) $ extclasses
     in map mkPkgHeaderFileName (class_allparents c) <> map HdrName extheaders
 
-
-
 -- |
 mkPkgIncludeHeadersInCPP :: Class -> [HeaderName]
 mkPkgIncludeHeadersInCPP = map mkPkgHeaderFileName . rights . mkModuleDepCpp . Right
-
 
 -- |
 mkCIH :: (ModuleUnit -> ModuleUnitImports)  -- ^ (mk namespace and include headers)

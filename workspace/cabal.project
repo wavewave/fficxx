@@ -3,5 +3,4 @@ packages:
   ../fficxx-runtime/
 optional-packages:
   ./stdcxx/
-  ./tmf-test/
-  ./proxy-test/
+  ./tmpl-dep-test/

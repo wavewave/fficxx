@@ -56,6 +56,7 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 
+
 -- -------------------------------------------------------------------
 -- import from stdcxx
 -- -------------------------------------------------------------------
@@ -131,15 +132,14 @@ t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" ["tp1"]
 -- -------------------------------------------------------------------
 
 
-
-
-cabal_ testH testCpp =
+cabal_ :: FilePath -> FilePath -> Cabal
+cabal_ tmftestH tmftestCpp =
   Cabal { cabal_pkgname            = CabalName "tmf-test"
         , cabal_version            = "0.0"
         , cabal_cheaderprefix      = "TMFTest"
         , cabal_moduleprefix       = "TMFTest"
-        , cabal_additional_c_incs  = [ AddCInc "test.h" testH ]
-        , cabal_additional_c_srcs  = [ AddCSrc "test.cpp" testCpp ]
+        , cabal_additional_c_incs  = [ AddCInc "tmftest.h" tmftestH ]
+        , cabal_additional_c_srcs  = [ AddCSrc "tmftest.cpp" tmftestCpp ]
         , cabal_additional_pkgdeps = [ CabalName "stdcxx" ]
         , cabal_license            = Just "BSD3"
         , cabal_licensefile        = Just "LICENSE"
@@ -150,10 +150,13 @@ cabal_ testH testCpp =
         , cabal_buildType          = Simple
         }
 
+extraDep :: [(String,[String])]
 extraDep = []
 
+extraLib :: [String]
 extraLib = []
 
+classA :: Cabal -> Class
 classA cabal =
   Class {
     class_cabal = cabal
@@ -191,6 +194,7 @@ classA cabal =
   , class_has_proxy = False
   }
 
+classT1 :: Cabal -> Class
 classT1 cabal =
   Class {
     class_cabal = cabal
@@ -207,6 +211,7 @@ classT1 cabal =
   , class_has_proxy = False
   }
 
+classT2 :: Cabal -> Class
 classT2 cabal =
   Class {
     class_cabal = cabal
@@ -223,16 +228,20 @@ classT2 cabal =
   , class_has_proxy = False
   }
 
+classes :: Cabal -> [Class]
 classes cabal = [ classA cabal, classT1 cabal, classT2 cabal ]
 
+toplevelfunctions :: [TopLevelFunction]
 toplevelfunctions = [ ]
 
+templates :: [TemplateClassImportHeader]
 templates = [  ]
 
+headers :: [(ModuleUnit, ModuleUnitImports)]
 headers =
-  [ modImports "A"  [] ["test.h"]
-  , modImports "T1" [] ["test.h"]
-  , modImports "T2" [] ["test.h"]
+  [ modImports "A"  [] ["tmftest.h"]
+  , modImports "T1" [] ["tmftest.h"]
+  , modImports "T2" [] ["tmftest.h"]
   ]
 
 main :: IO ()
@@ -245,9 +254,9 @@ main = do
   cwd <- getCurrentDirectory
 
   cabal <- do
-    testH   <- readFile (tmpldir </> "test.h")
-    testCpp <- readFile (tmpldir </> "test.cpp")
-    pure (cabal_ testH testCpp)
+    tmftestH   <- readFile (tmpldir </> "tmftest.h")
+    tmftestCpp <- readFile (tmpldir </> "tmftest.cpp")
+    pure (cabal_ tmftestH tmftestCpp)
 
   let fficfg = FFICXXConfig {
                  fficxxconfig_workingDir     = cwd </> "tmp" </> "working"
