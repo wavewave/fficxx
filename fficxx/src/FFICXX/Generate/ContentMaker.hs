@@ -64,7 +64,8 @@ import FFICXX.Generate.Code.HsFrontEnd        ( genExport
                                               , hsClassRawType
                                               )
 import FFICXX.Generate.Code.HsProxy           ( genProxyInstance )
-import FFICXX.Generate.Code.HsTemplate        ( genTemplateMemberFunctions
+import FFICXX.Generate.Code.HsTemplate        ( genImportInTemplate
+                                              , genTemplateMemberFunctions
                                               , genTmplInstance
                                               , genTmplInterface
                                               , genTmplImplementation
@@ -455,13 +456,15 @@ buildTemplateHs m =
           , "TypeFamilies"
           ]
       ]
-      [ mkImport "Foreign.C.Types"
-      , mkImport "Foreign.Ptr"
-      , mkImport "FFICXX.Runtime.Cast"
-      ]
+      imports
       body
   where
     t = tcihTClass $ tcmTCIH m
+    imports =    [ mkImport "Foreign.C.Types"
+                 , mkImport "Foreign.Ptr"
+                 , mkImport "FFICXX.Runtime.Cast"
+                 ]
+              <> genImportInTemplate t
     body = genTmplInterface t
 
 buildTHHs :: TemplateClassModule -> Module ()
