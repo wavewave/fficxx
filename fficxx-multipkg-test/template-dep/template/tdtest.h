@@ -1,15 +1,14 @@
 #pragma once
 
 #include <iostream>
+#include <typeinfo>
 
 template<typename P> class T1 {
 private:
-  //P& p;
 public:
   T1() {}
-  //T1(P& f) : p(f) {}
   void method() {
-    std::cout << "In T1::method(), " << std::endl;
+    std::cout << "In T1::method(), typeid(P) = " << typeid(P).name() << std::endl;
   }
 
 };

@@ -169,10 +169,10 @@ genTMFInstance cih f =
 --------------------
 
 genImportInTemplate :: TemplateClass -> [ImportDecl ()]
-genImportInTemplate t =
+genImportInTemplate t0 =
   let
-    deps_raw  = mkModuleDepRaw (Left t)
-    deps_high = mkModuleDepHighSource (Left t)
+    deps_raw  = mkModuleDepRaw (Left t0)
+    deps_high = mkModuleDepHighSource (Left t0)
   in     flip map deps_raw
            (\case
              Left t -> mkImport (getTClassModuleBase t <.> "Template")
@@ -208,10 +208,10 @@ genTmplInterface t =
 
 -- |
 genImportInTH :: TemplateClass -> [ImportDecl ()]
-genImportInTH t =
+genImportInTH t0 =
   let
-    deps_raw  = mkModuleDepRaw (Left t)
-    deps_high = mkModuleDepHighSource (Left t)
+    deps_raw  = mkModuleDepRaw (Left t0)
+    deps_high = mkModuleDepHighSource (Left t0)
   in     flip concatMap deps_raw
            (\case
              Left t  -> [mkImport (getTClassModuleBase t <.> "Template")]
