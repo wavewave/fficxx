@@ -24,6 +24,7 @@ test-suite hspec
   type:          exitcode-stdio-1.0
   main-is:       Main.hs
   other-modules: TemplateMemberSpec
+                 TemplateDepSpec
   build-depends: base
                , fficxx
                , fficxx-runtime
@@ -33,3 +34,4 @@ test-suite hspec
                , tmf-test
                , tmpl-dep-test
   hs-source-dirs: test
+  cxx-options: -std=c++14

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "test.h"
+#include "tmftest.h"
 
 
 void T1::print() {

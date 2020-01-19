@@ -20,16 +20,17 @@ import Test.Hspec     ( Spec, afterAll, around, beforeAll, describe, it, shouldB
 genUniquePtrInstanceFor
   NonCPrim
   ( [t|T1|], TPInfo { tpinfoCxxType       = "T1"
-                    , tpinfoCxxHeaders    = [ "TMFTestT1.h", "test.h" ]
+                    , tpinfoCxxHeaders    = [ "TMFTestT1.h", "tmftest.h" ]
                     , tpinfoCxxNamespaces = []
                     , tpinfoSuffix        = "T1"
                     }
   )
 
+
 genInstanceFor_a_method
   NonCPrim
   ( [t|T1|], TPInfo { tpinfoCxxType       = "T1"
-                    , tpinfoCxxHeaders    = [ "TMFTestT1.h" ]
+                    , tpinfoCxxHeaders    = [ "TMFTestT1.h", "tmftest.h" ]
                     , tpinfoCxxNamespaces = []
                     , tpinfoSuffix        = "T1"
                     }
@@ -38,7 +39,7 @@ genInstanceFor_a_method
 genInstanceFor_a_method
   NonCPrim
   ( [t|T2|], TPInfo { tpinfoCxxType       = "T2"
-                    , tpinfoCxxHeaders    = [ "TMFTestT2.h" ]
+                    , tpinfoCxxHeaders    = [ "TMFTestT2.h", "tmftest.h" ]
                     , tpinfoCxxNamespaces = []
                     , tpinfoSuffix        = "T2"
                     }
@@ -47,11 +48,12 @@ genInstanceFor_a_method
 genInstanceFor_a_method2
   NonCPrim
   ( [t|T1|], TPInfo { tpinfoCxxType       = "T1"
-                    , tpinfoCxxHeaders    = [ "TMFTestT1.h" ]
+                    , tpinfoCxxHeaders    = [ "TMFTestT1.h", "tmftest.h" ]
                     , tpinfoCxxNamespaces = []
                     , tpinfoSuffix        = "T1"
                     }
   )
+
 
 spec :: Spec
 spec =

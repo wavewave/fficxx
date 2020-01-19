@@ -132,13 +132,13 @@ t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" ["tp1"]
 
 
 cabal_ :: FilePath -> FilePath -> Cabal
-cabal_ testH testCpp =
+cabal_ tmftestH tmftestCpp =
   Cabal { cabal_pkgname            = CabalName "tmf-test"
         , cabal_version            = "0.0"
         , cabal_cheaderprefix      = "TMFTest"
         , cabal_moduleprefix       = "TMFTest"
-        , cabal_additional_c_incs  = [ AddCInc "test.h" testH ]
-        , cabal_additional_c_srcs  = [ AddCSrc "test.cpp" testCpp ]
+        , cabal_additional_c_incs  = [ AddCInc "tmftest.h" tmftestH ]
+        , cabal_additional_c_srcs  = [ AddCSrc "tmftest.cpp" tmftestCpp ]
         , cabal_additional_pkgdeps = [ CabalName "stdcxx" ]
         , cabal_license            = Just "BSD3"
         , cabal_licensefile        = Just "LICENSE"
@@ -238,9 +238,9 @@ templates = [  ]
 
 headers :: [(ModuleUnit, ModuleUnitImports)]
 headers =
-  [ modImports "A"  [] ["test.h"]
-  , modImports "T1" [] ["test.h"]
-  , modImports "T2" [] ["test.h"]
+  [ modImports "A"  [] ["tmftest.h"]
+  , modImports "T1" [] ["tmftest.h"]
+  , modImports "T2" [] ["tmftest.h"]
   ]
 
 main :: IO ()
@@ -253,9 +253,9 @@ main = do
   cwd <- getCurrentDirectory
 
   cabal <- do
-    testH   <- readFile (tmpldir </> "test.h")
-    testCpp <- readFile (tmpldir </> "test.cpp")
-    pure (cabal_ testH testCpp)
+    tmftestH   <- readFile (tmpldir </> "tmftest.h")
+    tmftestCpp <- readFile (tmpldir </> "tmftest.cpp")
+    pure (cabal_ tmftestH tmftestCpp)
 
   let fficfg = FFICXXConfig {
                  fficxxconfig_workingDir     = cwd </> "tmp" </> "working"
