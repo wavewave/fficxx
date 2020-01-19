@@ -292,8 +292,8 @@ genTmplClassCpp b TmplCls {..} fs =
   tname = tclass_name
   macroname = tname <> "_instance" <> suffix
   macro1 f@TFun {..}    = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
-  macro1 f@TFunNew {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f))           params
-  macro1 TFunDelete     = R.CMacroApp (R.sname (tname <> "_delete"))                          params
+  macro1 f@TFunNew {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
+  macro1 TFunDelete     = R.CMacroApp (R.sname (tname <> "_delete" <> suffix)) params
 
 returnCpp ::
      IsCPrimitive

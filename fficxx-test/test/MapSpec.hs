@@ -58,10 +58,14 @@ spec =
   describe "FFI to map" $ do
     beforeAll (newMap :: IO (Map CInt CDouble)) . afterAll deleteMap $
       describe "map<int,double>" $ do
-        it "should be able to insert" $ \m -> do
+        it "should have no elements at first" $ \m -> do
+          n <- size m
+          n `shouldBe` 0
+        it "should have 1 elem after insertion" $ \m -> do
           kv <- newPair 1 123.0 :: IO (Pair CInt CDouble)
           insert m kv
-          True `shouldBe` False
+          n <- size m
+          n `shouldBe` 1
 {-
         it "should add one item" $ \v -> do
           push_back v 1
