@@ -32,6 +32,8 @@ import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , Class(..)
                                    , ClassAlias(..)
                                    , Function(..)
+                                   , TemplateAppInfo(..)
+                                   , TemplateArgType(..)
                                    , TemplateClass(..)
                                    , TemplateFunction(..)
                                    , TopLevelFunction
@@ -112,7 +114,21 @@ t_map :: TemplateClass
 t_map =
   TmplCls cabal "Map" "std::map" ["tpk","tpv"]
     [ TFunNew [] Nothing
-    -- , TFun void_ {- temporary until iterator support -} "insert" "insert" [] Nothing
+    , TFun
+        void_ {- temporary until iterator support -}
+        "insert"
+        "insert"
+        [ Arg
+            (TemplateAppMove
+              TemplateAppInfo {
+                tapp_tclass = t_pair
+              , tapp_tparams = [ TArg_TypeParam "tpk", TArg_TypeParam "tpv" ]
+              , tapp_CppTypeForParam = "std::pair<tpk,tpv>"
+              }
+            )
+            "val"
+        ]
+        Nothing
     , TFun int_  "size" "size" [] Nothing
     , TFunDelete
     ]
