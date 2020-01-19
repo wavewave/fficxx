@@ -127,19 +127,18 @@ t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" ["tp1"]
              ]
 
 -- -------------------------------------------------------------------
--- tmf-test
+-- tmpl-dep-test
 -- -------------------------------------------------------------------
-
 
 cabal_ :: FilePath -> FilePath -> Cabal
 cabal_ testH testCpp =
-  Cabal { cabal_pkgname            = CabalName "tmf-test"
+  Cabal { cabal_pkgname            = CabalName "tmpl-dep-test"
         , cabal_version            = "0.0"
-        , cabal_cheaderprefix      = "TMFTest"
-        , cabal_moduleprefix       = "TMFTest"
+        , cabal_cheaderprefix      = "TmplDepTest"
+        , cabal_moduleprefix       = "TmplDepTest"
         , cabal_additional_c_incs  = [ AddCInc "test.h" testH ]
         , cabal_additional_c_srcs  = [ AddCSrc "test.cpp" testCpp ]
-        , cabal_additional_pkgdeps = [ CabalName "stdcxx" ]
+        , cabal_additional_pkgdeps = [ ]
         , cabal_license            = Just "BSD3"
         , cabal_licensefile        = Just "LICENSE"
         , cabal_extraincludedirs   = []
@@ -149,51 +148,28 @@ cabal_ testH testCpp =
         , cabal_buildType          = Simple
         }
 
-extraDep :: [(String,[String])]
 extraDep = []
 
-extraLib :: [String]
 extraLib = []
 
-classA :: Cabal -> Class
-classA cabal =
-  Class {
-    class_cabal = cabal
-  , class_name = "A"
-  , class_parents = [ deletable ]
-  , class_protected = mempty
-  , class_alias = Nothing
-  , class_funcs = [ Constructor [ ] Nothing ]
-  , class_vars  = [ ]
-  , class_tmpl_funcs =
-      [ TemplateMemberFunction {
-          tmf_params = ["tp1"]
-        , tmf_ret = void_
-        , tmf_name = "method"
-        , tmf_args = [ Arg (TemplateParamPointer "tp1") "x" ]
-        , tmf_alias = Nothing
-        }
-      , TemplateMemberFunction {
-          tmf_params = ["tp1"]
-        , tmf_ret = void_
-        , tmf_name = "method2"
-        , tmf_args = [ Arg
-                         (TemplateAppMove
-                           TemplateAppInfo {
-                             tapp_tclass = t_unique_ptr
-                           , tapp_tparams = [ TArg_TypeParam "tp1" ]
-                           , tapp_CppTypeForParam = "std::unique_ptr<tp1>"
-                           }
-                         )
-                         "x"
-                     ]
-        , tmf_alias = Nothing
-        }
-      ]
-  , class_has_proxy = False
+tT1 :: Cabal -> TemplateClass
+tT1 cabal =
+  TmplCls {
+    tclass_cabal = cabal
+  , tclass_name = "T1"
+  , tclass_oname = "T1"
+  , tclass_params = [ "p1" ]
+  , tclass_funcs = [
+      TFun {
+        tfun_ret = Void
+      , tfun_name = "method"
+      , tfun_oname = "method"
+      , tfun_args = []
+      , tfun_alias = Nothing
+      }
+    ]
   }
 
-classT1 :: Cabal -> Class
 classT1 cabal =
   Class {
     class_cabal = cabal
@@ -210,7 +186,6 @@ classT1 cabal =
   , class_has_proxy = False
   }
 
-classT2 :: Cabal -> Class
 classT2 cabal =
   Class {
     class_cabal = cabal
@@ -227,16 +202,12 @@ classT2 cabal =
   , class_has_proxy = False
   }
 
-classes :: Cabal -> [Class]
 classes cabal = [ classA cabal, classT1 cabal, classT2 cabal ]
 
-toplevelfunctions :: [TopLevelFunction]
 toplevelfunctions = [ ]
 
-templates :: [TemplateClassImportHeader]
 templates = [  ]
 
-headers :: [(ModuleUnit, ModuleUnitImports)]
 headers =
   [ modImports "A"  [] ["test.h"]
   , modImports "T1" [] ["test.h"]
