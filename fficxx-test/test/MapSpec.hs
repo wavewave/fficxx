@@ -66,20 +66,3 @@ spec =
           insert m kv
           n <- size m
           n `shouldBe` 1
-{-
-        it "should add one item" $ \v -> do
-          push_back v 1
-          n₁ <- size v
-          n₁ `shouldBe` 1
-        it "should add 100 items" $ \v -> do
-          mapM_ (push_back v) [1..100]
-          n₂ <- size v
-          n₂ `shouldBe` 101
-        it "should remove one item" $ \v -> do
-          pop_back v
-          n₃ <- size v
-          n₃ `shouldBe` 100
-        it "should be able to retrieve an item" $ \v -> do
-          item <- at v 5
-          item `shouldBe` 5
--}
