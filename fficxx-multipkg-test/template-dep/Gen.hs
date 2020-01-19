@@ -133,13 +133,13 @@ t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" "std::unique_ptr" ["tp1"]
 -- -------------------------------------------------------------------
 
 cabal_ :: FilePath -> FilePath -> Cabal
-cabal_ testH testCpp =
+cabal_ tdtestH tdtestCpp =
   Cabal { cabal_pkgname            = CabalName "tmpl-dep-test"
         , cabal_version            = "0.0"
         , cabal_cheaderprefix      = "TmplDepTest"
         , cabal_moduleprefix       = "TmplDepTest"
-        , cabal_additional_c_incs  = [ AddCInc "test.h" testH ]
-        , cabal_additional_c_srcs  = [ AddCSrc "test.cpp" testCpp ]
+        , cabal_additional_c_incs  = [ AddCInc "tdtest.h" tdtestH ]
+        , cabal_additional_c_srcs  = [ AddCSrc "tdtest.cpp" tdtestCpp ]
         , cabal_additional_pkgdeps = [ CabalName "stdcxx" ]
         , cabal_license            = Just "BSD3"
         , cabal_licensefile        = Just "LICENSE"
@@ -176,19 +176,49 @@ tT1 cabal =
     ]
   }
 
+tT2 :: Cabal -> TemplateClass
+tT2 cabal =
+  TmplCls {
+    tclass_cabal = cabal
+  , tclass_name = "T2"
+  , tclass_oname = "T2"
+  , tclass_params = [ "p1" ]
+  , tclass_funcs = [
+        TFunNew {
+          tfun_new_args = []
+        , tfun_new_alias = Nothing
+        }
+      , TFun {
+          tfun_ret = Void
+        , tfun_name = "callT1"
+        , tfun_oname = "callT1"
+        , tfun_args = [ Arg
+                          (TemplateAppRef
+                            TemplateAppInfo {
+                              tapp_tclass = tT1 cabal
+                            , tapp_tparams = [TArg_TypeParam "p1"]
+                            , tapp_CppTypeForParam = "T1<p1>"
+                            }
+                          )
+                          "tmpl1"
+                      ]
+        , tfun_alias = Nothing
+        }
+    ]
+  }
+
 
 classes cabal = [ ]
 
 toplevelfunctions = [ ]
 
 templates cabal =
-  [ TCIH (tT1 cabal) [ "test.h" ] ]
+  [ TCIH (tT1 cabal) [ "tdtest.h" ]
+  , TCIH (tT2 cabal) [ "tdtest.h" ]
+  ]
 
 headers =
   [ ]
-  -- modImports "A"  [] ["test.h"]
-  -- , modImports "T1" [] ["test.h"]
-  -- , modImports "T2" [] ["test.h"]
 
 
 main :: IO ()
@@ -201,9 +231,9 @@ main = do
   cwd <- getCurrentDirectory
 
   cabal <- do
-    testH   <- readFile (tmpldir </> "test.h")
-    testCpp <- readFile (tmpldir </> "test.cpp")
-    pure (cabal_ testH testCpp)
+    tdtestH   <- readFile (tmpldir </> "tdtest.h")
+    tdtestCpp <- readFile (tmpldir </> "tdtest.cpp")
+    pure (cabal_ tdtestH tdtestCpp)
 
   let fficfg = FFICXXConfig {
                  fficxxconfig_workingDir     = cwd </> "tmp" </> "working"
