@@ -21,16 +21,21 @@ let
     haskellPackages = newHaskellPackages0;
   };
 
+  tmplDepTestSrc = import ./fficxx-multipkg-test/template-dep/gen.nix {
+    inherit stdenv;
+    haskellPackages = newHaskellPackages0;
+  };
+
   newHaskellPackages = haskellPackages.override {
     overrides = self: super:
       {
-        "fficxx-runtime" = self.callCabal2nix "fficxx-runtime" ./fficxx-runtime {};
-        "fficxx"         = self.callCabal2nix "fficxx"         ./fficxx         {};
-        "stdcxx"         = self.callCabal2nix "stdcxx"         stdcxxSrc        {};
-        "fficxx-test"    = self.callCabal2nix "fficxx-test"    ./fficxx-test    {};
+        "fficxx-runtime"       = self.callCabal2nix "fficxx-runtime"       ./fficxx-runtime {};
+        "fficxx"               = self.callCabal2nix "fficxx"               ./fficxx         {};
+        "stdcxx"               = self.callCabal2nix "stdcxx"               stdcxxSrc        {};
+        "fficxx-test"          = self.callCabal2nix "fficxx-test"          ./fficxx-test    {};
         "fficxx-multipkg-test" = self.callCabal2nix "fficxx-multipkg-test" ./fficxx-multipkg-test {};
-        "tmf-test"       = self.callCabal2nix "tmf-test"       tmfTestSrc       {};
-
+        "tmf-test"             = self.callCabal2nix "tmf-test"             tmfTestSrc       {};
+        "tmpl-dep-test"        = self.callCabal2nix "tmpl-dep-test"        tmplDepTestSrc    {};
       };
   };
 
