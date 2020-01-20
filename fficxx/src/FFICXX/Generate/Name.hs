@@ -94,7 +94,7 @@ hsTemplateMemberFunctionNameTH c f = "t_" <> hsTemplateMemberFunctionName c f
 ffiTmplFuncName :: TemplateFunction -> String
 ffiTmplFuncName f =
   case f of
-    TFun {..}    -> fromMaybe tfun_name tfun_alias
+    TFun {..}    -> tfun_name
     TFunNew {..} -> fromMaybe "new" tfun_new_alias
     TFunDelete   -> "delete"
 

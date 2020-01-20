@@ -259,7 +259,7 @@ data TemplateFunction =
     , tfun_name :: String
     , tfun_oname :: String
     , tfun_args :: [Arg]
-    , tfun_alias :: Maybe String
+    -- , tfun_alias :: Maybe String
     }
   | TFunNew {
       tfun_new_args :: [Arg]

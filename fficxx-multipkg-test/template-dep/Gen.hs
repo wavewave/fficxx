@@ -103,7 +103,6 @@ tT1 cabal =
         , tfun_name = "method"
         , tfun_oname = "method"
         , tfun_args = []
-        , tfun_alias = Nothing
         }
     ]
   }
@@ -134,7 +133,6 @@ tT2 cabal =
                           )
                           "tmpl1"
                       ]
-        , tfun_alias = Nothing
         }
     ]
   }
