@@ -27,6 +27,7 @@ import FFICXX.Generate.Type.Config    ( ModuleUnit(..), ModuleUnitMap(..), Modul
 import FFICXX.Generate.Type.Class     ( Arg(..)
                                       , Class(..)
                                       , CTypes(CTDouble)
+                                      , Form(FormSimple)
                                       , Function(..)
                                       , ProtectedMethod(..)
                                       , TopLevelFunction(..)
@@ -90,7 +91,7 @@ tT1 cabal =
   TmplCls {
     tclass_cabal = cabal
   , tclass_name = "T1"
-  , tclass_oname = "T1"
+  , tclass_cxxform = FormSimple "T1"
   , tclass_params = [ "p1" ]
   , tclass_funcs = [
         TFunNew {
@@ -112,7 +113,7 @@ tT2 cabal =
   TmplCls {
     tclass_cabal = cabal
   , tclass_name = "T2"
-  , tclass_oname = "T2"
+  , tclass_cxxform = FormSimple "T2"
   , tclass_params = [ "p1" ]
   , tclass_funcs = [
         TFunNew {

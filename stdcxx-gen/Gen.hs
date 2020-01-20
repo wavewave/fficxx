@@ -31,6 +31,7 @@ import FFICXX.Generate.Type.Config ( ModuleUnitImports(..)
 import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , Class(..)
                                    , ClassAlias(..)
+                                   , Form(FormSimple)
                                    , Function(..)
                                    , TemplateAppInfo(..)
                                    , TemplateArgType(..)
@@ -105,14 +106,14 @@ toplevelfunctions = [ ]
 
 t_pair :: TemplateClass
 t_pair =
-  TmplCls cabal "Pair" "std::pair" ["tp1","tp2"]
+  TmplCls cabal "Pair" (FormSimple "std::pair") ["tp1","tp2"]
     [ TFunNew [Arg (TemplateParam "tp1") "x", Arg (TemplateParam "tp2") "y"] Nothing
     , TFunDelete
     ]
 
 t_map :: TemplateClass
 t_map =
-  TmplCls cabal "Map" "std::map" ["tpk","tpv"]
+  TmplCls cabal "Map" (FormSimple "std::map") ["tpk","tpv"]
     [ TFunNew [] Nothing
     , TFun
         void_ {- temporary until iterator support -}
@@ -135,7 +136,7 @@ t_map =
 
 t_vector :: TemplateClass
 t_vector =
-  TmplCls cabal "Vector" "std::vector"      ["tp1"]
+  TmplCls cabal "Vector" (FormSimple "std::vector") ["tp1"]
     [ TFunNew [] Nothing
     , TFun void_ "push_back" "push_back"    [Arg (TemplateParam "tp1") "x"] Nothing
     , TFun void_ "pop_back"  "pop_back"     []                        Nothing
@@ -146,7 +147,7 @@ t_vector =
 
 t_unique_ptr :: TemplateClass
 t_unique_ptr =
-  TmplCls cabal "UniquePtr" "std::unique_ptr" ["tp1"]
+  TmplCls cabal "UniquePtr" (FormSimple "std::unique_ptr") ["tp1"]
     [ TFunNew [] (Just "newUniquePtr0")
     , TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing
     , TFun (TemplateParamPointer "tp1") "get" "get" [] Nothing
@@ -157,7 +158,7 @@ t_unique_ptr =
 
 t_shared_ptr :: TemplateClass
 t_shared_ptr =
-  TmplCls cabal "SharedPtr" "std::shared_ptr" ["tp1"]
+  TmplCls cabal "SharedPtr" (FormSimple "std::shared_ptr") ["tp1"]
     [ TFunNew [] (Just "newSharedPtr0")
     , TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing
     , TFun (TemplateParamPointer "tp1") "get" "get" [] Nothing
