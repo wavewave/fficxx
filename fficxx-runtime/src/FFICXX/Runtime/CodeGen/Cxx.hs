@@ -38,7 +38,7 @@ sname s = CName [NamePart s]
 renderCName :: CName Identity -> String
 renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
-
+-- | Types
 data CType (f :: * -> *) =
     CTVoid
   | CTSimple (CName f)
@@ -48,9 +48,11 @@ data CType (f :: * -> *) =
       (CName f)   -- ^ template type name
       [ CType f ] -- ^ template parameters
   | CTConst (CType f)
+  | CTScoped (CType f) (CType f) -- some_class::inner_class
+                                 -- TODO: refine this by restriction
   | CTVerbatim String
 
-
+-- | Operators
 data COp = CArrow | CAssign
 
 renderCOp :: COp -> String
@@ -67,6 +69,7 @@ data CExp (f :: * -> *) =
   | CStar (CExp f)                      -- ^ *(exp)
   | CNew (CName f)  [CExp f]            -- ^ new operator: new Cstr(a1,a2,...)
   | CTNew (CName f) [CType f] [CExp f]  -- ^ new operator for template class: new Cstr<T1,T2,..>(a1,a2,..)
+  | CTNewI (CName f) (CName f) [CType f] [CExp f] -- ^ new operator for inner class of template class: new Cstr<T1,T2,..>::inner(a1,a2,..) -- TODO: make a generalization
   | CEMacroApp (CName f) [CName f]      -- ^ macro function at expression level
   | CEVerbatim String                   -- ^ verbatim
   | CNull                               -- ^ empty C expression. (for convenience)
@@ -118,6 +121,7 @@ renderCType (CTStar t)     = renderCType t <> "*"
 renderCType CTAuto         = "auto"
 renderCType (CTTApp n ts)  = renderCName n <> "<" <> intercalate ", " (map renderCType ts) <> ">"
 renderCType (CTConst t)    = "const " <> renderCType t
+renderCType (CTScoped t i) = renderCType t <> "::" <> renderCType i
 renderCType (CTVerbatim t) = t
 
 renderCExp :: CExp Identity -> String
@@ -158,6 +162,15 @@ renderCExp (CTNew n ts es) =    "new "
                              <> "("
                              <> intercalate ", " (map renderCExp es)  -- arguments
                              <> ")"
+renderCExp (CTNewI n i ts es) =    "new "
+                                <> renderCName n                         -- constructor name
+                                <> "<"
+                                <> intercalate ", " (map renderCType ts) -- type arguments
+                                <> ">::"
+                                <> renderCName i                         -- inner class name
+                                <> "("
+                                <> intercalate ", " (map renderCExp es)  -- arguments
+                                <> ")"
 renderCExp (CEMacroApp n as) =  renderCName n
                              <> "("
                              <> intercalate ", " (map renderCName as)

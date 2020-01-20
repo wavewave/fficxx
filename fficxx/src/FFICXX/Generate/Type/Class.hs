@@ -267,14 +267,19 @@ data TemplateFunction =
     }
   | TFunDelete
 
+-- TODO: Generalize this further.
+-- | Positional string interpolation form.
+--   For example, "std::map<K,V>::iterator" is FormNested "std::map" "iterator"].
+data Form = FormSimple String
+          | FormNested String String
 
 data TemplateClass =
   TmplCls {
-    tclass_cabal  :: Cabal
-  , tclass_name   :: String
-  , tclass_oname  :: String
-  , tclass_params :: [String]
-  , tclass_funcs  :: [TemplateFunction]
+    tclass_cabal   :: Cabal
+  , tclass_name    :: String
+  , tclass_cxxform :: Form
+  , tclass_params  :: [String]
+  , tclass_funcs   :: [TemplateFunction]
   }
 
 -- TODO: we had better not override standard definitions

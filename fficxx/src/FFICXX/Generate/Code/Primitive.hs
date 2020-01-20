@@ -23,6 +23,7 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , Class(..)
                                     , CPPTypes(..)
                                     , CTypes(..)
+                                    , Form(..)
                                     , Function(..)
                                     , IsConst(Const,NoConst)
                                     , Selfness(NoSelf,Self)
@@ -458,6 +459,10 @@ cxx2C t e =
                               -- if b then "(" <> callstr <> ");"
                               --      else "to_nonconst<Type ## _t, Type>(" <> e <> ") ;"
 
+tmplAppTypeFromForm :: Form -> [R.CType Identity] -> R.CType Identity
+tmplAppTypeFromForm (FormSimple tclass) targs = R.CTTApp (R.sname tclass) targs
+tmplAppTypeFromForm (FormNested tclass inner) targs = R.CTScoped (R.CTTApp (R.sname tclass) targs) (R.CTVerbatim inner)
+
 tmplArgToCTypVar ::
      IsCPrimitive
   -> TemplateClass
@@ -465,8 +470,8 @@ tmplArgToCTypVar ::
   -> (R.CType Identity, R.CName Identity)
 tmplArgToCTypVar _ _  (Arg (CT ctyp isconst) varname) =
   (ctypToCType ctyp isconst, R.sname varname)
-tmplArgToCTypVar _ t (Arg SelfType varname) =
-  (R.CTStar (R.CTSimple (R.sname (tclass_oname t))), R.sname varname)
+tmplArgToCTypVar _ _ (Arg SelfType varname) =
+  (R.CTStar R.CTVoid, R.sname varname)
 tmplArgToCTypVar _ _ (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
     Const   -> (R.CTSimple (R.sname ("const_" <> ffiClassName c <> "_p")), R.sname varname)
@@ -534,14 +539,14 @@ tmplArgToCallCExp _ (Arg (TemplateApp x) varname) =
   let targs = map (R.CTSimple . R.sname . hsClassNameForTArg) (tapp_tparams x)
   in R.CTApp
        (R.sname "static_cast")
-       [ R.CTStar $ R.CTTApp (R.sname (tclass_oname (tapp_tclass x))) targs ]
+       [ R.CTStar $ tmplAppTypeFromForm (tclass_cxxform (tapp_tclass x)) targs ]
        [ R.CVar $ R.sname varname ]
 tmplArgToCallCExp _ (Arg (TemplateAppRef x) varname) =
   let targs = map (R.CTSimple . R.sname . hsClassNameForTArg) (tapp_tparams x)
   in R.CStar $
        R.CTApp
          (R.sname "static_cast")
-         [ R.CTStar $ R.CTTApp (R.sname (tclass_oname (tapp_tclass x))) targs ]
+         [ R.CTStar $ tmplAppTypeFromForm (tclass_cxxform (tapp_tclass x)) targs ]
          [ R.CVar $ R.sname varname ]
 tmplArgToCallCExp _ (Arg (TemplateAppMove x) varname) =
   let targs = map (R.CTSimple . R.sname . hsClassNameForTArg) (tapp_tparams x)
@@ -550,7 +555,7 @@ tmplArgToCallCExp _ (Arg (TemplateAppMove x) varname) =
        [ R.CStar $
            R.CTApp
              (R.sname "static_cast")
-             [ R.CTStar $ R.CTTApp (R.sname (tclass_oname (tapp_tclass x))) targs ]
+             [ R.CTStar $ tmplAppTypeFromForm (tclass_cxxform (tapp_tclass x)) targs ]
              [ R.CVar $ R.sname varname ]
        ]
 tmplArgToCallCExp b (Arg (TemplateParam typ) varname) =

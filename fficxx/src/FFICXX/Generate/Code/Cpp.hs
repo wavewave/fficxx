@@ -25,6 +25,7 @@ import FFICXX.Generate.Code.Primitive
                                     , tmplMemFuncArgToCTypVar
                                     , tmplMemFuncReturnCType
                                     , tmplAllArgsToCTypVar
+                                    , tmplAppTypeFromForm
                                     , tmplArgToCallCExp
                                     , tmplReturnCType
                                     )
@@ -39,6 +40,7 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , Class(..)
                                     , CPPTypes(..)
                                     , CTypes(..)
+                                    , Form(FormSimple,FormNested)
                                     , Function(..)
                                     , Selfness(NoSelf,Self)
                                     , TemplateAppInfo(..)
@@ -504,16 +506,24 @@ tmplFunToDef b t@TmplCls {..} f =
       case f of
         TFunNew {..} ->
           let caller =
-                R.CTNew
-                  (R.sname tclass_oname)
-                  typparams
-                  (map (tmplArgToCallCExp b) tfun_new_args)
+                case tclass_cxxform of
+                  FormSimple tclass ->
+                    R.CTNew
+                      (R.sname tclass)
+                      typparams
+                      (map (tmplArgToCallCExp b) tfun_new_args)
+                  FormNested tclass inner ->
+                    R.CTNewI
+                      (R.sname tclass)
+                      (R.sname inner)
+                      typparams
+                      (map (tmplArgToCallCExp b) tfun_new_args)
           in  [ R.CReturn $ R.CTApp (R.sname "static_cast") [R.CTStar R.CTVoid] [caller] ]
         TFunDelete ->
           [ R.CDelete $
               R.CTApp
                 (R.sname "static_cast")
-                [ R.CTStar (R.CTTApp (R.sname tclass_oname) typparams) ]
+                [ R.CTStar $ tmplAppTypeFromForm tclass_cxxform typparams ]
                 [ R.CVar (R.sname "p") ]
           ]
         TFun {..}    ->
@@ -522,7 +532,7 @@ tmplFunToDef b t@TmplCls {..} f =
               R.CArrow
               (R.CTApp
                  (R.sname "static_cast")
-                 [ R.CTStar (R.CTTApp (R.sname tclass_oname) typparams) ]
+                 [ R.CTStar $ tmplAppTypeFromForm tclass_cxxform typparams ]
                  [ R.CVar $ R.sname "p" ]
               )
               (R.CApp
