@@ -83,7 +83,7 @@ data TemplateAppInfo =
   TemplateAppInfo {
     tapp_tclass :: TemplateClass
   , tapp_tparams :: [TemplateArgType]
-  , tapp_CppTypeForParam :: String
+  , tapp_CppTypeForParam :: String -- TODO: remove this
   }
   deriving Show
 

@@ -31,7 +31,7 @@ import FFICXX.Generate.Type.Config ( ModuleUnitImports(..)
 import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , Class(..)
                                    , ClassAlias(..)
-                                   , Form(FormSimple)
+                                   , Form(FormNested,FormSimple)
                                    , Function(..)
                                    , TemplateAppInfo(..)
                                    , TemplateArgType(..)
@@ -116,7 +116,19 @@ t_map =
   TmplCls cabal "Map" (FormSimple "std::map") ["tpk","tpv"]
     [ TFunNew [] Nothing
     , TFun
-        void_ {- temporary until iterator support -}
+        (TemplateAppRef
+          TemplateAppInfo {
+            tapp_tclass = t_map_iterator
+          , tapp_tparams = [TArg_TypeParam "tpk", TArg_TypeParam "tpv"]
+          , tapp_CppTypeForParam = "std::map<tpk,tpv>::iterator"
+          }
+        )
+        "begin"
+        "begin"
+        []
+        Nothing
+    , TFun
+        void_ -- until pair<iterator,bool> is allowed
         "insert"
         "insert"
         [ Arg
@@ -132,6 +144,12 @@ t_map =
         Nothing
     , TFun int_  "size" "size" [] Nothing
     , TFunDelete
+    ]
+
+t_map_iterator :: TemplateClass
+t_map_iterator =
+  TmplCls cabal "MapIterator" (FormNested "std::map" "iterator") ["tpk","tpv"]
+    [
     ]
 
 t_vector :: TemplateClass
@@ -169,11 +187,12 @@ t_shared_ptr =
 
 templates :: [TemplateClassImportHeader]
 templates =
-  [ TCIH t_pair       ["utility"]
-  , TCIH t_map        ["map"]
-  , TCIH t_vector     ["vector"]
-  , TCIH t_unique_ptr ["memory"]
-  , TCIH t_shared_ptr ["memory"]
+  [ TCIH t_pair         ["utility"]
+  , TCIH t_map          ["map"]
+  , TCIH t_map_iterator ["map"]
+  , TCIH t_vector       ["vector"]
+  , TCIH t_unique_ptr   ["memory"]
+  , TCIH t_shared_ptr   ["memory"]
   ]
 
 headers :: [ (ModuleUnit, ModuleUnitImports) ]
