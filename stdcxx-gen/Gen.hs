@@ -31,6 +31,7 @@ import FFICXX.Generate.Type.Config ( ModuleUnitImports(..)
 import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , Class(..)
                                    , ClassAlias(..)
+                                   , Form(FormNested,FormSimple)
                                    , Function(..)
                                    , TemplateAppInfo(..)
                                    , TemplateArgType(..)
@@ -105,17 +106,29 @@ toplevelfunctions = [ ]
 
 t_pair :: TemplateClass
 t_pair =
-  TmplCls cabal "Pair" "std::pair" ["tp1","tp2"]
+  TmplCls cabal "Pair" (FormSimple "std::pair") ["tp1","tp2"]
     [ TFunNew [Arg (TemplateParam "tp1") "x", Arg (TemplateParam "tp2") "y"] Nothing
     , TFunDelete
     ]
 
 t_map :: TemplateClass
 t_map =
-  TmplCls cabal "Map" "std::map" ["tpk","tpv"]
+  TmplCls cabal "Map" (FormSimple "std::map") ["tpk","tpv"]
     [ TFunNew [] Nothing
     , TFun
-        void_ {- temporary until iterator support -}
+        (TemplateAppRef
+          TemplateAppInfo {
+            tapp_tclass = t_map_iterator
+          , tapp_tparams = [TArg_TypeParam "tpk", TArg_TypeParam "tpv"]
+          , tapp_CppTypeForParam = "std::map<tpk,tpv>::iterator"
+          }
+        )
+        "begin"
+        "begin"
+        []
+        Nothing
+    , TFun
+        void_ -- until pair<iterator,bool> is allowed
         "insert"
         "insert"
         [ Arg
@@ -133,9 +146,15 @@ t_map =
     , TFunDelete
     ]
 
+t_map_iterator :: TemplateClass
+t_map_iterator =
+  TmplCls cabal "MapIterator" (FormNested "std::map" "iterator") ["tpk","tpv"]
+    [
+    ]
+
 t_vector :: TemplateClass
 t_vector =
-  TmplCls cabal "Vector" "std::vector"      ["tp1"]
+  TmplCls cabal "Vector" (FormSimple "std::vector") ["tp1"]
     [ TFunNew [] Nothing
     , TFun void_ "push_back" "push_back"    [Arg (TemplateParam "tp1") "x"] Nothing
     , TFun void_ "pop_back"  "pop_back"     []                        Nothing
@@ -146,7 +165,7 @@ t_vector =
 
 t_unique_ptr :: TemplateClass
 t_unique_ptr =
-  TmplCls cabal "UniquePtr" "std::unique_ptr" ["tp1"]
+  TmplCls cabal "UniquePtr" (FormSimple "std::unique_ptr") ["tp1"]
     [ TFunNew [] (Just "newUniquePtr0")
     , TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing
     , TFun (TemplateParamPointer "tp1") "get" "get" [] Nothing
@@ -157,7 +176,7 @@ t_unique_ptr =
 
 t_shared_ptr :: TemplateClass
 t_shared_ptr =
-  TmplCls cabal "SharedPtr" "std::shared_ptr" ["tp1"]
+  TmplCls cabal "SharedPtr" (FormSimple "std::shared_ptr") ["tp1"]
     [ TFunNew [] (Just "newSharedPtr0")
     , TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing
     , TFun (TemplateParamPointer "tp1") "get" "get" [] Nothing
@@ -168,11 +187,12 @@ t_shared_ptr =
 
 templates :: [TemplateClassImportHeader]
 templates =
-  [ TCIH t_pair       ["utility"]
-  , TCIH t_map        ["map"]
-  , TCIH t_vector     ["vector"]
-  , TCIH t_unique_ptr ["memory"]
-  , TCIH t_shared_ptr ["memory"]
+  [ TCIH t_pair         ["utility"]
+  , TCIH t_map          ["map"]
+  , TCIH t_map_iterator ["map"]
+  , TCIH t_vector       ["vector"]
+  , TCIH t_unique_ptr   ["memory"]
+  , TCIH t_shared_ptr   ["memory"]
   ]
 
 headers :: [ (ModuleUnit, ModuleUnitImports) ]

@@ -16,6 +16,8 @@ import FFICXX.Runtime.CodeGen.Cxx ( HeaderName(..), Namespace(..) )
 import FFICXX.Runtime.TH          ( IsCPrimitive(..), TemplateParamInfo(..) )
 import STD.Map.Template
 import STD.Map.TH
+import STD.MapIterator.Template
+import STD.MapIterator.TH
 import STD.Pair.Template
 import STD.Pair.TH
 --
@@ -52,6 +54,21 @@ genMapInstanceFor
                          }
   )
 
+genMapIteratorInstanceFor
+  CPrim
+  ( [t|CInt|], TPInfo { tpinfoCxxType       = "int"
+                      , tpinfoCxxHeaders    = []
+                      , tpinfoCxxNamespaces = []
+                      , tpinfoSuffix        = "int"
+                      }
+  )
+  ( [t|CDouble|], TPInfo { tpinfoCxxType       = "double"
+                         , tpinfoCxxHeaders    = []
+                         , tpinfoCxxNamespaces = []
+                         , tpinfoSuffix        = "double"
+                         }
+  )
+
 
 spec :: Spec
 spec =
@@ -66,3 +83,6 @@ spec =
           insert m kv
           n <- size m
           n `shouldBe` 1
+        it "should retrieve value via iterator" $ \m -> do
+          iter <- begin m
+          True `shouldBe` True
