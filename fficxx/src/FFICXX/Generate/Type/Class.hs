@@ -272,8 +272,6 @@ data TemplateFunction =
       tfun_ret :: Types
     , tfun_name :: String  -- ^ haskell alias for the operator
     , tfun_opexp :: OpExp
-    -- , tfun_oname :: String -- ^ operator
-    -- , tfun_args :: [Arg]
     }
 
 argsFromOpExp :: OpExp -> [Arg]
@@ -299,6 +297,7 @@ data TemplateClass =
   , tclass_cxxform :: Form
   , tclass_params  :: [String]
   , tclass_funcs   :: [TemplateFunction]
+  , tclass_vars :: [Variable]
   }
 
 -- TODO: we had better not override standard definitions

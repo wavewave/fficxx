@@ -110,6 +110,7 @@ t_pair =
     [ TFunNew [Arg (TemplateParam "tp1") "x", Arg (TemplateParam "tp2") "y"] Nothing
     , TFunDelete
     ]
+    []
 
 t_map :: TemplateClass
 t_map =
@@ -143,12 +144,13 @@ t_map =
     , TFun int_  "size" "size" []
     , TFunDelete
     ]
+    []
 
 t_map_iterator :: TemplateClass
 t_map_iterator =
   TmplCls cabal "MapIterator" (FormNested "std::map" "iterator") ["tpk","tpv"]
-    [
-    ]
+    []
+    []
 
 t_vector :: TemplateClass
 t_vector =
@@ -160,6 +162,7 @@ t_vector =
     , TFun int_  "size"      "size"         []
     , TFunDelete
     ]
+    []
 
 t_unique_ptr :: TemplateClass
 t_unique_ptr =
@@ -171,6 +174,7 @@ t_unique_ptr =
     , TFun void_ "reset" "reset" []
     , TFunDelete
     ]
+    []
 
 t_shared_ptr :: TemplateClass
 t_shared_ptr =
@@ -182,6 +186,7 @@ t_shared_ptr =
     , TFun int_ "use_count" "use_count" []
     , TFunDelete
     ]
+    []
 
 templates :: [TemplateClassImportHeader]
 templates =

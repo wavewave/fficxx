@@ -109,24 +109,28 @@ string =
     False
 
 t_vector :: TemplateClass
-t_vector = TmplCls stdcxx_cabal "Vector" (FormSimple "std::vector") ["tp1"]
-             [ TFunNew [] Nothing
-             , TFun void_ "push_back" "push_back"   [Arg (TemplateParam "tp1") "x"]
-             , TFun void_ "pop_back"  "pop_back"    []
-             , TFun (TemplateParam "tp1") "at" "at" [int "n"]
-             , TFun int_  "size"      "size"        []
-             , TFunDelete
-             ]
+t_vector =
+  TmplCls stdcxx_cabal "Vector" (FormSimple "std::vector") ["tp1"]
+    [ TFunNew [] Nothing
+    , TFun void_ "push_back" "push_back"   [Arg (TemplateParam "tp1") "x"]
+    , TFun void_ "pop_back"  "pop_back"    []
+    , TFun (TemplateParam "tp1") "at" "at" [int "n"]
+    , TFun int_  "size"      "size"        []
+    , TFunDelete
+    ]
+    []
 
 t_unique_ptr :: TemplateClass
-t_unique_ptr = TmplCls stdcxx_cabal "UniquePtr" (FormSimple "std::unique_ptr") ["tp1"]
-             [ TFunNew [] (Just "newUniquePtr0")
-             , TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing
-             , TFun (TemplateParamPointer "tp1") "get" "get" []
-             , TFun (TemplateParamPointer "tp1") "release" "release" []
-             , TFun void_ "reset" "reset" []
-             , TFunDelete
-             ]
+t_unique_ptr =
+  TmplCls stdcxx_cabal "UniquePtr" (FormSimple "std::unique_ptr") ["tp1"]
+    [ TFunNew [] (Just "newUniquePtr0")
+    , TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing
+    , TFun (TemplateParamPointer "tp1") "get" "get" []
+    , TFun (TemplateParamPointer "tp1") "release" "release" []
+    , TFun void_ "reset" "reset" []
+    , TFunDelete
+    ]
+    []
 
 -- -------------------------------------------------------------------
 -- tmf-test
