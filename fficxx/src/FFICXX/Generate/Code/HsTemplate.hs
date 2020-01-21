@@ -8,7 +8,7 @@ import qualified Data.List as L       ( foldr1 )
 import Language.Haskell.Exts.Build    ( app, binds, caseE, doE
                                       , lamE, letE, letStmt, listE, name
                                       , pApp, paren, pTuple
-                                      , qualStmt, strE, tuple
+                                      , qualStmt, strE, tuple, wildcard
                                       )
 import Language.Haskell.Exts.Syntax   ( Boxed(Boxed), Decl(..), ImportDecl(..), Type(TyTuple) )
 import System.FilePath                ( (<.>) )
@@ -246,18 +246,19 @@ genImportInTH t0 =
 genTmplImplementation :: TemplateClass -> [Decl ()]
 genTmplImplementation t = concatMap gen (tclass_funcs t)
   where
+    v = mkVar
+    p = mkPVar
+    itps = zip ([1..]::[Int]) (tclass_params t)
+    tvars = map (\(i,_) -> "typ" ++ show i) itps
+    nparams = length itps
+    tparams = if nparams == 1 then tycon "Type" else TyTuple () Boxed (replicate nparams (tycon "Type"))
+    sig = foldr1 tyfun [tparams , tycon "String", tyapp (tycon "Q") (tycon "Exp") ]
+    tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
+    prefix = tclass_name t
+
     gen f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
       where nh = hsTmplFuncNameTH t f
             nc = ffiTmplFuncName f
-            v = mkVar
-            p = mkPVar
-            itps = zip ([1..]::[Int]) (tclass_params t)
-            tvars = map (\(i,_) -> "typ" ++ show i) itps
-            nparams = length itps
-            tparams = if nparams == 1 then tycon "Type" else TyTuple () Boxed (replicate nparams (tycon "Type"))
-            sig = foldr1 tyfun [tparams , tycon "String", tyapp (tycon "Q") (tycon "Exp") ]
-            tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
-            prefix = tclass_name t
             lit' = strE (prefix<>"_"<>nc)
             lam = lamE [p "n"] ( lit' `app` v "<>" `app` v "n")
             rhs = app (v "mkTFunc") $
@@ -265,7 +266,7 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
                     in tuple (typs ++ [ v "suffix", lam, v "tyf"])
             sig' = functionSignatureTT t f
             tassgns = map (\(i,tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i)))) itps
-            bstmts = binds [ mkBind1 "tyf" [mkPVar "n"]
+            bstmts = binds [ mkBind1 "tyf" [wildcard] -- [mkPVar "n"]
                                (letE tassgns
                                   (bracketExp (typeBracket sig')))
                                Nothing
