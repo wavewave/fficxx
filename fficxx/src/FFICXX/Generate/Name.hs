@@ -108,6 +108,7 @@ cppTmplFuncName f =
     TFunDelete   -> "delete"
     TFunOp {..}  -> tfun_name
 
+-- |
 accessorName :: Class -> Variable -> Accessor -> String
 accessorName c v a =    nonvirtualName c (arg_name (unVariable v))
                      <> "_"
@@ -115,13 +116,20 @@ accessorName c v a =    nonvirtualName c (arg_name (unVariable v))
                           Getter -> "get"
                           Setter -> "set"
 
+-- |
 hscAccessorName :: Class -> Variable -> Accessor -> String
 hscAccessorName c v a = "c_" <> toLowers (accessorName c v a)
 
+-- |
+tmplAccessorName :: Variable -> Accessor -> String
+tmplAccessorName (Variable (Arg _ n)) a =
+     n <> "_" <> case a of { Getter -> "get"; Setter -> "set" }
 
+-- |
 cppStaticName :: Class -> Function -> String
 cppStaticName c f = class_name c <> "::" <> func_name f
 
+-- |
 cppFuncName :: Class -> Function -> String
 cppFuncName c f =   case f of
     Constructor _ _ -> "new"

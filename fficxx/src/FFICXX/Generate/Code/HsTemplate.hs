@@ -35,9 +35,11 @@ import FFICXX.Generate.Name           ( ffiTmplFuncName
                                       , hsTemplateMemberFunctionNameTH
                                       , hsTmplFuncName
                                       , hsTmplFuncNameTH
+                                      , tmplAccessorName
                                       , typeclassNameT
                                       )
-import FFICXX.Generate.Type.Class     ( Arg(..)
+import FFICXX.Generate.Type.Class     ( Accessor(Getter,Setter)
+                                      , Arg(..)
                                       , Class(..)
                                       , TemplateClass(..)
                                       , TemplateFunction(..)
@@ -206,14 +208,14 @@ genTmplInterface t =
    hightype    = foldl1 tyapp (tycon hname : map mkTVar tps)
    sigdecl f   = mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
    sigdeclV vf = let Variable (Arg {..}) = vf
-                     fg = TFun { tfun_ret  = arg_type
-                               , tfun_name = arg_name <> "_get"
-                               , tfun_oname = arg_name <> "_get"
-                               , tfun_args = []
+                     fg = TFun { tfun_ret   = arg_type
+                               , tfun_name  = tmplAccessorName vf Getter
+                               , tfun_oname = tmplAccessorName vf Getter
+                               , tfun_args  = []
                                }
-                     fs = TFun { tfun_ret  = Void
-                               , tfun_name = arg_name <> "_set"
-                               , tfun_oname = arg_name <> "_set"
+                     fs = TFun { tfun_ret   = Void
+                               , tfun_name  = tmplAccessorName vf Setter
+                               , tfun_oname = tmplAccessorName vf Setter
                                , tfun_args = [Arg arg_type "value"]
                                }
                  in [sigdecl fg, sigdecl fs]
