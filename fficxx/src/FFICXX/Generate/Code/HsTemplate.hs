@@ -37,10 +37,13 @@ import FFICXX.Generate.Name           ( ffiTmplFuncName
                                       , hsTmplFuncNameTH
                                       , typeclassNameT
                                       )
-import FFICXX.Generate.Type.Class     ( Class(..)
+import FFICXX.Generate.Type.Class     ( Arg(..)
+                                      , Class(..)
                                       , TemplateClass(..)
                                       , TemplateFunction(..)
                                       , TemplateMemberFunction(..)
+                                      , Variable(..)
+                                      , Types(Void)
                                       )
 import FFICXX.Generate.Type.Module    ( ClassImportHeader(..)
                                       , TemplateClassImportHeader(..)
@@ -196,18 +199,30 @@ genTmplInterface t =
   ]
  where
    (hname,rname) = hsTemplateClassName t
-   tps        = tclass_params t
-   fs         = tclass_funcs t
-   vfs        = tclass_vars t
-   rawtype    = foldl1 tyapp (tycon rname : map mkTVar tps)
-   hightype   = foldl1 tyapp (tycon hname : map mkTVar tps)
-   sigdecl f = mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
-   sigdeclV vf = mkFunSig "abcdef" (tycon "ABCDEF") -- mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
-   methods    = map (clsDecl . sigdecl) fs ++ map (clsDecl . sigdeclV) vfs
-   fptrbody   = [ insType (tyapp (tycon "Raw") hightype) rawtype
-                , insDecl (mkBind1 "get_fptr" [pApp (name hname) [mkPVar "ptr"]] (mkVar "ptr") Nothing )
-                , insDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
-                ]
+   tps         = tclass_params t
+   fs          = tclass_funcs t
+   vfs         = tclass_vars t
+   rawtype     = foldl1 tyapp (tycon rname : map mkTVar tps)
+   hightype    = foldl1 tyapp (tycon hname : map mkTVar tps)
+   sigdecl f   = mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
+   sigdeclV vf = let Variable (Arg {..}) = vf
+                     fg = TFun { tfun_ret  = arg_type
+                               , tfun_name = arg_name <> "_get"
+                               , tfun_oname = arg_name <> "_get"
+                               , tfun_args = []
+                               }
+                     fs = TFun { tfun_ret  = Void
+                               , tfun_name = arg_name <> "_set"
+                               , tfun_oname = arg_name <> "_set"
+                               , tfun_args = [Arg arg_type "value"]
+                               }
+                 in [sigdecl fg, sigdecl fs]
+   methods     = map (clsDecl . sigdecl) fs ++ (map clsDecl . concatMap sigdeclV) vfs
+
+   fptrbody    = [ insType (tyapp (tycon "Raw") hightype) rawtype
+                 , insDecl (mkBind1 "get_fptr" [pApp (name hname) [mkPVar "ptr"]] (mkVar "ptr") Nothing )
+                 , insDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
+                 ]
 
 -- |
 genImportInTH :: TemplateClass -> [ImportDecl ()]
