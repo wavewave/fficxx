@@ -39,6 +39,7 @@ import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , TemplateFunction(..)
                                    , TopLevelFunction
                                    , Types(..)
+                                   , Variable(..)
                                    )
 import FFICXX.Generate.Type.Module ( TemplateClassImportHeader(..) )
 import FFICXX.Generate.Type.PackageInterface ()
@@ -110,7 +111,9 @@ t_pair =
     [ TFunNew [Arg (TemplateParam "tp1") "x", Arg (TemplateParam "tp2") "y"] Nothing
     , TFunDelete
     ]
-    []
+    [ Variable $ Arg (TemplateParam "tp1") "first"
+    , Variable $ Arg (TemplateParam "tp2") "second"
+    ]
 
 t_map :: TemplateClass
 t_map =

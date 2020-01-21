@@ -194,17 +194,20 @@ genTmplInterface t =
   , mkInstance cxEmpty "FPtr" [ hightype ] fptrbody
   , mkInstance cxEmpty "Castable" [ hightype, tyapp tyPtr rawtype ] castBody
   ]
- where (hname,rname) = hsTemplateClassName t
-       tps = tclass_params t
-       fs = tclass_funcs t
-       rawtype  = foldl1 tyapp (tycon rname : map mkTVar tps)
-       hightype = foldl1 tyapp (tycon hname : map mkTVar tps)
-       sigdecl f = mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
-       methods = map (clsDecl . sigdecl) fs
-       fptrbody = [ insType (tyapp (tycon "Raw") hightype) rawtype
-                  , insDecl (mkBind1 "get_fptr" [pApp (name hname) [mkPVar "ptr"]] (mkVar "ptr") Nothing)
-                  , insDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
-                  ]
+ where
+   (hname,rname) = hsTemplateClassName t
+   tps        = tclass_params t
+   fs         = tclass_funcs t
+   vfs        = tclass_vars t
+   rawtype    = foldl1 tyapp (tycon rname : map mkTVar tps)
+   hightype   = foldl1 tyapp (tycon hname : map mkTVar tps)
+   sigdecl f = mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
+   sigdeclV vf = mkFunSig "abcdef" (tycon "ABCDEF") -- mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
+   methods    = map (clsDecl . sigdecl) fs ++ map (clsDecl . sigdeclV) vfs
+   fptrbody   = [ insType (tyapp (tycon "Raw") hightype) rawtype
+                , insDecl (mkBind1 "get_fptr" [pApp (name hname) [mkPVar "ptr"]] (mkVar "ptr") Nothing )
+                , insDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
+                ]
 
 -- |
 genImportInTH :: TemplateClass -> [ImportDecl ()]
@@ -261,132 +264,145 @@ genTmplInstance tcih =
       (p "isCprim" : zipWith (\x y -> pTuple [p x,p y]) qtvars pvars)
       rhs
       Nothing
-  where t = tcihTClass tcih
-        fs = tclass_funcs t
-        tname = tclass_name t
-        fname = "gen" <> tname <> "InstanceFor"
-        p = mkPVar
-        v = mkVar
-        itps = zip ([1..]::[Int]) (tclass_params t)
-        tvars  = map (\(i,_) -> "typ"   ++ show i) itps
-        qtvars = map (\(i,_) -> "qtyp"  ++ show i) itps
-        pvars  = map (\(i,_) -> "param" ++ show i) itps
-        nparams = length itps
-        typs_v   = if nparams == 1 then v (tvars !! 0) else tuple (map v tvars)
-        params_l = listE (map v pvars)
-        sig = foldr1 tyfun $
-                   [ tycon "IsCPrimitive" ]
-                ++ replicate
-                     nparams
-                     (TyTuple () Boxed [ tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo" ])
-                ++ [ tycon "Q" `tyapp` tylist (tycon "Dec") ]
-        nfs = zip ([1..] :: [Int]) fs
-        rhs = doE (   [ paramsstmt, suffixstmt ]
-                   <> map genqtypstmt (zip tvars qtvars)
-                   <> map genstmt nfs
-                   <> [foreignSrcStmt, letStmt (lststmt nfs), qualStmt retstmt]
-                  )
-        paramsstmt = letStmt [ pbind_
-                                 (p "params")
-                                 (v "map" `app` (v "tpinfoSuffix") `app` params_l)
-                             ]
+  where
+    t = tcihTClass tcih
+    fs = tclass_funcs t
+    vfs = tclass_vars t
+    tname = tclass_name t
+    fname = "gen" <> tname <> "InstanceFor"
+    p = mkPVar
+    v = mkVar
+    itps = zip ([1..]::[Int]) (tclass_params t)
+    tvars  = map (\(i,_) -> "typ"   ++ show i) itps
+    qtvars = map (\(i,_) -> "qtyp"  ++ show i) itps
+    pvars  = map (\(i,_) -> "param" ++ show i) itps
+    nparams = length itps
+    typs_v   = if nparams == 1 then v (tvars !! 0) else tuple (map v tvars)
+    params_l = listE (map v pvars)
+    sig = foldr1 tyfun $
+               [ tycon "IsCPrimitive" ]
+            ++ replicate
+                 nparams
+                 (TyTuple () Boxed [ tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo" ])
+            ++ [ tycon "Q" `tyapp` tylist (tycon "Dec") ]
+    nfs = zip ([1..] :: [Int]) fs
+    nvfs = zip ([1..] :: [Int]) vfs
+    rhs = doE (   [ paramsstmt, suffixstmt ]
+               <> map genqtypstmt (zip tvars qtvars)
+               <> map genstmt nfs
+               <> map genvarstmt nvfs
+               <> [foreignSrcStmt, letStmt (lststmt nfs), qualStmt retstmt]
+              )
+    paramsstmt = letStmt [ pbind_
+                             (p "params")
+                             (v "map" `app` (v "tpinfoSuffix") `app` params_l)
+                         ]
 
-        suffixstmt = letStmt [ pbind_
-                                 (p "suffix")
-                                 (      v "concatMap"
-                                  `app` (lamE [p "x"] (inapp (strE "_") (op "++") (v "tpinfoSuffix" `app` v "x")))
-                                  `app` params_l
-                                 )
-                             ]
-        genqtypstmt (tvar,qtvar) = generator (p tvar) (v qtvar)
-        genstmt (n,f@TFun    {..}) = generator
-                                       (p ("f"<>show n))
-                                       (v "mkMember" `app` strE (hsTmplFuncName t f)
-                                                     `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` typs_v
-                                                     `app` v    "suffix"
-                                       )
-        genstmt (n,f@TFunNew {..}) = generator
-                                       (p ("f"<>show n))
-                                       (v "mkNew"    `app` strE (hsTmplFuncName t f)
-                                                     `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` typs_v
-                                                     `app` v    "suffix"
-                                       )
-        genstmt (n,f@TFunDelete)   = generator
-                                       (p ("f"<>show n))
-                                       (v "mkDelete" `app` strE (hsTmplFuncName t f)
-                                                     `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` typs_v
-                                                     `app` v    "suffix"
-                                       )
-        genstmt (n,f@TFunOp  {..}) = generator
-                                       (p ("f"<>show n))
-                                       (v "mkMember" `app` strE (hsTmplFuncName t f)
-                                                     `app` v    (hsTmplFuncNameTH t f)
-                                                     `app` typs_v
-                                                     `app` v    "suffix"
-                                       )
-        lststmt xs = [ pbind_ (p "lst") (listE (map (v . (\n->"f"<>show n) . fst) xs)) ]
-        -- TODO: refactor out the following code.
-        foreignSrcStmt =
-          qualifier $
-                  (v "addModFinalizer")
-            `app` (      v "addForeignSource"
-                   `app` con "LangCxx"
-                   `app` (L.foldr1 (\x y -> inapp x (op "++") y)
-                            [ includeStatic
-                            , includeDynamic
-                            , namespaceStr
-                            , strE (tname <> "_instance")
-                            , paren $
-                                caseE
-                                  (v "isCprim")
-                                  [ match (p "CPrim")    (strE "_s")
-                                  , match (p "NonCPrim") (strE "")
-                                  ]
-                            , strE "("
-                            , v "intercalate" `app` strE ", " `app` v "params"
-                            , strE ")\n"
-                            ]
-                         )
-                  )
-          where
-            -- temporary
-            body = map R.renderCMacro $
-                        map R.Include (tcihCxxHeaders tcih)
-                     ++ map (genTmplFunCpp NonCPrim t) fs
-                     ++ map (genTmplFunCpp CPrim    t) fs
-                     ++ [ genTmplClassCpp NonCPrim t fs
-                        , genTmplClassCpp CPrim    t fs
-                        ]
-            includeStatic =
-              strE $ concatMap (<> "\n")
-                       (   [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h")) ]
-                        ++ body
-                       )
-            cxxHeaders    = v "concatMap" `app` (v "tpinfoCxxHeaders") `app` params_l
-            cxxNamespaces = v "concatMap" `app` (v "tpinfoCxxNamespaces") `app` params_l
-            includeDynamic =
-              letE
-                [ pbind_ (p "headers") cxxHeaders
-                , pbind_ (pApp (name "f") [p "x"])
-                        (v "renderCMacro" `app` (con "Include" `app` v "x"))
-                ]
-                (v "concatMap" `app` v "f" `app` v "headers")
-            namespaceStr =
-              letE
-                [ pbind_ (p "nss") cxxNamespaces
-                , pbind_ (pApp (name "f") [p "x"])
-                    (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
-                ]
-                (v "concatMap" `app` v "f" `app` v "nss")
+    suffixstmt = letStmt [ pbind_
+                             (p "suffix")
+                             (      v "concatMap"
+                              `app` (lamE [p "x"] (inapp (strE "_") (op "++") (v "tpinfoSuffix" `app` v "x")))
+                              `app` params_l
+                             )
+                         ]
+    genqtypstmt (tvar,qtvar) = generator (p tvar) (v qtvar)
+    genstmt (n,f@TFun    {..}) = generator
+                                   (p ("f"<>show n))
+                                   (v "mkMember" `app` strE (hsTmplFuncName t f)
+                                                 `app` v    (hsTmplFuncNameTH t f)
+                                                 `app` typs_v
+                                                 `app` v    "suffix"
+                                   )
+    genstmt (n,f@TFunNew {..}) = generator
+                                   (p ("f"<>show n))
+                                   (v "mkNew"    `app` strE (hsTmplFuncName t f)
+                                                 `app` v    (hsTmplFuncNameTH t f)
+                                                 `app` typs_v
+                                                 `app` v    "suffix"
+                                   )
+    genstmt (n,f@TFunDelete)   = generator
+                                   (p ("f"<>show n))
+                                   (v "mkDelete" `app` strE (hsTmplFuncName t f)
+                                                 `app` v    (hsTmplFuncNameTH t f)
+                                                 `app` typs_v
+                                                 `app` v    "suffix"
+                                   )
+    genstmt (n,f@TFunOp  {..}) = generator
+                                   (p ("f"<>show n))
+                                   (v "mkMember" `app` strE (hsTmplFuncName t f)
+                                                 `app` v    (hsTmplFuncNameTH t f)
+                                                 `app` typs_v
+                                                 `app` v    "suffix"
+                                   )
+    genvarstmt (n,vf) =
+      generator
+        (p ("vf"<>show n))
+        (v "mkMember" -- `app` strE (hsTmplFuncName t f)
+                      -- `app` v    (hsTmplFuncNameTH t f)
+                      -- `app` typs_v
+                      -- `app` v    "suffix"
+       )
 
-        retstmt = v "pure"
-                  `app` listE [ v "mkInstance"
-                                `app` listE []
-                                `app` foldl1
-                                        (\f x -> con "AppT" `app` f `app` x)
-                                        (v "con" `app` strE (typeclassNameT t) : map v tvars)
-                                `app` (v "lst")
+    lststmt xs = [ pbind_ (p "lst") (listE (map (v . (\n->"f"<>show n) . fst) xs)) ]
+    -- TODO: refactor out the following code.
+    foreignSrcStmt =
+      qualifier $
+              (v "addModFinalizer")
+        `app` (      v "addForeignSource"
+               `app` con "LangCxx"
+               `app` (L.foldr1 (\x y -> inapp x (op "++") y)
+                        [ includeStatic
+                        , includeDynamic
+                        , namespaceStr
+                        , strE (tname <> "_instance")
+                        , paren $
+                            caseE
+                              (v "isCprim")
+                              [ match (p "CPrim")    (strE "_s")
+                              , match (p "NonCPrim") (strE "")
                               ]
+                        , strE "("
+                        , v "intercalate" `app` strE ", " `app` v "params"
+                        , strE ")\n"
+                        ]
+                     )
+              )
+      where
+        -- temporary
+        body = map R.renderCMacro $
+                    map R.Include (tcihCxxHeaders tcih)
+                 ++ map (genTmplFunCpp NonCPrim t) fs
+                 ++ map (genTmplFunCpp CPrim    t) fs
+                 ++ [ genTmplClassCpp NonCPrim t fs
+                    , genTmplClassCpp CPrim    t fs
+                    ]
+        includeStatic =
+          strE $ concatMap (<> "\n")
+                   (   [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h")) ]
+                    ++ body
+                   )
+        cxxHeaders    = v "concatMap" `app` (v "tpinfoCxxHeaders") `app` params_l
+        cxxNamespaces = v "concatMap" `app` (v "tpinfoCxxNamespaces") `app` params_l
+        includeDynamic =
+          letE
+            [ pbind_ (p "headers") cxxHeaders
+            , pbind_ (pApp (name "f") [p "x"])
+                    (v "renderCMacro" `app` (con "Include" `app` v "x"))
+            ]
+            (v "concatMap" `app` v "f" `app` v "headers")
+        namespaceStr =
+          letE
+            [ pbind_ (p "nss") cxxNamespaces
+            , pbind_ (pApp (name "f") [p "x"])
+                (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
+            ]
+            (v "concatMap" `app` v "f" `app` v "nss")
+
+    retstmt = v "pure"
+              `app` listE [ v "mkInstance"
+                            `app` listE []
+                            `app` foldl1
+                                    (\f x -> con "AppT" `app` f `app` x)
+                                    (v "con" `app` strE (typeclassNameT t) : map v tvars)
+                            `app` (v "lst")
+                          ]
