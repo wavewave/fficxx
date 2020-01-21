@@ -50,10 +50,12 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , TopLevelFunction(..)
                                     , Types(..)
                                     , Variable(unVariable)
+                                    , argsFromOpExp
                                     , isDeleteFunc
                                     , isNewFunc
                                     , isStaticFunc
                                     , isVirtualFunc
+                                    , opSymbol
                                     , virtualFuncs
                                     )
 import FFICXX.Generate.Type.Module  ( ClassImportHeader(..) )
@@ -281,6 +283,7 @@ genTmplFunCpp b t@TmplCls {..} f =
       )
       (R.CVar (R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix )))
 
+-- |
 genTmplClassCpp ::
      IsCPrimitive
   -> TemplateClass
@@ -296,7 +299,9 @@ genTmplClassCpp b TmplCls {..} fs =
   macro1 f@TFun {..}    = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
   macro1 f@TFunNew {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
   macro1 TFunDelete     = R.CMacroApp (R.sname (tname <> "_delete" <> suffix)) params
+  macro1 f@TFunOp {..}  = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
 
+-- |
 returnCpp ::
      IsCPrimitive
   -> Types
@@ -492,7 +497,13 @@ tmplFunToDecl b t@TmplCls {..} f =
           func = R.CName (R.NamePart (tclass_name <> "_delete_") : nsuffix)
           args = tmplAllArgsToCTypVar b Self t []
       in R.CFunDecl ret func args
+    TFunOp {..} ->
+      let ret  = tmplReturnCType b tfun_ret
+          func = R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix)
+          args = tmplAllArgsToCTypVar b Self t (argsFromOpExp tfun_opexp)
+      in R.CFunDecl ret func args
 
+-- |
 tmplFunToDef ::
      IsCPrimitive
   -> TemplateClass
@@ -538,6 +549,19 @@ tmplFunToDef b t@TmplCls {..} f =
               (R.CApp
                 (R.CVar (R.sname tfun_oname))
                 (map (tmplArgToCallCExp b) tfun_args)
+              )
+        TFunOp {..}    ->
+          returnCpp b (tfun_ret) $
+            R.CBinOp
+              R.CArrow
+              (R.CTApp
+                 (R.sname "static_cast")
+                 [ R.CTStar $ tmplAppTypeFromForm tclass_cxxform typparams ]
+                 [ R.CVar $ R.sname "p" ]
+              )
+              (R.CApp
+                (R.CVar (R.sname ("operator" <> opSymbol tfun_opexp)))
+                (map (tmplArgToCallCExp b) (argsFromOpExp tfun_opexp))
               )
 
 -- Accessor Declaration and Definition

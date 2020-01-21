@@ -70,15 +70,16 @@ aliasedFuncName c f =
     Static _ str _ a     -> fromMaybe (nonvirtualName c str) a
     Destructor a         -> fromMaybe destructorName a
 
-
+-- |
 hsTmplFuncName :: TemplateClass -> TemplateFunction -> String
 hsTmplFuncName t f =
   case f of
-    TFun {..}    -> tfun_name  -- TODO: alias
+    TFun {..}    -> tfun_name
     TFunNew {..} -> fromMaybe ("new"<> tclass_name t) tfun_new_alias
     TFunDelete   -> "delete" <> tclass_name t
+    TFunOp {..}  -> tfun_name
 
-
+-- |
 hsTmplFuncNameTH :: TemplateClass -> TemplateFunction -> String
 hsTmplFuncNameTH t f = "t_" <> hsTmplFuncName t f
 
@@ -97,7 +98,7 @@ ffiTmplFuncName f =
     TFun {..}    -> tfun_name
     TFunNew {..} -> fromMaybe "new" tfun_new_alias
     TFunDelete   -> "delete"
-
+    TFunOp {..}  -> tfun_name
 
 cppTmplFuncName :: TemplateFunction -> String
 cppTmplFuncName f =
@@ -105,6 +106,7 @@ cppTmplFuncName f =
     TFun {..}    -> tfun_name
     TFunNew {..} -> "new"
     TFunDelete   -> "delete"
+    TFunOp {..}  -> tfun_name
 
 accessorName :: Class -> Variable -> Accessor -> String
 accessorName c v a =    nonvirtualName c (arg_name (unVariable v))

@@ -320,6 +320,13 @@ genTmplInstance tcih =
                                                      `app` typs_v
                                                      `app` v    "suffix"
                                        )
+        genstmt (n,f@TFunOp  {..}) = generator
+                                       (p ("f"<>show n))
+                                       (v "mkMember" `app` strE (hsTmplFuncName t f)
+                                                     `app` v    (hsTmplFuncNameTH t f)
+                                                     `app` typs_v
+                                                     `app` v    "suffix"
+                                       )
         lststmt xs = [ pbind_ (p "lst") (listE (map (v . (\n->"f"<>show n) . fst) xs)) ]
         -- TODO: refactor out the following code.
         foreignSrcStmt =

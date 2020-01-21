@@ -48,6 +48,7 @@ import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , TopLevelFunction(..)
                                    , Types(..)
                                    , Variable(unVariable)
+                                   , argsFromOpExp
                                    )
 import FFICXX.Generate.Type.Config ( ModuleUnit(..)
                                    , ModuleUnitImports(..)
@@ -162,6 +163,8 @@ extractClassDepForTmplFun (TFunNew args _) =
     Dep4Func [] (concatMap classFromArg args)
 extractClassDepForTmplFun TFunDelete =
     Dep4Func [] []
+extractClassDepForTmplFun (TFunOp ret  _ e) =
+    Dep4Func (extractClassFromType ret) (concatMap classFromArg $ argsFromOpExp e)
 
 -- |
 extractClassDep4TmplMemberFun :: TemplateMemberFunction -> Dep4Func
