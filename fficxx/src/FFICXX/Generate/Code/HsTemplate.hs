@@ -181,12 +181,12 @@ genImportInTemplate t0 =
   in     flip map deps_raw
            (\case
              Left t -> mkImport (getTClassModuleBase t <.> "Template")
-             Right c -> mkImport (getClassModuleBase c <.>"RawType")
+             Right c -> mkImport (getClassModuleBase c <.> "RawType")
            )
       <> flip map deps_high
            (\case
              Left t -> mkImport (getTClassModuleBase t <.> "Template")
-             Right c -> mkImport (getClassModuleBase c <.>"Interface")
+             Right c -> mkImport (getClassModuleBase c <.> "Interface")
            )
 
 -- |
