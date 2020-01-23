@@ -65,8 +65,7 @@ spec =
         it "should get second element" $ \kv -> do
           v <- second_get kv
           v `shouldBe` 123
--- TODO: make the following work or prohibited.
-{-        it "should change first element" $ \kv -> do
+        it "should change first element" $ \kv -> do
           first_set kv 2
           k <- first_get kv
           k `shouldBe` 2
@@ -74,4 +73,3 @@ spec =
           second_set kv 246
           v <- second_get kv
           v `shouldBe` 246
--}

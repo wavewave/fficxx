@@ -606,16 +606,23 @@ tmplVarToDef b t@TmplCls {..} v@(Variable (Arg {..})) a =
     typparams = map (R.CTSimple . R.sname) tclass_params
     body =
       case f of
-        TFun {..}    ->
-          returnCpp b (tfun_ret) $
-            R.CBinOp
-              R.CArrow
-              (R.CTApp
-                 (R.sname "static_cast")
-                 [ R.CTStar $ tmplAppTypeFromForm tclass_cxxform typparams ]
-                 [ R.CVar $ R.sname "p" ]
-              )
-              (R.CVar (R.sname arg_name))
+        TFun {..} ->
+          let varexp = R.CBinOp
+                         R.CArrow
+                         (R.CTApp
+                           (R.sname "static_cast")
+                           [ R.CTStar $ tmplAppTypeFromForm tclass_cxxform typparams ]
+                           [ R.CVar $ R.sname "p" ]
+                         )
+                         (R.CVar (R.sname arg_name))
+          in case a of
+               Getter -> returnCpp b (tfun_ret) varexp
+               Setter -> [ R.CExpSA $
+                             R.CBinOp
+                               R.CAssign
+                               varexp
+                               (c2Cxx arg_type (R.CVar (R.sname "value")))
+                         ]
         _ -> error "tmplVarToDef: should not happen"
 
 -- Accessor Declaration and Definition
