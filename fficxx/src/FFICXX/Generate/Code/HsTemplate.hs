@@ -306,12 +306,16 @@ genTmplInstance tcih =
             ++ [ tycon "Q" `tyapp` tylist (tycon "Dec") ]
     nfs = zip ([1..] :: [Int]) fs
     nvfs = zip ([1..] :: [Int]) vfs
+    --------------------------
+    -- final RHS expression --
+    --------------------------
     rhs = doE (   [ paramsstmt, suffixstmt ]
                <> map genqtypstmt (zip tvars qtvars)
                <> map genstmt nfs
                <> concatMap genvarstmt nvfs
-               <> [foreignSrcStmt, letStmt (lststmt nfs), qualStmt retstmt]
+               <> [foreignSrcStmt, letStmt lststmt, qualStmt retstmt]
               )
+    --------------------------
     paramsstmt = letStmt [ pbind_
                              (p "params")
                              (v "map" `app` (v "tpinfoSuffix") `app` params_l)
@@ -324,6 +328,7 @@ genTmplInstance tcih =
                               `app` params_l
                              )
                          ]
+
     genqtypstmt (tvar,qtvar) = generator (p tvar) (v qtvar)
     gen prefix nm f n =
       generator
@@ -354,7 +359,15 @@ genTmplInstance tcih =
          , gen "vf" "mkMember" f_s (2*n)
          ]
 
-    lststmt xs = [ pbind_ (p "lst") (listE (map (v . (\n->"f"<>show n) . fst) xs)) ]
+    lststmt = let mkElems prefix xs = map (v . (\n->prefix<>show n) . fst) xs
+              in [ pbind_
+                     (p "lst")
+                     (listE (   mkElems "f" nfs
+                             <> mkElems "vf" (concatMap (\(n,vf) -> [(2*n-1,vf),(2*n,vf)]) nvfs)
+                            )
+                     )
+                 ]
+
     -- TODO: refactor out the following code.
     foreignSrcStmt =
       qualifier $
