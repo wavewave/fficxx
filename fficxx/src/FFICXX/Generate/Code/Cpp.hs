@@ -313,10 +313,10 @@ genTmplVarCpp b t@TmplCls {..} var@(Variable (Arg {..})) =
 genTmplClassCpp ::
      IsCPrimitive
   -> TemplateClass
-  -> [TemplateFunction]
+  -> ([TemplateFunction],[Variable]) -- ^ (member functions, member accessors)
   -> R.CMacro Identity
-genTmplClassCpp b TmplCls {..} fs =
-    R.Define (R.sname macroname) params (map macro1 fs)
+genTmplClassCpp b TmplCls {..} (fs,vs) =
+    R.Define (R.sname macroname) params body
  where
   params = map R.sname tclass_params
   suffix = case b of { CPrim -> "_s"; NonCPrim -> "" }
@@ -326,6 +326,8 @@ genTmplClassCpp b TmplCls {..} fs =
   macro1 f@TFunNew {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
   macro1 TFunDelete     = R.CMacroApp (R.sname (tname <> "_delete" <> suffix)) params
   macro1 f@TFunOp {..}  = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
+  body =    map macro1 fs
+         ++ (map macro1 . concatMap (\v -> [tmplAccessorToTFun v Getter, tmplAccessorToTFun v Setter])) vs
 
 -- |
 returnCpp ::
@@ -613,10 +615,7 @@ tmplVarToDef b t@TmplCls {..} v@(Variable (Arg {..})) a =
                  [ R.CTStar $ tmplAppTypeFromForm tclass_cxxform typparams ]
                  [ R.CVar $ R.sname "p" ]
               )
-              (R.CApp
-                (R.CVar (R.sname tfun_oname))
-                (map (tmplArgToCallCExp b) tfun_args)
-              )
+              (R.CVar (R.sname arg_name))
         _ -> error "tmplVarToDef: should not happen"
 
 -- Accessor Declaration and Definition

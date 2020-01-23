@@ -386,8 +386,8 @@ genTmplInstance tcih =
                  ++ map (genTmplFunCpp CPrim    t) fs
                  ++ concatMap (genTmplVarCpp NonCPrim t) vfs
                  ++ concatMap (genTmplVarCpp CPrim    t) vfs
-                 ++ [ genTmplClassCpp NonCPrim t fs
-                    , genTmplClassCpp CPrim    t fs
+                 ++ [ genTmplClassCpp NonCPrim t (fs,vfs)
+                    , genTmplClassCpp CPrim    t (fs,vfs)
                     ]
         includeStatic =
           strE $ concatMap (<> "\n")
