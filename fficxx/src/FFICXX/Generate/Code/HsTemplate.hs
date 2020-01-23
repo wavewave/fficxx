@@ -17,11 +17,14 @@ import FFICXX.Runtime.CodeGen.Cxx     ( HeaderName(..) )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH              ( IsCPrimitive(CPrim,NonCPrim) )
 --
-import FFICXX.Generate.Code.Cpp       ( genTmplClassCpp, genTmplFunCpp )
-
+import FFICXX.Generate.Code.Cpp       ( genTmplClassCpp
+                                      , genTmplFunCpp
+                                      , genTmplVarCpp
+                                      )
 import FFICXX.Generate.Code.Primitive ( functionSignatureT
                                       , functionSignatureTT
                                       , functionSignatureTMF
+                                      , tmplAccessorToTFun
                                       )
 import FFICXX.Generate.Code.HsCast    ( castBody )
 import FFICXX.Generate.Dependency     ( getClassModuleBase
@@ -207,18 +210,9 @@ genTmplInterface t =
    rawtype     = foldl1 tyapp (tycon rname : map mkTVar tps)
    hightype    = foldl1 tyapp (tycon hname : map mkTVar tps)
    sigdecl f   = mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
-   sigdeclV vf = let Variable (Arg {..}) = vf
-                     fg = TFun { tfun_ret   = arg_type
-                               , tfun_name  = tmplAccessorName vf Getter
-                               , tfun_oname = tmplAccessorName vf Getter
-                               , tfun_args  = []
-                               }
-                     fs = TFun { tfun_ret   = Void
-                               , tfun_name  = tmplAccessorName vf Setter
-                               , tfun_oname = tmplAccessorName vf Setter
-                               , tfun_args = [Arg arg_type "value"]
-                               }
-                 in [sigdecl fg, sigdecl fs]
+   sigdeclV vf = let f_g = tmplAccessorToTFun vf Getter
+                     f_s = tmplAccessorToTFun vf Setter
+                 in [sigdecl f_g, sigdecl f_s]
    methods     = map (clsDecl . sigdecl) fs ++ (map clsDecl . concatMap sigdeclV) vfs
 
    fptrbody    = [ insType (tyapp (tycon "Raw") hightype) rawtype
@@ -243,8 +237,10 @@ genImportInTH t0 =
              Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType","Cast","Interface"]
            )
 
+-- |
 genTmplImplementation :: TemplateClass -> [Decl ()]
-genTmplImplementation t = concatMap gen (tclass_funcs t)
+genTmplImplementation t =
+    concatMap gen (tclass_funcs t) ++ concatMap genV (tclass_vars t)
   where
     v = mkVar
     p = mkPVar
@@ -272,6 +268,11 @@ genTmplImplementation t = concatMap gen (tclass_funcs t)
                                Nothing
                            ]
 
+    genV vf = let f_g = tmplAccessorToTFun vf Getter
+                  f_s = tmplAccessorToTFun vf Setter
+              in gen f_g ++ gen f_s
+
+-- |
 genTmplInstance ::
      TemplateClassImportHeader
   -> [Decl ()]
@@ -308,7 +309,7 @@ genTmplInstance tcih =
     rhs = doE (   [ paramsstmt, suffixstmt ]
                <> map genqtypstmt (zip tvars qtvars)
                <> map genstmt nfs
-               <> map genvarstmt nvfs
+               <> concatMap genvarstmt nvfs
                <> [foreignSrcStmt, letStmt (lststmt nfs), qualStmt retstmt]
               )
     paramsstmt = letStmt [ pbind_
@@ -324,42 +325,34 @@ genTmplInstance tcih =
                              )
                          ]
     genqtypstmt (tvar,qtvar) = generator (p tvar) (v qtvar)
-    genstmt (n,f@TFun    {..}) = generator
-                                   (p ("f"<>show n))
-                                   (v "mkMember" `app` strE (hsTmplFuncName t f)
-                                                 `app` v    (hsTmplFuncNameTH t f)
-                                                 `app` typs_v
-                                                 `app` v    "suffix"
-                                   )
-    genstmt (n,f@TFunNew {..}) = generator
-                                   (p ("f"<>show n))
-                                   (v "mkNew"    `app` strE (hsTmplFuncName t f)
-                                                 `app` v    (hsTmplFuncNameTH t f)
-                                                 `app` typs_v
-                                                 `app` v    "suffix"
-                                   )
-    genstmt (n,f@TFunDelete)   = generator
-                                   (p ("f"<>show n))
-                                   (v "mkDelete" `app` strE (hsTmplFuncName t f)
-                                                 `app` v    (hsTmplFuncNameTH t f)
-                                                 `app` typs_v
-                                                 `app` v    "suffix"
-                                   )
-    genstmt (n,f@TFunOp  {..}) = generator
-                                   (p ("f"<>show n))
-                                   (v "mkMember" `app` strE (hsTmplFuncName t f)
-                                                 `app` v    (hsTmplFuncNameTH t f)
-                                                 `app` typs_v
-                                                 `app` v    "suffix"
-                                   )
-    genvarstmt (n,vf) =
+    gen prefix nm f n =
       generator
-        (p ("vf"<>show n))
-        (v "mkMember" -- `app` strE (hsTmplFuncName t f)
-                      -- `app` v    (hsTmplFuncNameTH t f)
-                      -- `app` typs_v
-                      -- `app` v    "suffix"
-       )
+        (p (prefix<>show n))
+        (v nm `app` strE (hsTmplFuncName t f)
+              `app` v    (hsTmplFuncNameTH t f)
+              `app` typs_v
+              `app` v    "suffix"
+        )
+    genstmt (n,f@TFun    {..}) = gen "f" "mkMember" f n
+    genstmt (n,f@TFunNew {..}) = gen "f" "mkNew"    f n
+    genstmt (n,f@TFunDelete)   = gen "f" "mkDelete" f n
+    genstmt (n,f@TFunOp  {..}) = gen "f" "mkMember" f n
+    genvarstmt (n,vf) =
+      let
+        Variable (Arg {..}) = vf
+        f_g = TFun { tfun_ret   = arg_type
+                   , tfun_name  = tmplAccessorName vf Getter
+                   , tfun_oname = tmplAccessorName vf Getter
+                   , tfun_args  = []
+                   }
+        f_s = TFun { tfun_ret   = Void
+                   , tfun_name  = tmplAccessorName vf Setter
+                   , tfun_oname = tmplAccessorName vf Setter
+                   , tfun_args = [Arg arg_type "value"]
+                   }
+      in [ gen "vf" "mkMember" f_g (2*n-1)
+         , gen "vf" "mkMember" f_s (2*n)
+         ]
 
     lststmt xs = [ pbind_ (p "lst") (listE (map (v . (\n->"f"<>show n) . fst) xs)) ]
     -- TODO: refactor out the following code.
@@ -391,6 +384,8 @@ genTmplInstance tcih =
                     map R.Include (tcihCxxHeaders tcih)
                  ++ map (genTmplFunCpp NonCPrim t) fs
                  ++ map (genTmplFunCpp CPrim    t) fs
+                 ++ concatMap (genTmplVarCpp NonCPrim t) vfs
+                 ++ concatMap (genTmplVarCpp CPrim    t) vfs
                  ++ [ genTmplClassCpp NonCPrim t fs
                     , genTmplClassCpp CPrim    t fs
                     ]

@@ -22,11 +22,12 @@ import FFICXX.Generate.Code.Primitive
                                     , genericFuncArgs
                                     , genericFuncRet
                                     , returnCType
-                                    , tmplMemFuncArgToCTypVar
-                                    , tmplMemFuncReturnCType
+                                    , tmplAccessorToTFun
                                     , tmplAllArgsToCTypVar
                                     , tmplAppTypeFromForm
                                     , tmplArgToCallCExp
+                                    , tmplMemFuncArgToCTypVar
+                                    , tmplMemFuncReturnCType
                                     , tmplReturnCType
                                     )
 import FFICXX.Generate.Name         ( aliasedFuncName
@@ -49,7 +50,7 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , TemplateMemberFunction(..)
                                     , TopLevelFunction(..)
                                     , Types(..)
-                                    , Variable(unVariable)
+                                    , Variable(..)
                                     , argsFromOpExp
                                     , isDeleteFunc
                                     , isNewFunc
@@ -282,6 +283,31 @@ genTmplFunCpp b t@TmplCls {..} f =
         (R.CName (R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix ))
       )
       (R.CVar (R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix )))
+
+
+genTmplVarCpp ::
+     IsCPrimitive
+  -> TemplateClass
+  -> Variable
+  -> [ R.CMacro Identity ]
+genTmplVarCpp b t@TmplCls {..} var@(Variable (Arg {..})) =
+    [ gen var Getter, gen var Setter ]
+  where
+    nsuffix = intersperse (R.NamePart "_") $ map R.NamePart tclass_params
+    suffix = case b of { CPrim -> "_s"; NonCPrim -> "" }
+    gen v a =
+      let f = tmplAccessorToTFun v a
+          macroname = tclass_name <> "_" <> ffiTmplFuncName f <> suffix
+      in R.Define (R.sname macroname) (map R.sname tclass_params)
+           [ R.CExtern [R.CDeclaration (tmplFunToDecl b t f)]
+           , tmplVarToDef b t v a
+           , R.CInit
+               (R.CVarDecl
+                 R.CTAuto
+                 (R.CName (R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix ))
+           )
+               (R.CVar (R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix )))
+           ]
 
 -- |
 genTmplClassCpp ::
@@ -563,6 +589,35 @@ tmplFunToDef b t@TmplCls {..} f =
                 (R.CVar (R.sname ("operator" <> opSymbol tfun_opexp)))
                 (map (tmplArgToCallCExp b) (argsFromOpExp tfun_opexp))
               )
+
+
+tmplVarToDef ::
+     IsCPrimitive
+  -> TemplateClass
+  -> Variable
+  -> Accessor
+  -> R.CStatement Identity
+tmplVarToDef b t@TmplCls {..} v@(Variable (Arg {..})) a =
+    R.CDefinition (Just R.Inline) (tmplFunToDecl b t f) body
+  where
+    f = tmplAccessorToTFun v a
+    typparams = map (R.CTSimple . R.sname) tclass_params
+    body =
+      case f of
+        TFun {..}    ->
+          returnCpp b (tfun_ret) $
+            R.CBinOp
+              R.CArrow
+              (R.CTApp
+                 (R.sname "static_cast")
+                 [ R.CTStar $ tmplAppTypeFromForm tclass_cxxform typparams ]
+                 [ R.CVar $ R.sname "p" ]
+              )
+              (R.CApp
+                (R.CVar (R.sname tfun_oname))
+                (map (tmplArgToCallCExp b) tfun_args)
+              )
+        _ -> error "tmplVarToDef: should not happen"
 
 -- Accessor Declaration and Definition
 
