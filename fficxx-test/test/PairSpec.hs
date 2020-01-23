@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables      #-}
 {-# LANGUAGE TemplateHaskell          #-}
 
-module MapSpec ( spec ) where
+module PairSpec ( spec ) where
 
 import Control.Exception          ( bracket )
 import qualified Data.ByteString.Char8 as B
@@ -14,15 +14,30 @@ import Foreign.C.String
 --
 import FFICXX.Runtime.CodeGen.Cxx ( HeaderName(..), Namespace(..) )
 import FFICXX.Runtime.TH          ( IsCPrimitive(..), TemplateParamInfo(..) )
-import STD.Map.Template
-import STD.Map.TH
-import STD.MapIterator.Template
-import STD.MapIterator.TH
 import STD.Pair.Template
 import STD.Pair.TH
 --
 import Test.Hspec     ( Spec, afterAll, beforeAll, describe, it, shouldBe )
 
+
+genPairInstanceFor
+  CPrim
+  ( [t|CInt|], TPInfo { tpinfoCxxType       = "int"
+                      , tpinfoCxxHeaders    = []
+                      , tpinfoCxxNamespaces = []
+                      , tpinfoSuffix        = "int"
+                      }
+  )
+  ( [t|CInt|], TPInfo { tpinfoCxxType       = "int"
+                      , tpinfoCxxHeaders    = []
+                      , tpinfoCxxNamespaces = []
+                      , tpinfoSuffix        = "int"
+                      }
+  )
+
+{-
+-- TODO: resolve this.
+-- this caused conflict with MapSpec.
 
 genPairInstanceFor
   CPrim
@@ -38,51 +53,25 @@ genPairInstanceFor
                          , tpinfoSuffix        = "double"
                          }
   )
-
-genMapInstanceFor
-  CPrim
-  ( [t|CInt|], TPInfo { tpinfoCxxType       = "int"
-                      , tpinfoCxxHeaders    = []
-                      , tpinfoCxxNamespaces = []
-                      , tpinfoSuffix        = "int"
-                      }
-  )
-  ( [t|CDouble|], TPInfo { tpinfoCxxType       = "double"
-                         , tpinfoCxxHeaders    = []
-                         , tpinfoCxxNamespaces = []
-                         , tpinfoSuffix        = "double"
-                         }
-  )
-
-genMapIteratorInstanceFor
-  CPrim
-  ( [t|CInt|], TPInfo { tpinfoCxxType       = "int"
-                      , tpinfoCxxHeaders    = []
-                      , tpinfoCxxNamespaces = []
-                      , tpinfoSuffix        = "int"
-                      }
-  )
-  ( [t|CDouble|], TPInfo { tpinfoCxxType       = "double"
-                         , tpinfoCxxHeaders    = []
-                         , tpinfoCxxNamespaces = []
-                         , tpinfoSuffix        = "double"
-                         }
-  )
-
-
+-}
 spec :: Spec
 spec =
-  describe "FFI to map" $ do
-    beforeAll (newMap :: IO (Map CInt CDouble)) . afterAll deleteMap $
-      describe "map<int,double>" $ do
-        it "should have no elements at first" $ \m -> do
-          n <- size m
-          n `shouldBe` 0
-        it "should have 1 elem after insertion" $ \m -> do
-          kv <- newPair 1 123.0 :: IO (Pair CInt CDouble)
-          insert m kv
-          n <- size m
-          n `shouldBe` 1
-        it "should retrieve value via iterator" $ \m -> do
-          iter <- begin m
-          True `shouldBe` True
+  describe "FFI to pair" $ do
+    beforeAll (newPair 1 123 :: IO (Pair CInt CInt)) . afterAll deletePair $
+      describe "pair<int,int>" $ do
+        it "should get first element" $ \kv -> do
+          k <- first_get kv
+          k `shouldBe` 1
+        it "should get second element" $ \kv -> do
+          v <- second_get kv
+          v `shouldBe` 123
+-- TODO: make the following work or prohibited.
+{-        it "should change first element" $ \kv -> do
+          first_set kv 2
+          k <- first_get kv
+          k `shouldBe` 2
+        it "should change second element" $ \kv -> do
+          second_set kv 246
+          v <- second_get kv
+          v `shouldBe` 246
+-}
