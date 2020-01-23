@@ -15,6 +15,7 @@ import FFICXX.Generate.Name         ( ffiClassName
                                     , hsClassName
                                     , hsClassNameForTArg
                                     , hsTemplateClassName
+                                    , tmplAccessorName
                                     , typeclassName
                                     , typeclassNameFromStr
                                     )
@@ -33,7 +34,8 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , TemplateFunction(..)
                                     , TemplateMemberFunction(..)
                                     , Types(..)
-                                    , Variable(unVariable)
+                                    , Variable(..)
+                                    , argsFromOpExp
                                     , isNonVirtualFunc
                                     , isVirtualFunc
                                     )
@@ -846,6 +848,12 @@ functionSignatureT t TFunNew {..} =
 functionSignatureT t TFunDelete =
   let ctyp = convertCpp2HS Nothing (TemplateType t)
   in ctyp `tyfun` (tyapp (tycon "IO") unit_tycon)
+functionSignatureT t TFunOp {..} =
+  let (hname,_) = hsTemplateClassName t
+      slf = foldl1 tyapp (tycon hname : map mkTVar (tclass_params t))
+      ctyp = convertCpp2HS Nothing tfun_ret
+      lst = slf : map (convertCpp2HS Nothing . arg_type) (argsFromOpExp tfun_opexp)
+  in foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
 
 -- TODO: rename this and combine this with functionSignatureTMF
 functionSignatureTT :: TemplateClass -> TemplateFunction -> Type ()
@@ -856,13 +864,15 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
            TFun {..}    -> convertCpp2HS4Tmpl e Nothing spls tfun_ret
            TFunNew {..} -> convertCpp2HS4Tmpl e Nothing spls (TemplateType t)
            TFunDelete   -> unit_tycon
+           TFunOp {..}  -> convertCpp2HS4Tmpl e Nothing spls tfun_ret
   e = foldl1 tyapp (tycon hname : spls)
   spls = map (tySplice . parenSplice . mkVar) $ tclass_params t
   lst =
     case f of
       TFun {..}    -> e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) tfun_args
       TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spls . arg_type) tfun_new_args
-      TFunDelete -> [e]
+      TFunDelete   -> [e]
+      TFunOp {..}  -> e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (argsFromOpExp tfun_opexp)
 
 -- TODO: rename this and combine this with functionSignatureTT
 functionSignatureTMF :: Class -> TemplateMemberFunction -> Type ()
@@ -872,6 +882,21 @@ functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
     ctyp = convertCpp2HS4Tmpl e Nothing spls (tmf_ret f)
     e = tycon (fst (hsClassName c))
     lst = e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (tmf_args f)
+
+
+tmplAccessorToTFun :: Variable -> Accessor -> TemplateFunction
+tmplAccessorToTFun v@(Variable (Arg {..})) a =
+  case a of
+    Getter -> TFun { tfun_ret   = arg_type
+                   , tfun_name  = tmplAccessorName v Getter
+                   , tfun_oname = tmplAccessorName v Getter
+                   , tfun_args  = []
+                   }
+    Setter -> TFun { tfun_ret   = Void
+                   , tfun_name  = tmplAccessorName v Setter
+                   , tfun_oname = tmplAccessorName v Setter
+                   , tfun_args = [Arg arg_type "value"]
+                   }
 
 
 accessorCFunSig :: Types -> Accessor -> CFunSig

@@ -39,6 +39,7 @@ import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , TemplateFunction(..)
                                    , TopLevelFunction
                                    , Types(..)
+                                   , Variable(..)
                                    )
 import FFICXX.Generate.Type.Module ( TemplateClassImportHeader(..) )
 import FFICXX.Generate.Type.PackageInterface ()
@@ -110,6 +111,9 @@ t_pair =
     [ TFunNew [Arg (TemplateParam "tp1") "x", Arg (TemplateParam "tp2") "y"] Nothing
     , TFunDelete
     ]
+    [ Variable $ Arg (TemplateParam "tp1") "first"
+    , Variable $ Arg (TemplateParam "tp2") "second"
+    ]
 
 t_map :: TemplateClass
 t_map =
@@ -126,7 +130,6 @@ t_map =
         "begin"
         "begin"
         []
-        Nothing
     , TFun
         void_ -- until pair<iterator,bool> is allowed
         "insert"
@@ -141,49 +144,52 @@ t_map =
             )
             "val"
         ]
-        Nothing
-    , TFun int_  "size" "size" [] Nothing
+    , TFun int_  "size" "size" []
     , TFunDelete
     ]
+    []
 
 t_map_iterator :: TemplateClass
 t_map_iterator =
   TmplCls cabal "MapIterator" (FormNested "std::map" "iterator") ["tpk","tpv"]
-    [
-    ]
+    []
+    []
 
 t_vector :: TemplateClass
 t_vector =
   TmplCls cabal "Vector" (FormSimple "std::vector") ["tp1"]
     [ TFunNew [] Nothing
-    , TFun void_ "push_back" "push_back"    [Arg (TemplateParam "tp1") "x"] Nothing
-    , TFun void_ "pop_back"  "pop_back"     []                        Nothing
-    , TFun (TemplateParam "tp1") "at" "at" [int "n"]                 Nothing
-    , TFun int_  "size"      "size"         []                        Nothing
+    , TFun void_ "push_back" "push_back"    [Arg (TemplateParam "tp1") "x"]
+    , TFun void_ "pop_back"  "pop_back"     []
+    , TFun (TemplateParam "tp1") "at" "at" [int "n"]
+    , TFun int_  "size"      "size"         []
     , TFunDelete
     ]
+    []
 
 t_unique_ptr :: TemplateClass
 t_unique_ptr =
   TmplCls cabal "UniquePtr" (FormSimple "std::unique_ptr") ["tp1"]
     [ TFunNew [] (Just "newUniquePtr0")
     , TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing
-    , TFun (TemplateParamPointer "tp1") "get" "get" [] Nothing
-    , TFun (TemplateParamPointer "tp1") "release" "release" [] Nothing
-    , TFun void_ "reset" "reset" [] Nothing
+    , TFun (TemplateParamPointer "tp1") "get" "get" []
+    , TFun (TemplateParamPointer "tp1") "release" "release" []
+    , TFun void_ "reset" "reset" []
     , TFunDelete
     ]
+    []
 
 t_shared_ptr :: TemplateClass
 t_shared_ptr =
   TmplCls cabal "SharedPtr" (FormSimple "std::shared_ptr") ["tp1"]
     [ TFunNew [] (Just "newSharedPtr0")
     , TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing
-    , TFun (TemplateParamPointer "tp1") "get" "get" [] Nothing
-    , TFun void_ "reset" "reset" [] Nothing
-    , TFun int_ "use_count" "use_count" [] Nothing
+    , TFun (TemplateParamPointer "tp1") "get" "get" []
+    , TFun void_ "reset" "reset" []
+    , TFun int_ "use_count" "use_count" []
     , TFunDelete
     ]
+    []
 
 templates :: [TemplateClassImportHeader]
 templates =

@@ -252,6 +252,9 @@ instance Eq Class where
 instance Ord Class where
   compare x y = compare (class_name x) (class_name y)
 
+data OpExp = OpStar Arg
+           --    | OpAdd Arg Arg
+           --    | OpMul Arg Arg
 
 data TemplateFunction =
     TFun {
@@ -259,13 +262,27 @@ data TemplateFunction =
     , tfun_name :: String
     , tfun_oname :: String
     , tfun_args :: [Arg]
-    , tfun_alias :: Maybe String
     }
   | TFunNew {
       tfun_new_args :: [Arg]
     , tfun_new_alias :: Maybe String
     }
   | TFunDelete
+  | TFunOp {
+      tfun_ret :: Types
+    , tfun_name :: String  -- ^ haskell alias for the operator
+    , tfun_opexp :: OpExp
+    }
+
+argsFromOpExp :: OpExp -> [Arg]
+argsFromOpExp (OpStar x)  = [x]
+-- argsFromOpExp (OpAdd x y) = [x,y]
+-- argsFromOpExp (OpMul x y) = [x,y]
+
+opSymbol :: OpExp -> String
+opSymbol (OpStar _) = "*"
+-- opSymbol (OpAdd _ _) = "+"
+-- opSymbol (OpMul _ _) = "*"
 
 -- TODO: Generalize this further.
 -- | Positional string interpolation form.
@@ -280,6 +297,7 @@ data TemplateClass =
   , tclass_cxxform :: Form
   , tclass_params  :: [String]
   , tclass_funcs   :: [TemplateFunction]
+  , tclass_vars :: [Variable]
   }
 
 -- TODO: we had better not override standard definitions

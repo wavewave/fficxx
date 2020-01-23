@@ -103,9 +103,9 @@ tT1 cabal =
         , tfun_name = "method"
         , tfun_oname = "method"
         , tfun_args = []
-        , tfun_alias = Nothing
         }
     ]
+  , tclass_vars = []
   }
 
 tT2 :: Cabal -> TemplateClass
@@ -134,16 +134,16 @@ tT2 cabal =
                           )
                           "tmpl1"
                       ]
-        , tfun_alias = Nothing
         }
     ]
+  , tclass_vars = []
   }
 
 classes :: Cabal -> [Class]
-classes cabal = [ ]
+classes cabal = []
 
 toplevelfunctions :: [TopLevelFunction]
-toplevelfunctions = [ ]
+toplevelfunctions = []
 
 templates :: Cabal -> [TemplateClassImportHeader]
 templates cabal =
@@ -153,7 +153,7 @@ templates cabal =
 
 headers :: [(ModuleUnit, ModuleUnitImports)]
 headers =
-  [ ]
+  []
 
 main :: IO ()
 main = do
