@@ -85,4 +85,7 @@ spec =
           n `shouldBe` 1
         it "should retrieve value via iterator" $ \m -> do
           iter <- begin m
-          True `shouldBe` True
+          p <- deRef iter
+          k <- first_get p
+          v <- second_get p
+          (k,v) `shouldBe` (1,123.0)

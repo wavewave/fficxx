@@ -33,6 +33,7 @@ import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , ClassAlias(..)
                                    , Form(FormNested,FormSimple)
                                    , Function(..)
+                                   , OpExp(..)
                                    , TemplateAppInfo(..)
                                    , TemplateArgType(..)
                                    , TemplateClass(..)
@@ -152,7 +153,18 @@ t_map =
 t_map_iterator :: TemplateClass
 t_map_iterator =
   TmplCls cabal "MapIterator" (FormNested "std::map" "iterator") ["tpk","tpv"]
-    []
+    [ TFunOp {
+        tfun_ret =
+          TemplateApp
+            TemplateAppInfo {
+              tapp_tclass = t_pair
+            , tapp_tparams = [ TArg_TypeParam "tpk", TArg_TypeParam "tpv" ]
+            , tapp_CppTypeForParam = "std::pair<tpk,tpv>"
+            }
+      , tfun_name = "deRef"
+      , tfun_opexp = OpStar
+      }
+    ]
     []
 
 t_vector :: TemplateClass
