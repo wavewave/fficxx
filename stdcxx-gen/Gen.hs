@@ -14,6 +14,7 @@ import FFICXX.Generate.Code.Primitive
                                    ( cppclassref, cppclassref_
                                    , cstring, cstring_
                                    , int, int_
+                                   -- , self_
                                    , void_
                                    )
 import FFICXX.Generate.Config      ( FFICXXConfig(..)
@@ -33,6 +34,7 @@ import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , ClassAlias(..)
                                    , Form(FormNested,FormSimple)
                                    , Function(..)
+                                   , OpExp(..)
                                    , TemplateAppInfo(..)
                                    , TemplateArgType(..)
                                    , TemplateClass(..)
@@ -152,7 +154,29 @@ t_map =
 t_map_iterator :: TemplateClass
 t_map_iterator =
   TmplCls cabal "MapIterator" (FormNested "std::map" "iterator") ["tpk","tpv"]
-    []
+    [ TFunOp {
+        tfun_ret =
+          TemplateApp
+            TemplateAppInfo {
+              tapp_tclass = t_pair
+            , tapp_tparams = [ TArg_TypeParam "tpk", TArg_TypeParam "tpv" ]
+            , tapp_CppTypeForParam = "std::pair<tpk,tpv>"
+            }
+      , tfun_name = "deRef"
+      , tfun_opexp = OpStar
+      }
+    , TFunOp {
+        tfun_ret = -- TODO: this should be handled with self
+          TemplateApp
+            TemplateAppInfo {
+              tapp_tclass = t_map_iterator
+            , tapp_tparams = [ TArg_TypeParam "tpk", TArg_TypeParam "tpv" ]
+            , tapp_CppTypeForParam = "std::map<tpk,tpv>::iterator"
+            }
+      , tfun_name = "increment"
+      , tfun_opexp = OpFPPlus
+      }
+    ]
     []
 
 t_vector :: TemplateClass
