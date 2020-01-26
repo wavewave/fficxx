@@ -79,7 +79,7 @@ spec =
           n <- size m
           n `shouldBe` 0
         it "should have 1 elem after insertion" $ \m -> do
-          kv <- newPair 1 123.0 :: IO (Pair CInt CDouble)
+          kv <- newPair 1 123.0
           insert m kv
           n <- size m
           n `shouldBe` 1
@@ -89,3 +89,11 @@ spec =
           k <- first_get p
           v <- second_get p
           (k,v) `shouldBe` (1,123.0)
+        it "should retrieve multiple values via iterator" $ \m -> do
+          kv <- newPair 2 246.0
+          insert m kv
+          iter <- increment =<< begin m
+          p <- deRef iter
+          k <- first_get p
+          v <- second_get p
+          (k,v) `shouldBe` (2,246.0)

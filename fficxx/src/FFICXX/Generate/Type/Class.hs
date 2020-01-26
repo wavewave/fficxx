@@ -252,7 +252,8 @@ instance Eq Class where
 instance Ord Class where
   compare x y = compare (class_name x) (class_name y)
 
-data OpExp = OpStar   -- unary * (deRef) operator
+data OpExp = OpStar   -- ^ unary * (deRef) operator
+           | OpFPPlus -- ^ unary prefix ++ operator
            --    | OpAdd Arg Arg
            --    | OpMul Arg Arg
 
@@ -275,12 +276,14 @@ data TemplateFunction =
     }
 
 argsFromOpExp :: OpExp -> [Arg]
-argsFromOpExp OpStar  = []
+argsFromOpExp OpStar   = []
+argsFromOpExp OpFPPlus = []
 -- argsFromOpExp (OpAdd x y) = [x,y]
 -- argsFromOpExp (OpMul x y) = [x,y]
 
 opSymbol :: OpExp -> String
-opSymbol OpStar = "*"
+opSymbol OpStar   = "*"
+opSymbol OpFPPlus = "++"
 -- opSymbol (OpAdd _ _) = "+"
 -- opSymbol (OpMul _ _) = "*"
 

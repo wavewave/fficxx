@@ -14,6 +14,7 @@ import FFICXX.Generate.Code.Primitive
                                    ( cppclassref, cppclassref_
                                    , cstring, cstring_
                                    , int, int_
+                                   -- , self_
                                    , void_
                                    )
 import FFICXX.Generate.Config      ( FFICXXConfig(..)
@@ -163,6 +164,17 @@ t_map_iterator =
             }
       , tfun_name = "deRef"
       , tfun_opexp = OpStar
+      }
+    , TFunOp {
+        tfun_ret = -- TODO: this should be handled with self
+          TemplateApp
+            TemplateAppInfo {
+              tapp_tclass = t_map_iterator
+            , tapp_tparams = [ TArg_TypeParam "tpk", TArg_TypeParam "tpv" ]
+            , tapp_CppTypeForParam = "std::map<tpk,tpv>::iterator"
+            }
+      , tfun_name = "increment"
+      , tfun_opexp = OpFPPlus
       }
     ]
     []
