@@ -133,6 +133,17 @@ t_map =
         "begin"
         []
     , TFun
+        (TemplateAppRef
+          TemplateAppInfo {
+            tapp_tclass = t_map_iterator
+          , tapp_tparams = [TArg_TypeParam "tpk", TArg_TypeParam "tpv"]
+          , tapp_CppTypeForParam = "std::map<tpk,tpv>::iterator"
+          }
+        )
+        "end"
+        "end"
+        []
+    , TFun
         void_ -- until pair<iterator,bool> is allowed
         "insert"
         "insert"
@@ -183,6 +194,28 @@ t_vector :: TemplateClass
 t_vector =
   TmplCls cabal "Vector" (FormSimple "std::vector") ["tp1"]
     [ TFunNew [] Nothing
+    , TFun
+        (TemplateAppRef
+          TemplateAppInfo {
+            tapp_tclass = t_vector_iterator
+          , tapp_tparams = [TArg_TypeParam "tp1"]
+          , tapp_CppTypeForParam = "std::vector<tp1>::iterator"
+          }
+        )
+        "begin"
+        "begin"
+        []
+    , TFun
+        (TemplateAppRef
+          TemplateAppInfo {
+            tapp_tclass = t_vector_iterator
+          , tapp_tparams = [TArg_TypeParam "tp1"]
+          , tapp_CppTypeForParam = "std::vector<tp1>::iterator"
+          }
+        )
+        "end"
+        "end"
+        []
     , TFun void_ "push_back" "push_back"    [Arg (TemplateParam "tp1") "x"]
     , TFun void_ "pop_back"  "pop_back"     []
     , TFun (TemplateParam "tp1") "at" "at" [int "n"]
@@ -190,6 +223,29 @@ t_vector =
     , TFunDelete
     ]
     []
+
+t_vector_iterator :: TemplateClass
+t_vector_iterator =
+  TmplCls cabal "VectorIterator" (FormNested "std::vector" "iterator") ["tp1"]
+    [ TFunOp {
+        tfun_ret = TemplateParam "tp1"
+      , tfun_name = "deRef"
+      , tfun_opexp = OpStar
+      }
+    , TFunOp {
+        tfun_ret = -- TODO: this should be handled with self
+          TemplateApp
+            TemplateAppInfo {
+              tapp_tclass = t_vector_iterator
+            , tapp_tparams = [ TArg_TypeParam "tp1" ]
+            , tapp_CppTypeForParam = "std::vector<tp1>::iterator"
+            }
+      , tfun_name = "increment"
+      , tfun_opexp = OpFPPlus
+      }
+    ]
+    []
+
 
 t_unique_ptr :: TemplateClass
 t_unique_ptr =
@@ -217,12 +273,13 @@ t_shared_ptr =
 
 templates :: [TemplateClassImportHeader]
 templates =
-  [ TCIH t_pair         ["utility"]
-  , TCIH t_map          ["map"]
-  , TCIH t_map_iterator ["map"]
-  , TCIH t_vector       ["vector"]
-  , TCIH t_unique_ptr   ["memory"]
-  , TCIH t_shared_ptr   ["memory"]
+  [ TCIH t_pair            ["utility"]
+  , TCIH t_map             ["map"]
+  , TCIH t_map_iterator    ["map"]
+  , TCIH t_vector          ["vector"]
+  , TCIH t_vector_iterator ["vector"]
+  , TCIH t_unique_ptr      ["memory"]
+  , TCIH t_shared_ptr      ["memory"]
   ]
 
 headers :: [ (ModuleUnit, ModuleUnitImports) ]

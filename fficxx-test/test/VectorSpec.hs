@@ -14,11 +14,22 @@ import Foreign.C.String
 import FFICXX.Runtime.CodeGen.Cxx ( HeaderName(..), Namespace(..) )
 import FFICXX.Runtime.TH          ( IsCPrimitive(..), TemplateParamInfo(..) )
 import STD.CppString
+import STD.VectorIterator.Template
+import qualified STD.VectorIterator.TH as TH
 import STD.Vector.Template
 import qualified STD.Vector.TH as TH
 --
 import Test.Hspec     ( Spec, afterAll, around, beforeAll, describe, it, shouldBe )
 
+
+TH.genVectorIteratorInstanceFor
+  CPrim
+  ( [t|CInt|], TPInfo { tpinfoCxxType       = "int"
+                      , tpinfoCxxHeaders    = []
+                      , tpinfoCxxNamespaces = []
+                      , tpinfoSuffix        = "int"
+                      }
+  )
 
 TH.genVectorInstanceFor
   CPrim
@@ -61,6 +72,10 @@ spec =
         it "should be able to retrieve an item" $ \v -> do
           item <- at v 5
           item `shouldBe` 5
+        it "should retrieve an item by iterator" $ \v -> do
+          iter <- increment =<< increment =<< begin v
+          p <- deRef iter
+          p `shouldBe` 2
     --
     beforeAll (newVector :: IO (Vector CppString)) . afterAll deleteVector $
       describe "vector<std::string>" $ do
