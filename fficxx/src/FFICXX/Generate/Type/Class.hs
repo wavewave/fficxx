@@ -158,7 +158,7 @@ data TemplateMemberFunction =
 
 -- | Function defined at top level like ordinary C functions,
 --   i.e. no owning class.
-data TopLevelFunction =
+data TopLevel =
      TopLevelFunction {
        toplevelfunc_ret :: Types
      , toplevelfunc_name :: String

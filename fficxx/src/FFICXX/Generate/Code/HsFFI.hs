@@ -31,7 +31,7 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , Class(..)
                                     , Function(..)
                                     , Selfness(NoSelf,Self)
-                                    , TopLevelFunction(..)
+                                    , TopLevel(..)
                                     , Variable(unVariable)
                                     , isAbstractClass
                                     , isNewFunc
@@ -99,8 +99,8 @@ genImportInFFI = map mkMod . cmImportedModulesForFFI
 -- for top level function --
 ----------------------------
 
-genTopLevelFuncFFI :: TopLevelImportHeader -> TopLevelFunction -> Decl ()
-genTopLevelFuncFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) cfname typ
+genTopLevelFFI :: TopLevelImportHeader -> TopLevel -> Decl ()
+genTopLevelFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) cfname typ
   where (fname,args,ret) =
           case tfn of
             TopLevelFunction {..} -> (fromMaybe toplevelfunc_name toplevelfunc_alias, toplevelfunc_args, toplevelfunc_ret)

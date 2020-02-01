@@ -1,17 +1,28 @@
 {-# LANGUAGE RecordWildCards #-}
 module FFICXX.Generate.Name where
 
-import           Data.Char                         (toLower)
-import           Data.Maybe                        (fromMaybe,maybe)
-import           Data.Monoid                       ((<>))
+import           Data.Char                         ( toLower )
+import           Data.Maybe                        ( fromMaybe, maybe )
+import           Data.Monoid                       ( (<>) )
 --
-import           FFICXX.Generate.Type.Class
-import           FFICXX.Generate.Util
+import           FFICXX.Generate.Type.Class        ( Accessor(..)
+                                                   , Arg(..)
+                                                   , Class(..)
+                                                   , ClassAlias(caHaskellName,caFFIName)
+                                                   , Function(..)
+                                                   , TemplateArgType(..)
+                                                   , TemplateClass(..)
+                                                   , TemplateFunction(..)
+                                                   , TemplateMemberFunction(..)
+                                                   , TopLevel(..)
+                                                   , Variable(..)
+                                                   )
+import           FFICXX.Generate.Util              ( firstLower, toLowers )
 
 
 
-hsFrontNameForTopLevelFunction :: TopLevelFunction -> String
-hsFrontNameForTopLevelFunction tfn =
+hsFrontNameForTopLevel :: TopLevel -> String
+hsFrontNameForTopLevel tfn =
     let (x:xs) = case tfn of
                    TopLevelFunction {..} -> fromMaybe toplevelfunc_name toplevelfunc_alias
                    TopLevelVariable {..} -> fromMaybe toplevelvar_name  toplevelvar_alias

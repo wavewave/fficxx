@@ -14,7 +14,6 @@ import FFICXX.Generate.Code.Primitive
                                    ( cppclassref, cppclassref_
                                    , cstring, cstring_
                                    , int, int_
-                                   -- , self_
                                    , void_
                                    )
 import FFICXX.Generate.Config      ( FFICXXConfig(..)
@@ -39,7 +38,7 @@ import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , TemplateArgType(..)
                                    , TemplateClass(..)
                                    , TemplateFunction(..)
-                                   , TopLevelFunction
+                                   , TopLevel
                                    , Types(..)
                                    , Variable(..)
                                    )
@@ -104,8 +103,8 @@ classes = [ deletable
           , string
           ]
 
-toplevelfunctions :: [TopLevelFunction]
-toplevelfunctions = [ ]
+toplevels :: [TopLevel]
+toplevels = [ ]
 
 t_pair :: TemplateClass
 t_pair =
@@ -299,7 +298,7 @@ main = do
             , sbcModUnitMap = ModuleUnitMap (HM.fromList headers)
             , sbcCabal      = cabal
             , sbcClasses    = classes
-            , sbcTopLevels  = toplevelfunctions
+            , sbcTopLevels  = toplevels
             , sbcTemplates  = templates
             , sbcExtraLibs  = ["stdc++"]
             , sbcExtraDeps  = extraDep

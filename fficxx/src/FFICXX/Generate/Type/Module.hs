@@ -3,7 +3,7 @@ module FFICXX.Generate.Type.Module where
 import FFICXX.Runtime.CodeGen.Cxx ( HeaderName(..), Namespace(..) )
 --
 import FFICXX.Generate.Type.Cabal ( AddCInc, AddCSrc )
-import FFICXX.Generate.Type.Class ( Class, TemplateClass, TopLevelFunction )
+import FFICXX.Generate.Type.Class ( Class, TemplateClass, TopLevel )
 
 
 -- | C++ side
@@ -62,7 +62,7 @@ data TopLevelImportHeader =
   , tihExtraClassDep     :: [Either TemplateClass Class]
     -- ^ Extra class dependencies outside current package.
     --   NOTE: we cannot fully construct ClassImportHeader for them.
-  , tihFuncs             :: [TopLevelFunction]
+  , tihFuncs             :: [TopLevel]
   , tihNamespaces        :: [Namespace]
   , tihExtraHeadersInH   :: [HeaderName]
   , tihExtraHeadersInCPP :: [HeaderName]

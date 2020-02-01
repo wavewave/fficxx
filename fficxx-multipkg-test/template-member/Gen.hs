@@ -30,7 +30,7 @@ import FFICXX.Generate.Type.Class     ( Arg(..)
                                       , Form(FormSimple)
                                       , Function(..)
                                       , ProtectedMethod(..)
-                                      , TopLevelFunction(..)
+                                      , TopLevel(..)
                                       , Variable(..)
                                       )
 import FFICXX.Generate.Type.Config    ( ModuleUnit(..)
@@ -236,11 +236,11 @@ classT2 cabal =
 classes :: Cabal -> [Class]
 classes cabal = [ classA cabal, classT1 cabal, classT2 cabal ]
 
-toplevelfunctions :: [TopLevelFunction]
-toplevelfunctions = [ ]
+toplevels :: [TopLevel]
+toplevels = []
 
 templates :: [TemplateClassImportHeader]
-templates = [  ]
+templates = []
 
 headers :: [(ModuleUnit, ModuleUnitImports)]
 headers =
@@ -273,7 +273,7 @@ main = do
                , sbcModUnitMap = ModuleUnitMap (HM.fromList headers)
                , sbcCabal      = cabal
                , sbcClasses    = classes cabal
-               , sbcTopLevels  = toplevelfunctions
+               , sbcTopLevels  = toplevels
                , sbcTemplates  = templates
                , sbcExtraLibs  = extraLib
                , sbcExtraDeps  = extraDep

@@ -27,10 +27,11 @@ import FFICXX.Generate.Name                    (accessorName
                                                ,hscAccessorName
                                                ,hscFuncName
                                                ,hsFuncName
-                                               ,hsFrontNameForTopLevelFunction
-                                               ,typeclassName)
+                                               ,hsFrontNameForTopLevel
+                                               ,typeclassName
+                                               )
 import FFICXX.Generate.Dependency              (class_allparents
-                                               ,extractClassDepForTopLevelFunction
+                                               ,extractClassDepForTopLevel
                                                ,getClassModuleBase,getTClassModuleBase
                                                ,argumentDependency,returnDependency
                                                )
@@ -180,9 +181,9 @@ genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs No
 ------------------------
 
 
-genTopLevelFuncDef :: TopLevelFunction -> [Decl ()]
-genTopLevelFuncDef f@TopLevelFunction {..} =
-    let fname = hsFrontNameForTopLevelFunction f
+genTopLevelDef :: TopLevel -> [Decl ()]
+genTopLevelDef f@TopLevelFunction {..} =
+    let fname = hsFrontNameForTopLevel f
         HsFunSig typs assts =
           extractArgRetTypes
             Nothing
@@ -194,8 +195,8 @@ genTopLevelFuncDef f@TopLevelFunction {..} =
         rhs = app (mkVar xformerstr) (mkVar cfname)
 
     in mkFun fname sig [] rhs Nothing
-genTopLevelFuncDef v@TopLevelVariable {..} =
-    let fname = hsFrontNameForTopLevelFunction v
+genTopLevelDef v@TopLevelVariable {..} =
+    let fname = hsFrontNameForTopLevel v
         cfname = "c_" <> toLowers fname
         rtyp = convertCpp2HS Nothing toplevelvar_ret
         sig = tyapp (tycon "IO") rtyp
@@ -294,9 +295,9 @@ genImportInImplementation m =
 -- | generate import list for a given top-level function
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
-genImportForTopLevelFunction :: TopLevelFunction -> [ImportDecl ()]
-genImportForTopLevelFunction f =
-  let dep4func = extractClassDepForTopLevelFunction f
+genImportForTopLevel :: TopLevel -> [ImportDecl ()]
+genImportForTopLevel f =
+  let dep4func = extractClassDepForTopLevel f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
       cmods = nub $ map getClassModuleBase $ rights ecs
       tmods = nub $ map getTClassModuleBase $ lefts ecs
@@ -317,5 +318,5 @@ genImportInTopLevel modname (mods,tmods) tih =
         else    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
              ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
              ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
-             ++ concatMap genImportForTopLevelFunction tfns
+             ++ concatMap genImportForTopLevel tfns
 

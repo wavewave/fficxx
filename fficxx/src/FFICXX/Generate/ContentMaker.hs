@@ -35,15 +35,15 @@ import FFICXX.Generate.Code.Cpp               ( genAllCppHeaderInclude
                                               , genCppHeaderMacroType
                                               , genCppHeaderMacroVirtual
                                               , genCppHeaderMacroNonVirtual
-                                              , genTopLevelFuncCppDefinition
-                                              , topLevelFunDecl
+                                              , genTopLevelCppDefinition
+                                              , topLevelDecl
                                               )
 import FFICXX.Generate.Code.HsCast            ( genHsFrontInstCastable
                                               , genHsFrontInstCastableSelf
                                               )
 import FFICXX.Generate.Code.HsFFI             ( genHsFFI
                                               , genImportInFFI
-                                              , genTopLevelFuncFFI
+                                              , genTopLevelFFI
                                               )
 import FFICXX.Generate.Code.HsFrontEnd        ( genExport
                                               , genExtraImport
@@ -60,7 +60,7 @@ import FFICXX.Generate.Code.HsFrontEnd        ( genExport
                                               , genImportInInterface
                                               , genImportInModule
                                               , genImportInTopLevel
-                                              , genTopLevelFuncDef
+                                              , genTopLevelDef
                                               , hsClassRawType
                                               )
 import FFICXX.Generate.Code.HsProxy           ( genProxyInstance )
@@ -73,7 +73,7 @@ import FFICXX.Generate.Code.HsTemplate        ( genImportInTemplate
                                               )
 import FFICXX.Generate.Dependency
 import FFICXX.Generate.Name                   ( ffiClassName, hsClassName
-                                              , hsFrontNameForTopLevelFunction
+                                              , hsFrontNameForTopLevel
                                               )
 import FFICXX.Generate.Type.Annotate          ( AnnotateMap )
 import FFICXX.Generate.Type.Class             ( Class(..)
@@ -242,7 +242,7 @@ buildTopLevelHeader cprefix tih =
   let declHeaderStmts =
            [ R.Include (HdrName (cprefix ++ "Type.h")) ]
         <> map R.Include (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih)
-      declBodyStmts = map (R.CDeclaration . topLevelFunDecl) $ tihFuncs tih
+      declBodyStmts = map (R.CDeclaration . topLevelDecl) $ tihFuncs tih
   in R.renderBlock $
        R.ExternC $
             [ R.Pragma R.Once, R.EmptyLine ]
@@ -277,7 +277,7 @@ buildTopLevelCppDef tih =
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
       declBodyStr =
         intercalate "\n" $
-          map (R.renderCStmt . genTopLevelFuncCppDefinition) (tihFuncs tih)
+          map (R.renderCStmt . genTopLevelCppDefinition) (tihFuncs tih)
 
   in concatMap R.renderCMacro
        (   declHeaderStmts
@@ -512,12 +512,12 @@ buildTopLevelHs modname (mods,tmods) tih =
     tfns = tihFuncs tih
     pkgExtensions = [ lang [ "FlexibleContexts", "FlexibleInstances" ] ]
     pkgExports =     map (emodule . cmModule) mods
-                 ++  map (evar . unqual . hsFrontNameForTopLevelFunction) tfns
+                 ++  map (evar . unqual . hsFrontNameForTopLevel) tfns
 
     pkgImports = genImportInTopLevel modname (mods,tmods) tih
 
-    pkgBody    =    map (genTopLevelFuncFFI tih) tfns
-                 ++ concatMap genTopLevelFuncDef tfns
+    pkgBody    =    map (genTopLevelFFI tih) tfns
+                 ++ concatMap genTopLevelDef tfns
 
 -- |
 buildPackageInterface :: PackageInterface

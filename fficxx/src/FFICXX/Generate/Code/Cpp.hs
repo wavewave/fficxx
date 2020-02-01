@@ -48,7 +48,7 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , TemplateClass(..)
                                     , TemplateFunction(..)
                                     , TemplateMemberFunction(..)
-                                    , TopLevelFunction(..)
+                                    , TopLevel(..)
                                     , Types(..)
                                     , Variable(..)
                                     , argsFromOpExp
@@ -236,27 +236,27 @@ genAllCppHeaderInclude header =
 -- TOP LEVEL FUNCTIONS --
 -------------------------
 
-topLevelFunDecl :: TopLevelFunction -> R.CFunDecl Identity
-topLevelFunDecl TopLevelFunction {..} = R.CFunDecl ret func args
+topLevelDecl :: TopLevel -> R.CFunDecl Identity
+topLevelDecl TopLevelFunction {..} = R.CFunDecl ret func args
   where
     ret  = returnCType toplevelfunc_ret
     func = R.sname ("TopLevel_" <> maybe toplevelfunc_name id toplevelfunc_alias)
     args = argsToCTypVarNoSelf toplevelfunc_args
-topLevelFunDecl TopLevelVariable {..} = R.CFunDecl ret func []
+topLevelDecl TopLevelVariable {..} = R.CFunDecl ret func []
   where
     ret  = returnCType toplevelvar_ret
     func = R.sname ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
 
-genTopLevelFuncCppDefinition :: TopLevelFunction -> R.CStatement Identity
-genTopLevelFuncCppDefinition tf@TopLevelFunction {..} =
-  let decl = topLevelFunDecl tf
+genTopLevelCppDefinition :: TopLevel -> R.CStatement Identity
+genTopLevelCppDefinition tf@TopLevelFunction {..} =
+  let decl = topLevelDecl tf
       body = returnCpp
                NonCPrim
                (toplevelfunc_ret)
                (R.CApp (R.CVar (R.sname toplevelfunc_name)) (map argToCallCExp toplevelfunc_args))
   in R.CDefinition Nothing decl body
-genTopLevelFuncCppDefinition tv@TopLevelVariable {..} =
-  let decl = topLevelFunDecl tv
+genTopLevelCppDefinition tv@TopLevelVariable {..} =
+  let decl = topLevelDecl tv
       body = returnCpp NonCPrim (toplevelvar_ret) (R.CVar (R.sname toplevelvar_name))
   in R.CDefinition Nothing decl body
 

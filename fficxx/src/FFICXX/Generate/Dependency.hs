@@ -45,7 +45,7 @@ import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , TemplateClass(..)
                                    , TemplateFunction(..)
                                    , TemplateMemberFunction(..)
-                                   , TopLevelFunction(..)
+                                   , TopLevel(..)
                                    , Types(..)
                                    , Variable(unVariable)
                                    , argsFromOpExp
@@ -172,8 +172,8 @@ extractClassDep4TmplMemberFun (TemplateMemberFunction {..}) =
   Dep4Func (extractClassFromType tmf_ret) (concatMap classFromArg tmf_args)
 
 -- |
-extractClassDepForTopLevelFunction :: TopLevelFunction -> Dep4Func
-extractClassDepForTopLevelFunction f =
+extractClassDepForTopLevel :: TopLevel -> Dep4Func
+extractClassDepForTopLevel f =
     Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType . arg_type) args)
   where ret = case f of
                 TopLevelFunction {..} -> toplevelfunc_ret
@@ -323,7 +323,7 @@ mkTCM tcih =
 -- |
 mkPackageConfig
   :: (CabalName, ModuleUnit -> ModuleUnitImports) -- ^ (package name,getImports)
-  -> ([Class],[TopLevelFunction],[TemplateClassImportHeader],[(String,[String])])
+  -> ([Class],[TopLevel],[TemplateClassImportHeader],[(String,[String])])
   -> [AddCInc]
   -> [AddCSrc]
   -> PackageConfig
@@ -402,11 +402,11 @@ mkTIH
   :: CabalName
   -> (ModuleUnit -> ModuleUnitImports)
   -> [ClassImportHeader]
-  -> [TopLevelFunction]
+  -> [TopLevel]
   -> TopLevelImportHeader
 mkTIH pkgname getImports cihs fs =
-  let tl_cs1 = concatMap (argumentDependency . extractClassDepForTopLevelFunction) fs
-      tl_cs2 = concatMap (returnDependency . extractClassDepForTopLevelFunction) fs
+  let tl_cs1 = concatMap (argumentDependency . extractClassDepForTopLevel) fs
+      tl_cs2 = concatMap (returnDependency . extractClassDepForTopLevel) fs
       tl_cs = nubBy ((==) `on` either tclass_name ffiClassName) (tl_cs1 <> tl_cs2)
       -- NOTE: Select only class dependencies in the current package.
       -- TODO: This is clearly not a good impl. we need to look into this again
