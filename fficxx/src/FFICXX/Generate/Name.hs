@@ -26,6 +26,7 @@ hsFrontNameForTopLevel tfn =
     let (x:xs) = case tfn of
                    TopLevelFunction {..} -> fromMaybe toplevelfunc_name toplevelfunc_alias
                    TopLevelVariable {..} -> fromMaybe toplevelvar_name  toplevelvar_alias
+                   TopLevelTemplateFunction {..} -> topleveltfunc_name
     in toLower x : xs
 
 

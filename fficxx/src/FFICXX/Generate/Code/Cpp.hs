@@ -246,6 +246,7 @@ topLevelDecl TopLevelVariable {..} = R.CFunDecl ret func []
   where
     ret  = returnCType toplevelvar_ret
     func = R.sname ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
+topLevelDecl TopLevelTemplateFunction {..} = error "topLevelDecl: undefined"
 
 genTopLevelCppDefinition :: TopLevel -> R.CStatement Identity
 genTopLevelCppDefinition tf@TopLevelFunction {..} =
@@ -259,6 +260,8 @@ genTopLevelCppDefinition tv@TopLevelVariable {..} =
   let decl = topLevelDecl tv
       body = returnCpp NonCPrim (toplevelvar_ret) (R.CVar (R.sname toplevelvar_name))
   in R.CDefinition Nothing decl body
+genTopLevelCppDefinition TopLevelTemplateFunction {..} = error "genTopLevelCppDefinition: undefined"
+
 
 genTmplFunCpp ::
      IsCPrimitive

@@ -105,6 +105,7 @@ genTopLevelFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) c
           case tfn of
             TopLevelFunction {..} -> (fromMaybe toplevelfunc_name toplevelfunc_alias, toplevelfunc_args, toplevelfunc_ret)
             TopLevelVariable {..} -> (fromMaybe toplevelvar_name toplevelvar_alias, [], toplevelvar_ret)
+            TopLevelTemplateFunction {..} -> error "genTopLevelFFI: template function"
         hfilename = tihHeaderFileName header <.> "h"
         -- TODO: This must be exposed as a top-level function
         cfname = "c_" <> toLowers fname

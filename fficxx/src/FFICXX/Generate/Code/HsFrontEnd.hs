@@ -203,6 +203,7 @@ genTopLevelDef v@TopLevelVariable {..} =
         rhs = app (mkVar "xformnull") (mkVar cfname)
 
     in mkFun fname sig [] rhs Nothing
+genTopLevelDef TopLevelTemplateFunction {..} = error "genTopLevelDef: template undefined"
 
 
 ------------

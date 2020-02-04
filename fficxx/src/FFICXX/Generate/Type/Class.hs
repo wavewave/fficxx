@@ -170,6 +170,12 @@ data TopLevel =
      , toplevelvar_name :: String
      , toplevelvar_alias :: Maybe String
      }
+   | TopLevelTemplateFunction {
+       topleveltfunc_ret :: Types
+     , topleveltfunc_name :: String
+     , topleveltfunc_oname :: String
+     , topleveltfunc_args :: [Arg]
+     }
    deriving Show
 
 isNewFunc :: Function -> Bool

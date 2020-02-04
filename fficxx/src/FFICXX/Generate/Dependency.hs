@@ -178,9 +178,11 @@ extractClassDepForTopLevel f =
   where ret = case f of
                 TopLevelFunction {..} -> toplevelfunc_ret
                 TopLevelVariable {..} -> toplevelvar_ret
+                TopLevelTemplateFunction {..} -> topleveltfunc_ret
         args = case f of
                  TopLevelFunction {..} -> toplevelfunc_args
                  TopLevelVariable {..} -> []
+                 TopLevelTemplateFunction {..} -> topleveltfunc_args
 
 
 -- TODO: Confirm the answer below is correct.
