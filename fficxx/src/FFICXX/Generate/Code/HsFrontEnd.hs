@@ -5,41 +5,72 @@
 
 module FFICXX.Generate.Code.HsFrontEnd where
 
-import Control.Monad.Reader
-import Data.Either                             ( lefts, rights )
-import Data.List
-import Data.Monoid                             ( (<>) )
-import Language.Haskell.Exts.Build             ( app, letE, name, pApp )
-import Language.Haskell.Exts.Syntax            ( Decl(..), ExportSpec(..), ImportDecl(..) )
-import System.FilePath                         ( (<.>) )
+import Control.Monad.Reader                ( Reader )
+import Data.Either                         ( lefts, rights )
+import Data.List                           ( nub )
+import Data.Monoid                         ( (<>) )
+import Language.Haskell.Exts.Build         ( app, letE, name, pApp )
+import Language.Haskell.Exts.Syntax        ( Decl(..), ExportSpec(..), ImportDecl(..) )
+import System.FilePath                     ( (<.>) )
 --
-import FFICXX.Generate.Code.Primitive          ( CFunSig(..), HsFunSig(..)
-                                               , accessorSignature
-                                               , classConstraints
-                                               , convertCpp2HS
-                                               , extractArgRetTypes
-                                               , functionSignature
-                                               , hsFuncXformer
-                                               )
-import FFICXX.Generate.Name                    ( accessorName
-                                               , aliasedFuncName
-                                               , hsClassName
-                                               , hscAccessorName
-                                               , hscFuncName
-                                               , hsFuncName
-                                               , hsFrontNameForTopLevel
-                                               , typeclassName
-                                               )
-import FFICXX.Generate.Dependency              ( class_allparents
-                                               , extractClassDepForTLOrdinary
-                                               , getClassModuleBase,getTClassModuleBase
-                                               , argumentDependency,returnDependency
-                                               )
-import FFICXX.Generate.Type.Class
-import FFICXX.Generate.Type.Annotate
-import FFICXX.Generate.Type.Module
-import FFICXX.Generate.Util
-import FFICXX.Generate.Util.HaskellSrcExts
+import FFICXX.Generate.Code.Primitive      ( CFunSig(..), HsFunSig(..)
+                                           , accessorSignature
+                                           , classConstraints
+                                           , convertCpp2HS
+                                           , extractArgRetTypes
+                                           , functionSignature
+                                           , hsFuncXformer
+                                           )
+import FFICXX.Generate.Name                ( accessorName
+                                           , aliasedFuncName
+                                           , hsClassName
+                                           , hscAccessorName
+                                           , hscFuncName
+                                           , hsFuncName
+                                           , hsFrontNameForTopLevel
+                                           , typeclassName
+                                           )
+import FFICXX.Generate.Dependency          ( class_allparents
+                                           , extractClassDepForTLOrdinary
+                                           , getClassModuleBase,getTClassModuleBase
+                                           , argumentDependency,returnDependency
+                                           )
+import FFICXX.Generate.Type.Class          ( Accessor(..)
+                                           , Class(..)
+                                           , Types(..)
+                                           , TLOrdinary(..)
+                                           , TopLevel(TLOrdinary)
+                                           , constructorFuncs
+                                           , filterTLOrdinary
+                                           , isAbstractClass
+                                           , isNewFunc
+                                           , isVirtualFunc
+                                           , nonVirtualNotNewFuncs
+                                           , staticFuncs
+                                           , virtualFuncs
+                                           )
+import FFICXX.Generate.Type.Annotate       ( AnnotateMap )
+import FFICXX.Generate.Type.Module         ( ClassImportHeader(..)
+                                           , ClassModule(..)
+                                           , TemplateClassModule(..)
+                                           , TopLevelImportHeader(..)
+                                           )
+import FFICXX.Generate.Util                ( toLowers )
+import FFICXX.Generate.Util.HaskellSrcExts ( classA, clsDecl
+                                           , con, conDecl, cxEmpty, cxTuple
+                                           , eabs, ethingall, evar
+                                           , ihcon, insDecl, insType, irule
+                                           , mkBind1, mkClass, mkData, mkDeriving
+                                           , mkFun, mkFunSig
+                                           , mkImport, mkImportSrc, mkInstance
+                                           , mkNewtype, mkPVar, mkPVarSig
+                                           , mkTBind, mkTVar, mkVar
+                                           , nonamespace
+                                           , pbind
+                                           , qualConDecl
+                                           , tyapp, tycon, tyForall, tyfun, tyPtr
+                                           , unkindedVar, unqual
+                                           )
 
 
 genHsFrontDecl :: Class -> Reader AnnotateMap (Decl ())
