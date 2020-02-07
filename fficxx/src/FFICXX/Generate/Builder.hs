@@ -3,47 +3,63 @@
 
 module FFICXX.Generate.Builder where
 
-import           Control.Monad                           ( void, when )
-import qualified Data.ByteString.Lazy.Char8        as L
-import           Data.Char                               ( toUpper )
-import           Data.Digest.Pure.MD5                    ( md5 )
-import           Data.Foldable                           ( for_ )
-import           Data.Monoid                             ( (<>), mempty )
-import           Language.Haskell.Exts.Pretty            ( prettyPrint )
-import           System.FilePath                         ( (</>), (<.>), splitExtension )
-import           System.Directory                        ( copyFile
-                                                         , createDirectoryIfMissing
-                                                         , doesFileExist
-                                                         )
-import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
-import           System.Process                          ( readProcess )
+import Control.Monad                ( void, when )
+import qualified Data.ByteString.Lazy.Char8 as L
+import Data.Char                    ( toUpper )
+import Data.Digest.Pure.MD5         ( md5 )
+import Data.Foldable                ( for_ )
+import Data.Monoid                  ( (<>), mempty )
+import Language.Haskell.Exts.Pretty ( prettyPrint )
+import System.FilePath              ( (</>), (<.>), splitExtension )
+import System.Directory             ( copyFile
+                                    , createDirectoryIfMissing
+                                    , doesFileExist
+                                    )
+import System.IO                    ( hPutStrLn, withFile, IOMode(..) )
+import System.Process               ( readProcess )
 --
-import           FFICXX.Runtime.CodeGen.Cxx              ( HeaderName(..) )
+import FFICXX.Runtime.CodeGen.Cxx   ( HeaderName(..) )
 --
-import           FFICXX.Generate.Code.Cabal              ( buildCabalFile
-                                                         , buildJSONFile
-                                                         )
-import           FFICXX.Generate.Dependency              ( findModuleUnitImports
-                                                         , mkHSBOOTCandidateList
-                                                         , mkPackageConfig
-                                                         )
-import           FFICXX.Generate.Config                  ( FFICXXConfig(..)
-                                                         , SimpleBuilderConfig(..)
-                                                         )
-import           FFICXX.Generate.ContentMaker
-import           FFICXX.Generate.Type.Cabal              ( Cabal(..)
-                                                         , CabalName(..)
-                                                         , AddCInc(..)
-                                                         , AddCSrc(..)
-                                                         )
-import           FFICXX.Generate.Type.Class              ( hasProxy )
-import           FFICXX.Generate.Type.Module             ( ClassImportHeader(..)
-                                                         , ClassModule(..)
-                                                         , PackageConfig(..)
-                                                         , TemplateClassModule(..)
-                                                         , TopLevelImportHeader(..)
-                                                         )
-import           FFICXX.Generate.Util                    ( moduleDirFile )
+import FFICXX.Generate.Code.Cabal   ( buildCabalFile, buildJSONFile )
+import FFICXX.Generate.Dependency   ( findModuleUnitImports
+                                    , mkHSBOOTCandidateList
+                                    , mkPackageConfig
+                                    )
+import FFICXX.Generate.Config       ( FFICXXConfig(..)
+                                    , SimpleBuilderConfig(..)
+                                    )
+import FFICXX.Generate.ContentMaker ( buildCastHs
+                                    , buildDeclHeader
+                                    , buildDefMain
+                                    , buildFFIHsc
+                                    , buildImplementationHs
+                                    , buildInterfaceHs
+                                    , buildInterfaceHSBOOT
+                                    , buildModuleHs
+                                    , buildProxyHs
+                                    , buildRawTypeHs
+                                    , buildTemplateHs
+                                    , buildTHHs
+                                    , buildTopLevelCppDef
+                                    , buildTopLevelHeader
+                                    , buildTopLevelHs
+                                    , buildTypeDeclHeader
+                                    , csrcDir
+                                    , srcDir
+                                    )
+import FFICXX.Generate.Type.Cabal   ( Cabal(..)
+                                    , CabalName(..)
+                                    , AddCInc(..)
+                                    , AddCSrc(..)
+                                    )
+import FFICXX.Generate.Type.Class   ( hasProxy )
+import FFICXX.Generate.Type.Module  ( ClassImportHeader(..)
+                                    , ClassModule(..)
+                                    , PackageConfig(..)
+                                    , TemplateClassModule(..)
+                                    , TopLevelImportHeader(..)
+                                    )
+import FFICXX.Generate.Util         ( moduleDirFile )
 --
 
 macrofy :: String -> String
