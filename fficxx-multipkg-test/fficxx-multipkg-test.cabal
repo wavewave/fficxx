@@ -33,5 +33,6 @@ test-suite hspec
                , stdcxx
                , tmf-test
                , tmpl-dep-test
+               , tmpl-toplevel-test
   hs-source-dirs: test
   cxx-options: -std=c++14
