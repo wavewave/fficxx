@@ -506,8 +506,51 @@ buildModuleHs m = mkModuleE (cmModule m) [] (genExport c) (genImportInModule c) 
   where c = cihClass (cmCIH m)
 
 -- |
-buildTopLevelHs :: String -> ([ClassModule],[TemplateClassModule]) -> TopLevelImportHeader -> Module ()
+buildTopLevelHs ::
+     String
+  -> ([ClassModule],[TemplateClassModule])
+  -> TopLevelImportHeader
+  -> Module ()
 buildTopLevelHs modname (mods,tmods) tih =
+    mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
+  where
+    tfns = tihFuncs tih
+    pkgExtensions = [ lang [ "FlexibleContexts", "FlexibleInstances" ] ]
+    pkgExports =     map (emodule . cmModule) mods
+                 ++  map (evar . unqual . hsFrontNameForTopLevel) tfns
+
+    pkgImports = genImportInTopLevel modname (mods,tmods) tih
+
+    pkgBody    =    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
+                 ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
+
+-- |
+buildTopLevelTemplateHs ::
+     String
+  -> ([ClassModule],[TemplateClassModule])
+  -> TopLevelImportHeader
+  -> Module ()
+buildTopLevelTemplateHs modname (mods,tmods) tih =
+    mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
+  where
+    tfns = tihFuncs tih
+    pkgExtensions = [ lang [ "FlexibleContexts", "FlexibleInstances" ] ]
+    pkgExports =     map (emodule . cmModule) mods
+                 ++  map (evar . unqual . hsFrontNameForTopLevel) tfns
+
+    pkgImports = genImportInTopLevel modname (mods,tmods) tih
+
+    pkgBody    =    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
+                 ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
+
+
+-- |
+buildTopLevelTHHs ::
+     String
+  -> ([ClassModule],[TemplateClassModule])
+  -> TopLevelImportHeader
+  -> Module ()
+buildTopLevelTHHs modname (mods,tmods) tih =
     mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = tihFuncs tih
