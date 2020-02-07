@@ -32,6 +32,7 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , Function(..)
                                     , Selfness(NoSelf,Self)
                                     , TopLevel(..)
+                                    , TLOrdinary(..)
                                     , Variable(unVariable)
                                     , isAbstractClass
                                     , isNewFunc
@@ -99,13 +100,12 @@ genImportInFFI = map mkMod . cmImportedModulesForFFI
 -- for top level function --
 ----------------------------
 
-genTopLevelFFI :: TopLevelImportHeader -> TopLevel -> Decl ()
+genTopLevelFFI :: TopLevelImportHeader -> TLOrdinary -> Decl ()
 genTopLevelFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) cfname typ
   where (fname,args,ret) =
           case tfn of
             TopLevelFunction {..} -> (fromMaybe toplevelfunc_name toplevelfunc_alias, toplevelfunc_args, toplevelfunc_ret)
             TopLevelVariable {..} -> (fromMaybe toplevelvar_name toplevelvar_alias, [], toplevelvar_ret)
-            TopLevelTemplateFunction {..} -> error "genTopLevelFFI: template function"
         hfilename = tihHeaderFileName header <.> "h"
         -- TODO: This must be exposed as a top-level function
         cfname = "c_" <> toLowers fname

@@ -6,34 +6,34 @@
 module FFICXX.Generate.Code.HsFrontEnd where
 
 import Control.Monad.Reader
-import Data.Either                             (lefts,rights)
+import Data.Either                             ( lefts, rights )
 import Data.List
-import Data.Monoid                             ((<>))
-import Language.Haskell.Exts.Build             (app,letE,name,pApp)
-import Language.Haskell.Exts.Syntax            (Decl(..),ExportSpec(..),ImportDecl(..))
-import System.FilePath                         ((<.>))
+import Data.Monoid                             ( (<>) )
+import Language.Haskell.Exts.Build             ( app, letE, name, pApp )
+import Language.Haskell.Exts.Syntax            ( Decl(..), ExportSpec(..), ImportDecl(..) )
+import System.FilePath                         ( (<.>) )
 --
-import FFICXX.Generate.Code.Primitive          (CFunSig(..),HsFunSig(..)
-                                               ,accessorSignature
-                                               ,classConstraints
-                                               ,convertCpp2HS
-                                               ,extractArgRetTypes
-                                               ,functionSignature
-                                               ,hsFuncXformer
+import FFICXX.Generate.Code.Primitive          ( CFunSig(..), HsFunSig(..)
+                                               , accessorSignature
+                                               , classConstraints
+                                               , convertCpp2HS
+                                               , extractArgRetTypes
+                                               , functionSignature
+                                               , hsFuncXformer
                                                )
-import FFICXX.Generate.Name                    (accessorName
-                                               ,aliasedFuncName
-                                               ,hsClassName
-                                               ,hscAccessorName
-                                               ,hscFuncName
-                                               ,hsFuncName
-                                               ,hsFrontNameForTopLevel
-                                               ,typeclassName
+import FFICXX.Generate.Name                    ( accessorName
+                                               , aliasedFuncName
+                                               , hsClassName
+                                               , hscAccessorName
+                                               , hscFuncName
+                                               , hsFuncName
+                                               , hsFrontNameForTopLevel
+                                               , typeclassName
                                                )
-import FFICXX.Generate.Dependency              (class_allparents
-                                               ,extractClassDepForTopLevel
-                                               ,getClassModuleBase,getTClassModuleBase
-                                               ,argumentDependency,returnDependency
+import FFICXX.Generate.Dependency              ( class_allparents
+                                               , extractClassDepForTLOrdinary
+                                               , getClassModuleBase,getTClassModuleBase
+                                               , argumentDependency,returnDependency
                                                )
 import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Annotate
@@ -181,9 +181,9 @@ genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs No
 ------------------------
 
 
-genTopLevelDef :: TopLevel -> [Decl ()]
+genTopLevelDef :: TLOrdinary -> [Decl ()]
 genTopLevelDef f@TopLevelFunction {..} =
-    let fname = hsFrontNameForTopLevel f
+    let fname = hsFrontNameForTopLevel (TLOrdinary f)
         HsFunSig typs assts =
           extractArgRetTypes
             Nothing
@@ -196,14 +196,13 @@ genTopLevelDef f@TopLevelFunction {..} =
 
     in mkFun fname sig [] rhs Nothing
 genTopLevelDef v@TopLevelVariable {..} =
-    let fname = hsFrontNameForTopLevel v
+    let fname = hsFrontNameForTopLevel (TLOrdinary v)
         cfname = "c_" <> toLowers fname
         rtyp = convertCpp2HS Nothing toplevelvar_ret
         sig = tyapp (tycon "IO") rtyp
         rhs = app (mkVar "xformnull") (mkVar cfname)
 
     in mkFun fname sig [] rhs Nothing
-genTopLevelDef TopLevelTemplateFunction {..} = error "genTopLevelDef: template undefined"
 
 
 ------------
@@ -296,9 +295,9 @@ genImportInImplementation m =
 -- | generate import list for a given top-level function
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
-genImportForTopLevel :: TopLevel -> [ImportDecl ()]
+genImportForTopLevel :: TLOrdinary -> [ImportDecl ()]
 genImportForTopLevel f =
-  let dep4func = extractClassDepForTopLevel f
+  let dep4func = extractClassDepForTLOrdinary f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
       cmods = nub $ map getClassModuleBase $ rights ecs
       tmods = nub $ map getTClassModuleBase $ lefts ecs
@@ -319,5 +318,4 @@ genImportInTopLevel modname (mods,tmods) tih =
         else    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
              ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
              ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
-             ++ concatMap genImportForTopLevel tfns
-
+             ++ concatMap genImportForTopLevel (filterTLOrdinary tfns)

@@ -80,6 +80,7 @@ import FFICXX.Generate.Type.Class             ( Class(..)
                                               , ClassGlobal(..)
                                               , DaughterMap
                                               , ProtectedMethod(..)
+                                              , filterTLOrdinary
                                               , isAbstractClass
                                               )
 import FFICXX.Generate.Type.Module            ( ClassImportHeader(..)
@@ -242,7 +243,7 @@ buildTopLevelHeader cprefix tih =
   let declHeaderStmts =
            [ R.Include (HdrName (cprefix ++ "Type.h")) ]
         <> map R.Include (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih)
-      declBodyStmts = map (R.CDeclaration . topLevelDecl) $ tihFuncs tih
+      declBodyStmts = map (R.CDeclaration . topLevelDecl) $ filterTLOrdinary (tihFuncs tih)
   in R.renderBlock $
        R.ExternC $
             [ R.Pragma R.Once, R.EmptyLine ]
@@ -277,7 +278,7 @@ buildTopLevelCppDef tih =
                                  else Just ("typedef " <> n1 <> " " <> n2 <> ";")
       declBodyStr =
         intercalate "\n" $
-          map (R.renderCStmt . genTopLevelCppDefinition) (tihFuncs tih)
+          map (R.renderCStmt . genTopLevelCppDefinition) $ filterTLOrdinary (tihFuncs tih)
 
   in concatMap R.renderCMacro
        (   declHeaderStmts
@@ -516,8 +517,8 @@ buildTopLevelHs modname (mods,tmods) tih =
 
     pkgImports = genImportInTopLevel modname (mods,tmods) tih
 
-    pkgBody    =    map (genTopLevelFFI tih) tfns
-                 ++ concatMap genTopLevelDef tfns
+    pkgBody    =    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
+                 ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
 
 -- |
 buildPackageInterface :: PackageInterface

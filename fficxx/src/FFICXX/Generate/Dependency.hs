@@ -46,9 +46,12 @@ import FFICXX.Generate.Type.Class  ( Arg(..)
                                    , TemplateFunction(..)
                                    , TemplateMemberFunction(..)
                                    , TopLevel(..)
+                                   , TLOrdinary(..)
+                                   , TLTemplate(..)
                                    , Types(..)
                                    , Variable(unVariable)
                                    , argsFromOpExp
+                                   , filterTLOrdinary
                                    )
 import FFICXX.Generate.Type.Config ( ModuleUnit(..)
                                    , ModuleUnitImports(..)
@@ -172,17 +175,15 @@ extractClassDep4TmplMemberFun (TemplateMemberFunction {..}) =
   Dep4Func (extractClassFromType tmf_ret) (concatMap classFromArg tmf_args)
 
 -- |
-extractClassDepForTopLevel :: TopLevel -> Dep4Func
-extractClassDepForTopLevel f =
+extractClassDepForTLOrdinary :: TLOrdinary -> Dep4Func
+extractClassDepForTLOrdinary f =
     Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType . arg_type) args)
   where ret = case f of
                 TopLevelFunction {..} -> toplevelfunc_ret
                 TopLevelVariable {..} -> toplevelvar_ret
-                TopLevelTemplateFunction {..} -> topleveltfunc_ret
         args = case f of
                  TopLevelFunction {..} -> toplevelfunc_args
                  TopLevelVariable {..} -> []
-                 TopLevelTemplateFunction {..} -> topleveltfunc_args
 
 
 -- TODO: Confirm the answer below is correct.
@@ -407,8 +408,9 @@ mkTIH
   -> [TopLevel]
   -> TopLevelImportHeader
 mkTIH pkgname getImports cihs fs =
-  let tl_cs1 = concatMap (argumentDependency . extractClassDepForTopLevel) fs
-      tl_cs2 = concatMap (returnDependency . extractClassDepForTopLevel) fs
+  let ofs = filterTLOrdinary fs
+      tl_cs1 = concatMap (argumentDependency . extractClassDepForTLOrdinary) ofs
+      tl_cs2 = concatMap (returnDependency . extractClassDepForTLOrdinary) ofs
       tl_cs = nubBy ((==) `on` either tclass_name ffiClassName) (tl_cs1 <> tl_cs2)
       -- NOTE: Select only class dependencies in the current package.
       -- TODO: This is clearly not a good impl. we need to look into this again

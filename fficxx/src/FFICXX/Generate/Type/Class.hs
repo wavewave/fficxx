@@ -1,16 +1,18 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE RecordWildCards            #-}
 
 module FFICXX.Generate.Type.Class where
 
-import           Data.List                         ( intercalate )
-import qualified Data.Map                     as M
-import           Data.Monoid                       ( Monoid(..) )
-import           Data.Semigroup                    ( Semigroup(..), (<>) )
+import Data.List                  ( intercalate )
+import qualified Data.Map as M
+import Data.Maybe                 ( mapMaybe )
+import Data.Monoid                ( Monoid(..) )
+import Data.Semigroup             ( Semigroup(..), (<>) )
 --
-import           FFICXX.Generate.Type.Cabal        ( Cabal )
+import FFICXX.Generate.Type.Cabal ( Cabal )
 
 
 -- | C types
@@ -159,24 +161,38 @@ data TemplateMemberFunction =
 -- | Function defined at top level like ordinary C functions,
 --   i.e. no owning class.
 data TopLevel =
-     TopLevelFunction {
-       toplevelfunc_ret :: Types
-     , toplevelfunc_name :: String
-     , toplevelfunc_args :: [Arg]
-     , toplevelfunc_alias :: Maybe String
-     }
-   | TopLevelVariable {
-       toplevelvar_ret :: Types
-     , toplevelvar_name :: String
-     , toplevelvar_alias :: Maybe String
-     }
-   | TopLevelTemplateFunction {
-       topleveltfunc_ret :: Types
-     , topleveltfunc_name :: String
-     , topleveltfunc_oname :: String
-     , topleveltfunc_args :: [Arg]
-     }
-   deriving Show
+    TLOrdinary TLOrdinary
+  | TLTemplate TLTemplate
+  deriving (Show)
+
+filterTLOrdinary :: [TopLevel] -> [TLOrdinary]
+filterTLOrdinary = mapMaybe (\case TLOrdinary f -> Just f; _ -> Nothing)
+
+filterTLTemplate :: [TopLevel] -> [TLTemplate]
+filterTLTemplate = mapMaybe (\case TLTemplate f -> Just f; _ -> Nothing)
+
+data TLOrdinary =
+    TopLevelFunction {
+      toplevelfunc_ret :: Types
+    , toplevelfunc_name :: String
+    , toplevelfunc_args :: [Arg]
+    , toplevelfunc_alias :: Maybe String
+    }
+  | TopLevelVariable {
+      toplevelvar_ret :: Types
+    , toplevelvar_name :: String
+    , toplevelvar_alias :: Maybe String
+    }
+  deriving (Show)
+
+data TLTemplate =
+  TopLevelTemplateFunction {
+    topleveltfunc_ret :: Types
+  , topleveltfunc_name :: String
+  , topleveltfunc_oname :: String
+  , topleveltfunc_args :: [Arg]
+  }
+  deriving Show
 
 isNewFunc :: Function -> Bool
 isNewFunc (Constructor _ _) = True

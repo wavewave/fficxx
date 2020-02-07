@@ -49,6 +49,8 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , TemplateFunction(..)
                                     , TemplateMemberFunction(..)
                                     , TopLevel(..)
+                                    , TLOrdinary(..)
+                                    , TLTemplate(..)
                                     , Types(..)
                                     , Variable(..)
                                     , argsFromOpExp
@@ -236,7 +238,7 @@ genAllCppHeaderInclude header =
 -- TOP LEVEL FUNCTIONS --
 -------------------------
 
-topLevelDecl :: TopLevel -> R.CFunDecl Identity
+topLevelDecl :: TLOrdinary -> R.CFunDecl Identity
 topLevelDecl TopLevelFunction {..} = R.CFunDecl ret func args
   where
     ret  = returnCType toplevelfunc_ret
@@ -246,9 +248,8 @@ topLevelDecl TopLevelVariable {..} = R.CFunDecl ret func []
   where
     ret  = returnCType toplevelvar_ret
     func = R.sname ("TopLevel_" <> maybe toplevelvar_name id toplevelvar_alias)
-topLevelDecl TopLevelTemplateFunction {..} = error "topLevelDecl: undefined"
 
-genTopLevelCppDefinition :: TopLevel -> R.CStatement Identity
+genTopLevelCppDefinition :: TLOrdinary -> R.CStatement Identity
 genTopLevelCppDefinition tf@TopLevelFunction {..} =
   let decl = topLevelDecl tf
       body = returnCpp
@@ -260,8 +261,6 @@ genTopLevelCppDefinition tv@TopLevelVariable {..} =
   let decl = topLevelDecl tv
       body = returnCpp NonCPrim (toplevelvar_ret) (R.CVar (R.sname toplevelvar_name))
   in R.CDefinition Nothing decl body
-genTopLevelCppDefinition TopLevelTemplateFunction {..} = error "genTopLevelCppDefinition: undefined"
-
 
 genTmplFunCpp ::
      IsCPrimitive
