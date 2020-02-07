@@ -25,6 +25,7 @@ test-suite hspec
   main-is:       Main.hs
   other-modules: TemplateMemberSpec
                  TemplateDepSpec
+                 TemplateTopLevelSpec
   build-depends: base
                , fficxx
                , fficxx-runtime

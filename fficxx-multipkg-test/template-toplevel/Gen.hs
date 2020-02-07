@@ -59,7 +59,7 @@ import FFICXX.Generate.Type.PackageInterface
 
 
 -- -------------------------------------------------------------------
--- tmpl-dep-test
+-- tmpl-toplevel-test
 -- -------------------------------------------------------------------
 
 cabal_ :: FilePath -> FilePath -> Cabal
@@ -86,77 +86,31 @@ extraDep = []
 extraLib :: [String]
 extraLib = []
 
-{-
-tT1 :: Cabal -> TemplateClass
-tT1 cabal =
-  TmplCls {
-    tclass_cabal = cabal
-  , tclass_name = "T1"
-  , tclass_cxxform = FormSimple "T1"
-  , tclass_params = [ "p1" ]
-  , tclass_funcs = [
-        TFunNew {
-          tfun_new_args = []
-        , tfun_new_alias = Nothing
-        }
-      , TFun {
-          tfun_ret = Void
-        , tfun_name = "method"
-        , tfun_oname = "method"
-        , tfun_args = []
-        }
-    ]
-  , tclass_vars = []
-  }
-
-tT2 :: Cabal -> TemplateClass
-tT2 cabal =
-  TmplCls {
-    tclass_cabal = cabal
-  , tclass_name = "T2"
-  , tclass_cxxform = FormSimple "T2"
-  , tclass_params = [ "p1" ]
-  , tclass_funcs = [
-        TFunNew {
-          tfun_new_args = []
-        , tfun_new_alias = Nothing
-        }
-      , TFun {
-          tfun_ret = Void
-        , tfun_name = "callT1"
-        , tfun_oname = "callT1"
-        , tfun_args = [ Arg
-                          (TemplateAppRef
-                            TemplateAppInfo {
-                              tapp_tclass = tT1 cabal
-                            , tapp_tparams = [TArg_TypeParam "p1"]
-                            , tapp_CppTypeForParam = "T1<p1>"
-                            }
-                          )
-                          "tmpl1"
-                      ]
-        }
-    ]
-  , tclass_vars = []
-  }
--}
-
 classes :: Cabal -> [Class]
 classes cabal = []
 
 toplevels :: [TopLevel]
-toplevels = []
+toplevels =
+  [ TLOrdinary TopLevelFunction {
+      toplevelfunc_ret = Void
+    , toplevelfunc_name = "ordinary"
+    , toplevelfunc_args = []
+    , toplevelfunc_alias = Nothing
+    }
+  ]
 
 templates :: Cabal -> [TemplateClassImportHeader]
 templates cabal = []
-{-  [ TCIH (tT1 cabal) ["tdtest.h"]
-  , TCIH (tT2 cabal) ["tdtest.h"]
-  ]
--}
 
 headers :: [(ModuleUnit, ModuleUnitImports)]
 headers =
-  []
+  [ ( MU_TopLevel
+    , ModuleUnitImports {
+        muimports_namespaces = [ ]
+      , muimports_headers    = [ "tttest.h" ]
+      }
+    )
+  ]
 
 main :: IO ()
 main = do
