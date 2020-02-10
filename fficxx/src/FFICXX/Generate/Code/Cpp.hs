@@ -43,6 +43,7 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , CTypes(..)
                                     , Form(FormSimple,FormNested)
                                     , Function(..)
+                                    , IsConst(Const,NoConst)
                                     , Selfness(NoSelf,Self)
                                     , TemplateAppInfo(..)
                                     , TemplateClass(..)
@@ -353,36 +354,36 @@ returnCpp b ret caller =
       [R.CReturn $ R.CAddr caller ]
     CT _ _ ->
       [R.CReturn caller ]
-    CPT (CPTClass c') _ ->
+    CPT (CPTClass c') isconst ->
       [R.CReturn $
         R.CTApp
-          (R.sname "to_nonconst")
+          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
           [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CCast (R.CTStar (R.CTSimple (R.sname str))) caller ]
       ]
       where str = ffiClassName c'
-    CPT (CPTClassRef c') _ ->
+    CPT (CPTClassRef c') isconst ->
       [R.CReturn $
         R.CTApp
-          (R.sname "to_nonconst")
+          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
           [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CAddr caller ]
       ]
       where str = ffiClassName c'
-    CPT (CPTClassCopy c') _ ->
+    CPT (CPTClassCopy c') isconst ->
       [R.CReturn $
         R.CTApp
-          (R.sname "to_nonconst")
+          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
           [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CNew (R.sname str) [ caller ]  ]
       ]
       where str = ffiClassName c'
-    CPT (CPTClassMove c') _ -> -- TODO: check whether this is working or not.
+    CPT (CPTClassMove c') isconst -> -- TODO: check whether this is working or not.
       [R.CReturn $
         R.CApp
           (R.CVar (R.sname "std::move"))
           [R.CTApp
-            (R.sname "to_nonconst")
+            (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
             [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
             [ R.CAddr caller ]
           ]
