@@ -362,7 +362,7 @@ returnCpp b ret caller =
     CPT (CPTClassRef c') _ ->
       [R.CReturn $
         R.CTApp
-          (R.sname "to_nonconst")
+          (R.sname "to_nonconstref")
           [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CAddr caller ]
       ]
@@ -380,7 +380,7 @@ returnCpp b ret caller =
         R.CApp
           (R.CVar (R.sname "std::move"))
           [R.CTApp
-            (R.sname "to_nonconst")
+            (R.sname "to_nonconstref")
             [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
             [ R.CAddr caller ]
           ]
