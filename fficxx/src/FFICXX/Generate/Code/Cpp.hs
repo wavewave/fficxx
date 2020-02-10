@@ -355,7 +355,7 @@ returnCpp b ret caller =
     CPT (CPTClass c') isconst ->
       [R.CReturn $
         R.CTApp
-          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
+          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "from_const_to_nonconst" })
           [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CCast (R.CTStar (R.CTSimple (R.sname str))) caller ]
       ]
@@ -363,7 +363,7 @@ returnCpp b ret caller =
     CPT (CPTClassRef c') isconst ->
       [R.CReturn $
         R.CTApp
-          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
+          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "from_const_to_nonconst" })
           [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CAddr caller ]
       ]
@@ -371,7 +371,7 @@ returnCpp b ret caller =
     CPT (CPTClassCopy c') isconst ->
       [R.CReturn $
         R.CTApp
-          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
+          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "from_const_to_nonconst" })
           [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CNew (R.sname str) [ caller ]  ]
       ]
@@ -381,7 +381,7 @@ returnCpp b ret caller =
         R.CApp
           (R.CVar (R.sname "std::move"))
           [R.CTApp
-            (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
+            (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "from_const_to_nonconst" })
             [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
             [ R.CAddr caller ]
           ]

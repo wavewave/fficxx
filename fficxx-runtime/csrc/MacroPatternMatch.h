@@ -29,6 +29,11 @@ ToType* to_nonconst(FromType* x) {
 }
 
 template<class ToType, class FromType>
+ToType* from_const_to_nonconst(const FromType* x) {
+  return reinterpret_cast<ToType*>(const_cast<FromType*>(x));
+}
+
+template<class ToType, class FromType>
 const ToType& to_constref(const FromType& x) {
   return reinterpret_cast<const ToType&>(x);
 }
