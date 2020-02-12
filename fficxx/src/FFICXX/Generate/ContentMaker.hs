@@ -226,8 +226,8 @@ buildDefMain cih =
            , R.EmptyLine
            , R.Verbatim "#define TYPECASTMETHOD(cname,mname,oname) \\\n\
                         \  FXIIF( CHECKPROTECT(cname,mname) ) ( \\\n\
-                        \  (to_nonconst<oname,cname ## _t>), \\\n\
-                        \  (to_nonconst<cname,cname ## _t>) )\n"
+                        \  (from_nonconst_to_nonconst<oname,cname ## _t>), \\\n\
+                        \  (from_nonconst_to_nonconst<cname,cname ## _t>) )\n"
            , R.EmptyLine
            ]
         <> cppBodyStmts
