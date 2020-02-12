@@ -345,7 +345,7 @@ returnCpp b ret caller =
     SelfType ->
       [R.CReturn $
         R.CTApp
-          (R.sname "to_nonconst")
+          (R.sname "from_nonconst_to_nonconst")
           [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t" ])
           , R.CTSimple (R.sname "Type") ]
           [ R.CCast (R.CTStar (R.CTSimple (R.sname "Type"))) caller ]
@@ -357,7 +357,10 @@ returnCpp b ret caller =
     CPT (CPTClass c') isconst ->
       [R.CReturn $
         R.CTApp
-          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
+          (case isconst of
+              NoConst -> R.sname "from_nonconst_to_nonconst"
+              Const   -> R.sname "from_const_to_nonconst" 
+          )
           [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CCast (R.CTStar (R.CTSimple (R.sname str))) caller ]
       ]
@@ -365,7 +368,10 @@ returnCpp b ret caller =
     CPT (CPTClassRef c') isconst ->
       [R.CReturn $
         R.CTApp
-          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
+          (case isconst of
+             NoConst -> R.sname "from_nonconst_to_nonconst"
+             Const   -> R.sname "from_const_to_nonconst"
+          )
           [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CAddr caller ]
       ]
@@ -373,7 +379,10 @@ returnCpp b ret caller =
     CPT (CPTClassCopy c') isconst ->
       [R.CReturn $
         R.CTApp
-          (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
+          (case isconst of
+             NoConst -> R.sname "from_nonconst_to_nonconst"
+             Const   -> R.sname "from_const_to_nonconst"
+          )
           [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
           [ R.CNew (R.sname str) [ caller ]  ]
       ]
@@ -383,7 +392,10 @@ returnCpp b ret caller =
         R.CApp
           (R.CVar (R.sname "std::move"))
           [R.CTApp
-            (case isconst of { NoConst -> R.sname "to_nonconst"; Const -> R.sname "to_const" })
+            (case isconst of
+               NoConst -> R.sname "from_nonconst_to_nonconst"
+               Const   -> R.sname "from_const_to_nonconst"
+            )
             [ R.CTSimple (R.sname (str <> "_t")), R.CTSimple (R.sname str) ]
             [ R.CAddr caller ]
           ]
@@ -430,7 +442,7 @@ returnCpp b ret caller =
             CPrim    -> caller
             NonCPrim ->
               R.CTApp
-                (R.sname "to_nonconst")
+                (R.sname "from_nonconst_to_nonconst")
                 [ R.CTSimple (R.CName [ R.NamePart typ, R.NamePart "_t" ]), R.CTSimple (R.sname typ) ]
                 [ R.CCast (R.CTStar (R.CTSimple (R.sname typ))) $ R.CAddr caller ]
       ]
@@ -440,7 +452,7 @@ returnCpp b ret caller =
             CPrim    -> caller
             NonCPrim ->
               R.CTApp
-                (R.sname "to_nonconst")
+                (R.sname "from_nonconst_to_nonconst")
                 [ R.CTSimple (R.CName [ R.NamePart typ, R.NamePart "_t"]), R.CTSimple (R.sname typ) ]
                 [ caller ]
       ]
@@ -470,7 +482,7 @@ funcToDef c func
                    (R.CNew (R.sname "Type") $ map argToCallCExp (genericFuncArgs func))
                , R.CReturn $
                    R.CTApp
-                     (R.sname "to_nonconst")
+                     (R.sname "from_nonconst_to_nonconst")
                      [ R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t"]), R.CTSimple (R.sname "Type") ]
                      [ R.CVar (R.sname "newp") ]
                ]
@@ -478,7 +490,7 @@ funcToDef c func
   | isDeleteFunc func =
     let body = [ R.CDelete $
                    R.CTApp
-                     (R.sname "to_nonconst")
+                     (R.sname "from_nonconst_to_nonconst")
                      [ R.CTSimple (R.sname "Type"), R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t" ]) ]
                      [ R.CVar (R.sname "p") ]
                ]
@@ -655,7 +667,7 @@ accessorToDef v a =
         R.CBinOp
           R.CArrow
           (R.CTApp
-            (R.sname "to_nonconst")
+            (R.sname "from_nonconst_to_nonconst")
             [ R.CTSimple (R.sname "Type"), R.CTSimple (R.CName [ R.NamePart "Type", R.NamePart "_t"]) ]
             [ R.CVar (R.sname "p") ]
           )
@@ -691,7 +703,7 @@ tmplMemberFunToDef c f =
              R.CBinOp
                R.CArrow
                (R.CTApp
-                 (R.sname "to_nonconst")
+                 (R.sname "from_nonconst_to_nonconst")
                  [ R.CTSimple (R.sname (ffiClassName c)), R.CTSimple (R.sname (ffiClassName c <> "_t")) ]
                  [ R.CVar $ R.sname "p" ]
                )
