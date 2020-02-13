@@ -169,14 +169,17 @@ simpleBuilder cfg sbc = do
                       (cmModule m <.> "hs")
                       (prettyPrint (C.buildModuleHs m))
   --
-  putStrLn "Generating Top-level Module"
-  gen (topLevelMod <.> "hs") (prettyPrint (C.buildTopLevelHs topLevelMod (mods,tcms) tih))
+  putStrLn "Generating Top-level Ordinary Module"
+  gen (topLevelMod <.> "Ordinary" <.> "hs") (prettyPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods,tcms) tih))
   --
   putStrLn "Generating Top-level Template Module"
-  gen (topLevelMod <.> "Template" <.> "hs") (prettyPrint (C.buildTopLevelTemplateHs topLevelMod (mods,tcms) tih))
+  gen (topLevelMod <.> "Template" <.> "hs") (prettyPrint (C.buildTopLevelTemplateHs (topLevelMod <> ".Template") (mods,tcms) tih))
   --
   putStrLn "Generating Top-level TH Module"
-  gen (topLevelMod <.> "TH" <.> "hs") (prettyPrint (C.buildTopLevelTHHs topLevelMod (mods,tcms) tih))
+  gen (topLevelMod <.> "TH" <.> "hs") (prettyPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") (mods,tcms) tih))
+  --
+  putStrLn "Generating Top-level Module"
+  gen (topLevelMod <.> "hs") (prettyPrint (C.buildTopLevelHs topLevelMod (mods,tcms) tih))
   --
   putStrLn "Copying generated files to target directory"
   touch (workingDir </> "LICENSE")
@@ -187,6 +190,11 @@ simpleBuilder cfg sbc = do
   copyCppFiles workingDir (C.csrcDir installDir) (unCabalName pkgname) pkgconfig
   for_ mods (copyModule workingDir (C.srcDir installDir))
   for_ tcms (copyTemplateModule workingDir (C.srcDir installDir))
+
+  putStrLn "Copying Ordinary"
+  moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "Ordinary" <.> "hs"
+  moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "Template" <.> "hs"
+  moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "TH" <.> "hs"
   moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "hs"
 
   putStrLn "----------------------------------------------------"
@@ -242,6 +250,7 @@ moduleFileCopy wdir ddir fname = do
       (mfile',_mext') = splitExtension mfile
       newfpath = ddir </> mdir </> mfile' <> fnameext
   b <- doesFileExist origfpath
+  print (origfpath,b)
   when b $ do
     createDirectoryIfMissing True (ddir </> mdir)
     copyFileWithMD5Check origfpath newfpath

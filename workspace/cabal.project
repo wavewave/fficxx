@@ -4,3 +4,4 @@ packages:
 optional-packages:
   ./stdcxx/
   ./tmpl-dep-test/
+  ./tmpl-toplevel-test/

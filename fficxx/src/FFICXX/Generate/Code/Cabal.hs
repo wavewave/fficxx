@@ -103,7 +103,7 @@ genExposedModules summarymod (cmods,tmods) =
                      $ cmods
       template       = map ((<>".Template")       . tcmModule) tmods
       th             = map ((<>".TH")             . tcmModule) tmods
-  in    [summarymod]
+  in    [summarymod, summarymod <> ".Ordinary", summarymod <> ".Template", summarymod <> ".TH"]
      <> cmodstrs
      <> rawType
      <> ffi

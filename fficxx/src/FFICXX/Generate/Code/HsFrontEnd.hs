@@ -326,8 +326,8 @@ genImportInImplementation m =
 -- | generate import list for a given top-level function
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
-genImportForTopLevel :: TLOrdinary -> [ImportDecl ()]
-genImportForTopLevel f =
+genImportForTLOrdinary :: TLOrdinary -> [ImportDecl ()]
+genImportForTLOrdinary f =
   let dep4func = extractClassDepForTLOrdinary f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
       cmods = nub $ map getClassModuleBase $ rights ecs
@@ -344,9 +344,4 @@ genImportInTopLevel ::
 genImportInTopLevel modname (mods,tmods) tih =
   let tfns = tihFuncs tih
   in    map (mkImport . cmModule) mods
-     ++ if null tfns
-        then []
-        else    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
-             ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
-             ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
-             ++ concatMap genImportForTopLevel (filterTLOrdinary tfns)
+     ++ map mkImport [ modname <.> "Template", modname <.> "TH", modname <.> "Ordinary" ]
