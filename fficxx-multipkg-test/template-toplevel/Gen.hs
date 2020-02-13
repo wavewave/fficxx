@@ -59,6 +59,58 @@ import FFICXX.Generate.Type.PackageInterface
 
 
 -- -------------------------------------------------------------------
+-- stdcxx
+-- -------------------------------------------------------------------
+
+-- -------------------------------------------------------------------
+-- import from stdcxx
+-- -------------------------------------------------------------------
+
+stdcxx_cabal :: Cabal
+stdcxx_cabal = Cabal {
+    cabal_pkgname            = CabalName "stdcxx"
+  , cabal_version            = "0.6"
+  , cabal_cheaderprefix      = "STD"
+  , cabal_moduleprefix       = "STD"
+  , cabal_additional_c_incs  = []
+  , cabal_additional_c_srcs  = []
+  , cabal_additional_pkgdeps = []
+  , cabal_license            = Nothing
+  , cabal_licensefile        = Nothing
+  , cabal_extraincludedirs   = []
+  , cabal_extralibdirs       = []
+  , cabal_extrafiles         = []
+  , cabal_pkg_config_depends = []
+  , cabal_buildType          = Simple
+  }
+
+-- import from stdcxx
+deletable :: Class
+deletable =
+  AbstractClass {
+    class_cabal      = stdcxx_cabal
+  , class_name       = "Deletable"
+  , class_parents    = []
+  , class_protected  = Protected []
+  , class_alias      = Nothing
+  , class_funcs      = [ Destructor Nothing ]
+  , class_vars       = []
+  , class_tmpl_funcs = []
+  }
+
+t_vector :: TemplateClass
+t_vector =
+  TmplCls stdcxx_cabal "Vector" (FormSimple "std::vector") ["tp1"]
+    [ TFunNew [] Nothing
+    , TFun void_ "push_back" "push_back"   [Arg (TemplateParam "tp1") "x"]
+    , TFun void_ "pop_back"  "pop_back"    []
+    , TFun (TemplateParam "tp1") "at" "at" [int "n"]
+    , TFun int_  "size"      "size"        []
+    , TFunDelete
+    ]
+    []
+
+-- -------------------------------------------------------------------
 -- tmpl-toplevel-test
 -- -------------------------------------------------------------------
 
@@ -97,6 +149,14 @@ toplevels =
     , toplevelfunc_args = []
     , toplevelfunc_alias = Nothing
     }
+  , TLTemplate
+      (TopLevelTemplateFunction {
+         topleveltfunc_ret   = TemplateAppMove (TemplateAppInfo t_vector [TArg_TypeParam "t1"] "std::vector")
+       , topleveltfunc_name  = "return_vector"
+       , topleveltfunc_oname = "return_vector"
+       , topleveltfunc_args  = [int "n"]
+       }
+      )
   ]
 
 templates :: Cabal -> [TemplateClassImportHeader]
