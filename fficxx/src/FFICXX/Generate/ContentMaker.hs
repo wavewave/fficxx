@@ -81,6 +81,7 @@ import FFICXX.Generate.Type.Class             ( Class(..)
                                               , ClassGlobal(..)
                                               , DaughterMap
                                               , ProtectedMethod(..)
+                                              , TopLevel(TLOrdinary)
                                               , filterTLOrdinary
                                               , isAbstractClass
                                               )
@@ -536,7 +537,7 @@ buildTopLevelOrdinaryHs modname (mods,tmods) tih =
   where
     tfns = tihFuncs tih
     pkgExtensions = [ lang [ "FlexibleContexts", "FlexibleInstances" ] ]
-    pkgExports = map (evar . unqual . hsFrontNameForTopLevel) tfns
+    pkgExports = map (evar . unqual . hsFrontNameForTopLevel . TLOrdinary) (filterTLOrdinary tfns)
 
     pkgImports =    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
                  ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)

@@ -250,7 +250,6 @@ moduleFileCopy wdir ddir fname = do
       (mfile',_mext') = splitExtension mfile
       newfpath = ddir </> mdir </> mfile' <> fnameext
   b <- doesFileExist origfpath
-  print (origfpath,b)
   when b $ do
     createDirectoryIfMissing True (ddir </> mdir)
     copyFileWithMD5Check origfpath newfpath
