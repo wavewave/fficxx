@@ -187,7 +187,8 @@ data TLOrdinary =
 
 data TLTemplate =
   TopLevelTemplateFunction {
-    topleveltfunc_ret :: Types
+    topleveltfunc_params :: [String]
+  , topleveltfunc_ret :: Types
   , topleveltfunc_name :: String
   , topleveltfunc_oname :: String
   , topleveltfunc_args :: [Arg]

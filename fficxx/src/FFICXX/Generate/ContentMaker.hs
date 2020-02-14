@@ -71,6 +71,8 @@ import FFICXX.Generate.Code.HsTemplate        ( genImportInTemplate
                                               , genTmplInstance
                                               , genTmplInterface
                                               , genTmplImplementation
+                                              , genTLTemplateImplementation
+                                              , genTLTemplateInterface
                                               )
 import FFICXX.Generate.Dependency
 import FFICXX.Generate.Name                   ( ffiClassName, hsClassName
@@ -83,6 +85,7 @@ import FFICXX.Generate.Type.Class             ( Class(..)
                                               , ProtectedMethod(..)
                                               , TopLevel(TLOrdinary)
                                               , filterTLOrdinary
+                                              , filterTLTemplate
                                               , isAbstractClass
                                               )
 import FFICXX.Generate.Type.Module            ( ClassImportHeader(..)
@@ -538,12 +541,10 @@ buildTopLevelOrdinaryHs modname (mods,tmods) tih =
     tfns = tihFuncs tih
     pkgExtensions = [ lang [ "FlexibleContexts", "FlexibleInstances" ] ]
     pkgExports = map (evar . unqual . hsFrontNameForTopLevel . TLOrdinary) (filterTLOrdinary tfns)
-
     pkgImports =    map mkImport [ "Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast" ]
                  ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
                  ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
                  ++ concatMap genImportForTLOrdinary (filterTLOrdinary tfns)
-
     pkgBody    =    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
                  ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
 
@@ -558,14 +559,9 @@ buildTopLevelTemplateHs modname (mods,tmods) tih =
   where
     tfns = tihFuncs tih
     pkgExtensions = [ lang [ "FlexibleContexts", "FlexibleInstances" ] ]
-    pkgExports = [] --     map (emodule . cmModule) mods
-                    -- ++  map (evar . unqual . hsFrontNameForTopLevel) tfns
-
-    pkgImports = [] -- genImportInTopLevel modname (mods,tmods) tih
-
-    pkgBody    = [] --     map (genTopLevelFFI tih) (filterTLOrdinary tfns)
-                    -- ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
-
+    pkgExports = []
+    pkgImports = []
+    pkgBody    = concatMap genTLTemplateInterface (filterTLTemplate tfns)
 
 -- |
 buildTopLevelTHHs ::
@@ -577,14 +573,19 @@ buildTopLevelTHHs modname (mods,tmods) tih =
     mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = tihFuncs tih
-    pkgExtensions = [ lang [ "FlexibleContexts", "FlexibleInstances" ] ]
-    pkgExports = [] --     map (emodule . cmModule) mods
-                   -- ++  map (evar . unqual . hsFrontNameForTopLevel) tfns
-
-    pkgImports = [] -- genImportInTopLevel modname (mods,tmods) tih
-
-    pkgBody    = [] --    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
-                    -- ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
+    pkgExtensions = [ lang [ "FlexibleContexts", "FlexibleInstances", "TemplateHaskell" ] ]
+    pkgExports = []
+    pkgImports = [ mkImport "Data.Char"
+                 , mkImport "Data.List"
+                 , mkImport "Data.Monoid"
+                 , mkImport "Foreign.C.Types"
+                 , mkImport "Foreign.Ptr"
+                 , mkImport "Language.Haskell.TH"
+                 , mkImport "Language.Haskell.TH.Syntax"
+                 , mkImport "FFICXX.Runtime.CodeGen.Cxx"
+                 , mkImport "FFICXX.Runtime.TH"
+                 ]
+    pkgBody    = concatMap genTLTemplateImplementation (filterTLTemplate tfns)
 
 -- |
 buildPackageInterface :: PackageInterface

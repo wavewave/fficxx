@@ -2,7 +2,7 @@
 
 module FFICXX.Generate.Util where
 
-import           Data.Char 
+import           Data.Char
 import           Data.List
 import           Data.List.Split
 import           Data.Maybe               (fromMaybe)
@@ -14,10 +14,10 @@ import           Data.Text.Template
 --
 
 moduleDirFile :: String -> (String,String)
-moduleDirFile mname = 
+moduleDirFile mname =
   let splitted = splitOn "." mname
       moddir  = intercalate "/" (init splitted )
-      modfile = (last splitted) <> ".hs" 
+      modfile = (last splitted) <> ".hs"
   in  (moddir, modfile)
 
 hline :: IO ()
@@ -26,24 +26,27 @@ hline = putStrLn "--------------------------------------------------------"
 toUppers :: String -> String
 toUppers = map toUpper
 
-toLowers :: String -> String 
+toLowers :: String -> String
 toLowers = map toLower
 
+firstLower :: String -> String
+firstLower [] = []
+firstLower (x:xs) = (toLower x) : xs
 
-firstLower :: String -> String 
-firstLower [] = [] 
-firstLower (x:xs) = (toLower x) : xs 
+firstUpper :: String -> String
+firstUpper [] = []
+firstUpper (x:xs) = (toUpper x) : xs
 
-conn :: String -> String -> String -> String 
-conn st x y = x <> st <> y  
+conn :: String -> String -> String -> String
+conn st x y = x <> st <> y
 
 connspace :: String -> String -> String
-connspace = conn " " 
+connspace = conn " "
 
 conncomma :: String -> String -> String
-conncomma =  conn ", " 
+conncomma =  conn ", "
 
-connBSlash :: String -> String -> String 
+connBSlash :: String -> String -> String
 connBSlash = conn "\\\n"
 
 connSemicolonBSlash :: String -> String -> String
@@ -52,23 +55,23 @@ connSemicolonBSlash = conn "; \\\n"
 connRet :: String -> String -> String
 connRet = conn "\n"
 
-connRet2 :: String -> String -> String 
+connRet2 :: String -> String -> String
 connRet2 = conn "\n\n"
 
-connArrow :: String -> String -> String 
-connArrow = conn " -> " 
+connArrow :: String -> String -> String
+connArrow = conn " -> "
 
 intercalateWith :: (String-> String -> String) -> (a->String) -> [a] -> String
-intercalateWith  f mapper x 
+intercalateWith  f mapper x
   | not (null x) = foldl1 f (map mapper x)
-  | otherwise    = "" 
+  | otherwise    = ""
 
 
-intercalateWithM :: (Monad m) => (String -> String -> String) -> (a->m String) -> [a] -> m String 
-intercalateWithM f mapper x 
+intercalateWithM :: (Monad m) => (String -> String -> String) -> (a->m String) -> [a] -> m String
+intercalateWithM f mapper x
   | not (null x) = do ms <- mapM mapper x
                       return (foldl1 f ms)
-  | otherwise = return "" 
+  | otherwise = return ""
 
 
 -- TODO: deprecate this and use contextT

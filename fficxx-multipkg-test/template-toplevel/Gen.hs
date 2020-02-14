@@ -151,7 +151,8 @@ toplevels =
     }
   , TLTemplate
       (TopLevelTemplateFunction {
-         topleveltfunc_ret   =
+          topleveltfunc_params = [ "t1" ]
+       , topleveltfunc_ret   =
            TemplateAppMove (TemplateAppInfo t_vector [TArg_TypeParam "t1"] "std::vector")
        , topleveltfunc_name  = "return_vector"
        , topleveltfunc_oname = "return_vector"

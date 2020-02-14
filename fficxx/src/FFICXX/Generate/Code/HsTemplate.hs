@@ -21,7 +21,9 @@ import FFICXX.Generate.Code.Cpp       ( genTmplClassCpp
                                       , genTmplFunCpp
                                       , genTmplVarCpp
                                       )
-import FFICXX.Generate.Code.Primitive ( functionSignatureT
+import FFICXX.Generate.Code.Primitive ( convertCpp2HS
+                                      , convertCpp2HS4Tmpl
+                                      , functionSignatureT
                                       , functionSignatureTT
                                       , functionSignatureTMF
                                       , tmplAccessorToTFun
@@ -47,12 +49,14 @@ import FFICXX.Generate.Type.Class     ( Accessor(Getter,Setter)
                                       , TemplateClass(..)
                                       , TemplateFunction(..)
                                       , TemplateMemberFunction(..)
+                                      , TLTemplate(..)
                                       , Variable(..)
                                       , Types(Void)
                                       )
 import FFICXX.Generate.Type.Module    ( ClassImportHeader(..)
                                       , TemplateClassImportHeader(..)
                                       )
+import FFICXX.Generate.Util           ( firstUpper )
 import FFICXX.Generate.Util.HaskellSrcExts
                                       ( bracketExp
                                       , con, conDecl, cxEmpty, clsDecl
@@ -61,9 +65,9 @@ import FFICXX.Generate.Util.HaskellSrcExts
                                       , match, mkBind1, mkTBind, mkData, mkNewtype
                                       , mkFun, mkFunSig, mkClass, mkImport, mkInstance
                                       , mkPVar, mkTVar, mkVar
-                                      , op, pbind_
+                                      , op, pbind_, parenSplice
                                       , qualConDecl, qualifier
-                                      , tyapp, tycon, tyfun, tylist, tyPtr
+                                      , tyapp, tycon, tyfun, tylist, tyPtr, tySplice
                                       , typeBracket
                                       )
 
@@ -432,3 +436,57 @@ genTmplInstance tcih =
                                     (v "con" `app` strE (typeclassNameT t) : map v tvars)
                             `app` (v "lst")
                           ]
+
+---------------
+-- top-level --
+---------------
+
+-- |
+genTLTemplateInterface :: TLTemplate -> [Decl ()]
+genTLTemplateInterface t =
+  [ mkClass cxEmpty (firstUpper (topleveltfunc_name t)) (map mkTBind tps) methods
+  ]
+ where
+   tps     = topleveltfunc_params t
+   ctyp    = convertCpp2HS Nothing (topleveltfunc_ret t)
+   lst     = map (convertCpp2HS Nothing . arg_type) (topleveltfunc_args t)
+   sigdecl = mkFunSig (topleveltfunc_name t) $ foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
+   methods = [ clsDecl sigdecl ]
+
+
+-- |
+genTLTemplateImplementation :: TLTemplate -> [Decl ()]
+genTLTemplateImplementation t =
+    mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
+  where
+    v = mkVar
+    p = mkPVar
+    itps = zip ([1..]::[Int]) (topleveltfunc_params t)
+    tvars = map (\(i,_) -> "typ" ++ show i) itps
+    nparams = length itps
+    tparams = if nparams == 1 then tycon "Type" else TyTuple () Boxed (replicate nparams (tycon "Type"))
+    sig = foldr1 tyfun [tparams , tycon "String", tyapp (tycon "Q") (tycon "Exp") ]
+    tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
+    prefix = "TL"
+
+    nh = "t_" <> topleveltfunc_name t
+    nc = topleveltfunc_name t
+    lit' = strE (prefix<>"_"<>nc)
+    lam = lamE [p "n"] ( lit' `app` v "<>" `app` v "n")
+    rhs = app (v "mkTFunc") $
+            let typs = if nparams == 1 then map v tvars else [tuple (map v tvars)]
+            in tuple (typs ++ [ v "suffix", lam, v "tyf"])
+    sig' =
+      let e = error "genTLTemplateImplementation"
+          spls = map (tySplice . parenSplice . mkVar) $ topleveltfunc_params t
+          ctyp = convertCpp2HS4Tmpl e Nothing spls (topleveltfunc_ret t)
+          lst  = map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (topleveltfunc_args t)
+      in foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
+
+    tassgns = map (\(i,tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i)))) itps
+    bstmts = binds [ mkBind1 "tyf" [wildcard]
+                       (letE tassgns
+                          (bracketExp (typeBracket sig'))
+                       )
+                       Nothing
+                   ]
