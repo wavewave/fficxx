@@ -490,3 +490,132 @@ genTLTemplateImplementation t =
                        )
                        Nothing
                    ]
+
+genTLTemplateInstance ::
+     TLTemplate
+  -> [Decl ()]
+genTLTemplateInstance t =
+    mkFun
+      fname
+      sig
+      (p "isCprim" : zipWith (\x y -> pTuple [p x,p y]) qtvars pvars)
+      rhs
+      Nothing
+  where
+    p = mkPVar
+    v = mkVar
+    tcname = firstUpper (topleveltfunc_name t)
+    fname = "gen" <> tcname <> "InstanceFor"
+    itps = zip ([1..]::[Int]) (topleveltfunc_params t)
+    tvars  = map (\(i,_) -> "typ"   ++ show i) itps
+    qtvars = map (\(i,_) -> "qtyp"  ++ show i) itps
+    pvars  = map (\(i,_) -> "param" ++ show i) itps
+    nparams = length itps
+    typs_v   = if nparams == 1 then v (tvars !! 0) else tuple (map v tvars)
+    params_l = listE (map v pvars)
+    sig = foldr1 tyfun $
+               [ tycon "IsCPrimitive" ]
+            ++ replicate
+                 nparams
+                 (TyTuple () Boxed [ tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo" ])
+            ++ [ tycon "Q" `tyapp` tylist (tycon "Dec") ]
+    -- nvfs = zip ([1..] :: [Int]) vfs
+
+    --------------------------
+    -- final RHS expression --
+    --------------------------
+    rhs = doE (   [ paramsstmt, suffixstmt ]
+               <> map genqtypstmt (zip tvars qtvars)
+               <> [genstmt "f" 1]
+               -- <> concatMap genvarstmt nvfs
+               <> [{- foreignSrcStmt,-} letStmt lststmt, qualStmt retstmt]
+              )
+    --------------------------
+    paramsstmt = letStmt [ pbind_
+                             (p "params")
+                             (v "map" `app` (v "tpinfoSuffix") `app` params_l)
+                         ]
+
+    suffixstmt = letStmt [ pbind_
+                             (p "suffix")
+                             (      v "concatMap"
+                              `app` (lamE [p "x"] (inapp (strE "_") (op "++") (v "tpinfoSuffix" `app` v "x")))
+                              `app` params_l
+                             )
+                         ]
+    genqtypstmt (tvar,qtvar) = generator (p tvar) (v qtvar)
+
+    genstmt prefix n =
+      generator
+        (p (prefix<>show n))
+        (v "mkFunc" `app` strE (topleveltfunc_name t)
+                    `app` v    ("t_" <> topleveltfunc_name t)
+                    `app` typs_v
+                    `app` v    "suffix"
+        )
+    lststmt = [ pbind_  (p "lst") (listE [v "f1"]) ]
+    {-
+    -- TODO: refactor out the following code.
+    foreignSrcStmt =
+      qualifier $
+              (v "addModFinalizer")
+        `app` (      v "addForeignSource"
+               `app` con "LangCxx"
+               `app` (L.foldr1 (\x y -> inapp x (op "++") y)
+                        [ includeStatic
+                        , includeDynamic
+                        , namespaceStr
+                        , strE (tname <> "_instance")
+                        , paren $
+                            caseE
+                              (v "isCprim")
+                              [ match (p "CPrim")    (strE "_s")
+                              , match (p "NonCPrim") (strE "")
+                              ]
+                        , strE "("
+                        , v "intercalate" `app` strE ", " `app` v "params"
+                        , strE ")\n"
+                        ]
+                     )
+              )
+      where
+        -- temporary
+        body = map R.renderCMacro $
+                    map R.Include (tcihCxxHeaders tcih)
+                 ++ map (genTmplFunCpp NonCPrim t) fs
+                 ++ map (genTmplFunCpp CPrim    t) fs
+                 ++ concatMap (genTmplVarCpp NonCPrim t) vfs
+                 ++ concatMap (genTmplVarCpp CPrim    t) vfs
+                 ++ [ genTmplClassCpp NonCPrim t (fs,vfs)
+                    , genTmplClassCpp CPrim    t (fs,vfs)
+                    ]
+        includeStatic =
+          strE $ concatMap (<> "\n")
+                   (   [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h")) ]
+                    ++ body
+                   )
+        cxxHeaders    = v "concatMap" `app` (v "tpinfoCxxHeaders") `app` params_l
+        cxxNamespaces = v "concatMap" `app` (v "tpinfoCxxNamespaces") `app` params_l
+        includeDynamic =
+          letE
+            [ pbind_ (p "headers") cxxHeaders
+            , pbind_ (pApp (name "f") [p "x"])
+                    (v "renderCMacro" `app` (con "Include" `app` v "x"))
+            ]
+            (v "concatMap" `app` v "f" `app` v "headers")
+        namespaceStr =
+          letE
+            [ pbind_ (p "nss") cxxNamespaces
+            , pbind_ (pApp (name "f") [p "x"])
+                (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
+            ]
+            (v "concatMap" `app` v "f" `app` v "nss")
+     -}
+    retstmt = v "pure"
+              `app` listE [ v "mkInstance"
+                            `app` listE []
+                            -- `app` foldl1
+                            --         (\f x -> con "AppT" `app` f `app` x)
+                            --        (v "con" `app` strE (typeclassNameT t) : map v tvars)
+                            `app` (v "lst")
+                          ]

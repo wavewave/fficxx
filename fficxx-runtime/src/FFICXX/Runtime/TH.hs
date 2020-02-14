@@ -79,3 +79,12 @@ mkNew fname f typ suffix = do
 -- |
 mkDelete :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
 mkDelete = mkMember
+
+
+-- |
+mkFunc :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
+mkFunc fname f typ suffix = do
+  let x = mkNameS "x"
+  e <- f typ suffix
+  pure $
+    FunD (mkNameS fname) [ Clause [VarP x] (NormalB (AppE e (VarE x))) [] ]

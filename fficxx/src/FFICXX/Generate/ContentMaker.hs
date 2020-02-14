@@ -75,6 +75,7 @@ import FFICXX.Generate.Code.HsTemplate        ( genImportInTemplate
                                               , genTmplInterface
                                               , genTmplImplementation
                                               , genTLTemplateImplementation
+                                              , genTLTemplateInstance
                                               , genTLTemplateInterface
                                               )
 import FFICXX.Generate.Dependency             ( class_allparents
@@ -603,7 +604,8 @@ buildTopLevelTHHs modname (mods,tmods) tih =
                  , mkImport "FFICXX.Runtime.CodeGen.Cxx"
                  , mkImport "FFICXX.Runtime.TH"
                  ] ++ concatMap genImportForTLTemplate tfns
-    pkgBody    = concatMap genTLTemplateImplementation tfns
+    pkgBody    =    concatMap genTLTemplateImplementation tfns
+                 <> concatMap genTLTemplateInstance tfns
 
 -- |
 buildPackageInterface :: PackageInterface
