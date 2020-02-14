@@ -185,6 +185,12 @@ extractClassDepForTLOrdinary f =
                  TopLevelFunction {..} -> toplevelfunc_args
                  TopLevelVariable {..} -> []
 
+-- |
+extractClassDepForTLTemplate :: TLTemplate -> Dep4Func
+extractClassDepForTLTemplate f =
+    Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType . arg_type) args)
+  where ret  = topleveltfunc_ret f
+        args = topleveltfunc_args f
 
 -- TODO: Confirm the answer below is correct.
 -- NOTE: Q: Why returnDependency only?

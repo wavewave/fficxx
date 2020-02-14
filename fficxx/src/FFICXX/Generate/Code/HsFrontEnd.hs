@@ -32,6 +32,7 @@ import FFICXX.Generate.Name                ( accessorName
                                            )
 import FFICXX.Generate.Dependency          ( class_allparents
                                            , extractClassDepForTLOrdinary
+                                           , extractClassDepForTLTemplate
                                            , getClassModuleBase,getTClassModuleBase
                                            , argumentDependency,returnDependency
                                            )
@@ -39,7 +40,8 @@ import FFICXX.Generate.Type.Class          ( Accessor(..)
                                            , Class(..)
                                            , Types(..)
                                            , TLOrdinary(..)
-                                           , TopLevel(TLOrdinary)
+                                           , TLTemplate(..)
+                                           , TopLevel(TLOrdinary,TLTemplate)
                                            , constructorFuncs
                                            , filterTLOrdinary
                                            , isAbstractClass
@@ -323,7 +325,7 @@ genImportInImplementation m =
       <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c<.>y)) ["RawType","Cast","Interface"]) modlsthigh
 
 
--- | generate import list for a given top-level function
+-- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
 genImportForTLOrdinary :: TLOrdinary -> [ImportDecl ()]
@@ -334,6 +336,20 @@ genImportForTLOrdinary f =
       tmods = nub $ map getTClassModuleBase $ lefts ecs
   in    concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) cmods
      <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["Template"]) tmods
+
+-- | generate import list for a given top-level template function
+--   currently this may generate duplicate import list.
+-- TODO: eliminate duplicated imports.
+genImportForTLTemplate :: TLTemplate -> [ImportDecl ()]
+genImportForTLTemplate f =
+  let dep4func = extractClassDepForTLTemplate f
+      ecs = returnDependency dep4func ++ argumentDependency dep4func
+      cmods = nub $ map getClassModuleBase $ rights ecs
+      tmods = nub $ map getTClassModuleBase $ lefts ecs
+  in    concatMap (\x -> map (\y -> mkImport (x<.>y)) ["RawType","Cast","Interface"]) cmods
+     <> concatMap (\x -> map (\y -> mkImport (x<.>y)) ["Template"]) tmods
+
+
 
 -- | generate import list for top level module
 genImportInTopLevel ::
