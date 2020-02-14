@@ -593,7 +593,7 @@ buildTopLevelTHHs modname (mods,tmods) tih =
   where
     tfns = filterTLTemplate (tihFuncs tih)
     pkgExtensions = [ lang [ "FlexibleContexts", "FlexibleInstances", "TemplateHaskell" ] ]
-    pkgExports =  map (evar . unqual . ("t_" <>) . hsFrontNameForTopLevel . TLTemplate) tfns
+    pkgExports = map (evar . unqual . (\x -> "gen" <> x <> "InstanceFor") . firstUpper . hsFrontNameForTopLevel . TLTemplate) tfns
     pkgImports = [ mkImport "Data.Char"
                  , mkImport "Data.List"
                  , mkImport "Data.Monoid"

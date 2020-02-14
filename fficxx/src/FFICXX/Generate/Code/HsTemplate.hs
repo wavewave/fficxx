@@ -614,9 +614,9 @@ genTLTemplateInstance t =
     retstmt = v "pure"
               `app` listE [ v "mkInstance"
                             `app` listE []
-                            `app` (v "con" `app` strE tcname)
-                            -- `app` foldl1
-                            --         (\f x -> con "AppT" `app` f `app` x)
-                            --        (v "con" `app` strE (typeclassNameT t) : map v tvars)
+                            -- `app` (v "con" `app` strE tcname)
+                            `app` foldl1
+                                    (\f x -> con "AppT" `app` f `app` x)
+                                    (v "con" `app` strE tcname : map v tvars)
                             `app` (v "lst")
                           ]

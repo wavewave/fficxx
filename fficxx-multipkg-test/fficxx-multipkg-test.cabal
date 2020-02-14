@@ -37,3 +37,4 @@ test-suite hspec
                , tmpl-toplevel-test
   hs-source-dirs: test
   cxx-options: -std=c++14
+  ghc-options: -ddump-splices
