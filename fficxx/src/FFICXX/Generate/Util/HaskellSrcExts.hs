@@ -156,7 +156,11 @@ tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
 
 classA :: QName () -> [Type ()] -> Asst ()
+#if MIN_VERSION_haskell_src_exts(1,22,0)
+classA n = TypeA () . foldl' tyapp (TyCon () n)
+#else
 classA = ClassA ()
+#endif
 
 cxEmpty :: Context ()
 cxEmpty = CxEmpty ()
