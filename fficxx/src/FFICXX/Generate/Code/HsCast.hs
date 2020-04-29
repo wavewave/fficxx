@@ -5,11 +5,9 @@ import Language.Haskell.Exts.Syntax            (Decl(..),InstDecl(..))
 --
 import FFICXX.Generate.Name                    (hsClassName,typeclassName)
 import FFICXX.Generate.Type.Class              (Class(..),isAbstractClass)
-import FFICXX.Generate.Util.HaskellSrcExts     (classA
-                                               ,cxEmpty,cxTuple,insDecl
+import FFICXX.Generate.Util.HaskellSrcExts     (cxEmpty,cxTuple,insDecl
                                                ,mkBind1,mkInstance,mkPVar,mkTVar,mkVar
-                                               ,tyapp,tycon,tyPtr
-                                               ,unqual)
+                                               ,tyapp,tycon,typeA,tyPtr)
 -----
 
 castBody :: [InstDecl ()]
@@ -24,7 +22,7 @@ genHsFrontInstCastable c
     let iname = typeclassName c
         (_,rname) = hsClassName c
         a = mkTVar "a"
-        ctxt = cxTuple [ classA (unqual iname) [a], classA (unqual "FPtr") [a] ]
+        ctxt = cxTuple [ typeA (tyapp (tycon iname) a), typeA (tyapp (tycon "FPtr") a) ]
     in Just (mkInstance ctxt "Castable" [a,tyapp tyPtr (tycon rname)] castBody)
   | otherwise = Nothing
 
@@ -34,4 +32,3 @@ genHsFrontInstCastableSelf c
     let (cname,rname) = hsClassName c
     in Just (mkInstance cxEmpty "Castable" [tycon cname, tyapp tyPtr (tycon rname)] castBody)
   | otherwise = Nothing
-
