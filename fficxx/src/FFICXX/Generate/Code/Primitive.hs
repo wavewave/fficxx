@@ -5,7 +5,6 @@ module FFICXX.Generate.Code.Primitive where
 
 import Control.Monad.Trans.State    ( runState, put, get )
 import Data.Functor.Identity        ( Identity )
-import Data.List                    (foldl')
 import Data.Monoid                  ( (<>) )
 import Language.Haskell.Exts.Syntax ( Asst(..), Context, Type(..) )
 --
@@ -41,7 +40,7 @@ import FFICXX.Generate.Type.Class   ( Accessor(Getter,Setter)
                                     , isVirtualFunc
                                     )
 import FFICXX.Generate.Util.HaskellSrcExts
-       ( cxTuple, mkTVar, mkVar, parenSplice, tyapp, tycon, tyfun, typeA, tyPtr, tySplice
+       ( classA, cxTuple, mkTVar, mkVar, parenSplice, tyapp, tycon, tyfun, tyPtr, tySplice
        , unit_tycon, unqual )
 
 
@@ -765,7 +764,7 @@ hsFuncXformer func = let len = length (genericFuncArgs func)
 
 
 classConstraints :: Class -> Context ()
-classConstraints = cxTuple . map ((\n->typeA (tyapp (tycon n) (mkTVar "a"))) . typeclassName) . class_parents
+classConstraints = cxTuple . map ((\n->classA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents
 
 extractArgRetTypes
   :: Maybe Class  -- ^ class (Nothing for top-level function)
@@ -789,14 +788,14 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
          let cname = (fst.hsClassName) c
              iname = typeclassNameFromStr cname
              tvar = mkTVar ('c' : show n)
-             ctxt1 = typeA (tyapp (tycon iname) tvar)
-             ctxt2 = typeA (tyapp (tycon "FPtr") tvar)
+             ctxt1 = classA (unqual iname) [tvar]
+             ctxt2 = classA (unqual "FPtr") [tvar]
          put (ctxt1:ctxt2:ctxts,n+1)
          return tvar
        addstring = do
          (ctxts,n) <- get
          let tvar = mkTVar ('c' : show n)
-             ctxt = typeA $ foldl' tyapp (tycon "Castable") [tvar,tycon "CString"]
+             ctxt = classA (unqual "Castable") [tvar,tycon "CString"]
          put (ctxt:ctxts,n+1)
          return tvar
 

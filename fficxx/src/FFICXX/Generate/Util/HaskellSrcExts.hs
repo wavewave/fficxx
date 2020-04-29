@@ -155,8 +155,8 @@ tyPtr = tycon "Ptr"
 tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
 
-typeA :: Type () -> Asst ()
-typeA = TypeA ()
+classA :: QName () -> [Type ()] -> Asst ()
+classA = ClassA ()
 
 cxEmpty :: Context ()
 cxEmpty = CxEmpty ()

@@ -147,7 +147,7 @@ genHsFrontUpcastClass c = mkFun ("upcast"<>highname) typ [mkPVar "h"] rhs Nothin
         a_bind = unkindedVar (name "a")
         a_tvar = mkTVar "a"
         typ = tyForall (Just [a_bind])
-                (Just (cxTuple [typeA (tyapp (tycon "FPtr") a_tvar), typeA (tyapp (tycon iname) a_tvar)]))
+                (Just (cxTuple [classA (unqual "FPtr") [a_tvar], classA (unqual iname) [a_tvar]]))
                 (tyfun a_tvar hightype)
         rhs = letE [ pbind (mkPVar "fh") (app (mkVar "get_fptr") (mkVar "h")) Nothing
                    , pbind (mkPVarSig "fh2" (tyapp tyPtr rawtype))
@@ -168,7 +168,7 @@ genHsFrontDowncastClass c = mkFun ("downcast"<>highname) typ [mkPVar "h"] rhs No
         a_bind = unkindedVar (name "a")
         a_tvar = mkTVar "a"
         typ = tyForall (Just [a_bind])
-                (Just (cxTuple [typeA (tyapp (tycon "FPtr") a_tvar), typeA (tyapp (tycon iname) a_tvar)]))
+                (Just (cxTuple [classA (unqual "FPtr") [a_tvar], classA (unqual iname) [a_tvar]]))
                 (tyfun hightype a_tvar)
         rhs = letE [ pbind (mkPVar "fh") (app (mkVar "get_fptr") (mkVar "h")) Nothing
                    , pbind (mkPVar "fh2") (app (mkVar "castPtr") (mkVar "fh")) Nothing
@@ -319,3 +319,4 @@ genImportInTopLevel modname (mods,tmods) tih =
              ++ map (\c -> mkImport (modname <.> (fst.hsClassName.cihClass) c <.> "RawType")) (tihClassDep tih)
              ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
              ++ concatMap genImportForTopLevel tfns
+
