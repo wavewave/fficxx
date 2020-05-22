@@ -310,6 +310,10 @@ genTmplInstance tcih =
     -- final RHS expression --
     --------------------------
     rhs = doE (   [ paramsstmt, suffixstmt ]
+               <> [ generator (p "callmod_") (v "fmap" `app` v "loc_module" `app` (v "location"))
+                  , letStmt [ pbind_ (p "callmod")
+                                     (v "dot2_" `app` v "callmod_") ]
+                  ]
                <> map genqtypstmt (zip tvars qtvars)
                <> map genstmt nfs
                <> concatMap genvarstmt nvfs
@@ -386,7 +390,9 @@ genTmplInstance tcih =
                               , match (p "NonCPrim") (strE "")
                               ]
                         , strE "("
-                        , v "intercalate" `app` strE ", " `app` v "params"
+                        , v "intercalate" `app`
+                            strE ", " `app`
+                              paren (inapp (v "callmod") (op ":") (v "params"))
                         , strE ")\n"
                         ]
                      )

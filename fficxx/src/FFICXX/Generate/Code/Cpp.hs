@@ -267,7 +267,7 @@ genTmplFunCpp ::
   -> TemplateFunction
   -> R.CMacro Identity
 genTmplFunCpp b t@TmplCls {..} f =
-    R.Define (R.sname macroname) (map R.sname tclass_params)
+    R.Define (R.sname macroname) (map R.sname ("callmod" : tclass_params))
       [ R.CExtern [R.CDeclaration decl]
       , tmplFunToDef b t f
       , autoinst
@@ -281,10 +281,9 @@ genTmplFunCpp b t@TmplCls {..} f =
     R.CInit
       (R.CVarDecl
         R.CTAuto
-        (R.CName (R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix ))
+        (R.CName (R.NamePart "a_" : R.NamePart "callmod" : R.NamePart ("_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix ))
       )
       (R.CVar (R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix )))
-
 
 genTmplVarCpp ::
      IsCPrimitive
@@ -299,13 +298,13 @@ genTmplVarCpp b t@TmplCls {..} var@(Variable (Arg {..})) =
     gen v a =
       let f = tmplAccessorToTFun v a
           macroname = tclass_name <> "_" <> ffiTmplFuncName f <> suffix
-      in R.Define (R.sname macroname) (map R.sname tclass_params)
+      in R.Define (R.sname macroname) (map R.sname ("callmod" : tclass_params))
            [ R.CExtern [R.CDeclaration (tmplFunToDecl b t f)]
            , tmplVarToDef b t v a
            , R.CInit
                (R.CVarDecl
                  R.CTAuto
-                 (R.CName (R.NamePart ("a_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix ))
+                 (R.CName (R.NamePart "a_" : R.NamePart "callmod" : R.NamePart ("_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix ))
            )
                (R.CVar (R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix )))
            ]
@@ -319,7 +318,7 @@ genTmplClassCpp ::
 genTmplClassCpp b TmplCls {..} (fs,vs) =
     R.Define (R.sname macroname) params body
  where
-  params = map R.sname tclass_params
+  params = map R.sname ("callmod" : tclass_params)
   suffix = case b of { CPrim -> "_s"; NonCPrim -> "" }
   tname = tclass_name
   macroname = tname <> "_instance" <> suffix

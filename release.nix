@@ -29,13 +29,14 @@ let
   newHaskellPackages = haskellPackages.override {
     overrides = self: super:
       {
-        "fficxx-runtime"       = self.callCabal2nix "fficxx-runtime"       ./fficxx-runtime {};
-        "fficxx"               = self.callCabal2nix "fficxx"               ./fficxx         {};
-        "stdcxx"               = self.callCabal2nix "stdcxx"               stdcxxSrc        {};
-        "fficxx-test"          = self.callCabal2nix "fficxx-test"          ./fficxx-test    {};
+        "fficxx-runtime"       = self.callCabal2nix "fficxx-runtime"       ./fficxx-runtime       {};
+        "fficxx"               = self.callCabal2nix "fficxx"               ./fficxx               {};
+        "stdcxx"               = self.callCabal2nix "stdcxx"               stdcxxSrc              {};
+        "fficxx-test"          = self.callCabal2nix "fficxx-test"          ./fficxx-test          {};
         "fficxx-multipkg-test" = self.callCabal2nix "fficxx-multipkg-test" ./fficxx-multipkg-test {};
-        "tmf-test"             = self.callCabal2nix "tmf-test"             tmfTestSrc       {};
-        "tmpl-dep-test"        = self.callCabal2nix "tmpl-dep-test"        tmplDepTestSrc    {};
+        "tmf-test"             = self.callCabal2nix "tmf-test"             tmfTestSrc             {};
+        "tmpl-dep-test"        = self.callCabal2nix "tmpl-dep-test"        tmplDepTestSrc         {};
+        "tmpl-dup-inst"        = self.callCabal2nix "tmpl-dup-inst"        ./fficxx-multipkg-test/tmpl-dup-inst {};
       };
   };
 
@@ -48,5 +49,6 @@ in
   "stdcxx"         = newHaskellPackages.stdcxx;
   "fficxx-test"    = newHaskellPackages.fficxx-test;
   "fficxx-multipkg-test" = newHaskellPackages.fficxx-multipkg-test;
+  "tmpl-dup-inst"  = newHaskellPackages.tmpl-dup-inst;
 
 }
