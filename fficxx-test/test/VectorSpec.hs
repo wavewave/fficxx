@@ -5,21 +5,23 @@
 
 module VectorSpec ( spec ) where
 
-import Control.Exception          ( bracket )
-import qualified Data.ByteString.Char8 as B
-import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.C.String
+import           Control.Exception           (bracket)
+import qualified Data.ByteString.Char8       as B
+import           Foreign.C.String
+import           Foreign.C.Types
+import           Foreign.Ptr
 --
-import FFICXX.Runtime.CodeGen.Cxx ( HeaderName(..), Namespace(..) )
-import FFICXX.Runtime.TH          ( IsCPrimitive(..), TemplateParamInfo(..) )
-import STD.CppString
-import STD.VectorIterator.Template
-import qualified STD.VectorIterator.TH as TH
-import STD.Vector.Template
-import qualified STD.Vector.TH as TH
+import           FFICXX.Runtime.CodeGen.Cxx  (HeaderName (..), Namespace (..))
+import           FFICXX.Runtime.TH           (IsCPrimitive (..),
+                                              TemplateParamInfo (..))
+import           STD.CppString
+import           STD.Vector.Template
+import qualified STD.Vector.TH               as TH
+import           STD.VectorIterator.Template
+import qualified STD.VectorIterator.TH       as TH
 --
-import Test.Hspec     ( Spec, afterAll, around, beforeAll, describe, it, shouldBe )
+import           Test.Hspec                  (Spec, afterAll, around, beforeAll,
+                                              describe, it, shouldBe)
 
 
 TH.genVectorIteratorInstanceFor
