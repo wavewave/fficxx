@@ -79,3 +79,7 @@ mkNew fname f typ suffix = do
 -- |
 mkDelete :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
 mkDelete = mkMember
+
+-- | utility function for converting '.' to '_'
+dot2_ :: String -> String
+dot2_ = map (\c -> if c == '.' then '_' else c)

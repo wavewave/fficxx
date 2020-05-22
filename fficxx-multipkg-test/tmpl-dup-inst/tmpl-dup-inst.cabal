@@ -27,3 +27,4 @@ Library
                -fno-warn-unused-do-bind
                -fno-warn-missing-signatures
                -O0
+               -keep-tmp-files
