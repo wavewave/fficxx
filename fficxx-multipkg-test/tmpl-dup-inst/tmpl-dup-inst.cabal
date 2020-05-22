@@ -17,6 +17,7 @@ Source-repository head
 Library
   hs-source-dirs: src
   Build-Depends: base == 4.*
+               , fficxx-runtime
                , stdcxx
   Exposed-Modules:
                Test.TemplateInstantiation.A
