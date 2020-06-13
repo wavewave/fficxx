@@ -303,26 +303,23 @@ genTLTmplFunCpp b t@TopLevelTemplateFunction {..} =
   R.Define
     (R.sname macroname)
     (map R.sname ("callmod" : topleveltfunc_params))
-    [ R.CExtern [R.CDeclaration decl]
-      -- tmplFunToDef b t f,
-      -- autoinst
+    [ R.CExtern [R.CDeclaration decl],
+      topLevelTemplateFunToDef b t,
+      autoinst
     ]
   where
-    -- nsuffix = intersperse (R.NamePart "_") $ map R.NamePart tclass_params
+    nsuffix = intersperse (R.NamePart "_") $ map R.NamePart topleveltfunc_params
     -- suffix = case b of CPrim -> "_s"; NonCPrim -> ""
     nc = topleveltfunc_name
     macroname = "TL_" <> nc
     decl = topLevelTemplateFunToDecl b t
-
-{-
     autoinst =
       R.CInit
         ( R.CVarDecl
             R.CTAuto
-            (R.CName (R.NamePart "a_" : R.NamePart "callmod" : R.NamePart ("_" <> tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix))
+            (R.CName (R.NamePart "a_" : R.NamePart "callmod" : R.NamePart ("_TL_" <> topleveltfunc_name <> "_") : nsuffix))
         )
-        (R.CVar (R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix)))
--}
+        (R.CVar (R.CName (R.NamePart ("TL_" <> topleveltfunc_name <> "_") : nsuffix)))
 
 genTmplVarCpp ::
   IsCPrimitive ->
@@ -594,6 +591,7 @@ tmplFunToDecl b t@TmplCls {..} f =
               args = tmplAllArgsToCTypVar b Self t (argsFromOpExp tfun_opexp)
            in R.CFunDecl ret func args
 
+-- | top-level (bare) template function declaration
 topLevelTemplateFunToDecl ::
   IsCPrimitive ->
   TLTemplate ->
@@ -605,7 +603,7 @@ topLevelTemplateFunToDecl b t@(TopLevelTemplateFunction {..}) =
       args = map (tmplArgToCTypVar b) topleveltfunc_args
    in R.CFunDecl ret func args
 
--- |
+-- | function definition in a template class
 tmplFunToDef ::
   IsCPrimitive ->
   TemplateClass ->
@@ -665,6 +663,21 @@ tmplFunToDef b t@TmplCls {..} f =
                   (R.CVar (R.sname ("operator" <> opSymbol tfun_opexp)))
                   (map (tmplArgToCallCExp b) (argsFromOpExp tfun_opexp))
               )
+
+-- | function definition in a template class
+topLevelTemplateFunToDef ::
+  IsCPrimitive ->
+  TLTemplate ->
+  R.CStatement Identity
+topLevelTemplateFunToDef b t@TopLevelTemplateFunction {..} =
+  R.CDefinition (Just R.Inline) (topLevelTemplateFunToDecl b t) body
+  where
+    typparams = map (R.CTSimple . R.sname) topleveltfunc_params
+    body =
+      returnCpp b (topleveltfunc_ret) $
+        R.CApp
+          (R.CVar (R.sname topleveltfunc_oname))
+          (map (tmplArgToCallCExp b) topleveltfunc_args)
 
 tmplVarToDef ::
   IsCPrimitive ->
