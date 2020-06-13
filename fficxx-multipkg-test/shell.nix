@@ -1,6 +1,6 @@
 # NOTE: this doesn't include stdcxx intentionally.
 
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import ../nix/pinnedNixpkgs.nix {} }:
 
 with pkgs;
 
