@@ -1,7 +1,9 @@
 packages:
   ../fficxx/
   ../fficxx-runtime/
+  ../fficxx-multipkg-test/
 optional-packages:
   ./stdcxx/
+  ./tmf-test/
   ./tmpl-dep-test/
   ./tmpl-toplevel-test/

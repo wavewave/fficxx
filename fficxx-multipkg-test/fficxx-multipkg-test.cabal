@@ -25,6 +25,7 @@ test-suite hspec
   main-is:       Main.hs
   other-modules: TemplateMemberSpec
                  TemplateDepSpec
+                 TemplateTopLevelSpec
   build-depends: base
                , fficxx
                , fficxx-runtime
@@ -33,5 +34,7 @@ test-suite hspec
                , stdcxx
                , tmf-test
                , tmpl-dep-test
+               , tmpl-toplevel-test
   hs-source-dirs: test
   cxx-options: -std=c++14
+  ghc-options: -ddump-splices -keep-tmp-files

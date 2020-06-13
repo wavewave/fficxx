@@ -15,6 +15,8 @@ import           FFICXX.Generate.Type.Class        ( Accessor(..)
                                                    , TemplateFunction(..)
                                                    , TemplateMemberFunction(..)
                                                    , TopLevel(..)
+                                                   , TLOrdinary(..)
+                                                   , TLTemplate(..)
                                                    , Variable(..)
                                                    )
 import           FFICXX.Generate.Util              ( firstLower, toLowers )
@@ -24,8 +26,9 @@ import           FFICXX.Generate.Util              ( firstLower, toLowers )
 hsFrontNameForTopLevel :: TopLevel -> String
 hsFrontNameForTopLevel tfn =
     let (x:xs) = case tfn of
-                   TopLevelFunction {..} -> fromMaybe toplevelfunc_name toplevelfunc_alias
-                   TopLevelVariable {..} -> fromMaybe toplevelvar_name  toplevelvar_alias
+                   TLOrdinary TopLevelFunction {..} -> fromMaybe toplevelfunc_name toplevelfunc_alias
+                   TLOrdinary TopLevelVariable {..} -> fromMaybe toplevelvar_name  toplevelvar_alias
+                   TLTemplate TopLevelTemplateFunction {..} -> topleveltfunc_name
     in toLower x : xs
 
 

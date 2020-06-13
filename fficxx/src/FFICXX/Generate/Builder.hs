@@ -3,47 +3,45 @@
 
 module FFICXX.Generate.Builder where
 
-import           Control.Monad                           ( void, when )
-import qualified Data.ByteString.Lazy.Char8        as L
-import           Data.Char                               ( toUpper )
-import           Data.Digest.Pure.MD5                    ( md5 )
-import           Data.Foldable                           ( for_ )
-import           Data.Monoid                             ( (<>), mempty )
-import           Language.Haskell.Exts.Pretty            ( prettyPrint )
-import           System.FilePath                         ( (</>), (<.>), splitExtension )
-import           System.Directory                        ( copyFile
-                                                         , createDirectoryIfMissing
-                                                         , doesFileExist
-                                                         )
-import           System.IO                               ( hPutStrLn, withFile, IOMode(..) )
-import           System.Process                          ( readProcess )
+import Control.Monad                ( void, when )
+import qualified Data.ByteString.Lazy.Char8 as L
+import Data.Char                    ( toUpper )
+import Data.Digest.Pure.MD5         ( md5 )
+import Data.Foldable                ( for_ )
+import Data.Monoid                  ( (<>), mempty )
+import Language.Haskell.Exts.Pretty ( prettyPrint )
+import System.FilePath              ( (</>), (<.>), splitExtension )
+import System.Directory             ( copyFile
+                                    , createDirectoryIfMissing
+                                    , doesFileExist
+                                    )
+import System.IO                    ( hPutStrLn, withFile, IOMode(..) )
+import System.Process               ( readProcess )
 --
-import           FFICXX.Runtime.CodeGen.Cxx              ( HeaderName(..) )
+import FFICXX.Runtime.CodeGen.Cxx   ( HeaderName(..) )
 --
-import           FFICXX.Generate.Code.Cabal              ( buildCabalFile
-                                                         , buildJSONFile
-                                                         )
-import           FFICXX.Generate.Dependency              ( findModuleUnitImports
-                                                         , mkHSBOOTCandidateList
-                                                         , mkPackageConfig
-                                                         )
-import           FFICXX.Generate.Config                  ( FFICXXConfig(..)
-                                                         , SimpleBuilderConfig(..)
-                                                         )
-import           FFICXX.Generate.ContentMaker
-import           FFICXX.Generate.Type.Cabal              ( Cabal(..)
-                                                         , CabalName(..)
-                                                         , AddCInc(..)
-                                                         , AddCSrc(..)
-                                                         )
-import           FFICXX.Generate.Type.Class              ( hasProxy )
-import           FFICXX.Generate.Type.Module             ( ClassImportHeader(..)
-                                                         , ClassModule(..)
-                                                         , PackageConfig(..)
-                                                         , TemplateClassModule(..)
-                                                         , TopLevelImportHeader(..)
-                                                         )
-import           FFICXX.Generate.Util                    ( moduleDirFile )
+import FFICXX.Generate.Code.Cabal   ( buildCabalFile, buildJSONFile )
+import FFICXX.Generate.Dependency   ( findModuleUnitImports
+                                    , mkHSBOOTCandidateList
+                                    , mkPackageConfig
+                                    )
+import FFICXX.Generate.Config       ( FFICXXConfig(..)
+                                    , SimpleBuilderConfig(..)
+                                    )
+import qualified FFICXX.Generate.ContentMaker as C
+import FFICXX.Generate.Type.Cabal   ( Cabal(..)
+                                    , CabalName(..)
+                                    , AddCInc(..)
+                                    , AddCSrc(..)
+                                    )
+import FFICXX.Generate.Type.Class   ( hasProxy )
+import FFICXX.Generate.Type.Module  ( ClassImportHeader(..)
+                                    , ClassModule(..)
+                                    , PackageConfig(..)
+                                    , TemplateClassModule(..)
+                                    , TopLevelImportHeader(..)
+                                    )
+import FFICXX.Generate.Util         ( moduleDirFile )
 --
 
 macrofy :: String -> String
@@ -103,17 +101,17 @@ simpleBuilder cfg sbc = do
         let path = workingDir </> file in withFile path WriteMode (flip hPutStrLn str)
 
 
-  gen (unCabalName pkgname <> "Type.h") (buildTypeDeclHeader (map cihClass cihs))
+  gen (unCabalName pkgname <> "Type.h") (C.buildTypeDeclHeader (map cihClass cihs))
   for_ cihs $ \hdr -> gen
                         (unHdrName (cihSelfHeader hdr))
-                        (buildDeclHeader (unCabalName pkgname) hdr)
+                        (C.buildDeclHeader (unCabalName pkgname) hdr)
   gen
     (tihHeaderFileName tih <.> "h")
-    (buildTopLevelHeader (unCabalName pkgname) tih)
+    (C.buildTopLevelHeader (unCabalName pkgname) tih)
 
   putStrLn "Generating Cpp file"
-  for_ cihs (\hdr -> gen (cihSelfCpp hdr) (buildDefMain hdr))
-  gen (tihHeaderFileName tih <.> "cpp") (buildTopLevelCppDef tih)
+  for_ cihs (\hdr -> gen (cihSelfCpp hdr) (C.buildDefMain hdr))
+  gen (tihHeaderFileName tih <.> "cpp") (C.buildTopLevelCppDef tih)
   --
   putStrLn "Generating Additional Header/Source"
   for_ (cabal_additional_c_incs cabal) (\(AddCInc hdr txt) -> gen hdr txt)
@@ -122,57 +120,66 @@ simpleBuilder cfg sbc = do
   putStrLn "Generating RawType.hs"
   for_ mods $ \m -> gen
                       (cmModule m <.> "RawType" <.> "hs")
-                      (prettyPrint (buildRawTypeHs m))
+                      (prettyPrint (C.buildRawTypeHs m))
   --
   putStrLn "Generating FFI.hsc"
   for_ mods $ \m -> gen
                       (cmModule m <.> "FFI" <.> "hsc")
-                      (prettyPrint (buildFFIHsc m))
+                      (prettyPrint (C.buildFFIHsc m))
   --
   putStrLn "Generating Interface.hs"
   for_ mods $ \m -> gen
                       (cmModule m <.> "Interface" <.> "hs")
-                      (prettyPrint (buildInterfaceHs mempty m))
+                      (prettyPrint (C.buildInterfaceHs mempty m))
   --
   putStrLn "Generating Cast.hs"
   for_ mods $ \m -> gen
                       (cmModule m <.> "Cast" <.> "hs")
-                      (prettyPrint (buildCastHs m))
+                      (prettyPrint (C.buildCastHs m))
   --
   putStrLn "Generating Implementation.hs"
   for_ mods $ \m -> gen
                       (cmModule m <.> "Implementation" <.> "hs")
-                      (prettyPrint (buildImplementationHs mempty m))
+                      (prettyPrint (C.buildImplementationHs mempty m))
  --
   putStrLn "Generating Proxy.hs"
   for_ mods $ \m ->
     when (hasProxy . cihClass . cmCIH $ m) $
-      gen (cmModule m <.> "Proxy" <.> "hs") (prettyPrint (buildProxyHs m))
+      gen (cmModule m <.> "Proxy" <.> "hs") (prettyPrint (C.buildProxyHs m))
   --
   putStrLn "Generating Template.hs"
   for_ tcms $ \m -> gen
                       (tcmModule m <.> "Template" <.> "hs")
-                      (prettyPrint (buildTemplateHs m))
+                      (prettyPrint (C.buildTemplateHs m))
   --
   putStrLn "Generating TH.hs"
   for_ tcms $ \m -> gen
                       (tcmModule m <.> "TH" <.> "hs")
-                      (prettyPrint (buildTHHs m))
+                      (prettyPrint (C.buildTHHs m))
 
   --
   -- TODO: Template.hs-boot need to be generated as well
   putStrLn "Generating hs-boot file"
   for_ hsbootlst $ \m -> gen
                            (m <.> "Interface" <.> "hs-boot")
-                           (prettyPrint (buildInterfaceHSBOOT m))
+                           (prettyPrint (C.buildInterfaceHSBOOT m))
   --
   putStrLn "Generating Module summary file"
   for_ mods $ \m -> gen
                       (cmModule m <.> "hs")
-                      (prettyPrint (buildModuleHs m))
+                      (prettyPrint (C.buildModuleHs m))
+  --
+  putStrLn "Generating Top-level Ordinary Module"
+  gen (topLevelMod <.> "Ordinary" <.> "hs") (prettyPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods,tcms) tih))
+  --
+  putStrLn "Generating Top-level Template Module"
+  gen (topLevelMod <.> "Template" <.> "hs") (prettyPrint (C.buildTopLevelTemplateHs (topLevelMod <> ".Template") (mods,tcms) tih))
+  --
+  putStrLn "Generating Top-level TH Module"
+  gen (topLevelMod <.> "TH" <.> "hs") (prettyPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") (mods,tcms) tih))
   --
   putStrLn "Generating Top-level Module"
-  gen (topLevelMod <.> "hs") (prettyPrint (buildTopLevelHs topLevelMod (mods,tcms) tih))
+  gen (topLevelMod <.> "hs") (prettyPrint (C.buildTopLevelHs topLevelMod (mods,tcms) tih))
   --
   putStrLn "Copying generated files to target directory"
   touch (workingDir </> "LICENSE")
@@ -180,10 +187,15 @@ simpleBuilder cfg sbc = do
   copyFileWithMD5Check (workingDir </> jsonFileName)  (installDir </> jsonFileName)
   copyFileWithMD5Check (workingDir </> "LICENSE") (installDir </> "LICENSE")
 
-  copyCppFiles workingDir (csrcDir installDir) (unCabalName pkgname) pkgconfig
-  for_ mods (copyModule workingDir (srcDir installDir))
-  for_ tcms (copyTemplateModule workingDir (srcDir installDir))
-  moduleFileCopy workingDir (srcDir installDir) $ topLevelMod <.> "hs"
+  copyCppFiles workingDir (C.csrcDir installDir) (unCabalName pkgname) pkgconfig
+  for_ mods (copyModule workingDir (C.srcDir installDir))
+  for_ tcms (copyTemplateModule workingDir (C.srcDir installDir))
+
+  putStrLn "Copying Ordinary"
+  moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "Ordinary" <.> "hs"
+  moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "Template" <.> "hs"
+  moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "TH" <.> "hs"
+  moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "hs"
 
   putStrLn "----------------------------------------------------"
   putStrLn "-- Code generation has been completed. Enjoy!     --"
