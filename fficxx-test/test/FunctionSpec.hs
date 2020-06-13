@@ -2,41 +2,50 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module FunctionSpec ( spec ) where
+module FunctionSpec
+  ( spec,
+  )
+where
 
+--
+
+import qualified FFICXX.Runtime.Function.TH as TH
+import FFICXX.Runtime.Function.Template
+import FFICXX.Runtime.TH
 import Foreign.Ptr
 import System.IO.Silently (capture_)
 --
-import FFICXX.Runtime.TH
-import FFICXX.Runtime.Function.Template
-import qualified FFICXX.Runtime.Function.TH as TH
---
-import Test.Hspec     ( Spec
-                      , afterAll, anyException, around
-                      , beforeAll, describe, it
-                      , shouldBe, shouldThrow
-                      )
-
+import Test.Hspec
+  ( Spec,
+    afterAll,
+    anyException,
+    around,
+    beforeAll,
+    describe,
+    it,
+    shouldBe,
+    shouldThrow,
+  )
 
 TH.genFunctionInstanceFor
   [t|IO ()|]
-  FPInfo {
-    fpinfoCxxArgTypes = []
-  , fpinfoCxxRetType = Nothing
-  , fpinfoCxxHeaders =  []
-  , fpinfoCxxNamespaces = []
-  , fpinfoSuffix = "f1"
-  }
+  FPInfo
+    { fpinfoCxxArgTypes = [],
+      fpinfoCxxRetType = Nothing,
+      fpinfoCxxHeaders = [],
+      fpinfoCxxNamespaces = [],
+      fpinfoSuffix = "f1"
+    }
 
 TH.genFunctionInstanceFor
   [t|Int -> IO ()|]
-  FPInfo {
-    fpinfoCxxArgTypes = [ ("int","x") ]
-  , fpinfoCxxRetType = Nothing
-  , fpinfoCxxHeaders =  []
-  , fpinfoCxxNamespaces = []
-  , fpinfoSuffix = "f2"
-  }
+  FPInfo
+    { fpinfoCxxArgTypes = [("int", "x")],
+      fpinfoCxxRetType = Nothing,
+      fpinfoCxxHeaders = [],
+      fpinfoCxxNamespaces = [],
+      fpinfoSuffix = "f2"
+    }
 
 test :: IO ()
 test = do
@@ -97,7 +106,7 @@ spec =
         s `shouldBe` "closure test 2 \nthis is a captured message\n x = 27\n"
       it "should call a stored haskell higher-order closure :: (Int -> Int) -> Int -> IO () with captured Int -> Int function" $ do
         let action = do
-              p_test2_2 <- wrapFunPtr (closureTest3 (+100))
+              p_test2_2 <- wrapFunPtr (closureTest3 (+ 100))
               fptr2_2 <- newFunction p_test2_2
               call fptr2_2 27
               deleteFunction fptr2_2

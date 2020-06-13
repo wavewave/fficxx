@@ -1,61 +1,79 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE OverloadedStrings        #-}
-{-# LANGUAGE ScopedTypeVariables      #-}
-{-# LANGUAGE TemplateHaskell          #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
-module VectorSpec ( spec ) where
+module VectorSpec
+  ( spec,
+  )
+where
 
-import           Control.Exception           (bracket)
-import qualified Data.ByteString.Char8       as B
-import           Foreign.C.String
-import           Foreign.C.Types
-import           Foreign.Ptr
+import Control.Exception (bracket)
+import qualified Data.ByteString.Char8 as B
 --
-import           FFICXX.Runtime.CodeGen.Cxx  (HeaderName (..), Namespace (..))
-import           FFICXX.Runtime.TH           (IsCPrimitive (..),
-                                              TemplateParamInfo (..))
-import           STD.CppString
-import           STD.Vector.Template
-import qualified STD.Vector.TH               as TH
-import           STD.VectorIterator.Template
-import qualified STD.VectorIterator.TH       as TH
+import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..), Namespace (..))
+import FFICXX.Runtime.TH
+  ( IsCPrimitive (..),
+    TemplateParamInfo (..),
+  )
+import Foreign.C.String
+import Foreign.C.Types
+import Foreign.Ptr
+import STD.CppString
+import qualified STD.Vector.TH as TH
+import STD.Vector.Template
+import qualified STD.VectorIterator.TH as TH
+import STD.VectorIterator.Template
 --
-import           Test.Hspec                  (Spec, afterAll, around, beforeAll,
-                                              describe, it, shouldBe)
-
+import Test.Hspec
+  ( Spec,
+    afterAll,
+    around,
+    beforeAll,
+    describe,
+    it,
+    shouldBe,
+  )
 
 TH.genVectorIteratorInstanceFor
   CPrim
-  ( [t|CInt|], TPInfo { tpinfoCxxType       = "int"
-                      , tpinfoCxxHeaders    = []
-                      , tpinfoCxxNamespaces = []
-                      , tpinfoSuffix        = "int"
-                      }
+  ( [t|CInt|],
+    TPInfo
+      { tpinfoCxxType = "int",
+        tpinfoCxxHeaders = [],
+        tpinfoCxxNamespaces = [],
+        tpinfoSuffix = "int"
+      }
   )
 
 TH.genVectorInstanceFor
   CPrim
-  ( [t|CInt|], TPInfo { tpinfoCxxType       = "int"
-                      , tpinfoCxxHeaders    = []
-                      , tpinfoCxxNamespaces = []
-                      , tpinfoSuffix        = "int"
-                      }
+  ( [t|CInt|],
+    TPInfo
+      { tpinfoCxxType = "int",
+        tpinfoCxxHeaders = [],
+        tpinfoCxxNamespaces = [],
+        tpinfoSuffix = "int"
+      }
   )
 
 TH.genVectorInstanceFor
   NonCPrim
-  ( [t|CppString|], TPInfo { tpinfoCxxType       = "std::string"
-                           , tpinfoCxxHeaders    = [ "string", "stdcxxType.h"]
-                           , tpinfoCxxNamespaces = [ "std" ]
-                           , tpinfoSuffix        = "string"
-                           }
+  ( [t|CppString|],
+    TPInfo
+      { tpinfoCxxType = "std::string",
+        tpinfoCxxHeaders = ["string", "stdcxxType.h"],
+        tpinfoCxxNamespaces = ["std"],
+        tpinfoSuffix = "string"
+      }
   )
 
 spec :: Spec
 spec =
   describe "FFI to vector" $ do
-    beforeAll (newVector :: IO (Vector CInt)) . afterAll deleteVector $
-      describe "vector<int>" $ do
+    beforeAll (newVector :: IO (Vector CInt)) . afterAll deleteVector
+      $ describe "vector<int>"
+      $ do
         it "should be initialized" $ \v -> do
           n₀ <- size v
           n₀ `shouldBe` 0
@@ -64,7 +82,7 @@ spec =
           n₁ <- size v
           n₁ `shouldBe` 1
         it "should add 100 items" $ \v -> do
-          mapM_ (push_back v) [1..100]
+          mapM_ (push_back v) [1 .. 100]
           n₂ <- size v
           n₂ `shouldBe` 101
         it "should remove one item" $ \v -> do
@@ -79,8 +97,9 @@ spec =
           p <- deRef iter
           p `shouldBe` 2
     --
-    beforeAll (newVector :: IO (Vector CppString)) . afterAll deleteVector $
-      describe "vector<std::string>" $ do
+    beforeAll (newVector :: IO (Vector CppString)) . afterAll deleteVector
+      $ describe "vector<std::string>"
+      $ do
         it "should create a C++-string and store it" $ \v -> do
           cppstr <- newCppString ("hello" :: B.ByteString)
           push_back v cppstr

@@ -2,23 +2,24 @@
 
 module FFICXX.Generate.Util where
 
-import           Data.Char
-import           Data.List
-import           Data.List.Split
-import           Data.Maybe               (fromMaybe)
-import           Data.Monoid              ((<>))
-import           Data.Text                (Text)
-import qualified Data.Text          as T
-import qualified Data.Text.Lazy     as TL
-import           Data.Text.Template
+import Data.Char
+import Data.List
+import Data.List.Split
+import Data.Maybe (fromMaybe)
+import Data.Monoid ((<>))
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import Data.Text.Template
+
 --
 
-moduleDirFile :: String -> (String,String)
+moduleDirFile :: String -> (String, String)
 moduleDirFile mname =
   let splitted = splitOn "." mname
-      moddir  = intercalate "/" (init splitted )
+      moddir = intercalate "/" (init splitted)
       modfile = (last splitted) <> ".hs"
-  in  (moddir, modfile)
+   in (moddir, modfile)
 
 hline :: IO ()
 hline = putStrLn "--------------------------------------------------------"
@@ -31,11 +32,11 @@ toLowers = map toLower
 
 firstLower :: String -> String
 firstLower [] = []
-firstLower (x:xs) = (toLower x) : xs
+firstLower (x : xs) = (toLower x) : xs
 
 firstUpper :: String -> String
 firstUpper [] = []
-firstUpper (x:xs) = (toUpper x) : xs
+firstUpper (x : xs) = (toUpper x) : xs
 
 conn :: String -> String -> String -> String
 conn st x y = x <> st <> y
@@ -44,7 +45,7 @@ connspace :: String -> String -> String
 connspace = conn " "
 
 conncomma :: String -> String -> String
-conncomma =  conn ", "
+conncomma = conn ", "
 
 connBSlash :: String -> String -> String
 connBSlash = conn "\\\n"
@@ -61,29 +62,30 @@ connRet2 = conn "\n\n"
 connArrow :: String -> String -> String
 connArrow = conn " -> "
 
-intercalateWith :: (String-> String -> String) -> (a->String) -> [a] -> String
-intercalateWith  f mapper x
+intercalateWith :: (String -> String -> String) -> (a -> String) -> [a] -> String
+intercalateWith f mapper x
   | not (null x) = foldl1 f (map mapper x)
-  | otherwise    = ""
+  | otherwise = ""
 
-
-intercalateWithM :: (Monad m) => (String -> String -> String) -> (a->m String) -> [a] -> m String
+intercalateWithM :: (Monad m) => (String -> String -> String) -> (a -> m String) -> [a] -> m String
 intercalateWithM f mapper x
-  | not (null x) = do ms <- mapM mapper x
-                      return (foldl1 f ms)
+  | not (null x) = do
+    ms <- mapM mapper x
+    return (foldl1 f ms)
   | otherwise = return ""
 
-
 -- TODO: deprecate this and use contextT
-context :: [(Text,String)] -> Context
+context :: [(Text, String)] -> Context
 context assocs x = maybe err (T.pack) . lookup x $ assocs
-  where err = error $ "Could not find key: " <> (T.unpack x)
+  where
+    err = error $ "Could not find key: " <> (T.unpack x)
 
 -- TODO: Rename this to context.
 -- TODO: Proper error handling.
-contextT :: [(Text,Text)] -> Context
+contextT :: [(Text, Text)] -> Context
 contextT assocs x = fromMaybe err . lookup x $ assocs
-  where err = error $ T.unpack ("Could not find key: " <> x)
+  where
+    err = error $ T.unpack ("Could not find key: " <> x)
 
 subst :: Text -> Context -> String
 subst t c = TL.unpack (substitute t c)
