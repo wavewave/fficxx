@@ -26,6 +26,11 @@ let
     haskellPackages = newHaskellPackages0;
   };
 
+  tmplTopLevelTestSrc = import ./fficxx-multipkg-test/template-toplevel/gen.nix {
+    inherit stdenv;
+    haskellPackages = newHaskellPackages0;
+  };
+
   newHaskellPackages = haskellPackages.override {
     overrides = self: super:
       {
@@ -37,6 +42,7 @@ let
         "tmf-test"             = self.callCabal2nix "tmf-test"             tmfTestSrc             {};
         "tmpl-dep-test"        = self.callCabal2nix "tmpl-dep-test"        tmplDepTestSrc         {};
         "tmpl-dup-inst"        = self.callCabal2nix "tmpl-dup-inst"        ./fficxx-multipkg-test/tmpl-dup-inst {};
+        "tmpl-toplevel-test"   = self.callCabal2nix "tmpl-toplevel-test"   tmplTopLevelTestSrc    {};
       };
   };
 
