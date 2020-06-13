@@ -6,10 +6,9 @@ module FFICXX.Generate.Code.HsTemplate where
 import qualified Data.List as L (foldr1)
 import Data.Monoid ((<>))
 --
-
---
 import FFICXX.Generate.Code.Cpp
-  ( genTmplClassCpp,
+  ( genTLTmplFunCpp,
+    genTmplClassCpp,
     genTmplFunCpp,
     genTmplVarCpp,
   )
@@ -52,6 +51,7 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     TemplateClassImportHeader (..),
+    TopLevelImportHeader (..),
   )
 import FFICXX.Generate.Util (firstUpper)
 import FFICXX.Generate.Util.HaskellSrcExts
@@ -336,7 +336,7 @@ genTmplImplementation t =
           binds
             [ mkBind1
                 "tyf"
-                [wildcard] -- [mkPVar "n"]
+                [wildcard]
                 ( letE
                     tassgns
                     (bracketExp (typeBracket sig'))
@@ -591,9 +591,10 @@ genTLTemplateImplementation t =
         ]
 
 genTLTemplateInstance ::
+  TopLevelImportHeader ->
   TLTemplate ->
   [Decl ()]
-genTLTemplateInstance t =
+genTLTemplateInstance tih t =
   mkFun
     fname
     sig
@@ -630,8 +631,10 @@ genTLTemplateInstance t =
             <> map genqtypstmt (zip tvars qtvars)
             <> [genstmt "f" 1]
             -- <> concatMap genvarstmt nvfs
-            <> [
-            {- foreignSrcStmt,-} letStmt lststmt, qualStmt retstmt]
+            <> [ foreignSrcStmt,
+                 letStmt lststmt,
+                 qualStmt retstmt
+               ]
         )
     --------------------------
     paramsstmt =
@@ -659,63 +662,69 @@ genTLTemplateInstance t =
             `app` v "suffix"
         )
     lststmt = [pbind_ (p "lst") (listE [v "f1"])]
-    {-
     -- TODO: refactor out the following code.
     foreignSrcStmt =
       qualifier $
-              (v "addModFinalizer")
-        `app` (      v "addForeignSource"
-               `app` con "LangCxx"
-               `app` (L.foldr1 (\x y -> inapp x (op "++") y)
-                        [ includeStatic
-                        , includeDynamic
-                        , namespaceStr
-                        , strE (tname <> "_instance")
-                        , paren $
-                            caseE
-                              (v "isCprim")
-                              [ match (p "CPrim")    (strE "_s")
-                              , match (p "NonCPrim") (strE "")
+        (v "addModFinalizer")
+          `app` ( v "addForeignSource"
+                    `app` con "LangCxx"
+                    `app` ( L.foldr1
+                              (\x y -> inapp x (op "++") y)
+                              [ includeStatic
+                                {-                        , includeDynamic
+                                                        , namespaceStr
+                                                        , strE (tname <> "_instance")
+                                                        , paren $
+                                                            caseE
+                                                              (v "isCprim")
+                                                              [ match (p "CPrim")    (strE "_s")
+                                                              , match (p "NonCPrim") (strE "")
+                                                              ]
+                                                        , strE "("
+                                                        , v "intercalate" `app` strE ", " `app` v "params"
+                                                        , strE ")\n" -}
                               ]
-                        , strE "("
-                        , v "intercalate" `app` strE ", " `app` v "params"
-                        , strE ")\n"
-                        ]
-                     )
-              )
+                          )
+                )
       where
         -- temporary
-        body = map R.renderCMacro $
-                    map R.Include (tcihCxxHeaders tcih)
-                 ++ map (genTmplFunCpp NonCPrim t) fs
-                 ++ map (genTmplFunCpp CPrim    t) fs
-                 ++ concatMap (genTmplVarCpp NonCPrim t) vfs
-                 ++ concatMap (genTmplVarCpp CPrim    t) vfs
-                 ++ [ genTmplClassCpp NonCPrim t (fs,vfs)
-                    , genTmplClassCpp CPrim    t (fs,vfs)
-                    ]
+        body =
+          map R.renderCMacro $
+            map
+              R.Include
+              (tihExtraHeadersInCPP tih)
+              ++ [genTLTmplFunCpp NonCPrim t]
+        {-          ++ map (genTmplFunCpp CPrim t) fs
+                  ++ concatMap (genTmplVarCpp NonCPrim t) vfs
+                  ++ concatMap (genTmplVarCpp CPrim t) vfs
+                  ++ [ genTmplClassCpp NonCPrim t (fs, vfs),
+                       genTmplClassCpp CPrim t (fs, vfs)
+                     ] -}
         includeStatic =
-          strE $ concatMap (<> "\n")
-                   (   [ R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h")) ]
-                    ++ body
-                   )
-        cxxHeaders    = v "concatMap" `app` (v "tpinfoCxxHeaders") `app` params_l
+          strE $
+            concatMap
+              (<> "\n")
+              ( [R.renderCMacro (R.Include (HdrName "MacroPatternMatch.h"))]
+                  ++ body
+              )
+        cxxHeaders = v "concatMap" `app` (v "tpinfoCxxHeaders") `app` params_l
         cxxNamespaces = v "concatMap" `app` (v "tpinfoCxxNamespaces") `app` params_l
         includeDynamic =
           letE
-            [ pbind_ (p "headers") cxxHeaders
-            , pbind_ (pApp (name "f") [p "x"])
-                    (v "renderCMacro" `app` (con "Include" `app` v "x"))
+            [ pbind_ (p "headers") cxxHeaders,
+              pbind_
+                (pApp (name "f") [p "x"])
+                (v "renderCMacro" `app` (con "Include" `app` v "x"))
             ]
             (v "concatMap" `app` v "f" `app` v "headers")
         namespaceStr =
           letE
-            [ pbind_ (p "nss") cxxNamespaces
-            , pbind_ (pApp (name "f") [p "x"])
+            [ pbind_ (p "nss") cxxNamespaces,
+              pbind_
+                (pApp (name "f") [p "x"])
                 (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
             ]
             (v "concatMap" `app` v "f" `app` v "nss")
-     -}
     retstmt =
       v "pure"
         `app` listE
