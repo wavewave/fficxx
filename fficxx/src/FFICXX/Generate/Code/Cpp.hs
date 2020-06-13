@@ -65,7 +65,7 @@ import FFICXX.Generate.Type.Class
     virtualFuncs,
   )
 import FFICXX.Generate.Type.Module (ClassImportHeader (..))
-import FFICXX.Generate.Util (toUppers)
+import FFICXX.Generate.Util (firstUpper, toUppers)
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
 
@@ -309,9 +309,8 @@ genTLTmplFunCpp b t@TopLevelTemplateFunction {..} =
     ]
   where
     nsuffix = intersperse (R.NamePart "_") $ map R.NamePart topleveltfunc_params
-    -- suffix = case b of CPrim -> "_s"; NonCPrim -> ""
-    nc = topleveltfunc_name
-    macroname = "TL_" <> nc
+    suffix = case b of CPrim -> "_s"; NonCPrim -> ""
+    macroname = firstUpper topleveltfunc_name <> "_instance" <> suffix
     decl = topLevelTemplateFunToDecl b t
     autoinst =
       R.CInit
@@ -472,7 +471,7 @@ returnCpp b ret caller =
           R.CApp
             (R.CVar (R.sname "std::move"))
             [ R.CTApp
-                (R.sname "staic_cast")
+                (R.sname "static_cast")
                 [R.CTStar R.CTVoid]
                 [R.CVar (R.sname "r")]
             ]
@@ -675,10 +674,12 @@ topLevelTemplateFunToDef b t@TopLevelTemplateFunction {..} =
     typparams = map (R.CTSimple . R.sname) topleveltfunc_params
     body =
       returnCpp b (topleveltfunc_ret) $
-        R.CApp
-          (R.CVar (R.sname topleveltfunc_oname))
+        R.CTApp
+          (R.sname topleveltfunc_oname)
+          typparams
           (map (tmplArgToCallCExp b) topleveltfunc_args)
 
+-- |
 tmplVarToDef ::
   IsCPrimitive ->
   TemplateClass ->
