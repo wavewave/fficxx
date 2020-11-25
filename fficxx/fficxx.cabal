@@ -24,7 +24,6 @@ Library
                , containers
                , data-default
                , directory
-               , either
                , errors
                , fficxx-runtime
                , filepath>1
