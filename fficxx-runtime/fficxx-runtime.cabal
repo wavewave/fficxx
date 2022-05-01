@@ -1,5 +1,5 @@
 Name:           fficxx-runtime
-Version:        0.6
+Version:        0.6.999
 Synopsis:       Runtime for fficxx-generated library
 Description:    Runtime for fficxx-generated library.
                 fficxx is an automatic haskell Foreign Function Interface (FFI) generator to C++.

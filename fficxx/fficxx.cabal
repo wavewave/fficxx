@@ -1,5 +1,5 @@
 Name:           fficxx
-Version:        0.6
+Version:        0.6.999
 Synopsis:       Automatic C++ binding generation
 Description:    fficxx is an automatic haskell Foreign Function Interface (FFI) generator to C++.
 License:        BSD3
@@ -16,7 +16,7 @@ Source-repository head
 
 Library
   hs-source-dirs: src
-  default-language: Haskell2010  
+  default-language: Haskell2010
   Build-Depends: base == 4.*
                , aeson
                , aeson-pretty
