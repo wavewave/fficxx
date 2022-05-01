@@ -1,14 +1,14 @@
 Name:           fficxx
 Version:        0.6
-Synopsis:       automatic C++ binding generation
-Description:    automatic C++ binding generation
+Synopsis:       Automatic C++ binding generation
+Description:    fficxx is an automatic haskell Foreign Function Interface (FFI) generator to C++.
 License:        BSD3
 License-file:   LICENSE
 Author:         Ian-Woo Kim
 Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>
 Build-Type:     Simple
 Category:       FFI Tools
-Cabal-Version:  >= 1.8
+Cabal-Version:  >= 1.10
 
 Source-repository head
   type: git
@@ -16,6 +16,7 @@ Source-repository head
 
 Library
   hs-source-dirs: src
+  default-language: Haskell2010  
   Build-Depends: base == 4.*
                , aeson
                , aeson-pretty
@@ -67,5 +68,3 @@ Library
                -funbox-strict-fields
                -fno-warn-unused-do-bind
                -fno-warn-missing-signatures
-               -O2
-  ghc-prof-options: -caf-all -auto-all
