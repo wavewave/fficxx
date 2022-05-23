@@ -26,12 +26,43 @@
         "stdcxx" = self.callCabal2nix "stdcxx" stdcxxSrc { };
       };
 
-      newHaskellPackages =
-        haskellPackages.override { overrides = finalHaskellOverlay; };
+      newHaskellPackages = haskellPackages.override {
+        overrides = let
+          tmfTestSrc = import ./fficxx-multipkg-test/template-member/gen.nix {
+            inherit (pkgs) stdenv;
+            haskellPackages = newHaskellPackages0;
+          };
+          tmplDepTestSrc = import ./fficxx-multipkg-test/template-dep/gen.nix {
+            inherit (pkgs) stdenv;
+            haskellPackages = newHaskellPackages0;
+          };
+          tmplTopLevelTestSrc =
+            import ./fficxx-multipkg-test/template-toplevel/gen.nix {
+              inherit (pkgs) stdenv;
+              haskellPackages = newHaskellPackages0;
+            };
+
+        in self: super:
+        finalHaskellOverlay self super // {
+          "fficxx-test" = self.callCabal2nix "fficxx-test" ./fficxx-test { };
+          "fficxx-multipkg-test" =
+            self.callCabal2nix "fficxx-multipkg-test" ./fficxx-multipkg-test
+            { };
+          "tmf-test" = self.callCabal2nix "tmf-test" tmfTestSrc { };
+          "tmpl-dep-test" =
+            self.callCabal2nix "tmpl-dep-test" tmplDepTestSrc { };
+          "tmpl-dup-inst" = self.callCabal2nix "tmpl-dup-inst"
+            ./fficxx-multipkg-test/tmpl-dup-inst { };
+          "tmpl-toplevel-test" =
+            self.callCabal2nix "tmpl-toplevel-test" tmplTopLevelTestSrc { };
+        };
+      };
 
     in {
       packages.x86_64-linux = {
-        inherit (newHaskellPackages) fficxx fficxx-runtime stdcxx;
+        inherit (newHaskellPackages)
+          fficxx fficxx-runtime stdcxx fficxx-test fficxx-multipkg-test tmf-test
+          tmpl-dep-test tmpl-dup-inst tmpl-toplevel-test;
       };
 
       # see these issues and discussions:
@@ -49,7 +80,7 @@
       devShell.x86_64-linux = with pkgs;
         let
           hsenv = haskell.packages.ghc865.ghcWithPackages
-            (p: with p; [ cabal-install ]);
+            (p: [ p.cabal-install p.hspec ]);
         in mkShell {
           buildInputs = [ hsenv ];
           shellHook = "";
