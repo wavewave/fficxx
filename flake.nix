@@ -1,23 +1,18 @@
 {
   description = "fficxx";
-  inputs = { nixpkgs.url = "github:NixOS/nixpkgs/nixos-20.03"; };
+  inputs = { nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.11"; };
   outputs = { self, nixpkgs }:
     let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
 
-      haskellPackages = pkgs.haskell.packages.ghc865;
-
-      overlayDeps = self: super: {
-        "haskell-src-exts" = super.haskell-src-exts_1_23_0;
-      };
+      haskellPackages = pkgs.haskell.packages.ghc8107;
 
       newHaskellPackages0 = haskellPackages.override {
-        overrides = self: super:
-          overlayDeps self super // {
-            "fficxx-runtime" =
-              self.callCabal2nix "fficxx-runtime" ./fficxx-runtime { };
-            "fficxx" = self.callCabal2nix "fficxx" ./fficxx { };
-          };
+        overrides = self: super: {
+          "fficxx-runtime" =
+            self.callCabal2nix "fficxx-runtime" ./fficxx-runtime { };
+          "fficxx" = self.callCabal2nix "fficxx" ./fficxx { };
+        };
       };
 
       stdcxxSrc = import ./stdcxx-gen/gen.nix {
@@ -25,13 +20,12 @@
         haskellPackages = newHaskellPackages0;
       };
 
-      finalHaskellOverlay = self: super:
-        overlayDeps self super // {
-          "fficxx-runtime" =
-            self.callCabal2nix "fficxx-runtime" ./fficxx-runtime { };
-          "fficxx" = self.callCabal2nix "fficxx" ./fficxx { };
-          "stdcxx" = self.callCabal2nix "stdcxx" stdcxxSrc { };
-        };
+      finalHaskellOverlay = self: super: {
+        "fficxx-runtime" =
+          self.callCabal2nix "fficxx-runtime" ./fficxx-runtime { };
+        "fficxx" = self.callCabal2nix "fficxx" ./fficxx { };
+        "stdcxx" = self.callCabal2nix "stdcxx" stdcxxSrc { };
+      };
 
       newHaskellPackages = haskellPackages.override {
         overrides = let
