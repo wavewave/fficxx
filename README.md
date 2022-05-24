@@ -1,6 +1,8 @@
 What is fficxx?
 ===============
 
+![Build](https://github.com/wavewave/fficxx/actions/workflows/build.yml/badge.svg)
+
 fficxx ("eff fix") is an automatic haskell Foreign Function Interface (FFI) generator to C++.
 
 To use fficxx, you write a Haskell model of the C++ public interfaces and fficxx generates both a C wrapper and associated haskell functions and type classes which reflect specified model of the C++ interfaces. It is currently the user's responsibility to specify a correct model of the C++ interfaces, because fficxx does not presently check for model correctness.
