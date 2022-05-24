@@ -57,7 +57,7 @@ cabal :: Cabal
 cabal =
   Cabal
     { cabal_pkgname = CabalName "stdcxx",
-      cabal_version = "0.6",
+      cabal_version = "0.6.999",
       cabal_cheaderprefix = "STD",
       cabal_moduleprefix = "STD",
       cabal_additional_c_incs = [],
@@ -210,7 +210,8 @@ t_map_iterator =
           tfun_opexp = OpStar
         },
       TFunOp
-        { tfun_ret = -- TODO: this should be handled with self
+        { tfun_ret -- TODO: this should be handled with self
+          =
             TemplateApp
               TemplateAppInfo
                 { tapp_tclass = t_map_iterator,
@@ -274,7 +275,8 @@ t_vector_iterator =
           tfun_opexp = OpStar
         },
       TFunOp
-        { tfun_ret = -- TODO: this should be handled with self
+        { tfun_ret -- TODO: this should be handled with self
+          =
             TemplateApp
               TemplateAppInfo
                 { tapp_tclass = t_vector_iterator,

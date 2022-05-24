@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP #-}
-
 module FFICXX.Generate.Util.HaskellSrcExts where
 
 import           Data.Maybe                          (maybeToList)
@@ -100,19 +98,11 @@ mkInstance ctxt n typs idecls = InstDecl () Nothing instrule (Just idecls)
           where f acc x = IHApp () acc (tyParen x)
 
 mkData :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
-#if MIN_VERSION_haskell_src_exts(1,20,0)
 mkData n tbinds qdecls mderiv  = DataDecl () (DataType ()) Nothing declhead qdecls (maybeToList mderiv)
-#else
-mkData n tbinds qdecls mderiv  = DataDecl () (DataType ()) Nothing declhead qdecls mderiv
-#endif
   where declhead = mkDeclHead n tbinds
 
 mkNewtype :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
-#if MIN_VERSION_haskell_src_exts(1,20,0)
 mkNewtype n tbinds qdecls mderiv  = DataDecl () (NewType ()) Nothing declhead qdecls (maybeToList mderiv)
-#else
-mkNewtype n tbinds qdecls mderiv  = DataDecl () (NewType ()) Nothing declhead qdecls mderiv
-#endif
   where declhead = mkDeclHead n tbinds
 
 mkForImpCcall :: String -> String -> Type () -> Decl ()
@@ -156,11 +146,7 @@ tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
 
 classA :: QName () -> [Type ()] -> Asst ()
-#if MIN_VERSION_haskell_src_exts(1,22,0)
 classA n = TypeA () . foldl' tyapp (TyCon () n)
-#else
-classA = ClassA ()
-#endif
 
 cxEmpty :: Context ()
 cxEmpty = CxEmpty ()
@@ -178,11 +164,7 @@ bracketExp = BracketExp ()
 typeBracket = TypeBracket ()
 
 
-#if MIN_VERSION_haskell_src_exts(1,20,0)
 mkDeriving = Deriving () Nothing
-#else
-mkDeriving = Deriving ()
-#endif
 
 irule = IRule ()
 
