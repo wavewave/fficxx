@@ -172,7 +172,7 @@ cabalTemplate =
   \  pkgconfig-depends: $pkgconfigDepends\n\
   \  Install-includes:\n\
   \$includeFiles\n\
-  \  C-sources:\n\
+  \  Cxx-sources:\n\
   \$cppFiles\n"
 
 -- TODO: remove all T.pack after we switch over to Text
