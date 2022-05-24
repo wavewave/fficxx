@@ -39,9 +39,9 @@ jobs:
     - name: build tmpl-dep-test
       run: |
         nix build --print-build-logs .#tmpl-dep-test
-    - name: build tmpl-dup-test
+    - name: build tmpl-dup-inst
       run: |
-        nix build --print-build-logs .#tmpl-dup-test
+        nix build --print-build-logs .#tmpl-dup-inst
     - name: build tmpl-toplevel-test
       run: |
         nix build --print-build-logs .#tmpl-toplevel-test
