@@ -3,7 +3,7 @@
 
 module FFICXX.Generate.ContentMaker where
 
-import Control.Lens ((&), (.~), at)
+import Control.Lens (at, (&), (.~))
 import Control.Monad.Trans.Reader
 import Data.Either (rights)
 import Data.Functor.Identity (Identity)
@@ -164,9 +164,9 @@ buildTypeDeclHeader classes =
   let typeDeclBodyStmts =
         intercalate [R.EmptyLine] $
           map (map R.CRegular . genCppHeaderMacroType) classes
-   in R.renderBlock
-        $ R.ExternC
-        $ [R.Pragma R.Once, R.EmptyLine] <> typeDeclBodyStmts
+   in R.renderBlock $
+        R.ExternC $
+          [R.Pragma R.Once, R.EmptyLine] <> typeDeclBodyStmts
 
 -- |
 buildDeclHeader ::
@@ -199,14 +199,14 @@ buildDeclHeader cprefix header =
               <> concatMap (\c -> [genCppHeaderInstNonVirtual c, R.CEmptyLine]) classes
               <> concatMap (\c -> [genCppHeaderInstAccessor c, R.CEmptyLine]) classes
           else []
-   in R.renderBlock
-        $ R.ExternC
-        $ [R.Pragma R.Once, R.EmptyLine]
-          <> declHeaderStmts
-          <> [R.EmptyLine]
-          <> declDefStmts
-          <> [R.EmptyLine]
-          <> map R.CRegular classDeclStmts
+   in R.renderBlock $
+        R.ExternC $
+          [R.Pragma R.Once, R.EmptyLine]
+            <> declHeaderStmts
+            <> [R.EmptyLine]
+            <> declDefStmts
+            <> [R.EmptyLine]
+            <> map R.CRegular classDeclStmts
 
 -- |
 buildDefMain ::
@@ -222,9 +222,9 @@ buildDefMain cih =
         (map R.UsingNamespace . cihNamespace) cih
       aclass = cihClass cih
       aliasStr =
-        intercalate "\n"
-          $ mapMaybe typedefstmt
-          $ aclass : rights (cihImportedClasses cih)
+        intercalate "\n" $
+          mapMaybe typedefstmt $
+            aclass : rights (cihImportedClasses cih)
         where
           typedefstmt c =
             let n1 = class_name c
@@ -275,12 +275,12 @@ buildTopLevelHeader cprefix tih =
         [R.Include (HdrName (cprefix ++ "Type.h"))]
           <> map R.Include (map cihSelfHeader (tihClassDep tih) ++ tihExtraHeadersInH tih)
       declBodyStmts = map (R.CDeclaration . topLevelDecl) $ filterTLOrdinary (tihFuncs tih)
-   in R.renderBlock
-        $ R.ExternC
-        $ [R.Pragma R.Once, R.EmptyLine]
-          <> declHeaderStmts
-          <> [R.EmptyLine]
-          <> map R.CRegular declBodyStmts
+   in R.renderBlock $
+        R.ExternC $
+          [R.Pragma R.Once, R.EmptyLine]
+            <> declHeaderStmts
+            <> [R.EmptyLine]
+            <> map R.CRegular declBodyStmts
 
 -- |
 buildTopLevelCppDef :: TopLevelImportHeader -> String
@@ -298,9 +298,9 @@ buildTopLevelCppDef tih =
       allns = nub ((tihClassDep tih >>= cihNamespace) ++ tihNamespaces tih)
       namespaceStmts = map R.UsingNamespace allns
       aliasStr =
-        intercalate "\n"
-          $ mapMaybe typedefstmt
-          $ rights (concatMap cihImportedClasses cihs ++ extclasses)
+        intercalate "\n" $
+          mapMaybe typedefstmt $
+            rights (concatMap cihImportedClasses cihs ++ extclasses)
         where
           typedefstmt c =
             let n1 = class_name c
@@ -309,9 +309,9 @@ buildTopLevelCppDef tih =
                   then Nothing
                   else Just ("typedef " <> n1 <> " " <> n2 <> ";")
       declBodyStr =
-        intercalate "\n"
-          $ map (R.renderCStmt . genTopLevelCppDefinition)
-          $ filterTLOrdinary (tihFuncs tih)
+        intercalate "\n" $
+          map (R.renderCStmt . genTopLevelCppDefinition) $
+            filterTLOrdinary (tihFuncs tih)
    in concatMap
         R.renderCMacro
         ( declHeaderStmts
@@ -584,7 +584,7 @@ buildTopLevelHs modname (mods, tmods) tih =
         ++ map emodule [modname <.> "Ordinary", modname <.> "Template", modname <.> "TH"]
     pkgImports = genImportInTopLevel modname (mods, tmods) tih
     pkgBody = [] --    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
-      -- ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
+    -- ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
 
 buildTopLevelOrdinaryHs ::
   String ->
@@ -599,7 +599,6 @@ buildTopLevelOrdinaryHs modname (mods, tmods) tih =
     pkgExports = map (evar . unqual . hsFrontNameForTopLevel . TLOrdinary) (filterTLOrdinary tfns)
     pkgImports =
       map mkImport ["Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast"]
-        ++ map (\c -> mkImport (modname <.> (fst . hsClassName . cihClass) c <.> "RawType")) (tihClassDep tih)
         ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
         ++ concatMap genImportForTLOrdinary (filterTLOrdinary tfns)
     pkgBody =
