@@ -15,11 +15,10 @@ data ModuleUnit
 
 instance Hashable ModuleUnit
 
-data ModuleUnitImports
-  = ModuleUnitImports
-      { muimports_namespaces :: [Namespace],
-        muimports_headers :: [HeaderName]
-      }
+data ModuleUnitImports = ModuleUnitImports
+  { muimports_namespaces :: [Namespace],
+    muimports_headers :: [HeaderName]
+  }
   deriving (Show)
 
 emptyModuleUnitImports = ModuleUnitImports [] []

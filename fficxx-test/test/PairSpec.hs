@@ -63,20 +63,20 @@ genPairInstanceFor
 spec :: Spec
 spec =
   describe "FFI to pair" $ do
-    beforeAll (newPair 1 123 :: IO (Pair CInt CInt)) . afterAll deletePair
-      $ describe "pair<int,int>"
-      $ do
-        it "should get first element" $ \kv -> do
-          k <- first_get kv
-          k `shouldBe` 1
-        it "should get second element" $ \kv -> do
-          v <- second_get kv
-          v `shouldBe` 123
-        it "should change first element" $ \kv -> do
-          first_set kv 2
-          k <- first_get kv
-          k `shouldBe` 2
-        it "should change second element" $ \kv -> do
-          second_set kv 246
-          v <- second_get kv
-          v `shouldBe` 246
+    beforeAll (newPair 1 123 :: IO (Pair CInt CInt)) . afterAll deletePair $
+      describe "pair<int,int>" $
+        do
+          it "should get first element" $ \kv -> do
+            k <- first_get kv
+            k `shouldBe` 1
+          it "should get second element" $ \kv -> do
+            v <- second_get kv
+            v `shouldBe` 123
+          it "should change first element" $ \kv -> do
+            first_set kv 2
+            k <- first_get kv
+            k `shouldBe` 2
+          it "should change second element" $ \kv -> do
+            second_set kv 246
+            v <- second_get kv
+            v `shouldBe` 246

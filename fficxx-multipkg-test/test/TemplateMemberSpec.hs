@@ -65,17 +65,17 @@ genInstanceFor_a_method2
 
 spec :: Spec
 spec =
-  describe "template member function generation"
-    $ it "should call template member function"
-    $ do
-      let action = do
-            a <- newA
-            t1 <- newT1
-            t1_print t1
-            t2 <- newT2
-            a_method_T1 a t1
-            a_method_T2 a t2
-            ptr <- newUniquePtr t1
-            a_method2_T1 a ptr
-      s <- capture_ action
-      s `shouldBe` "I am T1.\nin A::method\nI am T1.\nin A::method\nI am T2.\nin A::method2\nI am T1.\n"
+  describe "template member function generation" $
+    it "should call template member function" $
+      do
+        let action = do
+              a <- newA
+              t1 <- newT1
+              t1_print t1
+              t2 <- newT2
+              a_method_T1 a t1
+              a_method_T2 a t2
+              ptr <- newUniquePtr t1
+              a_method2_T1 a ptr
+        s <- capture_ action
+        s `shouldBe` "I am T1.\nin A::method\nI am T1.\nin A::method\nI am T2.\nin A::method2\nI am T1.\n"

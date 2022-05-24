@@ -45,16 +45,16 @@ worker ptr = do
 
 spec :: Spec
 spec =
-  describe "FFI to shared_ptr"
-    $ describe "shared_ptr<std::string>"
-    $ it "should pass content via shared_ptr"
-    $ do
-      cppstr <- newCppString ("hello" :: B.ByteString)
-      ptr <- newSharedPtr cppstr
-      a1 <- async $ worker ptr
-      a2 <- async $ worker ptr
-      (_, bstr1) <- wait a1
-      (_, bstr2) <- wait a2
-      bstr1 `shouldBe` "hello"
-      bstr2 `shouldBe` "hello"
-      deleteSharedPtr ptr
+  describe "FFI to shared_ptr" $
+    describe "shared_ptr<std::string>" $
+      it "should pass content via shared_ptr" $
+        do
+          cppstr <- newCppString ("hello" :: B.ByteString)
+          ptr <- newSharedPtr cppstr
+          a1 <- async $ worker ptr
+          a2 <- async $ worker ptr
+          (_, bstr1) <- wait a1
+          (_, bstr2) <- wait a2
+          bstr1 `shouldBe` "hello"
+          bstr2 `shouldBe` "hello"
+          deleteSharedPtr ptr

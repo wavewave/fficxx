@@ -147,11 +147,10 @@ mkDaughterSelfMap = foldl' worker M.empty
        in M.alter f p m
 
 -- | class dependency for a given function
-data Dep4Func
-  = Dep4Func
-      { returnDependency :: [Either TemplateClass Class],
-        argumentDependency :: [Either TemplateClass Class]
-      }
+data Dep4Func = Dep4Func
+  { returnDependency :: [Either TemplateClass Class],
+    argumentDependency :: [Either TemplateClass Class]
+  }
 
 -- |
 extractClassDep :: Function -> Dep4Func
@@ -210,10 +209,10 @@ extractClassDepForTLTemplate f =
 --          return class is concrete and argument class is constraint.
 mkModuleDepRaw :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepRaw x@(Right c) =
-  nub
-    $ filter (/= x)
-    $ concatMap (returnDependency . extractClassDep) (class_funcs c)
-      ++ concatMap (returnDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
+  nub $
+    filter (/= x) $
+      concatMap (returnDependency . extractClassDep) (class_funcs c)
+        ++ concatMap (returnDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
 mkModuleDepRaw x@(Left t) =
   (nub . filter (/= x) . concatMap (returnDependency . extractClassDepForTmplFun) . tclass_funcs) t
 
@@ -257,15 +256,15 @@ mkModuleDepHighNonSource y@(Left t) =
 --       A: See explanation in mkModuleDepRaw
 mkModuleDepHighSource :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepHighSource y@(Right c) =
-  nub
-    $ filter (`isInSamePackageButNotInheritedBy` y)
-    $ concatMap (argumentDependency . extractClassDep) (class_funcs c)
-      ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
+  nub $
+    filter (`isInSamePackageButNotInheritedBy` y) $
+      concatMap (argumentDependency . extractClassDep) (class_funcs c)
+        ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
 mkModuleDepHighSource y@(Left t) =
   let fs = tclass_funcs t
-   in nub
-        $ filter (`isInSamePackageButNotInheritedBy` y)
-        $ concatMap (argumentDependency . extractClassDepForTmplFun) fs
+   in nub $
+        filter (`isInSamePackageButNotInheritedBy` y) $
+          concatMap (argumentDependency . extractClassDepForTmplFun) fs
 
 -- |
 mkModuleDepCpp :: Either TemplateClass Class -> [Either TemplateClass Class]
@@ -449,9 +448,9 @@ mkTIH pkgname getImports cihs fs =
       -- NOTE: The remaining class dependencies outside the current package
       extclasses = filter ((/= pkgname) . getPkgName) tl_cs
       extheaders =
-        map HdrName
-          $ nub
-          $ map ((<> "Type.h") . unCabalName . getPkgName) extclasses
+        map HdrName $
+          nub $
+            map ((<> "Type.h") . unCabalName . getPkgName) extclasses
    in TopLevelImportHeader
         { tihHeaderFileName = unCabalName pkgname <> "TopLevel",
           tihClassDep = tl_cihs,

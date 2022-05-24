@@ -210,10 +210,11 @@ genTMFInstance cih f =
                 )
       where
         includeStatic =
-          strE $ concatMap ((<> "\n") . R.renderCMacro . R.Include) $
-            [HdrName "MacroPatternMatch.h", cihSelfHeader cih]
-              <> cihIncludedHPkgHeadersInCPP cih
-              <> cihIncludedCPkgHeaders cih
+          strE $
+            concatMap ((<> "\n") . R.renderCMacro . R.Include) $
+              [HdrName "MacroPatternMatch.h", cihSelfHeader cih]
+                <> cihIncludedHPkgHeadersInCPP cih
+                <> cihIncludedCPkgHeaders cih
         includeDynamic =
           letE
             [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param"),
@@ -446,7 +447,7 @@ genTmplInstance tcih =
                 tfun_oname = tmplAccessorName vf Setter,
                 tfun_args = [Arg arg_type "value"]
               }
-       in [ gen "vf" "mkMember" f_g (2 * n -1),
+       in [ gen "vf" "mkMember" f_g (2 * n - 1),
             gen "vf" "mkMember" f_s (2 * n)
           ]
     lststmt =
@@ -455,7 +456,7 @@ genTmplInstance tcih =
               (p "lst")
               ( listE
                   ( mkElems "f" nfs
-                      <> mkElems "vf" (concatMap (\(n, vf) -> [(2 * n -1, vf), (2 * n, vf)]) nvfs)
+                      <> mkElems "vf" (concatMap (\(n, vf) -> [(2 * n - 1, vf), (2 * n, vf)]) nvfs)
                   )
               )
           ]
@@ -710,7 +711,7 @@ genTLTemplateInstance tih t =
     {-
     cxxHeaders = v "concatMap" `app` (v "tpinfoCxxHeaders") `app` params_l
     cxxNamespaces = v "concatMap" `app` (v "tpinfoCxxNamespaces") `app` params_l
-    
+
     includeDynamic =
       letE
         [ pbind_ (p "headers") cxxHeaders,
@@ -719,7 +720,7 @@ genTLTemplateInstance tih t =
             (v "renderCMacro" `app` (con "Include" `app` v "x"))
         ]
         (v "concatMap" `app` v "f" `app` v "headers")
-    
+
     namespaceStr =
       letE
         [ pbind_ (p "nss") cxxNamespaces,

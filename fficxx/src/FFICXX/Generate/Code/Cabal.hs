@@ -228,35 +228,35 @@ genCabalInfo cabal summarymodule pkgconfig extralibs =
 
 genCabalFile :: GeneratedCabalInfo -> Text
 genCabalFile GeneratedCabalInfo {..} =
-  TL.toStrict
-    $ substitute cabalTemplate
-    $ contextT
-      [ ("licenseField", "license: " <> gci_license),
-        ("licenseFileField", "license-file: " <> gci_licenseFile),
-        ("pkgname", gci_pkgname),
-        ("version", gci_version),
-        ("buildtype", gci_buildtype),
-        ("synopsis", gci_synopsis),
-        ("description", gci_description),
-        ("homepage", gci_homepage),
-        ("author", gci_author),
-        ("maintainer", gci_maintainer),
-        ("category", gci_category),
-        ("sourcerepository", gci_sourcerepository),
-        ("cxxOptions", T.intercalate " " gci_cxxOptions),
-        ("pkgdeps", T.intercalate ", " gci_pkgdeps),
-        ("extraFiles", unlinesWithIndent gci_extraFiles),
-        ("csrcFiles", unlinesWithIndent gci_csrcFiles),
-        ("includeFiles", unlinesWithIndent gci_includeFiles),
-        ("cppFiles", unlinesWithIndent gci_cppFiles),
-        ("exposedModules", unlinesWithIndent gci_exposedModules),
-        ("otherModules", unlinesWithIndent gci_otherModules),
-        ("extralibdirs", T.intercalate ", " gci_extraLibDirs),
-        ("extraincludedirs", T.intercalate ", " gci_extraIncludeDirs),
-        ("extraLibraries", T.intercalate ", " gci_extraLibraries),
-        ("cabalIndentation", cabalIndentation),
-        ("pkgconfigDepends", T.intercalate ", " gci_pkgconfigDepends)
-      ]
+  TL.toStrict $
+    substitute cabalTemplate $
+      contextT
+        [ ("licenseField", "license: " <> gci_license),
+          ("licenseFileField", "license-file: " <> gci_licenseFile),
+          ("pkgname", gci_pkgname),
+          ("version", gci_version),
+          ("buildtype", gci_buildtype),
+          ("synopsis", gci_synopsis),
+          ("description", gci_description),
+          ("homepage", gci_homepage),
+          ("author", gci_author),
+          ("maintainer", gci_maintainer),
+          ("category", gci_category),
+          ("sourcerepository", gci_sourcerepository),
+          ("cxxOptions", T.intercalate " " gci_cxxOptions),
+          ("pkgdeps", T.intercalate ", " gci_pkgdeps),
+          ("extraFiles", unlinesWithIndent gci_extraFiles),
+          ("csrcFiles", unlinesWithIndent gci_csrcFiles),
+          ("includeFiles", unlinesWithIndent gci_includeFiles),
+          ("cppFiles", unlinesWithIndent gci_cppFiles),
+          ("exposedModules", unlinesWithIndent gci_exposedModules),
+          ("otherModules", unlinesWithIndent gci_otherModules),
+          ("extralibdirs", T.intercalate ", " gci_extraLibDirs),
+          ("extraincludedirs", T.intercalate ", " gci_extraIncludeDirs),
+          ("extraLibraries", T.intercalate ", " gci_extraLibraries),
+          ("cabalIndentation", cabalIndentation),
+          ("pkgconfigDepends", T.intercalate ", " gci_pkgconfigDepends)
+        ]
 
 -- |
 buildCabalFile ::

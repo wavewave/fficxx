@@ -265,7 +265,7 @@ genTopLevelDef f@TopLevelFunction {..} =
           False
           (CFunSig toplevelfunc_args toplevelfunc_ret)
       sig = tyForall Nothing (Just (cxTuple assts)) (foldr1 tyfun typs)
-      xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len -1) else "xformnull"
+      xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len - 1) else "xformnull"
       cfname = "c_" <> toLowers fname
       rhs = app (mkVar xformerstr) (mkVar cfname)
    in mkFun fname sig [] rhs Nothing
