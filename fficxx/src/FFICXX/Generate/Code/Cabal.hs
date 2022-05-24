@@ -182,8 +182,10 @@ genCabalInfo ::
   PackageConfig ->
   -- | extra libs
   [String] ->
+  -- | cxx options
+  [String] ->
   GeneratedCabalInfo
-genCabalInfo cabal summarymodule pkgconfig extralibs =
+genCabalInfo cabal summarymodule pkgconfig extralibs cxxopts =
   let tih = pcfg_topLevelImportHeader pkgconfig
       classmodules = pcfg_classModules pkgconfig
       cih = pcfg_classImportHeaders pkgconfig
@@ -213,7 +215,7 @@ genCabalInfo cabal summarymodule pkgconfig extralibs =
           gci_extraFiles = map T.pack extrafiles,
           gci_csrcFiles = map T.pack $ genCsrcFiles (tih, classmodules) acincs acsrcs,
           gci_sourcerepository = "",
-          gci_cxxOptions = ["-std=c++14"],
+          gci_cxxOptions = map T.pack cxxopts,
           gci_pkgdeps = map T.pack $ genPkgDeps (cabal_additional_pkgdeps cabal),
           gci_exposedModules = map T.pack $ genExposedModules summarymodule (classmodules, tmods),
           gci_otherModules = map T.pack $ genOtherModules classmodules,
@@ -264,11 +266,13 @@ buildCabalFile ::
   PackageConfig ->
   -- | Extra libs
   [String] ->
+  -- | cxx options
+  [String] ->
   -- | Cabal file path
   FilePath ->
   IO ()
-buildCabalFile cabal summarymodule pkgconfig extralibs cabalfile = do
-  let cinfo = genCabalInfo cabal summarymodule pkgconfig extralibs
+buildCabalFile cabal summarymodule pkgconfig extralibs cxxopts cabalfile = do
+  let cinfo = genCabalInfo cabal summarymodule pkgconfig extralibs cxxopts
       txt = genCabalFile cinfo
   TIO.writeFile cabalfile txt
 
@@ -279,9 +283,11 @@ buildJSONFile ::
   PackageConfig ->
   -- | Extra libs
   [String] ->
+  -- | cxx options
+  [String] ->
   -- | JSON file path
   FilePath ->
   IO ()
-buildJSONFile cabal summarymodule pkgconfig extralibs jsonfile = do
-  let cinfo = genCabalInfo cabal summarymodule pkgconfig extralibs
+buildJSONFile cabal summarymodule pkgconfig extralibs cxxopts jsonfile = do
+  let cinfo = genCabalInfo cabal summarymodule pkgconfig extralibs cxxopts
   BL.writeFile jsonfile (encodePretty cinfo)

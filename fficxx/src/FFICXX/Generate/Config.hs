@@ -20,6 +20,7 @@ data SimpleBuilderConfig = SimpleBuilderConfig
     sbcTopLevels :: [TopLevel],
     sbcTemplates :: [TemplateClassImportHeader],
     sbcExtraLibs :: [String],
+    sbcCxxOpts :: [String],
     sbcExtraDeps :: [(String, [String])],
     sbcStaticFiles :: [String]
   }

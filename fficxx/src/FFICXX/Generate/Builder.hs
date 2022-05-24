@@ -67,6 +67,7 @@ simpleBuilder cfg sbc = do
         toplevelfunctions
         templates
         extralibs
+        cxxopts
         extramods
         staticFiles =
           sbc
@@ -94,10 +95,10 @@ simpleBuilder cfg sbc = do
   mapM_ (\x -> copyFileWithMD5Check (staticDir </> x) (installDir </> x)) staticFiles
   --
   putStrLn "Generating Cabal file"
-  buildCabalFile cabal topLevelMod pkgconfig extralibs (workingDir </> cabalFileName)
+  buildCabalFile cabal topLevelMod pkgconfig extralibs cxxopts (workingDir </> cabalFileName)
   --
   putStrLn "Generating JSON file"
-  buildJSONFile cabal topLevelMod pkgconfig extralibs (workingDir </> jsonFileName)
+  buildJSONFile cabal topLevelMod pkgconfig extralibs cxxopts (workingDir </> jsonFileName)
   --
   putStrLn "Generating Header file"
   let gen :: FilePath -> String -> IO ()

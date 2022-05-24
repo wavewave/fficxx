@@ -354,6 +354,7 @@ main = do
             sbcTopLevels = toplevels,
             sbcTemplates = templates,
             sbcExtraLibs = ["stdc++"],
+            sbcCxxOpts = ["-std=c++17"],
             sbcExtraDeps = extraDep,
             sbcStaticFiles = []
           }
