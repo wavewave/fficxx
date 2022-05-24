@@ -136,7 +136,8 @@ genPkgDeps cs =
 -- |
 cabalTemplate :: Text
 cabalTemplate =
-  "Name:                $pkgname\n\
+  "Cabal-version:  2.2\n\
+  \Name:                $pkgname\n\
   \Version:     $version\n\
   \Synopsis:    $synopsis\n\
   \Description:         $description\n\
@@ -148,7 +149,6 @@ cabalTemplate =
   \Category:       $category\n\
   \Tested-with:    GHC >= 7.6\n\
   \$buildtype\n\
-  \cabal-version:  2.0\n\
   \Extra-source-files:\n\
   \$extraFiles\n\
   \$csrcFiles\n\

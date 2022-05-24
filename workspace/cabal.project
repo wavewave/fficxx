@@ -3,5 +3,6 @@ packages:
   ../fficxx-runtime/
 optional-packages:
   ./stdcxx/
+  ../fficxx-test/
   ./tmpl-dep-test/
   ./tmpl-toplevel-test/
