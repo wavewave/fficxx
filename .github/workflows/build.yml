@@ -27,4 +27,22 @@ jobs:
     - name: build stdcxx
       run: |
         nix build --print-build-logs .#stdcxx
+    - name: build fficxx-test
+      run: |
+        nix build --print-build-logs .#fficxx-test
+    - name: build fficxx-multipkg-test
+      run: |
+        nix build --print-build-logs .#fficxx-multipkg-test
+    - name: build tmf-test
+      run: |
+        nix build --print-build-logs .#tmf-test
+    - name: build tmpl-dep-test
+      run: |
+        nix build --print-build-logs .#tmpl-dep-test
+    - name: build tmpl-dup-test
+      run: |
+        nix build --print-build-logs .#tmpl-dup-test
+    - name: build tmpl-toplevel-test
+      run: |
+        nix build --print-build-logs .#tmpl-toplevel-test
 
