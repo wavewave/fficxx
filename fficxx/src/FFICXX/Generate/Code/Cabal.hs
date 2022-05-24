@@ -25,7 +25,6 @@ import FFICXX.Generate.Type.Cabal
   )
 import FFICXX.Generate.Type.Class (hasProxy)
 import FFICXX.Generate.Type.Module
--- import FFICXX.Generate.Type.PackageInterface
 import FFICXX.Generate.Util
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import System.FilePath ((<.>), (</>))
@@ -149,7 +148,7 @@ cabalTemplate =
   \Category:       $category\n\
   \Tested-with:    GHC >= 7.6\n\
   \$buildtype\n\
-  \cabal-version:  >= 2\n\
+  \cabal-version:  2.0\n\
   \Extra-source-files:\n\
   \$extraFiles\n\
   \$csrcFiles\n\
