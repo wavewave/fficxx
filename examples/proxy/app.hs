@@ -1,19 +1,18 @@
-{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
-import Data.IORef                 ( IORef, newIORef, readIORef )
-import Foreign.Ptr                ( castPtr )
+import Data.IORef (IORef, newIORef, readIORef)
 --
-import FFICXX.Runtime.Function.Template (Function(..),newFunction,wrapFunPtr)
+import FFICXX.Runtime.Function.Template (Function (..), newFunction, wrapFunPtr)
+import Foreign.Ptr (castPtr)
 --
 import ProxyTest.Impl
 import ProxyTest.Loader
 --
 import TH2 (newImplProxy)
-
 
 testFn :: IORef Int -> IO ()
 testFn ref = do
@@ -27,7 +26,6 @@ main = do
   loader <- newLoader impl
 
   loader_invoke loader
-
 
   ref <- newIORef 8
   Function ptr <- newFunction =<< wrapFunPtr (testFn ref)

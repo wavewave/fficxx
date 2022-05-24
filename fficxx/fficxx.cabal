@@ -29,7 +29,7 @@ Library
                , fficxx-runtime
                , filepath>1
                , hashable
-               , haskell-src-exts >= 1.18
+               , haskell-src-exts >= 1.22
                , lens > 3
                , mtl>2
                , process

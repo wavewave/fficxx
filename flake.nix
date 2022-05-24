@@ -6,12 +6,18 @@
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
 
       haskellPackages = pkgs.haskell.packages.ghc865;
+
+      overlayDeps = self: super: {
+        "haskell-src-exts" = super.haskell-src-exts_1_23_0;
+      };
+
       newHaskellPackages0 = haskellPackages.override {
-        overrides = self: super: {
-          "fficxx-runtime" =
-            self.callCabal2nix "fficxx-runtime" ./fficxx-runtime { };
-          "fficxx" = self.callCabal2nix "fficxx" ./fficxx { };
-        };
+        overrides = self: super:
+          overlayDeps self super // {
+            "fficxx-runtime" =
+              self.callCabal2nix "fficxx-runtime" ./fficxx-runtime { };
+            "fficxx" = self.callCabal2nix "fficxx" ./fficxx { };
+          };
       };
 
       stdcxxSrc = import ./stdcxx-gen/gen.nix {
@@ -19,12 +25,13 @@
         haskellPackages = newHaskellPackages0;
       };
 
-      finalHaskellOverlay = self: super: {
-        "fficxx-runtime" =
-          self.callCabal2nix "fficxx-runtime" ./fficxx-runtime { };
-        "fficxx" = self.callCabal2nix "fficxx" ./fficxx { };
-        "stdcxx" = self.callCabal2nix "stdcxx" stdcxxSrc { };
-      };
+      finalHaskellOverlay = self: super:
+        overlayDeps self super // {
+          "fficxx-runtime" =
+            self.callCabal2nix "fficxx-runtime" ./fficxx-runtime { };
+          "fficxx" = self.callCabal2nix "fficxx" ./fficxx { };
+          "stdcxx" = self.callCabal2nix "stdcxx" stdcxxSrc { };
+        };
 
       newHaskellPackages = haskellPackages.override {
         overrides = let
@@ -77,14 +84,11 @@
         });
       };
 
-      devShell.x86_64-linux = with pkgs;
-        let
-          hsenv = haskell.packages.ghc865.ghcWithPackages
-            (p: [ p.cabal-install p.hspec ]);
-        in mkShell {
-          buildInputs = [ hsenv ];
-          shellHook = "";
-        };
+      devShell.x86_64-linux = newHaskellPackages0.shellFor {
+        packages = ps: [ ps.fficxx ps.fficxx-runtime ];
+        buildInputs = [ pkgs.cabal-install ];
+        withHoogle = false;
+      };
     };
 }
 

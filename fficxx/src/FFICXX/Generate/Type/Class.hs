@@ -1,23 +1,21 @@
-{-# LANGUAGE CPP                        #-}
-{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module FFICXX.Generate.Type.Class where
 
-import Data.List                  ( intercalate )
+import Data.List (intercalate)
 import qualified Data.Map as M
-import Data.Maybe                 ( mapMaybe )
-import Data.Monoid                ( Monoid(..) )
-import Data.Semigroup             ( Semigroup(..), (<>) )
+import Data.Maybe (mapMaybe)
+import Data.Monoid (Monoid (..))
+import Data.Semigroup (Semigroup (..), (<>))
 --
-import FFICXX.Generate.Type.Cabal ( Cabal )
-
+import FFICXX.Generate.Type.Cabal (Cabal)
 
 -- | C types
-data CTypes =
-    CTBool
+data CTypes
+  = CTBool
   | CTChar
   | CTClock
   | CTDouble
@@ -59,109 +57,111 @@ data CTypes =
   | CEnum CTypes String
   | CPointer CTypes
   | CRef CTypes
-  deriving Show
+  deriving (Show)
 
 -- | C++ types
-data CPPTypes = CPTClass Class
-              | CPTClassRef Class
-              | CPTClassCopy Class
-              | CPTClassMove Class
-              deriving Show
+data CPPTypes
+  = CPTClass Class
+  | CPTClassRef Class
+  | CPTClassCopy Class
+  | CPTClassMove Class
+  deriving (Show)
 
 -- | const flag
 data IsConst = Const | NoConst
-             deriving Show
+  deriving (Show)
 
 -- | Argument type which can be used as an template argument like float
 --   in vector<float>.
 --   For now, this distinguishes Class and non-Class.
-data TemplateArgType =
-    TArg_Class Class
+data TemplateArgType
+  = TArg_Class Class
   | TArg_TypeParam String
   | TArg_Other String
-  deriving Show
+  deriving (Show)
 
-data TemplateAppInfo =
-  TemplateAppInfo {
-    tapp_tclass :: TemplateClass
-  , tapp_tparams :: [TemplateArgType]
-  , tapp_CppTypeForParam :: String -- TODO: remove this
+data TemplateAppInfo = TemplateAppInfo
+  { tapp_tclass :: TemplateClass,
+    tapp_tparams :: [TemplateArgType],
+    tapp_CppTypeForParam :: String -- TODO: remove this
   }
-  deriving Show
+  deriving (Show)
 
 -- | Supported C++ types.
-data Types =
-    Void
+data Types
+  = Void
   | SelfType
-  | CT  CTypes IsConst
+  | CT CTypes IsConst
   | CPT CPPTypes IsConst
-  | TemplateApp     TemplateAppInfo  -- ^ like vector<float>*
-  | TemplateAppRef  TemplateAppInfo  -- ^ like vector<float>&
-  | TemplateAppMove TemplateAppInfo  -- ^ like unique_ptr<float> (using std::move)
-  | TemplateType    TemplateClass    -- ^ template self? TODO: clarify this.
-  | TemplateParam   String
-  | TemplateParamPointer String      -- ^ this is A* with template<A>
-  deriving Show
+  | -- | like vector<float>*
+    TemplateApp TemplateAppInfo
+  | -- | like vector<float>&
+    TemplateAppRef TemplateAppInfo
+  | -- | like unique_ptr<float> (using std::move)
+    TemplateAppMove TemplateAppInfo
+  | -- | template self? TODO: clarify this.
+    TemplateType TemplateClass
+  | TemplateParam String
+  | -- | this is A* with template<A>
+    TemplateParamPointer String
+  deriving (Show)
 
 -------------
 
 -- | Function argument, type and variable name.
-data Arg =
-  Arg {
-    arg_type :: Types
-  , arg_name :: String
+data Arg = Arg
+  { arg_type :: Types,
+    arg_name :: String
   }
-  deriving Show
+  deriving (Show)
 
 -- | Regular member functions in a ordinary class
-data Function =
-    Constructor {
-      func_args :: [Arg]
-    , func_alias :: Maybe String
-    }
-  | Virtual {
-      func_ret :: Types
-    , func_name :: String
-    , func_args :: [Arg]
-    , func_alias :: Maybe String
-    }
-  | NonVirtual {
-      func_ret :: Types
-    , func_name :: String
-    , func_args :: [Arg]
-    , func_alias :: Maybe String
-    }
-  | Static {
-      func_ret :: Types
-    , func_name :: String
-    , func_args :: [Arg]
-    , func_alias :: Maybe String
-    }
-  | Destructor  {
-      func_alias :: Maybe String
-    }
-  deriving Show
+data Function
+  = Constructor
+      { func_args :: [Arg],
+        func_alias :: Maybe String
+      }
+  | Virtual
+      { func_ret :: Types,
+        func_name :: String,
+        func_args :: [Arg],
+        func_alias :: Maybe String
+      }
+  | NonVirtual
+      { func_ret :: Types,
+        func_name :: String,
+        func_args :: [Arg],
+        func_alias :: Maybe String
+      }
+  | Static
+      { func_ret :: Types,
+        func_name :: String,
+        func_args :: [Arg],
+        func_alias :: Maybe String
+      }
+  | Destructor
+      { func_alias :: Maybe String
+      }
+  deriving (Show)
 
 -- | Member variable. Isomorphic to Arg
-newtype Variable =
-  Variable { unVariable :: Arg }
-  deriving Show
+newtype Variable = Variable {unVariable :: Arg}
+  deriving (Show)
 
 -- | Member functions of a template class.
-data TemplateMemberFunction =
-  TemplateMemberFunction {
-    tmf_params :: [String]
-  , tmf_ret :: Types
-  , tmf_name :: String
-  , tmf_args :: [Arg]
-  , tmf_alias :: Maybe String
+data TemplateMemberFunction = TemplateMemberFunction
+  { tmf_params :: [String],
+    tmf_ret :: Types,
+    tmf_name :: String,
+    tmf_args :: [Arg],
+    tmf_alias :: Maybe String
   }
-  deriving Show
+  deriving (Show)
 
 -- | Function defined at top level like ordinary C functions,
 --   i.e. no owning class.
-data TopLevel =
-    TLOrdinary TLOrdinary
+data TopLevel
+  = TLOrdinary TLOrdinary
   | TLTemplate TLTemplate
   deriving (Show)
 
@@ -171,29 +171,28 @@ filterTLOrdinary = mapMaybe (\case TLOrdinary f -> Just f; _ -> Nothing)
 filterTLTemplate :: [TopLevel] -> [TLTemplate]
 filterTLTemplate = mapMaybe (\case TLTemplate f -> Just f; _ -> Nothing)
 
-data TLOrdinary =
-    TopLevelFunction {
-      toplevelfunc_ret :: Types
-    , toplevelfunc_name :: String
-    , toplevelfunc_args :: [Arg]
-    , toplevelfunc_alias :: Maybe String
-    }
-  | TopLevelVariable {
-      toplevelvar_ret :: Types
-    , toplevelvar_name :: String
-    , toplevelvar_alias :: Maybe String
-    }
+data TLOrdinary
+  = TopLevelFunction
+      { toplevelfunc_ret :: Types,
+        toplevelfunc_name :: String,
+        toplevelfunc_args :: [Arg],
+        toplevelfunc_alias :: Maybe String
+      }
+  | TopLevelVariable
+      { toplevelvar_ret :: Types,
+        toplevelvar_name :: String,
+        toplevelvar_alias :: Maybe String
+      }
   deriving (Show)
 
-data TLTemplate =
-  TopLevelTemplateFunction {
-    topleveltfunc_params :: [String]
-  , topleveltfunc_ret :: Types
-  , topleveltfunc_name :: String
-  , topleveltfunc_oname :: String
-  , topleveltfunc_args :: [Arg]
+data TLTemplate = TopLevelTemplateFunction
+  { topleveltfunc_params :: [String],
+    topleveltfunc_ret :: Types,
+    topleveltfunc_name :: String,
+    topleveltfunc_oname :: String,
+    topleveltfunc_args :: [Arg]
   }
-  deriving Show
+  deriving (Show)
 
 isNewFunc :: Function -> Bool
 isNewFunc (Constructor _ _) = True
@@ -204,15 +203,13 @@ isDeleteFunc (Destructor _) = True
 isDeleteFunc _ = False
 
 isVirtualFunc :: Function -> Bool
-isVirtualFunc (Destructor _)          = True
-isVirtualFunc (Virtual _ _ _ _)       = True
-isVirtualFunc _                       = False
+isVirtualFunc (Destructor _) = True
+isVirtualFunc (Virtual _ _ _ _) = True
+isVirtualFunc _ = False
 
 isNonVirtualFunc :: Function -> Bool
 isNonVirtualFunc (NonVirtual _ _ _ _) = True
-isNonVirtualFunc _                    = False
-
-
+isNonVirtualFunc _ = False
 
 isStaticFunc :: Function -> Bool
 isStaticFunc (Static _ _ _ _) = True
@@ -226,42 +223,44 @@ constructorFuncs = filter isNewFunc
 
 nonVirtualNotNewFuncs :: [Function] -> [Function]
 nonVirtualNotNewFuncs =
-  filter (\x -> (not.isVirtualFunc) x && (not.isNewFunc) x && (not.isDeleteFunc) x && (not.isStaticFunc) x )
+  filter (\x -> (not . isVirtualFunc) x && (not . isNewFunc) x && (not . isDeleteFunc) x && (not . isStaticFunc) x)
 
 staticFuncs :: [Function] -> [Function]
 staticFuncs = filter isStaticFunc
 
 --------
 
-newtype ProtectedMethod = Protected { unProtected :: [String] }
-                        deriving (Semigroup, Monoid)
+newtype ProtectedMethod = Protected {unProtected :: [String]}
+  deriving (Semigroup, Monoid)
 
-data ClassAlias = ClassAlias { caHaskellName :: String
-                             , caFFIName :: String
-                             }
+data ClassAlias = ClassAlias
+  { caHaskellName :: String,
+    caFFIName :: String
+  }
 
 -- TODO: partial record must be avoided.
-data Class = Class {
-               class_cabal :: Cabal
-             , class_name :: String
-             , class_parents :: [Class]
-             , class_protected :: ProtectedMethod
-             , class_alias :: Maybe ClassAlias
-             , class_funcs :: [Function]
-             , class_vars :: [Variable]
-             , class_tmpl_funcs :: [TemplateMemberFunction]
-             , class_has_proxy :: Bool
-             }
-           | AbstractClass {
-               class_cabal :: Cabal
-             , class_name :: String
-             , class_parents :: [Class]
-             , class_protected :: ProtectedMethod
-             , class_alias :: Maybe ClassAlias
-             , class_funcs :: [Function]
-             , class_vars :: [Variable]
-             , class_tmpl_funcs :: [TemplateMemberFunction]
-             }
+data Class
+  = Class
+      { class_cabal :: Cabal,
+        class_name :: String,
+        class_parents :: [Class],
+        class_protected :: ProtectedMethod,
+        class_alias :: Maybe ClassAlias,
+        class_funcs :: [Function],
+        class_vars :: [Variable],
+        class_tmpl_funcs :: [TemplateMemberFunction],
+        class_has_proxy :: Bool
+      }
+  | AbstractClass
+      { class_cabal :: Cabal,
+        class_name :: String,
+        class_parents :: [Class],
+        class_protected :: ProtectedMethod,
+        class_alias :: Maybe ClassAlias,
+        class_funcs :: [Function],
+        class_vars :: [Variable],
+        class_tmpl_funcs :: [TemplateMemberFunction]
+      }
 
 -- TODO: we had better not override standard definitions
 instance Show Class where
@@ -275,55 +274,62 @@ instance Eq Class where
 instance Ord Class where
   compare x y = compare (class_name x) (class_name y)
 
-data OpExp = OpStar   -- ^ unary * (deRef) operator
-           | OpFPPlus -- ^ unary prefix ++ operator
-           --    | OpAdd Arg Arg
-           --    | OpMul Arg Arg
+data OpExp
+  = -- | unary * (deRef) operator
+    OpStar
+  | -- | unary prefix ++ operator
+    --    | OpAdd Arg Arg
+    --    | OpMul Arg Arg
+    OpFPPlus
 
-data TemplateFunction =
-    TFun {
-      tfun_ret :: Types
-    , tfun_name :: String
-    , tfun_oname :: String
-    , tfun_args :: [Arg]
-    }
-  | TFunNew {
-      tfun_new_args :: [Arg]
-    , tfun_new_alias :: Maybe String
-    }
+data TemplateFunction
+  = TFun
+      { tfun_ret :: Types,
+        tfun_name :: String,
+        tfun_oname :: String,
+        tfun_args :: [Arg]
+      }
+  | TFunNew
+      { tfun_new_args :: [Arg],
+        tfun_new_alias :: Maybe String
+      }
   | TFunDelete
-  | TFunOp {
-      tfun_ret :: Types
-    , tfun_name :: String  -- ^ haskell alias for the operator
-    , tfun_opexp :: OpExp
-    }
+  | TFunOp
+      { tfun_ret :: Types,
+        -- | haskell alias for the operator
+        tfun_name :: String,
+        tfun_opexp :: OpExp
+      }
 
 argsFromOpExp :: OpExp -> [Arg]
-argsFromOpExp OpStar   = []
+argsFromOpExp OpStar = []
 argsFromOpExp OpFPPlus = []
+
 -- argsFromOpExp (OpAdd x y) = [x,y]
 -- argsFromOpExp (OpMul x y) = [x,y]
 
 opSymbol :: OpExp -> String
-opSymbol OpStar   = "*"
+opSymbol OpStar = "*"
 opSymbol OpFPPlus = "++"
+
 -- opSymbol (OpAdd _ _) = "+"
 -- opSymbol (OpMul _ _) = "*"
 
 -- TODO: Generalize this further.
+
 -- | Positional string interpolation form.
 --   For example, "std::map<K,V>::iterator" is FormNested "std::map" "iterator"].
-data Form = FormSimple String
-          | FormNested String String
+data Form
+  = FormSimple String
+  | FormNested String String
 
-data TemplateClass =
-  TmplCls {
-    tclass_cabal   :: Cabal
-  , tclass_name    :: String
-  , tclass_cxxform :: Form
-  , tclass_params  :: [String]
-  , tclass_funcs   :: [TemplateFunction]
-  , tclass_vars :: [Variable]
+data TemplateClass = TmplCls
+  { tclass_cabal :: Cabal,
+    tclass_name :: String,
+    tclass_cxxform :: Form,
+    tclass_params :: [String],
+    tclass_funcs :: [TemplateFunction],
+    tclass_vars :: [Variable]
   }
 
 -- TODO: we had better not override standard definitions
@@ -338,27 +344,24 @@ instance Eq TemplateClass where
 instance Ord TemplateClass where
   compare x y = compare (tclass_name x) (tclass_name y)
 
-
 data ClassGlobal = ClassGlobal
-                   { cgDaughterSelfMap :: DaughterMap
-                   , cgDaughterMap :: DaughterMap
-                   }
+  { cgDaughterSelfMap :: DaughterMap,
+    cgDaughterMap :: DaughterMap
+  }
 
 data Selfness = Self | NoSelf
 
-
-
 -- | Check abstract class
 isAbstractClass :: Class -> Bool
-isAbstractClass Class{}         = False
-isAbstractClass AbstractClass{} = True
+isAbstractClass Class {} = False
+isAbstractClass AbstractClass {} = True
 
 -- | Check having Proxy
 hasProxy :: Class -> Bool
-hasProxy c@Class{} = class_has_proxy c
-hasProxy AbstractClass{} = False
+hasProxy c@Class {} = class_has_proxy c
+hasProxy AbstractClass {} = False
 
 type DaughterMap = M.Map String [Class]
 
 data Accessor = Getter | Setter
-              deriving (Show, Eq)
+  deriving (Show, Eq)

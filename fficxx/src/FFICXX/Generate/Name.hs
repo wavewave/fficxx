@@ -125,11 +125,12 @@ cppTmplFuncName f =
 
 -- |
 accessorName :: Class -> Variable -> Accessor -> String
-accessorName c v a = nonvirtualName c (arg_name (unVariable v))
-  <> "_"
-  <> case a of
-    Getter -> "get"
-    Setter -> "set"
+accessorName c v a =
+  nonvirtualName c (arg_name (unVariable v))
+    <> "_"
+    <> case a of
+      Getter -> "get"
+      Setter -> "set"
 
 -- |
 hscAccessorName :: Class -> Variable -> Accessor -> String

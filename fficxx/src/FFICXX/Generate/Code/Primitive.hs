@@ -57,17 +57,15 @@ import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
 import Language.Haskell.Exts.Syntax (Asst (..), Context, Type (..))
 
-data CFunSig
-  = CFunSig
-      { cArgTypes :: [Arg],
-        cRetType :: Types
-      }
+data CFunSig = CFunSig
+  { cArgTypes :: [Arg],
+    cRetType :: Types
+  }
 
-data HsFunSig
-  = HsFunSig
-      { hsSigTypes :: [Type ()],
-        hsSigConstraints :: [Asst ()]
-      }
+data HsFunSig = HsFunSig
+  { hsSigTypes :: [Type ()],
+    hsSigConstraints :: [Asst ()]
+  }
 
 ctypToCType :: CTypes -> IsConst -> R.CType Identity
 ctypToCType ctyp isconst =
@@ -736,14 +734,17 @@ convertCpp2HS _c (CPT (CPTClassRef c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
 convertCpp2HS _c (TemplateApp x) =
-  foldl1 tyapp $ map tycon $
-    tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
+  foldl1 tyapp $
+    map tycon $
+      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
 convertCpp2HS _c (TemplateAppRef x) =
-  foldl1 tyapp $ map tycon $
-    tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
+  foldl1 tyapp $
+    map tycon $
+      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
 convertCpp2HS _c (TemplateAppMove x) =
-  foldl1 tyapp $ map tycon $
-    tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
+  foldl1 tyapp $
+    map tycon $
+      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
 convertCpp2HS _c (TemplateType t) =
   foldl1 tyapp $
     tycon (tclass_name t) : map mkTVar (tclass_params t)
@@ -988,24 +989,24 @@ hsFFIFuncTyp msc (CFunSig args ret) =
       where
         rawname = snd (hsClassName d)
     hsargtype (TemplateApp x) =
-      tyapp tyPtr
-        $ foldl1 tyapp
-        $ map tycon
-        $ rawname : map hsClassNameForTArg (tapp_tparams x)
+      tyapp tyPtr $
+        foldl1 tyapp $
+          map tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsargtype (TemplateAppRef x) =
-      tyapp tyPtr
-        $ foldl1 tyapp
-        $ map tycon
-        $ rawname : map hsClassNameForTArg (tapp_tparams x)
+      tyapp tyPtr $
+        foldl1 tyapp $
+          map tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsargtype (TemplateAppMove x) =
-      tyapp tyPtr
-        $ foldl1 tyapp
-        $ map tycon
-        $ rawname : map hsClassNameForTArg (tapp_tparams x)
+      tyapp tyPtr $
+        foldl1 tyapp $
+          map tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsargtype (TemplateType t) = tyapp tyPtr $ foldl1 tyapp (tycon rawname : map mkTVar (tclass_params t))
@@ -1031,24 +1032,24 @@ hsFFIFuncTyp msc (CFunSig args ret) =
       where
         rawname = snd (hsClassName d)
     hsrettype (TemplateApp x) =
-      tyapp tyPtr
-        $ foldl1 tyapp
-        $ map tycon
-        $ rawname : map hsClassNameForTArg (tapp_tparams x)
+      tyapp tyPtr $
+        foldl1 tyapp $
+          map tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsrettype (TemplateAppRef x) =
-      tyapp tyPtr
-        $ foldl1 tyapp
-        $ map tycon
-        $ rawname : map hsClassNameForTArg (tapp_tparams x)
+      tyapp tyPtr $
+        foldl1 tyapp $
+          map tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsrettype (TemplateAppMove x) =
-      tyapp tyPtr
-        $ foldl1 tyapp
-        $ map tycon
-        $ rawname : map hsClassNameForTArg (tapp_tparams x)
+      tyapp tyPtr $
+        foldl1 tyapp $
+          map tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsrettype (TemplateType t) =

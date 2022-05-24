@@ -8,7 +8,7 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Char (toUpper)
 import Data.Digest.Pure.MD5 (md5)
 import Data.Foldable (for_)
-import Data.Monoid ((<>), mempty)
+import Data.Monoid (mempty, (<>))
 --
 
 --
@@ -45,7 +45,7 @@ import System.Directory
     createDirectoryIfMissing,
     doesFileExist,
   )
-import System.FilePath ((<.>), (</>), splitExtension)
+import System.FilePath (splitExtension, (<.>), (</>))
 import System.IO (IOMode (..), hPutStrLn, withFile)
 import System.Process (readProcess)
 
@@ -264,9 +264,9 @@ copyModule wdir ddir m = do
   moduleFileCopy wdir ddir $ modbase <> ".Cast.hs"
   moduleFileCopy wdir ddir $ modbase <> ".Implementation.hs"
   moduleFileCopy wdir ddir $ modbase <> ".Interface.hs-boot"
-  when (hasProxy . cihClass . cmCIH $ m)
-    $ moduleFileCopy wdir ddir
-    $ modbase <> ".Proxy.hs"
+  when (hasProxy . cihClass . cmCIH $ m) $
+    moduleFileCopy wdir ddir $
+      modbase <> ".Proxy.hs"
 
 copyTemplateModule :: FilePath -> FilePath -> TemplateClassModule -> IO ()
 copyTemplateModule wdir ddir m = do

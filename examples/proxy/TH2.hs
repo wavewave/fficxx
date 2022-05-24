@@ -1,15 +1,19 @@
-{-# LANGUAGE ForeignFunctionInterface, TypeFamilies,
-  MultiParamTypeClasses, FlexibleInstances, TypeSynonymInstances,
-  EmptyDataDecls, ExistentialQuantification, ScopedTypeVariables #-}
+{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module TH2 where
 
-import Foreign.Ptr
 import FFICXX.Runtime.Cast
-import STD.Deletable.Interface
+import Foreign.Ptr
 import ProxyTest.Impl.Interface
-
+import STD.Deletable.Interface
 import qualified TH
 
 TH.genImplProxy
@@ -17,16 +21,16 @@ TH.genImplProxy
 data RawImplProxy
 
 newtype ImplProxy = ImplProxy (Ptr RawImplProxy)
-                 deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show)
 
 instance () => FPtr (ImplProxy) where
-        type Raw ImplProxy = RawImplProxy
-        get_fptr (ImplProxy ptr) = ptr
-        cast_fptr_to_obj = ImplProxy
+  type Raw ImplProxy = RawImplProxy
+  get_fptr (ImplProxy ptr) = ptr
+  cast_fptr_to_obj = ImplProxy
 
 instance () => Castable (ImplProxy) (Ptr RawImplProxy) where
-        cast x f = f (castPtr (get_fptr x))
-        uncast x f = f (cast_fptr_to_obj (castPtr x))
+  cast x f = f (castPtr (get_fptr x))
+  uncast x f = f (cast_fptr_to_obj (castPtr x))
 
 foreign import ccall safe "ImplProxy_delete"
   c_implsub_delete :: Ptr RawImplProxy -> IO ()

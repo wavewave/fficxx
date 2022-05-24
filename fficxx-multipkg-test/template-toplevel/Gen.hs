@@ -7,9 +7,10 @@ import qualified Data.HashMap.Strict as HM
 
 import qualified Data.HashMap.Strict as HM (fromList)
 import Data.Monoid (mempty)
-import FFICXX.Generate.Builder (simpleBuilder)
 --
 import FFICXX.Generate.Builder
+import FFICXX.Generate.Builder (simpleBuilder)
+import FFICXX.Generate.Code.Primitive
 import FFICXX.Generate.Code.Primitive
   ( bool_,
     charpp,
@@ -26,19 +27,18 @@ import FFICXX.Generate.Code.Primitive
     void_,
     voidp,
   )
-import FFICXX.Generate.Code.Primitive
 import FFICXX.Generate.Config
   ( FFICXXConfig (..),
     SimpleBuilderConfig (..),
   )
-import FFICXX.Generate.Type.Cabal (BuildType (..), Cabal (..), CabalName (..))
 import FFICXX.Generate.Type.Cabal
   ( AddCInc (..),
     AddCSrc (..),
-    BuildType (Simple),
+    BuildType (..),
     Cabal (..),
     CabalName (..),
   )
+import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Class
   ( Arg (..),
     CTypes (CTDouble),
@@ -49,21 +49,11 @@ import FFICXX.Generate.Type.Class
     TopLevel (..),
     Variable (..),
   )
-import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Config
   ( ModuleUnit (..),
     ModuleUnitImports (..),
     ModuleUnitMap (..),
     modImports,
-  )
-import FFICXX.Generate.Type.Config
-  ( ModuleUnit (..),
-    ModuleUnitImports (..),
-  )
-import FFICXX.Generate.Type.Config
-  ( ModuleUnit (..),
-    ModuleUnitImports (..),
-    ModuleUnitMap (..),
   )
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface

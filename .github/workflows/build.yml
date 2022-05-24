@@ -45,4 +45,9 @@ jobs:
     - name: build tmpl-toplevel-test
       run: |
         nix build --print-build-logs .#tmpl-toplevel-test
-
+  format:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      # ormolu 0.3.0.1
+      - uses: mrkkrp/ormolu-action@v4

@@ -347,7 +347,6 @@ instance Castable String CString where
   cast x = unsafePerformIO (newCString x)
   uncast x = unsafePerformIO (peekCString x)
 
-
 instance (Castable a a', Castable b b') => Castable (a->b) (a'->b') where
   cast f = cast . f . uncast
   uncast f = uncast . f . cast
