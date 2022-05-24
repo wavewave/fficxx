@@ -77,14 +77,11 @@
         });
       };
 
-      devShell.x86_64-linux = with pkgs;
-        let
-          hsenv = haskell.packages.ghc865.ghcWithPackages
-            (p: [ p.cabal-install p.hspec ]);
-        in mkShell {
-          buildInputs = [ hsenv ];
-          shellHook = "";
-        };
+      devShell.x86_64-linux = newHaskellPackages0.shellFor {
+        packages = ps: [ ps.fficxx ps.fficxx-runtime ];
+        buildInputs = [ pkgs.cabal-install ];
+        withHoogle = false;
+      };
     };
 }
 
