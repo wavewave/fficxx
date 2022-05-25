@@ -76,7 +76,7 @@ cabal_ tdtestH tdtestCpp =
       cabal_additional_c_incs = [AddCInc "tdtest.h" tdtestH],
       cabal_additional_c_srcs = [AddCSrc "tdtest.cpp" tdtestCpp],
       cabal_additional_pkgdeps = [CabalName "stdcxx"],
-      cabal_license = Just "BSD3",
+      cabal_license = Just "BSD-3-Clause",
       cabal_licensefile = Just "LICENSE",
       cabal_extraincludedirs = [],
       cabal_extralibdirs = [],
@@ -188,6 +188,7 @@ main = do
             sbcTopLevels = toplevels,
             sbcTemplates = templates cabal,
             sbcExtraLibs = extraLib,
+            sbcCxxOpts = ["-std=c++17"],
             sbcExtraDeps = extraDep,
             sbcStaticFiles = []
           }
