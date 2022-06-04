@@ -25,7 +25,6 @@ Library
                  bytestring,
                  hashable,
                  template-haskell
-
   Exposed-Modules:
                    FFICXX.Runtime.Cast
                    FFICXX.Runtime.CodeGen.Cxx

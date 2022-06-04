@@ -11,11 +11,42 @@
 module FFICXX.Runtime.Cast where
 
 import Data.ByteString.Char8 (ByteString, packCString, useAsCString)
-import Data.Int
-import Data.Word
+import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Word (Word16, Word32, Word64, Word8)
 import Foreign.C
-import Foreign.Marshal.Array
-import Foreign.Ptr
+  ( CBool,
+    CChar,
+    CClock,
+    CDouble,
+    CFile,
+    CFloat,
+    CFpos,
+    CInt,
+    CIntMax,
+    CIntPtr,
+    CJmpBuf,
+    CLLong,
+    CLong,
+    CPtrdiff,
+    CSChar,
+    CSUSeconds,
+    CShort,
+    CSigAtomic,
+    CSize,
+    CString,
+    CTime,
+    CUChar,
+    CUInt,
+    CUIntMax,
+    CUIntPtr,
+    CULLong,
+    CULong,
+    CUSeconds,
+    CUShort,
+    CWchar,
+  )
+import Foreign.Marshal.Array (newArray, withArray)
+import Foreign.Ptr (FunPtr, Ptr)
 
 class IsRawType a
 

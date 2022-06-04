@@ -40,7 +40,6 @@ Library
                , template-haskell
                , text
                , unordered-containers
-               , fficxx-build-tools
   Exposed-Modules:
                FFICXX.Generate.Builder
                FFICXX.Generate.Config

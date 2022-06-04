@@ -7,7 +7,11 @@
 module FFICXX.Runtime.Function.Template where
 
 import FFICXX.Runtime.Cast
-import Foreign.Ptr
+  ( Castable (..),
+    FPtr (..),
+    Raw (..),
+  )
+import Foreign.Ptr (FunPtr, Ptr, castPtr)
 
 data RawFunction t
 
