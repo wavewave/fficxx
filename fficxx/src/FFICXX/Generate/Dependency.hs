@@ -25,10 +25,6 @@ import qualified Data.HashMap.Strict as HM
 import Data.List (find, foldl', nub, nubBy)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.Monoid ((<>))
---
-
---
 import FFICXX.Generate.Name (ffiClassName, hsClassName, hsTemplateClassName)
 import FFICXX.Generate.Type.Cabal
   ( AddCInc,
@@ -191,7 +187,7 @@ extractClassDepForTLOrdinary f =
       TopLevelVariable {..} -> toplevelvar_ret
     args = case f of
       TopLevelFunction {..} -> toplevelfunc_args
-      TopLevelVariable {..} -> []
+      TopLevelVariable {} -> []
 
 -- |
 extractClassDepForTLTemplate :: TLTemplate -> Dep4Func

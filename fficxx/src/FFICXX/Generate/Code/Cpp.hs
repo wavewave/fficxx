@@ -6,10 +6,6 @@ module FFICXX.Generate.Code.Cpp where
 import Data.Char (toUpper)
 import Data.Functor.Identity (Identity)
 import Data.List (intercalate, intersperse)
-import Data.Monoid ((<>))
---
-
---
 import FFICXX.Generate.Code.Primitive
   ( CFunSig (..),
     accessorCFunSig,
@@ -53,7 +49,6 @@ import FFICXX.Generate.Type.Class
     TemplateClass (..),
     TemplateFunction (..),
     TemplateMemberFunction (..),
-    TopLevel (..),
     Types (..),
     Variable (..),
     argsFromOpExp,
@@ -325,7 +320,7 @@ genTmplVarCpp ::
   TemplateClass ->
   Variable ->
   [R.CMacro Identity]
-genTmplVarCpp b t@TmplCls {..} var@(Variable (Arg {..})) =
+genTmplVarCpp b t@TmplCls {..} var@(Variable (Arg {})) =
   [gen var Getter, gen var Setter]
   where
     nsuffix = intersperse (R.NamePart "_") $ map R.NamePart tclass_params
@@ -360,10 +355,10 @@ genTmplClassCpp b TmplCls {..} (fs, vs) =
     suffix = case b of CPrim -> "_s"; NonCPrim -> ""
     tname = tclass_name
     macroname = tname <> "_instance" <> suffix
-    macro1 f@TFun {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
-    macro1 f@TFunNew {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
+    macro1 f@TFun {} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
+    macro1 f@TFunNew {} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
     macro1 TFunDelete = R.CMacroApp (R.sname (tname <> "_delete" <> suffix)) params
-    macro1 f@TFunOp {..} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
+    macro1 f@TFunOp {} = R.CMacroApp (R.sname (tname <> "_" <> ffiTmplFuncName f <> suffix)) params
     body =
       map macro1 fs
         ++ (map macro1 . concatMap (\v -> [tmplAccessorToTFun v Getter, tmplAccessorToTFun v Setter])) vs
@@ -595,7 +590,7 @@ topLevelTemplateFunToDecl ::
   IsCPrimitive ->
   TLTemplate ->
   R.CFunDecl Identity
-topLevelTemplateFunToDecl b t@(TopLevelTemplateFunction {..}) =
+topLevelTemplateFunToDecl b (TopLevelTemplateFunction {..}) =
   let nsuffix = intersperse (R.NamePart "_") $ map R.NamePart topleveltfunc_params
       ret = tmplReturnCType b topleveltfunc_ret
       func = R.CName (R.NamePart ("TL_" <> topleveltfunc_name <> "_") : nsuffix)

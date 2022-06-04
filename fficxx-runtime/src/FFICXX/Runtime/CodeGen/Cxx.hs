@@ -6,7 +6,6 @@ module FFICXX.Runtime.CodeGen.Cxx where
 import Data.Functor.Identity (Identity)
 import Data.Hashable (Hashable)
 import Data.List (intercalate)
-import Data.Semigroup ((<>))
 import Data.String (IsString (..))
 
 newtype HeaderName = HdrName {unHdrName :: String}

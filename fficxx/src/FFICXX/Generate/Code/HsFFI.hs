@@ -4,10 +4,6 @@
 module FFICXX.Generate.Code.HsFFI where
 
 import Data.Maybe (fromMaybe, mapMaybe)
-import Data.Monoid ((<>))
---
-
---
 import FFICXX.Generate.Code.Primitive
   ( CFunSig (..),
     accessorCFunSig,
@@ -33,7 +29,6 @@ import FFICXX.Generate.Type.Class
     Function (..),
     Selfness (NoSelf, Self),
     TLOrdinary (..),
-    TopLevel (..),
     Variable (unVariable),
     isAbstractClass,
     isNewFunc,

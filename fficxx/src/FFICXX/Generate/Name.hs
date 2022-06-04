@@ -1,11 +1,10 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module FFICXX.Generate.Name where
 
 import Data.Char (toLower)
-import Data.Maybe (fromMaybe, maybe)
-import Data.Monoid ((<>))
---
+import Data.Maybe (fromMaybe)
 import FFICXX.Generate.Type.Class
   ( Accessor (..),
     Arg (..),
@@ -92,10 +91,10 @@ aliasedFuncName c f =
 hsTmplFuncName :: TemplateClass -> TemplateFunction -> String
 hsTmplFuncName t f =
   case f of
-    TFun {..} -> tfun_name
-    TFunNew {..} -> fromMaybe ("new" <> tclass_name t) tfun_new_alias
+    TFun {tfun_name} -> tfun_name
+    TFunNew {tfun_new_alias} -> fromMaybe ("new" <> tclass_name t) tfun_new_alias
     TFunDelete -> "delete" <> tclass_name t
-    TFunOp {..} -> tfun_name
+    TFunOp {tfun_name} -> tfun_name
 
 -- |
 hsTmplFuncNameTH :: TemplateClass -> TemplateFunction -> String
@@ -110,18 +109,18 @@ hsTemplateMemberFunctionNameTH c f = "t_" <> hsTemplateMemberFunctionName c f
 ffiTmplFuncName :: TemplateFunction -> String
 ffiTmplFuncName f =
   case f of
-    TFun {..} -> tfun_name
-    TFunNew {..} -> fromMaybe "new" tfun_new_alias
+    TFun {tfun_name} -> tfun_name
+    TFunNew {tfun_new_alias} -> fromMaybe "new" tfun_new_alias
     TFunDelete -> "delete"
-    TFunOp {..} -> tfun_name
+    TFunOp {tfun_name} -> tfun_name
 
 cppTmplFuncName :: TemplateFunction -> String
 cppTmplFuncName f =
   case f of
-    TFun {..} -> tfun_name
-    TFunNew {..} -> "new"
+    TFun {tfun_name} -> tfun_name
+    TFunNew {} -> "new"
     TFunDelete -> "delete"
-    TFunOp {..} -> tfun_name
+    TFunOp {tfun_name} -> tfun_name
 
 -- |
 accessorName :: Class -> Variable -> Accessor -> String

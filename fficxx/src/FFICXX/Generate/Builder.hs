@@ -8,10 +8,6 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Char (toUpper)
 import Data.Digest.Pure.MD5 (md5)
 import Data.Foldable (for_)
-import Data.Monoid (mempty, (<>))
---
-
---
 import FFICXX.Generate.Code.Cabal (buildCabalFile, buildJSONFile)
 import FFICXX.Generate.Config
   ( FFICXXConfig (..),
@@ -48,8 +44,6 @@ import System.Directory
 import System.FilePath (splitExtension, (<.>), (</>))
 import System.IO (IOMode (..), hPutStrLn, withFile)
 import System.Process (readProcess)
-
---
 
 macrofy :: String -> String
 macrofy = map ((\x -> if x == '-' then '_' else x) . toUpper)

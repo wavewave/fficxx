@@ -64,6 +64,7 @@ Library
                FFICXX.Generate.Type.Module
                FFICXX.Generate.Type.PackageInterface
   ghc-options: -Wall
+               -Werror
                -funbox-strict-fields
                -fno-warn-unused-do-bind
                -fno-warn-missing-signatures

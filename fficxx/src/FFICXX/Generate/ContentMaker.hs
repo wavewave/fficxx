@@ -11,7 +11,6 @@ import Data.List (intercalate, nub)
 import Data.List.Split (splitOn)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
-import Data.Monoid ((<>))
 import FFICXX.Generate.Code.Cpp
   ( genAllCppHeaderInclude,
     genCppDefInstAccessor,
@@ -89,7 +88,6 @@ import FFICXX.Generate.Type.Class
     ClassGlobal (..),
     DaughterMap,
     ProtectedMethod (..),
-    TLTemplate,
     TopLevel (TLOrdinary, TLTemplate),
     filterTLOrdinary,
     filterTLTemplate,
@@ -582,15 +580,14 @@ buildTopLevelHs ::
   ([ClassModule], [TemplateClassModule]) ->
   TopLevelImportHeader ->
   Module ()
-buildTopLevelHs modname (mods, tmods) tih =
+buildTopLevelHs modname (mods, tmods) _tih =
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
-    tfns = tihFuncs tih
     pkgExtensions = [lang ["FlexibleContexts", "FlexibleInstances"]]
     pkgExports =
       map (emodule . cmModule) mods
         ++ map emodule [modname <.> "Ordinary", modname <.> "Template", modname <.> "TH"]
-    pkgImports = genImportInTopLevel modname (mods, tmods) tih
+    pkgImports = genImportInTopLevel modname (mods, tmods)
     pkgBody = [] --    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
     -- ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
 
@@ -599,7 +596,7 @@ buildTopLevelOrdinaryHs ::
   ([ClassModule], [TemplateClassModule]) ->
   TopLevelImportHeader ->
   Module ()
-buildTopLevelOrdinaryHs modname (mods, tmods) tih =
+buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = tihFuncs tih
@@ -619,7 +616,7 @@ buildTopLevelTemplateHs ::
   ([ClassModule], [TemplateClassModule]) ->
   TopLevelImportHeader ->
   Module ()
-buildTopLevelTemplateHs modname (mods, tmods) tih =
+buildTopLevelTemplateHs modname (_mods, _tmods) tih =
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = filterTLTemplate (tihFuncs tih)
@@ -646,7 +643,7 @@ buildTopLevelTHHs ::
   ([ClassModule], [TemplateClassModule]) ->
   TopLevelImportHeader ->
   Module ()
-buildTopLevelTHHs modname (mods, tmods) tih =
+buildTopLevelTHHs modname (_mods, _tmods) tih =
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = filterTLTemplate (tihFuncs tih)

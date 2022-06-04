@@ -8,8 +8,6 @@ module FFICXX.Generate.Code.HsFrontEnd where
 import Control.Monad.Reader (Reader)
 import Data.Either (lefts, rights)
 import Data.List (nub)
-import Data.Monoid ((<>))
---
 import FFICXX.Generate.Code.Primitive
   ( CFunSig (..),
     HsFunSig (..),
@@ -44,11 +42,10 @@ import FFICXX.Generate.Type.Class
   ( Accessor (..),
     Class (..),
     TLOrdinary (..),
-    TLTemplate (..),
-    TopLevel (TLOrdinary, TLTemplate),
+    TLTemplate,
+    TopLevel (TLOrdinary),
     Types (..),
     constructorFuncs,
-    filterTLOrdinary,
     isAbstractClass,
     isNewFunc,
     isVirtualFunc,
@@ -60,7 +57,6 @@ import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     ClassModule (..),
     TemplateClassModule (..),
-    TopLevelImportHeader (..),
   )
 import FFICXX.Generate.Util (toLowers)
 import FFICXX.Generate.Util.HaskellSrcExts
@@ -407,9 +403,7 @@ genImportForTLTemplate f =
 genImportInTopLevel ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
-  TopLevelImportHeader ->
   [ImportDecl ()]
-genImportInTopLevel modname (mods, tmods) tih =
-  let tfns = tihFuncs tih
-   in map (mkImport . cmModule) mods
-        ++ map mkImport [modname <.> "Template", modname <.> "TH", modname <.> "Ordinary"]
+genImportInTopLevel modname (mods, _tmods) =
+  map (mkImport . cmModule) mods
+    ++ map mkImport [modname <.> "Template", modname <.> "TH", modname <.> "Ordinary"]
