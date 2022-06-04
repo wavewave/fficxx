@@ -6,15 +6,11 @@ module FFICXX.Generate.Code.Cabal where
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy as BL
 import Data.List (intercalate, nub)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T (intercalate, pack, replicate, unlines)
 import qualified Data.Text.IO as TIO (writeFile)
 import qualified Data.Text.Lazy as TL (toStrict)
 import Data.Text.Template (substitute)
---
-
---
 import FFICXX.Generate.Type.Cabal
   ( AddCInc (..),
     AddCSrc (..),
@@ -25,7 +21,14 @@ import FFICXX.Generate.Type.Cabal
   )
 import FFICXX.Generate.Type.Class (hasProxy)
 import FFICXX.Generate.Type.Module
-import FFICXX.Generate.Util
+  ( ClassImportHeader (..),
+    ClassModule (..),
+    PackageConfig (..),
+    TemplateClassImportHeader,
+    TemplateClassModule (..),
+    TopLevelImportHeader (..),
+  )
+import FFICXX.Generate.Util (contextT)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import System.FilePath ((<.>), (</>))
 

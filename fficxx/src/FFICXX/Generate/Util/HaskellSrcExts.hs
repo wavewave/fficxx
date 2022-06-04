@@ -2,8 +2,108 @@ module FFICXX.Generate.Util.HaskellSrcExts where
 
 import Data.List (foldl')
 import Data.Maybe (maybeToList)
-import Language.Haskell.Exts hiding (unit_tycon)
-import qualified Language.Haskell.Exts (unit_tycon)
+import Language.Haskell.Exts
+  ( Alt (..),
+    Asst (TypeA),
+    Binds,
+    Bracket (TypeBracket),
+    CallConv (CCall),
+    ClassDecl (ClsDecl),
+    ConDecl
+      ( ConDecl,
+        RecDecl
+      ),
+    Context
+      ( CxEmpty,
+        CxTuple
+      ),
+    DataOrNew
+      ( DataType,
+        NewType
+      ),
+    Decl
+      ( ClassDecl,
+        DataDecl,
+        ForImp,
+        FunBind,
+        InstDecl,
+        PatBind,
+        TypeSig
+      ),
+    DeclHead
+      ( DHApp,
+        DHead
+      ),
+    Deriving (..),
+    EWildcard (..),
+    Exp
+      ( App,
+        BracketExp,
+        Con,
+        If,
+        InfixApp,
+        Lit,
+        Var
+      ),
+    ExportSpec
+      ( EAbs,
+        EModuleContents,
+        EThingWith,
+        EVar
+      ),
+    ExportSpecList (..),
+    FieldDecl,
+    ImportDecl (..),
+    ImportSpec (IVar),
+    ImportSpecList (..),
+    InstDecl
+      ( InsDecl,
+        InsType
+      ),
+    InstHead
+      ( IHApp,
+        IHCon
+      ),
+    InstRule (IRule),
+    Literal,
+    Match (..),
+    Module (..),
+    ModuleHead (..),
+    ModuleName (..),
+    ModulePragma (LanguagePragma),
+    Name
+      ( Ident,
+        Symbol
+      ),
+    Namespace (NoNamespace),
+    Pat
+      ( PVar,
+        PatTypeSig
+      ),
+    QName (UnQual),
+    QOp (QVarOp),
+    QualConDecl (..),
+    Rhs (UnGuardedRhs),
+    Safety (PlaySafe),
+    Splice (ParenSplice),
+    Stmt
+      ( Generator,
+        Qualifier
+      ),
+    TyVarBind (UnkindedVar),
+    Type
+      ( TyApp,
+        TyCon,
+        TyForall,
+        TyFun,
+        TyList,
+        TyParen,
+        TySplice,
+        TyVar
+      ),
+    app,
+    unit_tycon,
+  )
 
 unqual :: String -> QName ()
 unqual = UnQual () . Ident ()

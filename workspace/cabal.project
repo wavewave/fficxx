@@ -1,6 +1,7 @@
 packages:
   ../fficxx/
   ../fficxx-runtime/
+  ../build-tools/
 optional-packages:
   ./stdcxx/
   ../fficxx-test/

@@ -4,7 +4,7 @@
 module FFICXX.Generate.ContentMaker where
 
 import Control.Lens (at, (&), (.~))
-import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Reader (runReader)
 import Data.Either (rights)
 import Data.Functor.Identity (Identity)
 import Data.List (intercalate, nub)
@@ -12,9 +12,6 @@ import Data.List.Split (splitOn)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import Data.Monoid ((<>))
---
-
---
 import FFICXX.Generate.Code.Cpp
   ( genAllCppHeaderInclude,
     genCppDefInstAccessor,
@@ -112,6 +109,17 @@ import FFICXX.Generate.Type.PackageInterface
   )
 import FFICXX.Generate.Util (firstUpper)
 import FFICXX.Generate.Util.HaskellSrcExts
+  ( cxEmpty,
+    emodule,
+    evar,
+    lang,
+    mkClass,
+    mkImport,
+    mkModule,
+    mkModuleE,
+    mkTBind,
+    unqual,
+  )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import Language.Haskell.Exts.Syntax
