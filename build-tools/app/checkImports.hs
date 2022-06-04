@@ -17,10 +17,10 @@ import qualified Extensions.Module as EM
 import qualified Extensions.Types as E
 import FastString (mkFastString)
 import qualified GHC
+import GHC.Hs (HsModule (..))
+import GHC.Hs.Extension (GhcPs)
+import GHC.Hs.ImpExp (ImportDecl (..), ImportDeclQualifiedStyle (..))
 import qualified GHC.Paths as GHC.Paths
-import HsExtension (GhcPs)
-import HsImpExp (ImportDecl (..))
-import HsSyn (HsModule (..))
 import Lexer (P (unP), ParseResult (..), mkPState)
 import Module (moduleNameString)
 import qualified Options.Applicative as OA
@@ -47,7 +47,7 @@ runParser flags str filename parser = unP parser parseState
 isImplicitImport :: ImportDecl GhcPs -> Bool
 isImplicitImport (ImportDecl {ideclName, ideclQualified, ideclHiding})
   | moduleNameString (unLoc ideclName) == "Prelude" = False
-  | ideclQualified = False
+  | ideclQualified /= NotQualified = False
   | Just (False, _) <- ideclHiding = False
   | otherwise = True
 isImplicitImport _ = False

@@ -21,6 +21,8 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import DynFlags (DynFlags)
 import GHC (getModuleInfo)
+import GHC.Hs.Decls (HsGroup (..))
+import GHC.Hs.Extension (GhcRn)
 import GhcPlugins
   ( CommandLineOption,
     CoreM,
@@ -32,8 +34,6 @@ import GhcPlugins
     defaultPlugin,
     putMsgS,
   )
-import HsDecls (HsGroup (..))
-import HsExtension (GhcRn)
 import HscTypes (HsParsedModule (..), ModIface (..))
 import IOEnv (failWithM)
 import Module (ModuleName, lookupModuleEnv)

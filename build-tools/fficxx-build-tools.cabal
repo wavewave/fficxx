@@ -23,7 +23,7 @@ extra-source-files: CHANGELOG.md
 
 library
   hs-source-dirs:     src
-  Build-Depends:      base == 4.*,
+  Build-Depends:      base ^>= 4.14.0.0,
                       containers,
                       ghc == 8.10.*,
                       transformers
@@ -38,7 +38,7 @@ executable checkImports
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.13.0.0,
+    build-depends:    base ^>=4.14.0.0,
                       extensions,
                       ghc == 8.10.*,
                       ghc-paths,
