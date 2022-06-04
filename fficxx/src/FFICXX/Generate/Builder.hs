@@ -178,13 +178,19 @@ simpleBuilder cfg sbc = do
   gen (topLevelMod <.> "Ordinary" <.> "hs") (prettyPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih))
   --
   putStrLn "Generating Top-level Template Module"
-  gen (topLevelMod <.> "Template" <.> "hs") (prettyPrint (C.buildTopLevelTemplateHs (topLevelMod <> ".Template") (mods, tcms) tih))
+  gen
+    (topLevelMod <.> "Template" <.> "hs")
+    (prettyPrint (C.buildTopLevelTemplateHs (topLevelMod <> ".Template") tih))
   --
   putStrLn "Generating Top-level TH Module"
-  gen (topLevelMod <.> "TH" <.> "hs") (prettyPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") (mods, tcms) tih))
+  gen
+    (topLevelMod <.> "TH" <.> "hs")
+    (prettyPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") tih))
   --
   putStrLn "Generating Top-level Module"
-  gen (topLevelMod <.> "hs") (prettyPrint (C.buildTopLevelHs topLevelMod (mods, tcms) tih))
+  gen
+    (topLevelMod <.> "hs")
+    (prettyPrint (C.buildTopLevelHs topLevelMod (mods, tcms)))
   --
   putStrLn "Copying generated files to target directory"
   touch (workingDir </> "LICENSE")

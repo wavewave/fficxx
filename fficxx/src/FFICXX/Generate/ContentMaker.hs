@@ -578,9 +578,8 @@ buildModuleHs m = mkModuleE (cmModule m) [] (genExport c) (genImportInModule c) 
 buildTopLevelHs ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
-  TopLevelImportHeader ->
   Module ()
-buildTopLevelHs modname (mods, tmods) _tih =
+buildTopLevelHs modname (mods, tmods) =
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     pkgExtensions = [lang ["FlexibleContexts", "FlexibleInstances"]]
@@ -613,10 +612,9 @@ buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
 -- |
 buildTopLevelTemplateHs ::
   String ->
-  ([ClassModule], [TemplateClassModule]) ->
   TopLevelImportHeader ->
   Module ()
-buildTopLevelTemplateHs modname (_mods, _tmods) tih =
+buildTopLevelTemplateHs modname tih =
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = filterTLTemplate (tihFuncs tih)
@@ -628,7 +626,15 @@ buildTopLevelTemplateHs modname (_mods, _tmods) tih =
             "TypeFamilies"
           ]
       ]
-    pkgExports = map ((\n -> EThingWith () (EWildcard () 1) n []) . unqual . firstUpper . hsFrontNameForTopLevel . TLTemplate) tfns
+    pkgExports =
+      map
+        ( (\n -> EThingWith () (EWildcard () 1) n [])
+            . unqual
+            . firstUpper
+            . hsFrontNameForTopLevel
+            . TLTemplate
+        )
+        tfns
     pkgImports =
       [ mkImport "Foreign.C.Types",
         mkImport "Foreign.Ptr",
@@ -640,15 +646,23 @@ buildTopLevelTemplateHs modname (_mods, _tmods) tih =
 -- |
 buildTopLevelTHHs ::
   String ->
-  ([ClassModule], [TemplateClassModule]) ->
   TopLevelImportHeader ->
   Module ()
-buildTopLevelTHHs modname (_mods, _tmods) tih =
+buildTopLevelTHHs modname tih =
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = filterTLTemplate (tihFuncs tih)
     pkgExtensions = [lang ["FlexibleContexts", "FlexibleInstances", "TemplateHaskell"]]
-    pkgExports = map (evar . unqual . (\x -> "gen" <> x <> "InstanceFor") . firstUpper . hsFrontNameForTopLevel . TLTemplate) tfns
+    pkgExports =
+      map
+        ( evar
+            . unqual
+            . (\x -> "gen" <> x <> "InstanceFor")
+            . firstUpper
+            . hsFrontNameForTopLevel
+            . TLTemplate
+        )
+        tfns
     pkgImports =
       [ mkImport "Data.Char",
         mkImport "Data.List",
