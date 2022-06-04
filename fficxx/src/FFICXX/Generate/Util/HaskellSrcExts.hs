@@ -104,6 +104,7 @@ import Language.Haskell.Exts
     app,
     unit_tycon,
   )
+import Language.Haskell.Exts.Syntax (CName)
 
 unqual :: String -> QName ()
 unqual = UnQual () . Ident ()
@@ -130,6 +131,11 @@ unit_tycon = Language.Haskell.Exts.unit_tycon ()
 conDecl :: String -> [Type ()] -> ConDecl ()
 conDecl n ys = ConDecl () (Ident () n) ys
 
+qualConDecl ::
+  Maybe [TyVarBind ()] ->
+  Maybe (Context ()) ->
+  ConDecl () ->
+  QualConDecl ()
 qualConDecl = QualConDecl ()
 
 recDecl :: String -> [FieldDecl ()] -> ConDecl ()
@@ -237,8 +243,14 @@ lang ns = LanguagePragma () (map (Ident ()) ns)
 dot :: Exp () -> Exp () -> Exp ()
 x `dot` y = x `app` mkVar "." `app` y
 
+tyForall ::
+  Maybe [TyVarBind ()] ->
+  Maybe (Context ()) ->
+  Type () ->
+  Type ()
 tyForall = TyForall ()
 
+tyParen :: Type () -> Type ()
 tyParen = TyParen ()
 
 tyPtr :: Type ()
@@ -262,47 +274,77 @@ tySplice = TySplice ()
 parenSplice :: Exp () -> Splice ()
 parenSplice = ParenSplice ()
 
+bracketExp :: Bracket () -> Exp ()
 bracketExp = BracketExp ()
 
+typeBracket :: Type () -> Bracket ()
 typeBracket = TypeBracket ()
 
+mkDeriving :: [InstRule ()] -> Deriving ()
 mkDeriving = Deriving () Nothing
 
+irule ::
+  Maybe [TyVarBind ()] ->
+  Maybe (Context ()) ->
+  InstHead () ->
+  InstRule ()
 irule = IRule ()
 
+ihcon :: QName () -> InstHead ()
 ihcon = IHCon ()
 
+evar :: QName () -> ExportSpec ()
 evar = EVar ()
 
+eabs :: Namespace () -> QName () -> ExportSpec ()
 eabs = EAbs ()
 
+ethingwith ::
+  EWildcard () ->
+  QName () ->
+  [Language.Haskell.Exts.Syntax.CName ()] ->
+  ExportSpec ()
 ethingwith = EThingWith ()
 
+ethingall :: QName () -> ExportSpec ()
 ethingall q = ethingwith (EWildcard () 0) q []
 
+emodule :: String -> ExportSpec ()
 emodule nm = EModuleContents () (ModuleName () nm)
 
+nonamespace :: Namespace ()
 nonamespace = NoNamespace ()
 
+insType :: Type () -> Type () -> InstDecl ()
 insType = InsType ()
 
+insDecl :: Decl () -> InstDecl ()
 insDecl = InsDecl ()
 
+generator :: Pat () -> Exp () -> Stmt ()
 generator = Generator ()
 
+qualifier :: Exp () -> Stmt ()
 qualifier = Qualifier ()
 
+clsDecl :: Decl () -> ClassDecl ()
 clsDecl = ClsDecl ()
 
+unkindedVar :: Name () -> TyVarBind ()
 unkindedVar = UnkindedVar ()
 
+op :: String -> QOp ()
 op = QVarOp () . UnQual () . Symbol ()
 
+inapp :: Exp () -> QOp () -> Exp () -> Exp ()
 inapp = InfixApp ()
 
+if_ :: Exp () -> Exp () -> Exp () -> Exp ()
 if_ = If ()
 
+urhs :: Exp () -> Rhs ()
 urhs = UnGuardedRhs ()
 
--- case pattern match p -> e
+-- | case pattern match p -> e
+match :: Pat () -> Exp () -> Alt ()
 match p e = Alt () p (urhs e) Nothing
