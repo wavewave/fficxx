@@ -31,6 +31,7 @@ Library
                , hashable
                , haskell-src-exts >= 1.22
                , lens > 3
+               , attoparsec
                , mtl>2
                , process
                , pureMD5
@@ -53,6 +54,8 @@ Library
                FFICXX.Generate.Code.Primitive
                FFICXX.Generate.ContentMaker
                FFICXX.Generate.Dependency
+               FFICXX.Generate.IDL.Parser
+               FFICXX.Generate.IDL.Type
                FFICXX.Generate.Name
                FFICXX.Generate.QQ.Verbatim
                FFICXX.Generate.Util
@@ -68,3 +71,12 @@ Library
                -funbox-strict-fields
                -fno-warn-unused-do-bind
                -fno-warn-missing-signatures
+
+executable test
+    main-is:          test.hs
+    build-depends:    attoparsec,
+                      base,
+                      fficxx,
+                      text
+    hs-source-dirs:   app
+    default-language: Haskell2010
