@@ -2,17 +2,26 @@
 
 module FFICXX.Generate.Util where
 
-import Data.Char
+import Data.Char (toLower, toUpper)
 import Data.List
-import Data.List.Split
+  ( foldl1,
+    init,
+    intercalate,
+    last,
+    lookup,
+    map,
+    null,
+  )
+import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Text.Template
-
---
+  ( Context,
+    substitute,
+  )
 
 moduleDirFile :: String -> (String, String)
 moduleDirFile mname =
