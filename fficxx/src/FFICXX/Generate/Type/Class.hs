@@ -8,9 +8,6 @@ module FFICXX.Generate.Type.Class where
 import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
-import Data.Monoid (Monoid (..))
-import Data.Semigroup (Semigroup (..), (<>))
---
 import FFICXX.Generate.Type.Cabal (Cabal)
 
 -- | C types

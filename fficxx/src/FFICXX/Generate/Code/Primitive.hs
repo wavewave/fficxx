@@ -5,10 +5,6 @@ module FFICXX.Generate.Code.Primitive where
 
 import Control.Monad.Trans.State (get, put, runState)
 import Data.Functor.Identity (Identity)
-import Data.Monoid ((<>))
---
-
---
 import FFICXX.Generate.Name
   ( ffiClassName,
     hsClassName,
@@ -908,7 +904,7 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
     (hname, _) = hsTemplateClassName t
     ctyp = case f of
       TFun {..} -> convertCpp2HS4Tmpl e Nothing spls tfun_ret
-      TFunNew {..} -> convertCpp2HS4Tmpl e Nothing spls (TemplateType t)
+      TFunNew {} -> convertCpp2HS4Tmpl e Nothing spls (TemplateType t)
       TFunDelete -> unit_tycon
       TFunOp {..} -> convertCpp2HS4Tmpl e Nothing spls tfun_ret
     e = foldl1 tyapp (tycon hname : spls)

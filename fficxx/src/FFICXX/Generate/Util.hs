@@ -3,18 +3,9 @@
 module FFICXX.Generate.Util where
 
 import Data.Char (toLower, toUpper)
-import Data.List
-  ( foldl1,
-    init,
-    intercalate,
-    last,
-    lookup,
-    map,
-    null,
-  )
+import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL

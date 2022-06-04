@@ -4,8 +4,6 @@
 module FFICXX.Generate.Code.HsTemplate where
 
 import qualified Data.List as L (foldr1)
-import Data.Monoid ((<>))
---
 import FFICXX.Generate.Code.Cpp
   ( genTLTmplFunCpp,
     genTmplClassCpp,
@@ -427,10 +425,10 @@ genTmplInstance tcih =
             `app` typs_v
             `app` v "suffix"
         )
-    genstmt (n, f@TFun {..}) = gen "f" "mkMember" f n
-    genstmt (n, f@TFunNew {..}) = gen "f" "mkNew" f n
+    genstmt (n, f@TFun {}) = gen "f" "mkMember" f n
+    genstmt (n, f@TFunNew {}) = gen "f" "mkNew" f n
     genstmt (n, f@TFunDelete) = gen "f" "mkDelete" f n
-    genstmt (n, f@TFunOp {..}) = gen "f" "mkMember" f n
+    genstmt (n, f@TFunOp {}) = gen "f" "mkMember" f n
     genvarstmt (n, vf) =
       let Variable (Arg {..}) = vf
           f_g =
@@ -637,7 +635,7 @@ genTLTemplateInstance tih t =
                    ]
                ]
             <> map genqtypstmt (zip tvars qtvars)
-            <> [genstmt "f" 1]
+            <> [genstmt "f" (1 :: Int)]
             <> [ foreignSrcStmt,
                  letStmt lststmt,
                  qualStmt retstmt
