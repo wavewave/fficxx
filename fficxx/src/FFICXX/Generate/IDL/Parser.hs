@@ -3,6 +3,7 @@
 module FFICXX.Generate.IDL.Parser
   ( function,
     class_,
+    package,
   )
 where
 
@@ -26,6 +27,7 @@ import FFICXX.Generate.IDL.Type
     Class (..),
     Function (..),
     Name (..),
+    Package (..),
     Typ (..),
   )
 
@@ -84,3 +86,9 @@ class_ = do
   skipSpace
   char ';'
   pure (Class cname parents methods)
+
+package :: Parser Package
+package = do
+  fs <- many (skipSpace *> function <* skipSpace)
+  cs <- many (skipSpace *> class_ <* skipSpace)
+  pure (Package fs cs)

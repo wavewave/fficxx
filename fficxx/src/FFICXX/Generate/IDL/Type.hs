@@ -9,6 +9,9 @@ module FFICXX.Generate.IDL.Type
     -- * high-level
     Function (..),
     Class (..),
+
+    -- * top-level
+    Package (..),
   )
 where
 
@@ -34,5 +37,13 @@ data Class = Class
   { className :: Name,
     classParents :: [Name],
     classMethods :: [Function]
+  }
+  deriving (Show)
+
+data Package = Package
+  { -- | top-level functions in the package
+    pkgFunctions :: [Function],
+    -- | classes
+    pkgClasses :: [Class]
   }
   deriving (Show)
