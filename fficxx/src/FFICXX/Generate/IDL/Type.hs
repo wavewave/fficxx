@@ -1,10 +1,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module FFICXX.Generate.IDL.Type
-  ( Name (..),
+  ( -- * elements
+    Name (..),
     Typ (..),
     Arg (..),
+
+    -- * high-level
     Function (..),
+    Class (..),
   )
 where
 
@@ -19,5 +23,16 @@ newtype Typ = Typ Name
 data Arg = Arg Typ Name
   deriving (Show)
 
-data Function = Function Typ Name [Arg]
+data Function = Function
+  { funcOutput :: Typ,
+    funcName :: Name,
+    funcArgs :: [Arg]
+  }
+  deriving (Show)
+
+data Class = Class
+  { className :: Name,
+    classParents :: [Name],
+    classMethods :: [Function]
+  }
   deriving (Show)
