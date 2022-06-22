@@ -73,12 +73,18 @@ Library
                -fno-warn-unused-do-bind
                -fno-warn-missing-signatures
 
-executable test
-    main-is:          test.hs
+Test-suite idl-test
+    type:             exitcode-stdio-1.0
+    main-is:          idl-test.hs
+    hs-source-dirs:   test
+    other-modules:    Test.FFICXX.IDLSpec
     build-depends:    attoparsec,
                       base,
                       fficxx,
+                      hspec,
+                      hspec-discover,
                       pretty-simple,
                       text
-    hs-source-dirs:   app
     default-language: Haskell2010
+    build-tool-depends:
+                      hspec-discover:hspec-discover

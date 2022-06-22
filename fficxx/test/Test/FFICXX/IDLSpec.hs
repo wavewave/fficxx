@@ -1,14 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -w #-}
 
-module Main (main) where
+module Test.FFICXX.IDLSpec (spec) where
 
 import Data.Attoparsec.Text (parseOnly)
+import Data.Either (isRight)
 import Data.Text (Text)
 import FFICXX.Generate.IDL.Parser
   ( class_,
     function,
     package,
   )
+import Test.Hspec
 import Text.Pretty.Simple (pPrint)
 
 sample1 :: Text
@@ -28,11 +31,15 @@ sample3 =
   \  int method1( double x, double y );\n\
   \};\n"
 
-main :: IO ()
-main = do
-  let e1 = parseOnly function sample1
-  pPrint e1
-  let e2 = parseOnly class_ sample2
-  pPrint e2
-  let e3 = parseOnly package sample3
-  pPrint e3
+spec :: Spec
+spec = do
+  describe "parse test" $ do
+    it "function" $ do
+      let e = parseOnly function sample1
+      isRight e `shouldBe` True
+    it "class" $ do
+      let e = parseOnly class_ sample2
+      isRight e `shouldBe` True
+    it "package" $ do
+      let e = parseOnly package sample3
+      isRight e `shouldBe` True
