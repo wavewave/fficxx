@@ -55,6 +55,7 @@ Library
                FFICXX.Generate.ContentMaker
                FFICXX.Generate.Dependency
                FFICXX.Generate.IDL.Parser
+               FFICXX.Generate.IDL.Translate
                FFICXX.Generate.IDL.Type
                FFICXX.Generate.Name
                FFICXX.Generate.QQ.Verbatim

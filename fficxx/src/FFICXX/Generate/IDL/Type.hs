@@ -18,7 +18,7 @@ where
 import Data.Text (Text)
 
 newtype Name = Name Text
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 newtype Typ = Typ Name
   deriving (Show)
@@ -43,7 +43,7 @@ data Class = Class
 data Package = Package
   { -- | top-level functions in the package
     pkgFunctions :: [Function],
-    -- | classes
+    -- | classes in the package
     pkgClasses :: [Class]
   }
   deriving (Show)
