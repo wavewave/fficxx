@@ -11,7 +11,7 @@
           inherit system;
         };
 
-        haskellPackages = pkgs.haskell.packages.ghc8107;
+        haskellPackages = pkgs.haskell.packages.ghc923;
 
         newHaskellPackages0 = haskellPackages.override {
           overrides = self: super: {
