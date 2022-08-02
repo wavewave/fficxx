@@ -353,7 +353,7 @@ main = do
             sbcClasses = classes,
             sbcTopLevels = toplevels,
             sbcTemplates = templates,
-            sbcExtraLibs = ["stdc++"],
+            sbcExtraLibs = [],
             sbcCxxOpts = ["-std=c++17"],
             sbcExtraDeps = extraDep,
             sbcStaticFiles = []
