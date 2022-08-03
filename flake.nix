@@ -68,6 +68,7 @@
 
       in {
         packages = {
+          "stdcxx-src" = stdcxxSrc;
           inherit (newHaskellPackages)
             fficxx fficxx-runtime stdcxx fficxx-test fficxx-multipkg-test tmf-test
             tmpl-dep-test tmpl-dup-inst tmpl-toplevel-test;
