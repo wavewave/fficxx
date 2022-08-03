@@ -23,7 +23,7 @@
         };
 
         stdcxxSrc = import ./stdcxx-gen/gen.nix {
-          inherit (pkgs) stdenv;
+          inherit (pkgs) lib stdenv;
           haskellPackages = newHaskellPackages0;
         };
 
