@@ -340,7 +340,7 @@ buildTopLevelCppDef tih =
 
 -- |
 buildFFIHsc :: ClassModule -> Module ()
-buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface"]] ffiImports hscBody
+buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface", "InterruptibleFFI"]] ffiImports hscBody
   where
     mname = cmModule m
     ffiImports =
