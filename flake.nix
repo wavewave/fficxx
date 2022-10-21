@@ -32,6 +32,7 @@
             hself.callCabal2nix "fficxx-runtime" ./fficxx-runtime { };
           "fficxx" = hself.callCabal2nix "fficxx" ./fficxx { };
           "stdcxx" = hself.callCabal2nix "stdcxx" stdcxxSrc { };
+          "fficxx-test" = hself.callCabal2nix "fficxx-test" ./fficxx-test { };
           "fficxx-multipkg-test" =
             hself.callCabal2nix "fficxx-multipkg-test" ./fficxx-multipkg-test
             { };
@@ -47,22 +48,30 @@
 
         pkgs = import nixpkgs { inherit system; };
 
-        hpkgsGhc902 = pkgs.haskell.packages.ghc902.extend (haskellOverlay pkgs);
+        hpkgsFor = compiler:
+          pkgs.haskell.packages.${compiler}.extend (haskellOverlay pkgs);
 
-      in {
-        packages = {
-          inherit (hpkgsGhc902)
+        mkPackages = compiler: {
+          inherit (hpkgsFor compiler)
             fficxx fficxx-runtime stdcxx fficxx-test fficxx-multipkg-test
             tmf-test tmpl-dep-test tmpl-dup-inst tmpl-toplevel-test;
         };
 
-        inherit haskellOverlay;
-
-        devShells.default =
-          hpkgsGhc902.shellFor {
+        mkShellFor = compiler:
+          (hpkgsFor compiler).shellFor {
             packages = ps: [ ps.fficxx ps.fficxx-runtime ];
             buildInputs = [ pkgs.cabal-install pkgs.ormolu pkgs.nixfmt ];
             withHoogle = false;
           };
+
+        supportedCompilers = [ "ghc902" "ghc923" ];
+      in {
+        packages =
+          pkgs.lib.genAttrs supportedCompilers (compiler: hpkgsFor compiler);
+
+        inherit haskellOverlay;
+
+        devShells =
+          pkgs.lib.genAttrs supportedCompilers (compiler: mkShellFor compiler);
       });
 }
