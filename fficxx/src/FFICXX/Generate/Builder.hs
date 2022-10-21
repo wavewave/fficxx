@@ -16,6 +16,7 @@ import FFICXX.Generate.Config
 import qualified FFICXX.Generate.ContentMaker as C
 import FFICXX.Generate.Dependency
   ( findModuleUnitImports,
+    getClassModuleBase,
     mkHSBOOTCandidateList,
     mkPackageConfig,
   )
@@ -50,6 +51,7 @@ macrofy = map ((\x -> if x == '-' then '_' else x) . toUpper)
 
 simpleBuilder :: FFICXXConfig -> SimpleBuilderConfig -> IO ()
 simpleBuilder cfg sbc = do
+  putStrLn "THIS IS NEW"
   putStrLn "----------------------------------------------------"
   putStrLn "-- fficxx code generation for Haskell-C++ binding --"
   putStrLn "----------------------------------------------------"
@@ -163,10 +165,10 @@ simpleBuilder cfg sbc = do
   --
   -- TODO: Template.hs-boot need to be generated as well
   putStrLn "Generating hs-boot file"
-  for_ hsbootlst $ \m ->
+  for_ hsbootlst $ \c ->
     gen
-      (m <.> "Interface" <.> "hs-boot")
-      (prettyPrint (C.buildInterfaceHSBOOT m))
+      (getClassModuleBase c <.> "Interface" <.> "hs-boot")
+      (prettyPrint (C.buildInterfaceHSBOOT c))
   --
   putStrLn "Generating Module summary file"
   for_ mods $ \m ->

@@ -72,8 +72,12 @@ import FFICXX.Generate.Code.HsTemplate
     genTmplInstance,
     genTmplInterface,
   )
+import FFICXX.Generate.Code.Primitive
+  ( classConstraints,
+  )
 import FFICXX.Generate.Dependency
   ( class_allparents,
+    getClassModuleBase,
     mkDaughterMap,
     mkDaughterSelfMap,
   )
@@ -81,6 +85,7 @@ import FFICXX.Generate.Name
   ( ffiClassName,
     hsClassName,
     hsFrontNameForTopLevel,
+    typeclassName,
   )
 import FFICXX.Generate.Type.Annotate (AnnotateMap)
 import FFICXX.Generate.Type.Class
@@ -567,11 +572,11 @@ buildTHHs m =
     tmplInsts = genTmplInstance (tcmTCIH m)
 
 -- |
-buildInterfaceHSBOOT :: String -> Module ()
-buildInterfaceHSBOOT mname = mkModule (mname <.> "Interface") [] [] hsbootBody
+buildInterfaceHSBOOT :: Class -> Module ()
+buildInterfaceHSBOOT c = mkModule (mname <.> "Interface") [] [] hsbootBody
   where
-    cname = last (splitOn "." mname)
-    hsbootBody = [mkClass cxEmpty ('I' : cname) [mkTBind "a"] []]
+    mname = getClassModuleBase c
+    hsbootBody = [mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] []]
 
 -- |
 buildModuleHs :: ClassModule -> Module ()

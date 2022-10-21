@@ -23,6 +23,7 @@ import Data.Either (rights)
 import Data.Function (on)
 import qualified Data.HashMap.Strict as HM
 import Data.List (find, foldl', nub, nubBy)
+import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import FFICXX.Generate.Name (ffiClassName, hsClassName, hsTemplateClassName)
@@ -368,12 +369,13 @@ mkPackageConfig (pkgname, getImports) (cs, fs, ts, extra) acincs acsrcs =
           pcfg_additional_c_srcs = acsrcs
         }
 
--- TODO: change [String] to Set String
-mkHSBOOTCandidateList :: [ClassModule] -> [String]
+mkHSBOOTCandidateList :: [ClassModule] -> [Class]
 mkHSBOOTCandidateList ms =
   let -- get only class dependencies, not template classes.
       cs = rights (concatMap cmImportedModulesHighSource ms)
-   in nub (map getClassModuleBase cs)
+   in L.nubBy ((==) `on` getClassModuleBase)
+        . L.sortBy (compare `on` getClassModuleBase)
+        $ cs
 
 -- |
 mkPkgHeaderFileName :: Class -> HeaderName
