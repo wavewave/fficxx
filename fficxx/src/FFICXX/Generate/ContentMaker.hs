@@ -340,7 +340,12 @@ buildTopLevelCppDef tih =
 
 -- |
 buildFFIHsc :: ClassModule -> Module ()
-buildFFIHsc m = mkModule (mname <.> "FFI") [lang ["ForeignFunctionInterface", "InterruptibleFFI"]] ffiImports hscBody
+buildFFIHsc m =
+  mkModule
+    (mname <.> "FFI")
+    [lang ["ForeignFunctionInterface", "InterruptibleFFI"]]
+    ffiImports
+    hscBody
   where
     mname = cmModule m
     ffiImports =
@@ -582,7 +587,14 @@ buildTopLevelHs ::
 buildTopLevelHs modname (mods, tmods) =
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
-    pkgExtensions = [lang ["FlexibleContexts", "FlexibleInstances"]]
+    pkgExtensions =
+      [ lang
+          [ "FlexibleContexts",
+            "FlexibleInstances",
+            "ForeignFunctionInterface",
+            "InterruptibleFFI"
+          ]
+      ]
     pkgExports =
       map (emodule . cmModule) mods
         ++ map emodule [modname <.> "Ordinary", modname <.> "Template", modname <.> "TH"]
@@ -599,7 +611,14 @@ buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = tihFuncs tih
-    pkgExtensions = [lang ["FlexibleContexts", "FlexibleInstances"]]
+    pkgExtensions =
+      [ lang
+          [ "FlexibleContexts",
+            "FlexibleInstances",
+            "ForeignFunctionInterface",
+            "InterruptibleFFI"
+          ]
+      ]
     pkgExports = map (evar . unqual . hsFrontNameForTopLevel . TLOrdinary) (filterTLOrdinary tfns)
     pkgImports =
       map mkImport ["Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast"]
@@ -622,6 +641,8 @@ buildTopLevelTemplateHs modname tih =
       [ lang
           [ "EmptyDataDecls",
             "FlexibleInstances",
+            "ForeignFunctionInterface",
+            "InterruptibleFFI",
             "MultiParamTypeClasses",
             "TypeFamilies"
           ]
@@ -652,7 +673,15 @@ buildTopLevelTHHs modname tih =
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = filterTLTemplate (tihFuncs tih)
-    pkgExtensions = [lang ["FlexibleContexts", "FlexibleInstances", "TemplateHaskell"]]
+    pkgExtensions =
+      [ lang
+          [ "FlexibleContexts",
+            "FlexibleInstances",
+            "ForeignFunctionInterface",
+            "InterruptibleFFI",
+            "TemplateHaskell"
+          ]
+      ]
     pkgExports =
       map
         ( evar
