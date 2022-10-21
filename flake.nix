@@ -71,7 +71,7 @@
           });
         };
 
-        devShell = pkgs.haskellPackages.shellFor {
+        devShell = newHaskellPackages.shellFor {
           packages = ps: [ ps.fficxx ps.fficxx-runtime ];
           buildInputs = [ pkgs.cabal-install pkgs.ormolu ];
           withHoogle = false;
