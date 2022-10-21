@@ -1,9 +1,9 @@
 {
   description = "fficxx";
   inputs = {
-    # nixpkgs/master on 2022-07-18
+    # nixpkgs/master on 2022-10-21
     nixpkgs.url =
-      "github:NixOS/nixpkgs/31997025a4d59f09a9b4c55a3c6ff5ade48de2d6";
+      "github:NixOS/nixpkgs/71c5816834f93840dd301ec384c9d7947e97c27d";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = { self, nixpkgs, flake-utils }:
@@ -27,6 +27,8 @@
               inherit (final) stdenv;
               haskellPackages = hself;
             };
+
+          "template" = final.haskell.lib.doJailbreak (hsuper.template);
 
           "fficxx-runtime" =
             hself.callCabal2nix "fficxx-runtime" ./fficxx-runtime { };
@@ -64,7 +66,7 @@
             withHoogle = false;
           };
 
-        supportedCompilers = [ "ghc902" "ghc923" ];
+        supportedCompilers = [ "ghc902" "ghc924" "ghc942" ];
       in {
         packages =
           pkgs.lib.genAttrs supportedCompilers (compiler: hpkgsFor compiler);
