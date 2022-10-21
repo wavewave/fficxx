@@ -47,23 +47,22 @@
 
         pkgs = import nixpkgs { inherit system; };
 
+        hpkgsGhc902 = pkgs.haskell.packages.ghc902.extend (haskellOverlay pkgs);
+
       in {
         packages = {
-          inherit (pkgs.haskellPackages)
+          inherit (hpkgsGhc902)
             fficxx fficxx-runtime stdcxx fficxx-test fficxx-multipkg-test
             tmf-test tmpl-dep-test tmpl-dup-inst tmpl-toplevel-test;
         };
 
         inherit haskellOverlay;
 
-        devShells.default = let
-          hpkgsGhc902 = pkgs.haskell.packages.ghc902.override {
-            overrides = haskellOverlay pkgs;
+        devShells.default =
+          hpkgsGhc902.shellFor {
+            packages = ps: [ ps.fficxx ps.fficxx-runtime ];
+            buildInputs = [ pkgs.cabal-install pkgs.ormolu pkgs.nixfmt ];
+            withHoogle = false;
           };
-        in hpkgsGhc902.shellFor {
-          packages = ps: [ ps.fficxx ps.fficxx-runtime ];
-          buildInputs = [ pkgs.cabal-install pkgs.ormolu pkgs.nixfmt ];
-          withHoogle = false;
-        };
       });
 }
