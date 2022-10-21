@@ -8,7 +8,6 @@ import Control.Monad.Trans.Reader (runReader)
 import Data.Either (rights)
 import Data.Functor.Identity (Identity)
 import Data.List (intercalate, nub)
-import Data.List.Split (splitOn)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import FFICXX.Generate.Code.Cpp
@@ -72,8 +71,12 @@ import FFICXX.Generate.Code.HsTemplate
     genTmplInstance,
     genTmplInterface,
   )
+import FFICXX.Generate.Code.Primitive
+  ( classConstraints,
+  )
 import FFICXX.Generate.Dependency
   ( class_allparents,
+    getClassModuleBase,
     mkDaughterMap,
     mkDaughterSelfMap,
   )
@@ -81,6 +84,7 @@ import FFICXX.Generate.Name
   ( ffiClassName,
     hsClassName,
     hsFrontNameForTopLevel,
+    typeclassName,
   )
 import FFICXX.Generate.Type.Annotate (AnnotateMap)
 import FFICXX.Generate.Type.Class
@@ -107,8 +111,7 @@ import FFICXX.Generate.Type.PackageInterface
   )
 import FFICXX.Generate.Util (firstUpper)
 import FFICXX.Generate.Util.HaskellSrcExts
-  ( cxEmpty,
-    emodule,
+  ( emodule,
     evar,
     lang,
     mkClass,
@@ -422,6 +425,24 @@ buildInterfaceHs amap m =
         <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
 
 -- |
+buildInterfaceHsBoot :: ClassModule -> Module ()
+buildInterfaceHsBoot m =
+  mkModule (cmModule m <.> "Interface") [] hsbootImports hsbootBody
+  where
+    c = cihClass (cmCIH m)
+    hsbootImports =
+      [ mkImport "Data.Word",
+        mkImport "Data.Int",
+        mkImport "Foreign.C",
+        mkImport "Foreign.Ptr",
+        mkImport "FFICXX.Runtime.Cast"
+      ]
+        <> genImportInInterface m
+        <> genExtraImport m
+    hsbootBody =
+      runReader (mapM genHsFrontDecl [c]) M.empty
+
+-- |
 buildCastHs :: ClassModule -> Module ()
 buildCastHs m =
   mkModule
@@ -565,13 +586,6 @@ buildTHHs m =
     body = tmplImpls <> tmplInsts
     tmplImpls = genTmplImplementation t
     tmplInsts = genTmplInstance (tcmTCIH m)
-
--- |
-buildInterfaceHSBOOT :: String -> Module ()
-buildInterfaceHSBOOT mname = mkModule (mname <.> "Interface") [] [] hsbootBody
-  where
-    cname = last (splitOn "." mname)
-    hsbootBody = [mkClass cxEmpty ('I' : cname) [mkTBind "a"] []]
 
 -- |
 buildModuleHs :: ClassModule -> Module ()

@@ -368,12 +368,12 @@ mkPackageConfig (pkgname, getImports) (cs, fs, ts, extra) acincs acsrcs =
           pcfg_additional_c_srcs = acsrcs
         }
 
--- TODO: change [String] to Set String
-mkHSBOOTCandidateList :: [ClassModule] -> [String]
-mkHSBOOTCandidateList ms =
+mkHsBootCandidateList :: [ClassModule] -> [ClassModule]
+mkHsBootCandidateList ms =
   let -- get only class dependencies, not template classes.
       cs = rights (concatMap cmImportedModulesHighSource ms)
-   in nub (map getClassModuleBase cs)
+      candidateModBases = fmap getClassModuleBase cs
+   in filter (\m -> cmModule m `elem` candidateModBases) ms
 
 -- |
 mkPkgHeaderFileName :: Class -> HeaderName

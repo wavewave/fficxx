@@ -16,7 +16,8 @@ import FFICXX.Generate.Config
 import qualified FFICXX.Generate.ContentMaker as C
 import FFICXX.Generate.Dependency
   ( findModuleUnitImports,
-    mkHSBOOTCandidateList,
+    getClassModuleBase,
+    mkHsBootCandidateList,
     mkPackageConfig,
   )
 import FFICXX.Generate.Type.Cabal
@@ -76,7 +77,7 @@ simpleBuilder cfg sbc = do
           (classes, toplevelfunctions, templates, extramods)
           (cabal_additional_c_incs cabal)
           (cabal_additional_c_srcs cabal)
-      hsbootlst = mkHSBOOTCandidateList mods
+      hsbootlst = mkHsBootCandidateList mods
       cabalFileName = unCabalName pkgname <.> "cabal"
       jsonFileName = unCabalName pkgname <.> "json"
   --
@@ -163,10 +164,10 @@ simpleBuilder cfg sbc = do
   --
   -- TODO: Template.hs-boot need to be generated as well
   putStrLn "Generating hs-boot file"
-  for_ hsbootlst $ \m ->
+  for_ hsbootlst $ \m -> do
     gen
-      (m <.> "Interface" <.> "hs-boot")
-      (prettyPrint (C.buildInterfaceHSBOOT m))
+      (cmModule m <.> "Interface" <.> "hs-boot")
+      (prettyPrint (C.buildInterfaceHsBoot m))
   --
   putStrLn "Generating Module summary file"
   for_ mods $ \m ->
