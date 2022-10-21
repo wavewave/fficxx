@@ -84,7 +84,7 @@ import Language.Haskell.Exts
     QOp (QVarOp),
     QualConDecl (..),
     Rhs (UnGuardedRhs),
-    Safety (PlaySafe),
+    Safety (PlayInterruptible),
     Splice (ParenSplice),
     Stmt
       ( Generator,
@@ -212,7 +212,7 @@ mkNewtype n tbinds qdecls mderiv = DataDecl () (NewType ()) Nothing declhead qde
     declhead = mkDeclHead n tbinds
 
 mkForImpCcall :: String -> String -> Type () -> Decl ()
-mkForImpCcall quote n typ = ForImp () (CCall ()) (Just (PlaySafe () False)) (Just quote) (Ident () n) typ
+mkForImpCcall quote n typ = ForImp () (CCall ()) (Just (PlayInterruptible ())) (Just quote) (Ident () n) typ
 
 mkModule :: String -> [ModulePragma ()] -> [ImportDecl ()] -> [Decl ()] -> Module ()
 mkModule n pragmas idecls decls = Module () (Just mhead) pragmas idecls decls

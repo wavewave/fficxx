@@ -37,6 +37,5 @@ Library
                     Function.h
                     cpp_magic.h
   ghc-options: -Wall
-               -Werror
                -funbox-strict-fields
                -fno-warn-unused-do-bind

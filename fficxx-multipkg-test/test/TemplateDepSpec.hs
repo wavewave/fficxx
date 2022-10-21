@@ -14,7 +14,7 @@ import System.IO.Silently (capture_)
 --
 
 --
-import Test.Hspec (Spec, afterAll, around, beforeAll, describe, it, shouldBe)
+import Test.Hspec (Spec, afterAll, around, beforeAll, describe, it, shouldBe, shouldSatisfy)
 import TmplDepTest.T1.TH
 import TmplDepTest.T1.Template
 import TmplDepTest.T2.TH
@@ -74,10 +74,15 @@ spec =
             callT1 t2 t1
       s <- capture_ action
       s `shouldBe` "In T2::callT1(), calling T1::method: \nIn T1::method(), typeid(P) = i\n"
-    it "should call template function that depends on another template class, for non-primitive type param" $ do
-      let action = do
-            t1 <- newT1 :: IO (T1 CppString)
-            t2 <- newT2 :: IO (T2 CppString)
-            callT1 t2 t1
-      s <- capture_ action
-      s `shouldBe` "In T2::callT1(), calling T1::method: \nIn T1::method(), typeid(P) = NSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE\n"
+    it "should call template function that depends on another template class, for non-primitive type param" $
+      do
+        let action = do
+              t1 <- newT1 :: IO (T1 CppString)
+              t2 <- newT2 :: IO (T2 CppString)
+              callT1 t2 t1
+        s <- capture_ action
+        s
+          `shouldSatisfy` ( \s ->
+                              s == "In T2::callT1(), calling T1::method: \nIn T1::method(), typeid(P) = NSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE\n"
+                                || s == "In T2::callT1(), calling T1::method: \nIn T1::method(), typeid(P) = NSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEE\n"
+                          )
