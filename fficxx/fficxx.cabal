@@ -25,6 +25,7 @@ Library
                , containers
                , data-default
                , directory
+               , dotgen
                , errors
                , fficxx-runtime
                , filepath>1
@@ -56,6 +57,7 @@ Library
                FFICXX.Generate.Name
                FFICXX.Generate.QQ.Verbatim
                FFICXX.Generate.Util
+               FFICXX.Generate.Util.DepGraph
                FFICXX.Generate.Util.HaskellSrcExts
                FFICXX.Generate.Type.Annotate
                FFICXX.Generate.Type.Cabal
