@@ -323,6 +323,7 @@ genExtraImport cm = map mkImport (cmExtraImport cm)
 genImportInModule :: Class -> [ImportDecl ()]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
 
+-- TODO: this dependency should be refactored out and analyzed separately, particularly for cyclic deps.
 genImportInInterface :: ClassModule -> [ImportDecl ()]
 genImportInInterface m =
   let modlstraw = cmImportedModulesRaw m

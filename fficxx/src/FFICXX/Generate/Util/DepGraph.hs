@@ -13,6 +13,7 @@ import FFICXX.Generate.Dependency
     mkModuleDepHighInplace,
     mkModuleDepRaw,
   )
+import FFICXX.Generate.Name (hsClassName, hsTemplateClassName)
 import FFICXX.Generate.Type.Class
   ( Class (..),
     TemplateClass (..),
@@ -42,20 +43,21 @@ data TemplateClassModuleType
 type UClass = Either TemplateClass Class
 
 formatOrdinary :: ClassModuleType -> Class -> String
-formatOrdinary typ cls =
-  class_name cls <.> submod
+formatOrdinary typ cls = highName <.> submod
   where
-    submod = case typ of
-      CMTRawType -> "RawType"
-      CMTInterface -> "Interface"
-      CMTImplementation -> "Implementation"
-      CMTFFI -> "FFI"
-      CMTCast -> "Cast"
+    (highName, _rawName) = hsClassName cls
+    submod =
+      case typ of
+        CMTRawType -> "RawType"
+        CMTInterface -> "Interface"
+        CMTImplementation -> "Implementation"
+        CMTFFI -> "FFI"
+        CMTCast -> "Cast"
 
 formatTemplate :: TemplateClassModuleType -> TemplateClass -> String
-formatTemplate typ tcl =
-  tclass_name tcl ++ "<T>" <.> submod
+formatTemplate typ tcl = "<" ++ highName <.> submod ++ ">"
   where
+    (highName, _rawName) = hsTemplateClassName tcl
     submod = case typ of
       TCMTTH -> "TH"
       TCMTTemplate -> "Template"
@@ -77,10 +79,19 @@ drawDepGraph allclasses =
   where
     mkInterfaceDep :: Class -> (String, [String])
     mkInterfaceDep c =
-      let ds = mkModuleDepRaw (Right c)
-          format' (Left tcl) = formatTemplate TCMTTemplate tcl
-          format' (Right cls) = formatOrdinary CMTRawType cls
-       in (formatOrdinary CMTInterface c, fmap format' ds)
+      let interface = formatOrdinary CMTInterface c
+          depsRawSelf = [formatOrdinary CMTRawType c]
+          depsRaw =
+            let ds = mkModuleDepRaw (Right c)
+                format' (Left tcl) = formatTemplate TCMTTemplate tcl
+                format' (Right cls) = formatOrdinary CMTRawType cls
+             in fmap format' ds
+          depsInterfaceInplace =
+            let ds = mkModuleDepHighInplace (Right c)
+                format' (Left tcl) = formatTemplate TCMTTemplate tcl
+                format' (Right cls) = formatOrdinary CMTInterface cls
+             in fmap format' ds
+       in (interface, depsRawSelf ++ depsRaw ++ depsInterfaceInplace)
     depmap = fmap mkInterfaceDep allclasses
     allSyms =
       L.nub . L.sort $
