@@ -36,8 +36,8 @@ data ClassModule = ClassModule
     cmImportedModulesHighNonSource :: [Either TemplateClass Class],
     -- | imported modules for raw types.
     cmImportedModulesRaw :: [Either TemplateClass Class],
-    -- | imported modules that need source
-    cmImportedModulesHighSource :: [Either TemplateClass Class],
+    -- | imported modules in the current package-in-place
+    cmImportedModulesHighInplace :: [Either TemplateClass Class],
     cmImportedModulesForFFI :: [Either TemplateClass Class],
     cmExtraImport :: [String]
   }

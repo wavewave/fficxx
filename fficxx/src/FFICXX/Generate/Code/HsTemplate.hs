@@ -22,7 +22,7 @@ import FFICXX.Generate.Code.Primitive
 import FFICXX.Generate.Dependency
   ( getClassModuleBase,
     getTClassModuleBase,
-    mkModuleDepHighSource,
+    mkModuleDepHighInplace,
     mkModuleDepRaw,
   )
 import FFICXX.Generate.Name
@@ -237,7 +237,7 @@ genTMFInstance cih f =
 genImportInTemplate :: TemplateClass -> [ImportDecl ()]
 genImportInTemplate t0 =
   let deps_raw = mkModuleDepRaw (Left t0)
-      deps_high = mkModuleDepHighSource (Left t0)
+      deps_high = mkModuleDepHighInplace (Left t0)
    in flip
         map
         deps_raw
@@ -289,7 +289,7 @@ genTmplInterface t =
 genImportInTH :: TemplateClass -> [ImportDecl ()]
 genImportInTH t0 =
   let deps_raw = mkModuleDepRaw (Left t0)
-      deps_high = mkModuleDepHighSource (Left t0)
+      deps_high = mkModuleDepHighInplace (Left t0)
    in flip
         concatMap
         deps_raw

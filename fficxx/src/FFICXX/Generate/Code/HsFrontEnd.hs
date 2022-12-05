@@ -327,7 +327,7 @@ genImportInInterface :: ClassModule -> [ImportDecl ()]
 genImportInInterface m =
   let modlstraw = cmImportedModulesRaw m
       modlstparent = cmImportedModulesHighNonSource m
-      modlsthigh = cmImportedModulesHighSource m
+      modlsthigh = cmImportedModulesHighInplace m
    in [mkImport (cmModule m <.> "RawType")]
         <> flip
           map

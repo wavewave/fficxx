@@ -10,7 +10,7 @@ import Data.Maybe (mapMaybe)
 import Data.Tuple (swap)
 import FFICXX.Generate.Dependency
   ( mkModuleDepHighNonSource,
-    mkModuleDepHighSource,
+    mkModuleDepHighInplace,
     mkModuleDepRaw,
   )
 import FFICXX.Generate.Type.Class
@@ -61,26 +61,26 @@ formatTemplate typ tcl =
 
 -- | Draw dependency graph of modules in graphviz dot format.
 drawDepGraph ::
-  FilePath ->
+  -- FilePath ->
   [Class] ->
-  IO ()
-drawDepGraph fp allclasses = do
-  withFile fp WriteMode $ \h ->
-    hPutStrLn h $ showDot $ do
-      attribute ("size","40,15")
-      attribute ("rankdir","LR")
-      cs <- traverse box allSyms
-      for_ depmap' $ \(i, js) ->
-        for_ js $ \j ->
-          (cs !! i) .->. (cs !! j)
+  -- | dot string
+  String
+drawDepGraph allclasses =
+  showDot $ do
+    attribute ("size","40,15")
+    attribute ("rankdir","LR")
+    cs <- traverse box allSyms
+    for_ depmap' $ \(i, js) ->
+      for_ js $ \j ->
+        (cs !! i) .->. (cs !! j)
   where
-    mkDep :: Class -> (String, [String])
-    mkDep c =
+    mkInterfaceDep :: Class -> (String, [String])
+    mkInterfaceDep c =
       let ds = mkModuleDepRaw (Right c)
           format' (Left tcl) = formatTemplate TCMTTemplate tcl
           format' (Right cls) = formatOrdinary CMTRawType cls
        in (formatOrdinary CMTInterface c, fmap format' ds)
-    depmap = fmap mkDep allclasses
+    depmap = fmap mkInterfaceDep allclasses
     allSyms =
       L.nub . L.sort $
         fmap fst depmap ++ concatMap snd depmap

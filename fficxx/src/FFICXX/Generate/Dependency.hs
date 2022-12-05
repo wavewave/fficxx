@@ -247,16 +247,15 @@ mkModuleDepHighNonSource y@(Left t) =
           concatMap (argumentDependency . extractClassDepForTmplFun) fs
    in nub extclasses
 
--- TODO: Confirm the following answer
 -- NOTE: Q: why returnDependency is not considered?
 --       A: See explanation in mkModuleDepRaw
-mkModuleDepHighSource :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepHighSource y@(Right c) =
+mkModuleDepHighInplace :: Either TemplateClass Class -> [Either TemplateClass Class]
+mkModuleDepHighInplace y@(Right c) =
   nub $
     filter (`isInSamePackageButNotInheritedBy` y) $
       concatMap (argumentDependency . extractClassDep) (class_funcs c)
         ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
-mkModuleDepHighSource y@(Left t) =
+mkModuleDepHighInplace y@(Left t) =
   let fs = tclass_funcs t
    in nub $
         filter (`isInSamePackageButNotInheritedBy` y) $
@@ -318,14 +317,14 @@ mkClassModule getImports extra c =
       cmCIH = mkCIH getImports c,
       cmImportedModulesHighNonSource = highs_nonsource,
       cmImportedModulesRaw = raws,
-      cmImportedModulesHighSource = highs_source,
+      cmImportedModulesHighInplace = highs_inplace,
       cmImportedModulesForFFI = ffis,
       cmExtraImport = extraimports
     }
   where
     highs_nonsource = mkModuleDepHighNonSource (Right c)
     raws = mkModuleDepRaw (Right c)
-    highs_source = mkModuleDepHighSource (Right c)
+    highs_inplace = mkModuleDepHighInplace (Right c)
     ffis = mkModuleDepFFI (Right c)
     extraimports = fromMaybe [] (lookup (class_name c) extra)
 
@@ -371,7 +370,7 @@ mkPackageConfig (pkgname, getImports) (cs, fs, ts, extra) acincs acsrcs =
 mkHsBootCandidateList :: [ClassModule] -> [ClassModule]
 mkHsBootCandidateList ms =
   let -- get only class dependencies, not template classes.
-      cs = rights (concatMap cmImportedModulesHighSource ms)
+      cs = rights (concatMap cmImportedModulesHighInplace ms)
       candidateModBases = fmap getClassModuleBase cs
    in filter (\m -> cmModule m `elem` candidateModBases) ms
 
