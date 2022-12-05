@@ -123,7 +123,7 @@ drawDepGraph allclasses =
           depsSelf = [formatOrdinary CMTRawType c, formatOrdinary CMTInterface c]
        in (cast, depsSelf)
     -- Implementation
-    -- TODO: THIS IS VERY INVOLVED! NEED TO REFACTOR THINGS OUT.
+    -- TODO: THIS IS INVOLVED! NEED TO REFACTOR THINGS OUT.
     mkImplementationDep :: Class -> (String, [String])
     mkImplementationDep c =
       let implementation = formatOrdinary CMTImplementation c
@@ -142,11 +142,35 @@ drawDepGraph allclasses =
                   fmap (\typ -> formatOrdinary typ cls) [CMTRawType, CMTCast, CMTInterface]
              in concatMap format (dsNonParents ++ dsParents)
        in (implementation, depsSelf ++ deps)
-    -- for now
+    -- Template Class part
+    -- <TClass>.Template
     mkTemplateDep :: TemplateClass -> (String, [String])
     mkTemplateDep t =
       let template = formatTemplate TCMTTemplate t
-       in (template, [])
+          depsRaw =
+            let ds = mkModuleDepRaw (Left t)
+                format' (Left tcl) = formatTemplate TCMTTemplate tcl
+                format' (Right cls) = formatOrdinary CMTRawType cls
+             in fmap format' ds
+          depsInplace =
+            let ds = mkModuleDepInplace (Left t)
+                format' (Left tcl) = formatTemplate TCMTTemplate tcl
+                format' (Right cls) = formatOrdinary CMTInterface cls
+             in fmap format' ds
+       in (template, depsRaw ++ depsInplace)
+    -- <TClass>.TH
+    mkTHDep :: TemplateClass -> (String, [String])
+    mkTHDep t =
+      let th = formatTemplate TCMTTH t
+          deps =
+            let dsRaw = mkModuleDepRaw (Left t)
+                dsInplace = mkModuleDepInplace (Left t)
+
+                format' (Left tcl) = [formatTemplate TCMTTemplate tcl]
+                format' (Right cls) =
+                  fmap (\typ -> formatOrdinary typ cls) [CMTRawType, CMTCast, CMTInterface]
+             in concatMap format' (dsRaw ++ dsInplace)
+       in (th, deps)
     depmap =
       concatMap
         (\case
