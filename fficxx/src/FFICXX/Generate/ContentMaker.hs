@@ -429,7 +429,7 @@ buildInterfaceHsBoot :: ClassModule -> Module ()
 buildInterfaceHsBoot m =
   mkModule
     (cmModule m <.> "Interface")
-        [ lang
+    [ lang
         [ "EmptyDataDecls",
           "ExistentialQuantification",
           "FlexibleContexts",

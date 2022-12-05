@@ -353,7 +353,7 @@ genImportInInterface m =
                 --       Currently, we do not have it yet.
                 mkImport (getTClassModuleBase t <.> "Template")
               Right c -> mkImport (getClassModuleBase c <.> "Interface")
-                -- mkImportSrc (getClassModuleBase c <.> "Interface")
+              -- mkImportSrc (getClassModuleBase c <.> "Interface")
           )
 
 -- |

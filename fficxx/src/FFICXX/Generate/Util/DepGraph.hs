@@ -5,8 +5,8 @@ module FFICXX.Generate.Util.DepGraph
   )
 where
 
-import qualified Data.HashMap.Strict as HM
 import Data.Foldable (for_)
+import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe (mapMaybe)
 import Data.Tuple (swap)
@@ -34,11 +34,12 @@ import System.IO (IOMode (..), hPutStrLn, withFile)
 import Text.Dot (Dot, NodeId, attribute, node, showDot, (.->.))
 
 src, box, diamond :: String -> Dot NodeId
-src     label = node $ [ ("shape","none"),("label",label) ]
-box     label = node $ [ ("shape","box"),("style","rounded"),("label",label) ]
-diamond label = node $ [("shape","diamond"),("label",label),("fontsize","10")]
+src label = node $ [("shape", "none"), ("label", label)]
+box label = node $ [("shape", "box"), ("style", "rounded"), ("label", label)]
+diamond label = node $ [("shape", "diamond"), ("label", label), ("fontsize", "10")]
 
 -- TODO: Should be used everywhere.
+
 -- | UClass = Unified Class, either template class or ordinary class
 type UClass = Either TemplateClass Class
 
@@ -72,8 +73,8 @@ drawDepGraph ::
   String
 drawDepGraph allclasses allTopLevels =
   showDot $ do
-    attribute ("size","40,15")
-    attribute ("rankdir","LR")
+    attribute ("size", "40,15")
+    attribute ("rankdir", "LR")
     cs <- traverse box allSyms
     for_ depmap' $ \(i, js) ->
       for_ js $ \j ->
@@ -127,10 +128,10 @@ drawDepGraph allclasses allTopLevels =
     mkImplementationDep c =
       let implementation = formatOrdinary CMTImplementation c
           depsSelf =
-            [ formatOrdinary CMTRawType c
-            , formatOrdinary CMTFFI c
-            , formatOrdinary CMTInterface c
-            , formatOrdinary CMTCast c
+            [ formatOrdinary CMTRawType c,
+              formatOrdinary CMTFFI c,
+              formatOrdinary CMTInterface c,
+              formatOrdinary CMTCast c
             ]
           deps =
             let dsFFI = mkModuleDepFFI (Right c)
@@ -181,14 +182,14 @@ drawDepGraph allclasses allTopLevels =
 
     depmapAllClasses =
       concatMap
-        (\case
+        ( \case
             Left tcl -> [mkTemplateDep tcl]
             Right cls ->
-              [ mkRawTypeDep cls
-              , mkFFIDep cls
-              , mkInterfaceDep cls
-              , mkCastDep cls
-              , mkImplementationDep cls
+              [ mkRawTypeDep cls,
+                mkFFIDep cls,
+                mkInterfaceDep cls,
+                mkCastDep cls,
+                mkImplementationDep cls
               ]
         )
         allclasses
@@ -197,7 +198,7 @@ drawDepGraph allclasses allTopLevels =
       L.nub . L.sort $
         fmap fst depmap ++ concatMap snd depmap
     allISyms :: [(Int, String)]
-    allISyms = zip [0..] allSyms
+    allISyms = zip [0 ..] allSyms
     symMap = HM.fromList allISyms
     symRevMap = HM.fromList $ fmap swap allISyms
     replace (c, ds) = do
