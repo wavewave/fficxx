@@ -427,7 +427,22 @@ buildInterfaceHs amap m =
 -- |
 buildInterfaceHsBoot :: ClassModule -> Module ()
 buildInterfaceHsBoot m =
-  mkModule (cmModule m <.> "Interface") [] hsbootImports hsbootBody
+  mkModule
+    (cmModule m <.> "Interface")
+    [ lang
+        [ "EmptyDataDecls",
+          "ExistentialQuantification",
+          "FlexibleContexts",
+          "FlexibleInstances",
+          "ForeignFunctionInterface",
+          "MultiParamTypeClasses",
+          "ScopedTypeVariables",
+          "TypeFamilies",
+          "TypeSynonymInstances"
+        ]
+    ]
+    hsbootImports
+    hsbootBody
   where
     c = cihClass (cmCIH m)
     hsbootImports =

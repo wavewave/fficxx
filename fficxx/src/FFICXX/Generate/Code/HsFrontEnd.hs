@@ -80,7 +80,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
     mkFun,
     mkFunSig,
     mkImport,
-    mkImportSrc,
+    -- mkImportSrc,
     mkInstance,
     mkNewtype,
     mkPVar,
@@ -323,35 +323,37 @@ genExtraImport cm = map mkImport (cmExtraImport cm)
 genImportInModule :: Class -> [ImportDecl ()]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
 
+-- TODO: this dependency should be refactored out and analyzed separately, particularly for cyclic deps.
 genImportInInterface :: ClassModule -> [ImportDecl ()]
 genImportInInterface m =
-  let modlstraw = cmImportedModulesRaw m
-      modlstparent = cmImportedModulesHighNonSource m
-      modlsthigh = cmImportedModulesHighSource m
+  let modsRaw = cmImportedModulesRaw m
+      modsExt = cmImportedModulesExternal m
+      modsInplace = cmImportedModulesInplace m
    in [mkImport (cmModule m <.> "RawType")]
         <> flip
           map
-          modlstraw
+          modsRaw
           ( \case
               Left t -> mkImport (getTClassModuleBase t <.> "Template")
               Right c -> mkImport (getClassModuleBase c <.> "RawType")
           )
         <> flip
           map
-          modlstparent
+          modsExt
           ( \case
               Left t -> mkImport (getTClassModuleBase t <.> "Template")
               Right c -> mkImport (getClassModuleBase c <.> "Interface")
           )
         <> flip
           map
-          modlsthigh
+          modsInplace
           ( \case
               Left t ->
                 -- TODO: *.Template in the same package needs to have hs-boot.
                 --       Currently, we do not have it yet.
                 mkImport (getTClassModuleBase t <.> "Template")
-              Right c -> mkImportSrc (getClassModuleBase c <.> "Interface")
+              Right c -> mkImport (getClassModuleBase c <.> "Interface")
+              -- mkImportSrc (getClassModuleBase c <.> "Interface")
           )
 
 -- |
@@ -364,20 +366,21 @@ genImportInCast m =
 -- |
 genImportInImplementation :: ClassModule -> [ImportDecl ()]
 genImportInImplementation m =
-  let modlstraw' = cmImportedModulesForFFI m
-      modlsthigh = nub $ map Right $ class_allparents $ cihClass $ cmCIH m
-      modlstraw = filter (not . (flip elem modlsthigh)) modlstraw'
+  let modsFFI = cmImportedModulesFFI m
+      modsParents = nub $ map Right $ class_allparents $ cihClass $ cmCIH m
+      modsNonParents = filter (not . (flip elem modsParents)) modsFFI
    in [ mkImport (cmModule m <.> "RawType"),
         mkImport (cmModule m <.> "FFI"),
         mkImport (cmModule m <.> "Interface"),
         mkImport (cmModule m <.> "Cast")
       ]
-        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modlstraw
-        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modlsthigh
+        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modsNonParents
+        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modsParents
 
 -- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
+-- TODO2: should be refactored out.
 genImportForTLOrdinary :: TLOrdinary -> [ImportDecl ()]
 genImportForTLOrdinary f =
   let dep4func = extractClassDepForTLOrdinary f
@@ -390,6 +393,7 @@ genImportForTLOrdinary f =
 -- | generate import list for a given top-level template function
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
+-- TODO2: should be refactored out.
 genImportForTLTemplate :: TLTemplate -> [ImportDecl ()]
 genImportForTLTemplate f =
   let dep4func = extractClassDepForTLTemplate f

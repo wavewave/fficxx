@@ -22,7 +22,7 @@ import FFICXX.Generate.Code.Primitive
 import FFICXX.Generate.Dependency
   ( getClassModuleBase,
     getTClassModuleBase,
-    mkModuleDepHighSource,
+    mkModuleDepInplace,
     mkModuleDepRaw,
   )
 import FFICXX.Generate.Name
@@ -236,18 +236,18 @@ genTMFInstance cih f =
 
 genImportInTemplate :: TemplateClass -> [ImportDecl ()]
 genImportInTemplate t0 =
-  let deps_raw = mkModuleDepRaw (Left t0)
-      deps_high = mkModuleDepHighSource (Left t0)
+  let depsRaw = mkModuleDepRaw (Left t0)
+      depsInplace = mkModuleDepInplace (Left t0)
    in flip
         map
-        deps_raw
+        depsRaw
         ( \case
             Left t -> mkImport (getTClassModuleBase t <.> "Template")
             Right c -> mkImport (getClassModuleBase c <.> "RawType")
         )
         <> flip
           map
-          deps_high
+          depsInplace
           ( \case
               Left t -> mkImport (getTClassModuleBase t <.> "Template")
               Right c -> mkImport (getClassModuleBase c <.> "Interface")
@@ -288,18 +288,18 @@ genTmplInterface t =
 -- |
 genImportInTH :: TemplateClass -> [ImportDecl ()]
 genImportInTH t0 =
-  let deps_raw = mkModuleDepRaw (Left t0)
-      deps_high = mkModuleDepHighSource (Left t0)
+  let depsRaw = mkModuleDepRaw (Left t0)
+      depsInplace = mkModuleDepInplace (Left t0)
    in flip
         concatMap
-        deps_raw
+        depsRaw
         ( \case
             Left t -> [mkImport (getTClassModuleBase t <.> "Template")]
             Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]
         )
         <> flip
           concatMap
-          deps_high
+          depsInplace
           ( \case
               Left t -> [mkImport (getTClassModuleBase t <.> "Template")]
               Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]

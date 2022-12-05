@@ -22,6 +22,17 @@ import FFICXX.Generate.Type.Class
   )
 import FFICXX.Generate.Util (firstLower, toLowers)
 
+data ClassModuleType
+  = CMTRawType
+  | CMTInterface
+  | CMTImplementation
+  | CMTFFI
+  | CMTCast
+
+data TemplateClassModuleType
+  = TCMTTH
+  | TCMTTemplate
+
 hsFrontNameForTopLevel :: TopLevel -> String
 hsFrontNameForTopLevel tfn =
   let (x : xs) = case tfn of

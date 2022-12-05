@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 
 module FFICXX.Generate.Dependency where
 
@@ -25,7 +26,13 @@ import qualified Data.HashMap.Strict as HM
 import Data.List (find, foldl', nub, nubBy)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import FFICXX.Generate.Name (ffiClassName, hsClassName, hsTemplateClassName)
+import FFICXX.Generate.Name
+  ( ClassModuleType (..),
+    TemplateClassModuleType (..),
+    ffiClassName,
+    hsClassName,
+    hsTemplateClassName,
+  )
 import FFICXX.Generate.Type.Cabal
   ( AddCInc,
     AddCSrc,
@@ -232,31 +239,30 @@ isInSamePackageButNotInheritedBy x y =
 -- TODO: Confirm the following answer
 -- NOTE: Q: why returnDependency is not considered?
 --       A: See explanation in mkModuleDepRaw
-mkModuleDepHighNonSource :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepHighNonSource y@(Right c) =
+mkModuleDepExternal :: Either TemplateClass Class -> [Either TemplateClass Class]
+mkModuleDepExternal y@(Right c) =
   let extclasses =
         filter (`isNotInSamePackageWith` y) $
           concatMap (argumentDependency . extractClassDep) (class_funcs c)
             ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
       parents = map Right (class_parents c)
    in nub (parents <> extclasses)
-mkModuleDepHighNonSource y@(Left t) =
+mkModuleDepExternal y@(Left t) =
   let fs = tclass_funcs t
       extclasses =
         filter (`isNotInSamePackageWith` y) $
           concatMap (argumentDependency . extractClassDepForTmplFun) fs
    in nub extclasses
 
--- TODO: Confirm the following answer
 -- NOTE: Q: why returnDependency is not considered?
 --       A: See explanation in mkModuleDepRaw
-mkModuleDepHighSource :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepHighSource y@(Right c) =
+mkModuleDepInplace :: Either TemplateClass Class -> [Either TemplateClass Class]
+mkModuleDepInplace y@(Right c) =
   nub $
     filter (`isInSamePackageButNotInheritedBy` y) $
       concatMap (argumentDependency . extractClassDep) (class_funcs c)
         ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
-mkModuleDepHighSource y@(Left t) =
+mkModuleDepInplace y@(Left t) =
   let fs = tclass_funcs t
    in nub $
         filter (`isInSamePackageButNotInheritedBy` y) $
@@ -306,6 +312,26 @@ mkModuleDepFFI y@(Right c) =
    in nub (filter (/= y) alldeps')
 mkModuleDepFFI (Left _) = []
 
+-- | Find module-level dependency per each toplevel function/template function.
+mkTopLevelDep ::
+  TopLevel ->
+  [ Either
+      (TemplateClassModuleType, TemplateClass)
+      (ClassModuleType, Class)
+  ]
+mkTopLevelDep (TLOrdinary f) =
+  let dep4func = extractClassDepForTLOrdinary f
+      allDeps = returnDependency dep4func ++ argumentDependency dep4func
+      mkTags (Left tcl) = [Left (TCMTTemplate, tcl)]
+      mkTags (Right cls) = fmap (Right . (,cls)) [CMTRawType, CMTCast, CMTInterface]
+   in concatMap mkTags allDeps
+mkTopLevelDep (TLTemplate f) =
+  let dep4func = extractClassDepForTLTemplate f
+      allDeps = returnDependency dep4func ++ argumentDependency dep4func
+      mkTags (Left tcl) = [Left (TCMTTemplate, tcl)]
+      mkTags (Right cls) = fmap (Right . (,cls)) [CMTRawType, CMTCast, CMTInterface]
+   in concatMap mkTags allDeps
+
 -- |
 mkClassModule ::
   (ModuleUnit -> ModuleUnitImports) ->
@@ -316,16 +342,16 @@ mkClassModule getImports extra c =
   ClassModule
     { cmModule = getClassModuleBase c,
       cmCIH = mkCIH getImports c,
-      cmImportedModulesHighNonSource = highs_nonsource,
+      cmImportedModulesExternal = exts,
       cmImportedModulesRaw = raws,
-      cmImportedModulesHighSource = highs_source,
-      cmImportedModulesForFFI = ffis,
+      cmImportedModulesInplace = inplaces,
+      cmImportedModulesFFI = ffis,
       cmExtraImport = extraimports
     }
   where
-    highs_nonsource = mkModuleDepHighNonSource (Right c)
+    exts = mkModuleDepExternal (Right c)
     raws = mkModuleDepRaw (Right c)
-    highs_source = mkModuleDepHighSource (Right c)
+    inplaces = mkModuleDepInplace (Right c)
     ffis = mkModuleDepFFI (Right c)
     extraimports = fromMaybe [] (lookup (class_name c) extra)
 
@@ -371,7 +397,7 @@ mkPackageConfig (pkgname, getImports) (cs, fs, ts, extra) acincs acsrcs =
 mkHsBootCandidateList :: [ClassModule] -> [ClassModule]
 mkHsBootCandidateList ms =
   let -- get only class dependencies, not template classes.
-      cs = rights (concatMap cmImportedModulesHighSource ms)
+      cs = rights (concatMap cmImportedModulesInplace ms)
       candidateModBases = fmap getClassModuleBase cs
    in filter (\m -> cmModule m `elem` candidateModBases) ms
 
