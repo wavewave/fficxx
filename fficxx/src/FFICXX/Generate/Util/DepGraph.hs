@@ -9,8 +9,8 @@ import qualified Data.List as L
 import Data.Maybe (mapMaybe)
 import Data.Tuple (swap)
 import FFICXX.Generate.Dependency
-  ( mkModuleDepHighNonSource,
-    mkModuleDepHighInplace,
+  ( mkModuleDepExternal,
+    mkModuleDepInplace,
     mkModuleDepRaw,
   )
 import FFICXX.Generate.Name (hsClassName, hsTemplateClassName)
@@ -64,7 +64,6 @@ formatTemplate typ tcl = "<" ++ highName <.> submod ++ ">"
 
 -- | Draw dependency graph of modules in graphviz dot format.
 drawDepGraph ::
-  -- FilePath ->
   [Class] ->
   -- | dot string
   String
@@ -87,7 +86,7 @@ drawDepGraph allclasses =
                 format' (Right cls) = formatOrdinary CMTRawType cls
              in fmap format' ds
           depsInterfaceInplace =
-            let ds = mkModuleDepHighInplace (Right c)
+            let ds = mkModuleDepInplace (Right c)
                 format' (Left tcl) = formatTemplate TCMTTemplate tcl
                 format' (Right cls) = formatOrdinary CMTInterface cls
              in fmap format' ds

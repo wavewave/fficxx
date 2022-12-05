@@ -30,14 +30,12 @@ data ClassImportHeader = ClassImportHeader
 data ClassModule = ClassModule
   { cmModule :: String,
     cmCIH :: ClassImportHeader,
-    -- | imported modules that do not need source
-    -- NOTE: source means the same cabal package.
-    -- TODO: rename Source to something more clear.
-    cmImportedModulesHighNonSource :: [Either TemplateClass Class],
+    -- | imported modules external to the current package unit.
+    cmImportedModulesExternal :: [Either TemplateClass Class],
     -- | imported modules for raw types.
     cmImportedModulesRaw :: [Either TemplateClass Class],
     -- | imported modules in the current package-in-place
-    cmImportedModulesHighInplace :: [Either TemplateClass Class],
+    cmImportedModulesInplace :: [Either TemplateClass Class],
     cmImportedModulesForFFI :: [Either TemplateClass Class],
     cmExtraImport :: [String]
   }

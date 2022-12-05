@@ -232,15 +232,15 @@ isInSamePackageButNotInheritedBy x y =
 -- TODO: Confirm the following answer
 -- NOTE: Q: why returnDependency is not considered?
 --       A: See explanation in mkModuleDepRaw
-mkModuleDepHighNonSource :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepHighNonSource y@(Right c) =
+mkModuleDepExternal :: Either TemplateClass Class -> [Either TemplateClass Class]
+mkModuleDepExternal y@(Right c) =
   let extclasses =
         filter (`isNotInSamePackageWith` y) $
           concatMap (argumentDependency . extractClassDep) (class_funcs c)
             ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
       parents = map Right (class_parents c)
    in nub (parents <> extclasses)
-mkModuleDepHighNonSource y@(Left t) =
+mkModuleDepExternal y@(Left t) =
   let fs = tclass_funcs t
       extclasses =
         filter (`isNotInSamePackageWith` y) $
@@ -249,13 +249,13 @@ mkModuleDepHighNonSource y@(Left t) =
 
 -- NOTE: Q: why returnDependency is not considered?
 --       A: See explanation in mkModuleDepRaw
-mkModuleDepHighInplace :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepHighInplace y@(Right c) =
+mkModuleDepInplace :: Either TemplateClass Class -> [Either TemplateClass Class]
+mkModuleDepInplace y@(Right c) =
   nub $
     filter (`isInSamePackageButNotInheritedBy` y) $
       concatMap (argumentDependency . extractClassDep) (class_funcs c)
         ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
-mkModuleDepHighInplace y@(Left t) =
+mkModuleDepInplace y@(Left t) =
   let fs = tclass_funcs t
    in nub $
         filter (`isInSamePackageButNotInheritedBy` y) $
@@ -315,16 +315,16 @@ mkClassModule getImports extra c =
   ClassModule
     { cmModule = getClassModuleBase c,
       cmCIH = mkCIH getImports c,
-      cmImportedModulesHighNonSource = highs_nonsource,
+      cmImportedModulesExternal = exts,
       cmImportedModulesRaw = raws,
-      cmImportedModulesHighInplace = highs_inplace,
+      cmImportedModulesInplace = inplaces,
       cmImportedModulesForFFI = ffis,
       cmExtraImport = extraimports
     }
   where
-    highs_nonsource = mkModuleDepHighNonSource (Right c)
+    exts = mkModuleDepExternal (Right c)
     raws = mkModuleDepRaw (Right c)
-    highs_inplace = mkModuleDepHighInplace (Right c)
+    inplaces = mkModuleDepInplace (Right c)
     ffis = mkModuleDepFFI (Right c)
     extraimports = fromMaybe [] (lookup (class_name c) extra)
 
@@ -370,7 +370,7 @@ mkPackageConfig (pkgname, getImports) (cs, fs, ts, extra) acincs acsrcs =
 mkHsBootCandidateList :: [ClassModule] -> [ClassModule]
 mkHsBootCandidateList ms =
   let -- get only class dependencies, not template classes.
-      cs = rights (concatMap cmImportedModulesHighInplace ms)
+      cs = rights (concatMap cmImportedModulesInplace ms)
       candidateModBases = fmap getClassModuleBase cs
    in filter (\m -> cmModule m `elem` candidateModBases) ms
 

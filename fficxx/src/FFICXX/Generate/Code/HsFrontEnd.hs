@@ -326,27 +326,27 @@ genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawTyp
 -- TODO: this dependency should be refactored out and analyzed separately, particularly for cyclic deps.
 genImportInInterface :: ClassModule -> [ImportDecl ()]
 genImportInInterface m =
-  let modlstraw = cmImportedModulesRaw m
-      modlstparent = cmImportedModulesHighNonSource m
-      modlsthigh = cmImportedModulesHighInplace m
+  let modsRaw = cmImportedModulesRaw m
+      modsExt = cmImportedModulesExternal m
+      modsInplace = cmImportedModulesInplace m
    in [mkImport (cmModule m <.> "RawType")]
         <> flip
           map
-          modlstraw
+          modsRaw
           ( \case
               Left t -> mkImport (getTClassModuleBase t <.> "Template")
               Right c -> mkImport (getClassModuleBase c <.> "RawType")
           )
         <> flip
           map
-          modlstparent
+          modsExt
           ( \case
               Left t -> mkImport (getTClassModuleBase t <.> "Template")
               Right c -> mkImport (getClassModuleBase c <.> "Interface")
           )
         <> flip
           map
-          modlsthigh
+          modsInplace
           ( \case
               Left t ->
                 -- TODO: *.Template in the same package needs to have hs-boot.
