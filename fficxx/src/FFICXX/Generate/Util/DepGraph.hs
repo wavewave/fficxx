@@ -8,7 +8,11 @@ import Data.Foldable (for_)
 import qualified Data.List as L
 import Data.Maybe (mapMaybe)
 import Data.Tuple (swap)
-import FFICXX.Generate.Dependency (mkModuleDepHighNonSource, mkModuleDepHighSource)
+import FFICXX.Generate.Dependency
+  ( mkModuleDepHighNonSource,
+    mkModuleDepHighSource,
+    mkModuleDepRaw,
+  )
 import FFICXX.Generate.Type.Class
   ( Class (..),
     TemplateClass (..),
@@ -21,7 +25,45 @@ src     label = node $ [ ("shape","none"),("label",label) ]
 box     label = node $ [ ("shape","box"),("style","rounded"),("label",label) ]
 diamond label = node $ [("shape","diamond"),("label",label),("fontsize","10")]
 
-drawDepGraph :: FilePath -> [Either TemplateClass Class] -> IO ()
+data ClassModuleType
+  = CMTRawType
+  | CMTInterface
+  | CMTImplementation
+  | CMTFFI
+  | CMTCast
+
+data TemplateClassModuleType
+  = TCMTTH
+  | TCMTTemplate
+
+-- TODO: Should be used everywhere.
+-- | UClass = Unified Class, either template class or ordinary class
+type UClass = Either TemplateClass Class
+
+formatOrdinary :: ClassModuleType -> Class -> String
+formatOrdinary typ cls =
+  class_name cls <> "." <> submod
+  where
+    submod = case typ of
+      CMTRawType -> "RawType"
+      CMTInterface -> "Interface"
+      CMTImplementation -> "Implementation"
+      CMTFFI -> "FFI"
+      CMTCast -> "Cast"
+
+formatTemplate :: TemplateClassModuleType -> TemplateClass -> String
+formatTemplate typ tcl =
+  tclass_name tcl ++ "<T>." ++ submod
+  where
+    submod = case typ of
+      TCMTTH -> "TH"
+      TCMTTemplate -> "Template"
+
+-- | Draw dependency graph of modules in graphviz dot format.
+drawDepGraph ::
+  FilePath ->
+  [Class] ->
+  IO ()
 drawDepGraph fp allclasses = do
   withFile fp WriteMode $ \h ->
     hPutStrLn h $ showDot $ do
@@ -32,13 +74,12 @@ drawDepGraph fp allclasses = do
         for_ js $ \j ->
           (cs !! i) .->. (cs !! j)
   where
-    format :: Either TemplateClass Class -> String
-    format (Left t) = tclass_name t ++ "<T>"
-    format (Right c) = class_name c
-    mkDep :: Either TemplateClass Class -> (String, [String])
+    mkDep :: Class -> (String, [String])
     mkDep c =
-      let ds = mkModuleDepHighNonSource c <> mkModuleDepHighSource c
-       in (format c, fmap format ds)
+      let ds = mkModuleDepRaw (Right c)
+          format' (Left tcl) = formatTemplate TCMTTemplate tcl
+          format' (Right cls) = formatOrdinary CMTRawType cls
+       in (formatOrdinary CMTInterface c, fmap format' ds)
     depmap = fmap mkDep allclasses
     allSyms =
       L.nub . L.sort $
