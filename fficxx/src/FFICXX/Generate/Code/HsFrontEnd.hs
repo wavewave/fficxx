@@ -80,7 +80,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
     mkFun,
     mkFunSig,
     mkImport,
-    mkImportSrc,
+    -- mkImportSrc,
     mkInstance,
     mkNewtype,
     mkPVar,
@@ -351,7 +351,8 @@ genImportInInterface m =
                 -- TODO: *.Template in the same package needs to have hs-boot.
                 --       Currently, we do not have it yet.
                 mkImport (getTClassModuleBase t <.> "Template")
-              Right c -> mkImportSrc (getClassModuleBase c <.> "Interface")
+              Right c -> mkImport (getClassModuleBase c <.> "Interface")
+                -- mkImportSrc (getClassModuleBase c <.> "Interface")
           )
 
 -- |

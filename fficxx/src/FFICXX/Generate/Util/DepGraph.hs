@@ -17,6 +17,7 @@ import FFICXX.Generate.Type.Class
   ( Class (..),
     TemplateClass (..),
   )
+import System.FilePath ((<.>))
 import System.IO (IOMode (..), hPutStrLn, withFile)
 import Text.Dot (Dot, NodeId, attribute, node, showDot, (.->.))
 
@@ -42,7 +43,7 @@ type UClass = Either TemplateClass Class
 
 formatOrdinary :: ClassModuleType -> Class -> String
 formatOrdinary typ cls =
-  class_name cls <> "." <> submod
+  class_name cls <.> submod
   where
     submod = case typ of
       CMTRawType -> "RawType"
@@ -53,7 +54,7 @@ formatOrdinary typ cls =
 
 formatTemplate :: TemplateClassModuleType -> TemplateClass -> String
 formatTemplate typ tcl =
-  tclass_name tcl ++ "<T>." ++ submod
+  tclass_name tcl ++ "<T>" <.> submod
   where
     submod = case typ of
       TCMTTH -> "TH"
