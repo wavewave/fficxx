@@ -36,7 +36,7 @@ data ClassModule = ClassModule
     cmImportedModulesRaw :: [Either TemplateClass Class],
     -- | imported modules in the current package-in-place
     cmImportedModulesInplace :: [Either TemplateClass Class],
-    cmImportedModulesForFFI :: [Either TemplateClass Class],
+    cmImportedModulesFFI :: [Either TemplateClass Class],
     cmExtraImport :: [String]
   }
   deriving (Show)

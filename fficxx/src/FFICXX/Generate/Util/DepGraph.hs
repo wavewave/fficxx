@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module FFICXX.Generate.Util.DepGraph
   ( drawDepGraph,
   )
@@ -10,6 +12,7 @@ import Data.Maybe (mapMaybe)
 import Data.Tuple (swap)
 import FFICXX.Generate.Dependency
   ( mkModuleDepExternal,
+    mkModuleDepFFI,
     mkModuleDepInplace,
     mkModuleDepRaw,
   )
@@ -64,7 +67,7 @@ formatTemplate typ tcl = "<" ++ highName <.> submod ++ ">"
 
 -- | Draw dependency graph of modules in graphviz dot format.
 drawDepGraph ::
-  [Class] ->
+  [UClass] ->
   -- | dot string
   String
 drawDepGraph allclasses =
@@ -76,22 +79,53 @@ drawDepGraph allclasses =
       for_ js $ \j ->
         (cs !! i) .->. (cs !! j)
   where
+    -- RawType dependency is trivial
+    mkRawTypeDep :: Class -> (String, [String])
+    mkRawTypeDep c =
+      let rawtype = formatOrdinary CMTRawType c
+       in (rawtype, [])
+    -- FFI
+    mkFFIDep :: Class -> (String, [String])
+    mkFFIDep c =
+      let ffi = formatOrdinary CMTFFI c
+          depRawSelf = formatOrdinary CMTRawType c
+          depsFFI =
+            let ds = mkModuleDepFFI (Right c)
+                format' (Left tcl) = formatTemplate TCMTTemplate tcl
+                format' (Right cls) = formatOrdinary CMTRawType cls
+             in fmap format' ds
+       in (ffi, [depRawSelf] ++ depsFFI)
     mkInterfaceDep :: Class -> (String, [String])
     mkInterfaceDep c =
       let interface = formatOrdinary CMTInterface c
-          depsRawSelf = [formatOrdinary CMTRawType c]
+          depRawSelf = formatOrdinary CMTRawType c
           depsRaw =
             let ds = mkModuleDepRaw (Right c)
                 format' (Left tcl) = formatTemplate TCMTTemplate tcl
                 format' (Right cls) = formatOrdinary CMTRawType cls
              in fmap format' ds
-          depsInterfaceInplace =
+          depsExt =
+            let ds = mkModuleDepExternal (Right c)
+                format' (Left tcl) = formatTemplate TCMTTemplate tcl
+                format' (Right cls) = formatOrdinary CMTInterface cls
+             in fmap format' ds
+          depsInplace =
             let ds = mkModuleDepInplace (Right c)
                 format' (Left tcl) = formatTemplate TCMTTemplate tcl
                 format' (Right cls) = formatOrdinary CMTInterface cls
              in fmap format' ds
-       in (interface, depsRawSelf ++ depsRaw ++ depsInterfaceInplace)
-    depmap = fmap mkInterfaceDep allclasses
+       in (interface, [depRawSelf] ++ depsRaw ++ depsExt ++ depsInplace)
+    -- for now
+    mkTemplateDep :: TemplateClass -> (String, [String])
+    mkTemplateDep t =
+      let template = formatTemplate TCMTTemplate t
+       in (template, [])
+    depmap =
+      concatMap
+        (\case
+            Left tcl -> [mkTemplateDep tcl]
+            Right cls -> [mkRawTypeDep cls, mkFFIDep cls, mkInterfaceDep cls])
+        allclasses
     allSyms =
       L.nub . L.sort $
         fmap fst depmap ++ concatMap snd depmap

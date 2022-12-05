@@ -366,7 +366,7 @@ genImportInCast m =
 -- |
 genImportInImplementation :: ClassModule -> [ImportDecl ()]
 genImportInImplementation m =
-  let modlstraw' = cmImportedModulesForFFI m
+  let modlstraw' = cmImportedModulesFFI m
       modlsthigh = nub $ map Right $ class_allparents $ cihClass $ cmCIH m
       modlstraw = filter (not . (flip elem modlsthigh)) modlstraw'
    in [ mkImport (cmModule m <.> "RawType"),

@@ -91,7 +91,7 @@ hsFFIAccessor c v a =
 -- import for FFI
 
 genImportInFFI :: ClassModule -> [ImportDecl ()]
-genImportInFFI = map mkMod . cmImportedModulesForFFI
+genImportInFFI = map mkMod . cmImportedModulesFFI
   where
     mkMod (Left t) = mkImport (getTClassModuleBase t <.> "Template")
     mkMod (Right c) = mkImport (getClassModuleBase c <.> "RawType")

@@ -318,7 +318,7 @@ mkClassModule getImports extra c =
       cmImportedModulesExternal = exts,
       cmImportedModulesRaw = raws,
       cmImportedModulesInplace = inplaces,
-      cmImportedModulesForFFI = ffis,
+      cmImportedModulesFFI = ffis,
       cmExtraImport = extraimports
     }
   where
