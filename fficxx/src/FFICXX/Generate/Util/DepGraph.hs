@@ -11,7 +11,8 @@ import qualified Data.List as L
 import Data.Maybe (mapMaybe)
 import Data.Tuple (swap)
 import FFICXX.Generate.Dependency
-  ( mkModuleDepExternal,
+  ( class_allparents,
+    mkModuleDepExternal,
     mkModuleDepFFI,
     mkModuleDepInplace,
     mkModuleDepRaw,
@@ -115,6 +116,32 @@ drawDepGraph allclasses =
                 format' (Right cls) = formatOrdinary CMTInterface cls
              in fmap format' ds
        in (interface, [depRawSelf] ++ depsRaw ++ depsExt ++ depsInplace)
+    -- Cast
+    mkCastDep :: Class -> (String, [String])
+    mkCastDep c =
+      let cast = formatOrdinary CMTCast c
+          depsSelf = [formatOrdinary CMTRawType c, formatOrdinary CMTInterface c]
+       in (cast, depsSelf)
+    -- Implementation
+    -- TODO: THIS IS VERY INVOLVED! NEED TO REFACTOR THINGS OUT.
+    mkImplementationDep :: Class -> (String, [String])
+    mkImplementationDep c =
+      let implementation = formatOrdinary CMTImplementation c
+          depsSelf =
+            [ formatOrdinary CMTRawType c
+            , formatOrdinary CMTFFI c
+            , formatOrdinary CMTInterface c
+            , formatOrdinary CMTCast c
+            ]
+          deps =
+            let dsFFI = mkModuleDepFFI (Right c)
+                dsParents = L.nub $ map Right $ class_allparents c
+                dsNonParents = filter (not . (flip elem dsParents)) dsFFI
+                format (Left tcl) = [formatTemplate TCMTTemplate tcl]
+                format (Right cls) =
+                  fmap (\typ -> formatOrdinary typ cls) [CMTRawType, CMTCast, CMTInterface]
+             in concatMap format (dsNonParents ++ dsParents)
+       in (implementation, depsSelf ++ deps)
     -- for now
     mkTemplateDep :: TemplateClass -> (String, [String])
     mkTemplateDep t =
@@ -124,7 +151,14 @@ drawDepGraph allclasses =
       concatMap
         (\case
             Left tcl -> [mkTemplateDep tcl]
-            Right cls -> [mkRawTypeDep cls, mkFFIDep cls, mkInterfaceDep cls])
+            Right cls ->
+              [ mkRawTypeDep cls
+              , mkFFIDep cls
+              , mkInterfaceDep cls
+              , mkCastDep cls
+              , mkImplementationDep cls
+              ]
+        )
         allclasses
     allSyms =
       L.nub . L.sort $

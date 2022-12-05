@@ -366,16 +366,16 @@ genImportInCast m =
 -- |
 genImportInImplementation :: ClassModule -> [ImportDecl ()]
 genImportInImplementation m =
-  let modlstraw' = cmImportedModulesFFI m
-      modlsthigh = nub $ map Right $ class_allparents $ cihClass $ cmCIH m
-      modlstraw = filter (not . (flip elem modlsthigh)) modlstraw'
+  let modsFFI = cmImportedModulesFFI m
+      modsParents = nub $ map Right $ class_allparents $ cihClass $ cmCIH m
+      modsNonParents = filter (not . (flip elem modsParents)) modsFFI
    in [ mkImport (cmModule m <.> "RawType"),
         mkImport (cmModule m <.> "FFI"),
         mkImport (cmModule m <.> "Interface"),
         mkImport (cmModule m <.> "Cast")
       ]
-        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modlstraw
-        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modlsthigh
+        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modsNonParents
+        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modsParents
 
 -- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.
