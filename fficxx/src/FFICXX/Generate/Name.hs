@@ -21,6 +21,7 @@ import FFICXX.Generate.Type.Class
     Variable (..),
   )
 import FFICXX.Generate.Util (firstLower, toLowers)
+import System.FilePath ((<.>))
 
 data ClassModuleType
   = CMTRawType
@@ -172,3 +173,29 @@ nonvirtualName c str = (firstLower . fst . hsClassName) c <> "_" <> str
 
 destructorName :: String
 destructorName = "delete"
+
+--
+-- Submodule names in ClassModule
+--
+
+subModuleName ::
+  Either
+    (TemplateClassModuleType, TemplateClass)
+    (ClassModuleType, Class) ->
+  String
+subModuleName (Left (typ, tcl)) = "<" ++ highName <.> submod ++ ">"
+  where
+    (highName, _rawName) = hsTemplateClassName tcl
+    submod = case typ of
+      TCMTTH -> "TH"
+      TCMTTemplate -> "Template"
+subModuleName (Right (typ, cls)) = highName <.> submod
+  where
+    (highName, _rawName) = hsClassName cls
+    submod =
+      case typ of
+        CMTRawType -> "RawType"
+        CMTInterface -> "Interface"
+        CMTImplementation -> "Implementation"
+        CMTFFI -> "FFI"
+        CMTCast -> "Cast"

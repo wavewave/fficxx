@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TupleSections #-}
 
 module FFICXX.Generate.Util.DepGraph
   ( drawDepGraph,
@@ -23,6 +24,7 @@ import FFICXX.Generate.Name
     TemplateClassModuleType (..),
     hsClassName,
     hsTemplateClassName,
+    subModuleName,
   )
 import FFICXX.Generate.Type.Class
   ( Class (..),
@@ -42,26 +44,6 @@ diamond label = node $ [("shape", "diamond"), ("label", label), ("fontsize", "10
 
 -- | UClass = Unified Class, either template class or ordinary class
 type UClass = Either TemplateClass Class
-
-formatOrdinary :: ClassModuleType -> Class -> String
-formatOrdinary typ cls = highName <.> submod
-  where
-    (highName, _rawName) = hsClassName cls
-    submod =
-      case typ of
-        CMTRawType -> "RawType"
-        CMTInterface -> "Interface"
-        CMTImplementation -> "Implementation"
-        CMTFFI -> "FFI"
-        CMTCast -> "Cast"
-
-formatTemplate :: TemplateClassModuleType -> TemplateClass -> String
-formatTemplate typ tcl = "<" ++ highName <.> submod ++ ">"
-  where
-    (highName, _rawName) = hsTemplateClassName tcl
-    submod = case typ of
-      TCMTTH -> "TH"
-      TCMTTemplate -> "Template"
 
 -- | Draw dependency graph of modules in graphviz dot format.
 drawDepGraph ::
@@ -83,101 +65,95 @@ drawDepGraph allclasses allTopLevels =
     -- RawType dependency is trivial
     mkRawTypeDep :: Class -> (String, [String])
     mkRawTypeDep c =
-      let rawtype = formatOrdinary CMTRawType c
+      let rawtype = subModuleName (Right (CMTRawType, c))
        in (rawtype, [])
     -- FFI
     mkFFIDep :: Class -> (String, [String])
     mkFFIDep c =
-      let ffi = formatOrdinary CMTFFI c
-          depRawSelf = formatOrdinary CMTRawType c
+      let ffi = subModuleName (Right (CMTFFI, c))
+          depRawSelf = subModuleName (Right (CMTRawType, c))
           depsFFI =
             let ds = mkModuleDepFFI (Right c)
-                format' (Left tcl) = formatTemplate TCMTTemplate tcl
-                format' (Right cls) = formatOrdinary CMTRawType cls
+                format' (Left tcl) = subModuleName $ Left (TCMTTemplate, tcl)
+                format' (Right cls) = subModuleName $ Right (CMTRawType, cls)
              in fmap format' ds
        in (ffi, [depRawSelf] ++ depsFFI)
     mkInterfaceDep :: Class -> (String, [String])
     mkInterfaceDep c =
-      let interface = formatOrdinary CMTInterface c
-          depRawSelf = formatOrdinary CMTRawType c
+      let interface = subModuleName $ Right (CMTInterface, c)
+          depRawSelf = subModuleName $ Right (CMTRawType, c)
           depsRaw =
             let ds = mkModuleDepRaw (Right c)
-                format' (Left tcl) = formatTemplate TCMTTemplate tcl
-                format' (Right cls) = formatOrdinary CMTRawType cls
+                format' (Left tcl) = subModuleName $ Left (TCMTTemplate, tcl)
+                format' (Right cls) = subModuleName $ Right (CMTRawType, cls)
              in fmap format' ds
           depsExt =
             let ds = mkModuleDepExternal (Right c)
-                format' (Left tcl) = formatTemplate TCMTTemplate tcl
-                format' (Right cls) = formatOrdinary CMTInterface cls
+                format' (Left tcl) = subModuleName $ Left (TCMTTemplate, tcl)
+                format' (Right cls) = subModuleName $ Right (CMTInterface, cls)
              in fmap format' ds
           depsInplace =
             let ds = mkModuleDepInplace (Right c)
-                format' (Left tcl) = formatTemplate TCMTTemplate tcl
-                format' (Right cls) = formatOrdinary CMTInterface cls
+                format' (Left tcl) = subModuleName $ Left (TCMTTemplate, tcl)
+                format' (Right cls) = subModuleName $ Right (CMTInterface, cls)
              in fmap format' ds
        in (interface, [depRawSelf] ++ depsRaw ++ depsExt ++ depsInplace)
     -- Cast
     mkCastDep :: Class -> (String, [String])
     mkCastDep c =
-      let cast = formatOrdinary CMTCast c
-          depsSelf = [formatOrdinary CMTRawType c, formatOrdinary CMTInterface c]
+      let cast = subModuleName $ Right (CMTCast, c)
+          depsSelf = fmap (subModuleName . Right . (,c)) [CMTRawType, CMTInterface]
        in (cast, depsSelf)
     -- Implementation
     -- TODO: THIS IS INVOLVED! NEED TO REFACTOR THINGS OUT.
     mkImplementationDep :: Class -> (String, [String])
     mkImplementationDep c =
-      let implementation = formatOrdinary CMTImplementation c
+      let implementation = subModuleName $ Right (CMTImplementation, c)
           depsSelf =
-            [ formatOrdinary CMTRawType c,
-              formatOrdinary CMTFFI c,
-              formatOrdinary CMTInterface c,
-              formatOrdinary CMTCast c
-            ]
+            fmap (subModuleName . Right . (,c)) [CMTRawType, CMTFFI, CMTInterface, CMTCast]
           deps =
             let dsFFI = mkModuleDepFFI (Right c)
                 dsParents = L.nub $ map Right $ class_allparents c
                 dsNonParents = filter (not . (flip elem dsParents)) dsFFI
-                format (Left tcl) = [formatTemplate TCMTTemplate tcl]
+                format (Left tcl) = [subModuleName $ Left (TCMTTemplate, tcl)]
                 format (Right cls) =
-                  fmap (\typ -> formatOrdinary typ cls) [CMTRawType, CMTCast, CMTInterface]
+                  fmap (subModuleName . Right . (,cls)) [CMTRawType, CMTCast, CMTInterface]
              in concatMap format (dsNonParents ++ dsParents)
        in (implementation, depsSelf ++ deps)
     -- Template Class part
     -- <TClass>.Template
     mkTemplateDep :: TemplateClass -> (String, [String])
     mkTemplateDep t =
-      let template = formatTemplate TCMTTemplate t
+      let template = subModuleName $ Left (TCMTTemplate, t)
           depsRaw =
             let ds = mkModuleDepRaw (Left t)
-                format' (Left tcl) = formatTemplate TCMTTemplate tcl
-                format' (Right cls) = formatOrdinary CMTRawType cls
+                format' (Left tcl) = subModuleName $ Left (TCMTTemplate, tcl)
+                format' (Right cls) = subModuleName $ Right (CMTRawType, cls)
              in fmap format' ds
           depsInplace =
             let ds = mkModuleDepInplace (Left t)
-                format' (Left tcl) = formatTemplate TCMTTemplate tcl
-                format' (Right cls) = formatOrdinary CMTInterface cls
+                format' (Left tcl) = subModuleName $ Left (TCMTTemplate, tcl)
+                format' (Right cls) = subModuleName $ Right (CMTInterface, cls)
              in fmap format' ds
        in (template, depsRaw ++ depsInplace)
     -- <TClass>.TH
     mkTHDep :: TemplateClass -> (String, [String])
     mkTHDep t =
-      let th = formatTemplate TCMTTH t
+      let th = subModuleName $ Left (TCMTTH, t)
           deps =
             let dsRaw = mkModuleDepRaw (Left t)
                 dsInplace = mkModuleDepInplace (Left t)
 
-                format' (Left tcl) = [formatTemplate TCMTTemplate tcl]
+                format' (Left tcl) = [subModuleName $ Left (TCMTTemplate, tcl)]
                 format' (Right cls) =
-                  fmap (\typ -> formatOrdinary typ cls) [CMTRawType, CMTCast, CMTInterface]
+                  fmap (subModuleName . Right . (,cls)) [CMTRawType, CMTCast, CMTInterface]
              in concatMap format' (dsRaw ++ dsInplace)
        in (th, deps)
     -- TopLevel
     topLevelDeps :: (String, [String])
     topLevelDeps =
-      let format' (Left (typ, tcl)) = formatTemplate typ tcl
-          format' (Right (typ, cls)) = formatOrdinary typ cls
-          deps =
-            L.nub . L.sort $ concatMap (fmap format' . mkTopLevelDep) allTopLevels
+      let deps =
+            L.nub . L.sort $ concatMap (fmap subModuleName . mkTopLevelDep) allTopLevels
        in ("[TopLevel]", deps)
 
     depmapAllClasses =
