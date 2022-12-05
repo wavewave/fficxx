@@ -16,11 +16,18 @@ import FFICXX.Generate.Dependency
     mkModuleDepFFI,
     mkModuleDepInplace,
     mkModuleDepRaw,
+    mkTopLevelDep,
   )
-import FFICXX.Generate.Name (hsClassName, hsTemplateClassName)
+import FFICXX.Generate.Name
+  ( ClassModuleType (..),
+    TemplateClassModuleType (..),
+    hsClassName,
+    hsTemplateClassName,
+  )
 import FFICXX.Generate.Type.Class
   ( Class (..),
     TemplateClass (..),
+    TopLevel (..),
   )
 import System.FilePath ((<.>))
 import System.IO (IOMode (..), hPutStrLn, withFile)
@@ -30,17 +37,6 @@ src, box, diamond :: String -> Dot NodeId
 src     label = node $ [ ("shape","none"),("label",label) ]
 box     label = node $ [ ("shape","box"),("style","rounded"),("label",label) ]
 diamond label = node $ [("shape","diamond"),("label",label),("fontsize","10")]
-
-data ClassModuleType
-  = CMTRawType
-  | CMTInterface
-  | CMTImplementation
-  | CMTFFI
-  | CMTCast
-
-data TemplateClassModuleType
-  = TCMTTH
-  | TCMTTemplate
 
 -- TODO: Should be used everywhere.
 -- | UClass = Unified Class, either template class or ordinary class
@@ -68,10 +64,13 @@ formatTemplate typ tcl = "<" ++ highName <.> submod ++ ">"
 
 -- | Draw dependency graph of modules in graphviz dot format.
 drawDepGraph ::
+  -- | list of all classes, either template class or ordinary class.
   [UClass] ->
+  -- | list of all top-level functions.
+  [TopLevel] ->
   -- | dot string
   String
-drawDepGraph allclasses =
+drawDepGraph allclasses allTopLevels =
   showDot $ do
     attribute ("size","40,15")
     attribute ("rankdir","LR")
@@ -171,7 +170,16 @@ drawDepGraph allclasses =
                   fmap (\typ -> formatOrdinary typ cls) [CMTRawType, CMTCast, CMTInterface]
              in concatMap format' (dsRaw ++ dsInplace)
        in (th, deps)
-    depmap =
+    -- TopLevel
+    topLevelDeps :: (String, [String])
+    topLevelDeps =
+      let format' (Left (typ, tcl)) = formatTemplate typ tcl
+          format' (Right (typ, cls)) = formatOrdinary typ cls
+          deps =
+            L.nub . L.sort $ concatMap (fmap format' . mkTopLevelDep) allTopLevels
+       in ("[TopLevel]", deps)
+
+    depmapAllClasses =
       concatMap
         (\case
             Left tcl -> [mkTemplateDep tcl]
@@ -184,6 +192,7 @@ drawDepGraph allclasses =
               ]
         )
         allclasses
+    depmap = topLevelDeps : depmapAllClasses
     allSyms =
       L.nub . L.sort $
         fmap fst depmap ++ concatMap snd depmap

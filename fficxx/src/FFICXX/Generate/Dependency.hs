@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 
 module FFICXX.Generate.Dependency where
 
@@ -25,7 +26,13 @@ import qualified Data.HashMap.Strict as HM
 import Data.List (find, foldl', nub, nubBy)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import FFICXX.Generate.Name (ffiClassName, hsClassName, hsTemplateClassName)
+import FFICXX.Generate.Name
+  ( ClassModuleType (..),
+    TemplateClassModuleType (..),
+    ffiClassName,
+    hsClassName,
+    hsTemplateClassName,
+  )
 import FFICXX.Generate.Type.Cabal
   ( AddCInc,
     AddCSrc,
@@ -304,6 +311,26 @@ mkModuleDepFFI y@(Right c) =
       alldeps' = (concatMap mkModuleDepFFI1 ps) <> mkModuleDepFFI1 y
    in nub (filter (/= y) alldeps')
 mkModuleDepFFI (Left _) = []
+
+-- | Find module-level dependency per each toplevel function/template function.
+mkTopLevelDep ::
+  TopLevel ->
+  [ Either
+      (TemplateClassModuleType, TemplateClass)
+      (ClassModuleType, Class)
+  ]
+mkTopLevelDep (TLOrdinary f) =
+  let dep4func = extractClassDepForTLOrdinary f
+      allDeps = returnDependency dep4func ++ argumentDependency dep4func
+      mkTags (Left tcl) = [Left (TCMTTemplate, tcl)]
+      mkTags (Right cls) = fmap (Right . (,cls)) [CMTRawType, CMTCast, CMTInterface]
+   in concatMap mkTags allDeps
+mkTopLevelDep (TLTemplate f) =
+  let dep4func = extractClassDepForTLTemplate f
+      allDeps = returnDependency dep4func ++ argumentDependency dep4func
+      mkTags (Left tcl) = [Left (TCMTTemplate, tcl)]
+      mkTags (Right cls) = fmap (Right . (,cls)) [CMTRawType, CMTCast, CMTInterface]
+   in concatMap mkTags allDeps
 
 -- |
 mkClassModule ::

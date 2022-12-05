@@ -380,6 +380,7 @@ genImportInImplementation m =
 -- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
+-- TODO2: should be refactored out.
 genImportForTLOrdinary :: TLOrdinary -> [ImportDecl ()]
 genImportForTLOrdinary f =
   let dep4func = extractClassDepForTLOrdinary f
@@ -392,6 +393,7 @@ genImportForTLOrdinary f =
 -- | generate import list for a given top-level template function
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
+-- TODO2: should be refactored out.
 genImportForTLTemplate :: TLTemplate -> [ImportDecl ()]
 genImportForTLTemplate f =
   let dep4func = extractClassDepForTLTemplate f
