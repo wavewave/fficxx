@@ -5,6 +5,7 @@ module FFICXX.Generate.Name where
 
 import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
+import FFICXX.Generate.Type.Cabal (cabal_moduleprefix)
 import FFICXX.Generate.Type.Class
   ( Accessor (..),
     Arg (..),
@@ -175,23 +176,29 @@ destructorName :: String
 destructorName = "delete"
 
 --
--- Submodule names in ClassModule
+-- Module base and Submodule names in ClassModule
 --
+
+getClassModuleBase :: Class -> String
+getClassModuleBase = (<.>) <$> (cabal_moduleprefix . class_cabal) <*> (fst . hsClassName)
+
+getTClassModuleBase :: TemplateClass -> String
+getTClassModuleBase = (<.>) <$> (cabal_moduleprefix . tclass_cabal) <*> (fst . hsTemplateClassName)
 
 subModuleName ::
   Either
     (TemplateClassModuleType, TemplateClass)
     (ClassModuleType, Class) ->
   String
-subModuleName (Left (typ, tcl)) = "<" ++ highName <.> submod ++ ">"
+subModuleName (Left (typ, tcl)) = modBase <.> submod
   where
-    (highName, _rawName) = hsTemplateClassName tcl
+    modBase = getTClassModuleBase tcl
     submod = case typ of
       TCMTTH -> "TH"
       TCMTTemplate -> "Template"
-subModuleName (Right (typ, cls)) = highName <.> submod
+subModuleName (Right (typ, cls)) = modBase <.> submod
   where
-    (highName, _rawName) = hsClassName cls
+    modBase = getClassModuleBase cls
     submod =
       case typ of
         CMTRawType -> "RawType"

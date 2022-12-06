@@ -23,14 +23,14 @@ import FFICXX.Generate.Dependency
     class_allparents,
     extractClassDepForTLOrdinary,
     extractClassDepForTLTemplate,
-    getClassModuleBase,
-    getTClassModuleBase,
     returnDependency,
   )
 import FFICXX.Generate.Dependency.Graph (DepCycles)
 import FFICXX.Generate.Name
   ( accessorName,
     aliasedFuncName,
+    getClassModuleBase,
+    getTClassModuleBase,
     hsClassName,
     hsFrontNameForTopLevel,
     hsFuncName,

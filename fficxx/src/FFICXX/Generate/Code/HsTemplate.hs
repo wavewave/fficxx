@@ -20,13 +20,13 @@ import FFICXX.Generate.Code.Primitive
     tmplAccessorToTFun,
   )
 import FFICXX.Generate.Dependency
-  ( getClassModuleBase,
-    getTClassModuleBase,
-    mkModuleDepInplace,
+  ( mkModuleDepInplace,
     mkModuleDepRaw,
   )
 import FFICXX.Generate.Name
   ( ffiTmplFuncName,
+    getClassModuleBase,
+    getTClassModuleBase,
     hsTemplateClassName,
     hsTemplateMemberFunctionName,
     hsTemplateMemberFunctionNameTH,

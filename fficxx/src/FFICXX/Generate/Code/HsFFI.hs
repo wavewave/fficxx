@@ -13,12 +13,12 @@ import FFICXX.Generate.Code.Primitive
   )
 import FFICXX.Generate.Dependency
   ( class_allparents,
-    getClassModuleBase,
-    getTClassModuleBase,
   )
 import FFICXX.Generate.Name
   ( aliasedFuncName,
     ffiClassName,
+    getClassModuleBase,
+    getTClassModuleBase,
     hscAccessorName,
     hscFuncName,
   )

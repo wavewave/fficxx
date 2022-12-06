@@ -30,6 +30,8 @@ import FFICXX.Generate.Name
   ( ClassModuleType (..),
     TemplateClassModuleType (..),
     ffiClassName,
+    getClassModuleBase,
+    getTClassModuleBase,
     hsClassName,
     hsTemplateClassName,
   )
@@ -118,12 +120,6 @@ class_allparents c =
    in if null ps
         then []
         else nub (ps <> (concatMap class_allparents ps))
-
-getClassModuleBase :: Class -> String
-getClassModuleBase = (<.>) <$> (cabal_moduleprefix . class_cabal) <*> (fst . hsClassName)
-
-getTClassModuleBase :: TemplateClass -> String
-getTClassModuleBase = (<.>) <$> (cabal_moduleprefix . tclass_cabal) <*> (fst . hsTemplateClassName)
 
 -- | Daughter map not including itself
 mkDaughterMap :: [Class] -> DaughterMap

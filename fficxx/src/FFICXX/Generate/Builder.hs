@@ -16,7 +16,6 @@ import FFICXX.Generate.Config
 import qualified FFICXX.Generate.ContentMaker as C
 import FFICXX.Generate.Dependency
   ( findModuleUnitImports,
-    getClassModuleBase,
     mkHsBootCandidateList,
     mkPackageConfig,
   )

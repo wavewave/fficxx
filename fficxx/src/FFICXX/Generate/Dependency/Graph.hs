@@ -4,8 +4,8 @@
 module FFICXX.Generate.Dependency.Graph where
 
 import Data.Array (listArray)
-import qualified Data.Graph as G
 import Data.Foldable (for_)
+import qualified Data.Graph as G
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe (fromMaybe, mapMaybe)
@@ -33,7 +33,6 @@ import FFICXX.Generate.Type.Class
   )
 import System.FilePath ((<.>))
 import System.IO (IOMode (..), hPutStrLn, withFile)
-
 
 -- TODO: Should be used everywhere.
 
@@ -176,12 +175,12 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
 
 -- | find grouped dependency cycles
 findDepCycles :: ([String], [(Int, [Int])]) -> [[String]]
-findDepCycles (syms, deps) = do
-  let symMap = zip [0..] syms
+findDepCycles (syms, deps) =
+  let symMap = zip [0 ..] syms
       lookupSym i = fromMaybe "<NOTFOUND>" (L.lookup i symMap)
       n = length syms
       bounds = (0, n - 1)
-      gr = listArray bounds $ fmap (\i -> fromMaybe [] (L.lookup i deps)) [0..n-1]
+      gr = listArray bounds $ fmap (\i -> fromMaybe [] (L.lookup i deps)) [0 .. n - 1]
       cycleGroups =
         fmap (fmap lookupSym) $ filter (\xs -> length xs > 1) $ fmap flatten (G.scc gr)
    in cycleGroups

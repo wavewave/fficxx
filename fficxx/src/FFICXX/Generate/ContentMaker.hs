@@ -71,12 +71,8 @@ import FFICXX.Generate.Code.HsTemplate
     genTmplInstance,
     genTmplInterface,
   )
-import FFICXX.Generate.Code.Primitive
-  ( classConstraints,
-  )
 import FFICXX.Generate.Dependency
   ( class_allparents,
-    getClassModuleBase,
     mkDaughterMap,
     mkDaughterSelfMap,
   )
@@ -85,7 +81,6 @@ import FFICXX.Generate.Name
   ( ffiClassName,
     hsClassName,
     hsFrontNameForTopLevel,
-    typeclassName,
   )
 import FFICXX.Generate.Type.Annotate (AnnotateMap)
 import FFICXX.Generate.Type.Class
@@ -115,11 +110,9 @@ import FFICXX.Generate.Util.HaskellSrcExts
   ( emodule,
     evar,
     lang,
-    mkClass,
     mkImport,
     mkModule,
     mkModuleE,
-    mkTBind,
     unqual,
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
