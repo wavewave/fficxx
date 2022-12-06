@@ -80,6 +80,7 @@ import FFICXX.Generate.Dependency
     mkDaughterMap,
     mkDaughterSelfMap,
   )
+import FFICXX.Generate.Dependency.Graph (DepCycles)
 import FFICXX.Generate.Name
   ( ffiClassName,
     hsClassName,
@@ -390,8 +391,12 @@ buildRawTypeHs m =
        in if isAbstractClass c then [] else hsClassRawType c
 
 -- |
-buildInterfaceHs :: AnnotateMap -> ClassModule -> Module ()
-buildInterfaceHs amap m =
+buildInterfaceHs ::
+  AnnotateMap ->
+  DepCycles ->
+  ClassModule ->
+  Module ()
+buildInterfaceHs amap depCycles m =
   mkModule
     (cmModule m <.> "Interface")
     [ lang
@@ -417,7 +422,7 @@ buildInterfaceHs amap m =
         mkImport "Foreign.Ptr",
         mkImport "FFICXX.Runtime.Cast"
       ]
-        <> genImportInInterface m
+        <> genImportInInterface depCycles m
         <> genExtraImport m
     ifaceBody =
       runReader (mapM genHsFrontDecl classes) amap
@@ -425,8 +430,8 @@ buildInterfaceHs amap m =
         <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
 
 -- |
-buildInterfaceHsBoot :: ClassModule -> Module ()
-buildInterfaceHsBoot m =
+buildInterfaceHsBoot :: DepCycles -> ClassModule -> Module ()
+buildInterfaceHsBoot depCycles m =
   mkModule
     (cmModule m <.> "Interface")
     [ lang
@@ -452,7 +457,7 @@ buildInterfaceHsBoot m =
         mkImport "Foreign.Ptr",
         mkImport "FFICXX.Runtime.Cast"
       ]
-        <> genImportInInterface m
+        <> genImportInInterface depCycles m
         <> genExtraImport m
     hsbootBody =
       runReader (mapM genHsFrontDecl [c]) M.empty

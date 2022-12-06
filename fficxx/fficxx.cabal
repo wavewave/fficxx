@@ -20,6 +20,7 @@ Library
   Build-Depends: base == 4.*
                , aeson
                , aeson-pretty
+               , array
                , bytestring
                , Cabal
                , containers

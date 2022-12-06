@@ -3,11 +3,13 @@
 
 module FFICXX.Generate.Dependency.Graph where
 
--- import Data.Graph ()
+import Data.Array (listArray)
+import qualified Data.Graph as G
 import Data.Foldable (for_)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
-import Data.Maybe (mapMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Tree (drawForest, flatten)
 import Data.Tuple (swap)
 import FFICXX.Generate.Dependency
   ( class_allparents,
@@ -37,6 +39,9 @@ import System.IO (IOMode (..), hPutStrLn, withFile)
 
 -- | UClass = Unified Class, either template class or ordinary class
 type UClass = Either TemplateClass Class
+
+-- | Dependency cycle information. Currently just a string
+type DepCycles = [[String]]
 
 -- | construct dependency graph
 constructDepGraph ::
@@ -168,3 +173,15 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
       js <- traverse (\d -> HM.lookup d symRevMap) ds
       pure (i, js)
     depmap' = mapMaybe replace depmap
+
+-- | find grouped dependency cycles
+findDepCycles :: ([String], [(Int, [Int])]) -> [[String]]
+findDepCycles (syms, deps) = do
+  let symMap = zip [0..] syms
+      lookupSym i = fromMaybe "<NOTFOUND>" (L.lookup i symMap)
+      n = length syms
+      bounds = (0, n - 1)
+      gr = listArray bounds $ fmap (\i -> fromMaybe [] (L.lookup i deps)) [0..n-1]
+      cycleGroups =
+        fmap (fmap lookupSym) $ filter (\xs -> length xs > 1) $ fmap flatten (G.scc gr)
+   in cycleGroups

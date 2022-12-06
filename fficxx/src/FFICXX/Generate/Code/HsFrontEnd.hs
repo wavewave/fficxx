@@ -27,6 +27,7 @@ import FFICXX.Generate.Dependency
     getTClassModuleBase,
     returnDependency,
   )
+import FFICXX.Generate.Dependency.Graph (DepCycles)
 import FFICXX.Generate.Name
   ( accessorName,
     aliasedFuncName,
@@ -324,8 +325,8 @@ genImportInModule :: Class -> [ImportDecl ()]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
 
 -- TODO: this dependency should be refactored out and analyzed separately, particularly for cyclic deps.
-genImportInInterface :: ClassModule -> [ImportDecl ()]
-genImportInInterface m =
+genImportInInterface :: DepCycles -> ClassModule -> [ImportDecl ()]
+genImportInInterface _ m =
   let modsRaw = cmImportedModulesRaw m
       modsExt = cmImportedModulesExternal m
       modsInplace = cmImportedModulesInplace m

@@ -51,6 +51,7 @@ macrofy = map ((\x -> if x == '-' then '_' else x) . toUpper)
 
 simpleBuilder :: FFICXXConfig -> SimpleBuilderConfig -> IO ()
 simpleBuilder cfg sbc = do
+  let depCycles = []
   putStrLn "----------------------------------------------------"
   putStrLn "-- fficxx code generation for Haskell-C++ binding --"
   putStrLn "----------------------------------------------------"
@@ -131,7 +132,7 @@ simpleBuilder cfg sbc = do
   for_ mods $ \m ->
     gen
       (cmModule m <.> "Interface" <.> "hs")
-      (prettyPrint (C.buildInterfaceHs mempty m))
+      (prettyPrint (C.buildInterfaceHs mempty depCycles m))
   --
   putStrLn "Generating Cast.hs"
   for_ mods $ \m ->
@@ -167,7 +168,7 @@ simpleBuilder cfg sbc = do
   for_ hsbootlst $ \m -> do
     gen
       (cmModule m <.> "Interface" <.> "hs-boot")
-      (prettyPrint (C.buildInterfaceHsBoot m))
+      (prettyPrint (C.buildInterfaceHsBoot depCycles m))
   --
   putStrLn "Generating Module summary file"
   for_ mods $ \m ->
