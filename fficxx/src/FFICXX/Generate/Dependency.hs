@@ -27,9 +27,7 @@ import Data.List (find, foldl', nub, nubBy)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import FFICXX.Generate.Name
-  ( ClassModuleType (..),
-    TemplateClassModuleType (..),
-    ffiClassName,
+  ( ffiClassName,
     getClassModuleBase,
     getTClassModuleBase,
     hsClassName,
@@ -72,9 +70,11 @@ import FFICXX.Generate.Type.Config
 import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     ClassModule (..),
+    ClassSubmoduleType (..),
     PackageConfig (..),
     TemplateClassImportHeader (..),
     TemplateClassModule (..),
+    TemplateClassSubmoduleType (..),
     TopLevelImportHeader (..),
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
@@ -232,6 +232,8 @@ isInSamePackageButNotInheritedBy ::
 isInSamePackageButNotInheritedBy x y =
   x /= y && not (x `elem` getparents y) && (getPkgName x == getPkgName y)
 
+-- calculateDependency :: Either (
+
 -- TODO: Confirm the following answer
 -- NOTE: Q: why returnDependency is not considered?
 --       A: See explanation in mkModuleDepRaw
@@ -312,20 +314,20 @@ mkModuleDepFFI (Left _) = []
 mkTopLevelDep ::
   TopLevel ->
   [ Either
-      (TemplateClassModuleType, TemplateClass)
-      (ClassModuleType, Class)
+      (TemplateClassSubmoduleType, TemplateClass)
+      (ClassSubmoduleType, Class)
   ]
 mkTopLevelDep (TLOrdinary f) =
   let dep4func = extractClassDepForTLOrdinary f
       allDeps = returnDependency dep4func ++ argumentDependency dep4func
-      mkTags (Left tcl) = [Left (TCMTTemplate, tcl)]
-      mkTags (Right cls) = fmap (Right . (,cls)) [CMTRawType, CMTCast, CMTInterface]
+      mkTags (Left tcl) = [Left (TCSTTemplate, tcl)]
+      mkTags (Right cls) = fmap (Right . (,cls)) [CSTRawType, CSTCast, CSTInterface]
    in concatMap mkTags allDeps
 mkTopLevelDep (TLTemplate f) =
   let dep4func = extractClassDepForTLTemplate f
       allDeps = returnDependency dep4func ++ argumentDependency dep4func
-      mkTags (Left tcl) = [Left (TCMTTemplate, tcl)]
-      mkTags (Right cls) = fmap (Right . (,cls)) [CMTRawType, CMTCast, CMTInterface]
+      mkTags (Left tcl) = [Left (TCSTTemplate, tcl)]
+      mkTags (Right cls) = fmap (Right . (,cls)) [CSTRawType, CSTCast, CSTInterface]
    in concatMap mkTags allDeps
 
 -- |

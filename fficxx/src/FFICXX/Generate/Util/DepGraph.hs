@@ -17,13 +17,10 @@ import FFICXX.Generate.Dependency
     mkTopLevelDep,
   )
 import FFICXX.Generate.Dependency.Graph
-  ( UClass,
-    constructDepGraph,
+  ( constructDepGraph,
   )
 import FFICXX.Generate.Name
-  ( ClassModuleType (..),
-    TemplateClassModuleType (..),
-    hsClassName,
+  ( hsClassName,
     hsTemplateClassName,
     subModuleName,
   )
@@ -31,6 +28,11 @@ import FFICXX.Generate.Type.Class
   ( Class (..),
     TemplateClass (..),
     TopLevel (..),
+  )
+import FFICXX.Generate.Type.Module
+  ( ClassSubmoduleType (..),
+    TemplateClassSubmoduleType (..),
+    UClass,
   )
 import System.FilePath ((<.>))
 import System.IO (IOMode (..), hPutStrLn, withFile)

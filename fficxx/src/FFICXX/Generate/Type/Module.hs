@@ -5,6 +5,10 @@ import FFICXX.Generate.Type.Cabal (AddCInc, AddCSrc)
 import FFICXX.Generate.Type.Class (Class, TemplateClass, TopLevel)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..), Namespace (..))
 
+--
+-- C++
+--
+
 -- | C++ side
 --   HPkg is generated C++ headers by fficxx, CPkg is original C++ headers
 data ClassImportHeader = ClassImportHeader
@@ -23,9 +27,30 @@ data ClassImportHeader = ClassImportHeader
   }
   deriving (Show)
 
--------------------------
--- Haskell side module --
--------------------------
+--
+-- Haskell side
+--
+
+--
+-- Submodule
+--
+
+data ClassSubmoduleType
+  = CSTRawType
+  | CSTInterface
+  | CSTImplementation
+  | CSTFFI
+  | CSTCast
+
+data TemplateClassSubmoduleType
+  = TCSTTH
+  | TCSTTemplate
+
+-- | UClass = Unified Class, either template class or ordinary class
+type UClass = Either TemplateClass Class
+
+-- | Dependency cycle information. Currently just a string
+type DepCycles = [[String]]
 
 data ClassModule = ClassModule
   { cmModule :: String,

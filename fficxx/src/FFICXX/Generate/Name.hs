@@ -21,19 +21,12 @@ import FFICXX.Generate.Type.Class
     TopLevel (..),
     Variable (..),
   )
+import FFICXX.Generate.Type.Module
+  ( ClassSubmoduleType (..),
+    TemplateClassSubmoduleType (..),
+  )
 import FFICXX.Generate.Util (firstLower, toLowers)
 import System.FilePath ((<.>))
-
-data ClassModuleType
-  = CMTRawType
-  | CMTInterface
-  | CMTImplementation
-  | CMTFFI
-  | CMTCast
-
-data TemplateClassModuleType
-  = TCMTTH
-  | TCMTTemplate
 
 hsFrontNameForTopLevel :: TopLevel -> String
 hsFrontNameForTopLevel tfn =
@@ -187,22 +180,22 @@ getTClassModuleBase = (<.>) <$> (cabal_moduleprefix . tclass_cabal) <*> (fst . h
 
 subModuleName ::
   Either
-    (TemplateClassModuleType, TemplateClass)
-    (ClassModuleType, Class) ->
+    (TemplateClassSubmoduleType, TemplateClass)
+    (ClassSubmoduleType, Class) ->
   String
 subModuleName (Left (typ, tcl)) = modBase <.> submod
   where
     modBase = getTClassModuleBase tcl
     submod = case typ of
-      TCMTTH -> "TH"
-      TCMTTemplate -> "Template"
+      TCSTTH -> "TH"
+      TCSTTemplate -> "Template"
 subModuleName (Right (typ, cls)) = modBase <.> submod
   where
     modBase = getClassModuleBase cls
     submod =
       case typ of
-        CMTRawType -> "RawType"
-        CMTInterface -> "Interface"
-        CMTImplementation -> "Implementation"
-        CMTFFI -> "FFI"
-        CMTCast -> "Cast"
+        CSTRawType -> "RawType"
+        CSTInterface -> "Interface"
+        CSTImplementation -> "Implementation"
+        CSTFFI -> "FFI"
+        CSTCast -> "Cast"

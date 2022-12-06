@@ -76,7 +76,6 @@ import FFICXX.Generate.Dependency
     mkDaughterMap,
     mkDaughterSelfMap,
   )
-import FFICXX.Generate.Dependency.Graph (DepCycles)
 import FFICXX.Generate.Name
   ( ffiClassName,
     hsClassName,
@@ -96,6 +95,7 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     ClassModule (..),
+    DepCycles,
     TemplateClassImportHeader (..),
     TemplateClassModule (..),
     TopLevelImportHeader (..),

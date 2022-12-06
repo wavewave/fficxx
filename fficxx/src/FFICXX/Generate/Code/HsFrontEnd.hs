@@ -26,8 +26,7 @@ import FFICXX.Generate.Dependency
     returnDependency,
   )
 import FFICXX.Generate.Dependency.Graph
-  ( DepCycles,
-    locateInDepCycles,
+  ( locateInDepCycles,
   )
 import FFICXX.Generate.Name
   ( accessorName,
@@ -60,6 +59,7 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     ClassModule (..),
+    DepCycles,
     TemplateClassModule (..),
   )
 import FFICXX.Generate.Util (toLowers)
