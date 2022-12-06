@@ -184,3 +184,11 @@ findDepCycles (syms, deps) =
       cycleGroups =
         fmap (fmap lookupSym) $ filter (\xs -> length xs > 1) $ fmap flatten (G.scc gr)
    in cycleGroups
+
+-- | locate importing module and imported module in dependency cycles
+locateInDepCycles :: (String, String) -> DepCycles -> Maybe (Int, Int)
+locateInDepCycles (self, imported) depCycles = do
+  cycl <- L.find (self `L.elem`) depCycles
+  idxSelf <- self `L.elemIndex` cycl
+  idxImported <- imported `L.elemIndex` cycl
+  pure (idxSelf, idxImported)

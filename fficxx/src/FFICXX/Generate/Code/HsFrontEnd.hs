@@ -7,7 +7,7 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import Control.Monad.Reader (Reader)
 import Data.Either (lefts, rights)
-import Data.List (nub)
+import qualified Data.List as L
 import FFICXX.Generate.Code.Primitive
   ( CFunSig (..),
     HsFunSig (..),
@@ -25,7 +25,10 @@ import FFICXX.Generate.Dependency
     extractClassDepForTLTemplate,
     returnDependency,
   )
-import FFICXX.Generate.Dependency.Graph (DepCycles)
+import FFICXX.Generate.Dependency.Graph
+  ( DepCycles,
+    locateInDepCycles,
+  )
 import FFICXX.Generate.Name
   ( accessorName,
     aliasedFuncName,
@@ -81,7 +84,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
     mkFun,
     mkFunSig,
     mkImport,
-    -- mkImportSrc,
+    mkImportSrc,
     mkInstance,
     mkNewtype,
     mkPVar,
@@ -324,10 +327,20 @@ genExtraImport cm = map mkImport (cmExtraImport cm)
 genImportInModule :: Class -> [ImportDecl ()]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
 
+mkImportWithDepCycles :: DepCycles -> String -> String -> ImportDecl ()
+mkImportWithDepCycles depCycles self imported =
+  let mloc = locateInDepCycles (self, imported) depCycles
+   in case mloc of
+        Just (idxSelf, idxImported)
+          | idxImported > idxSelf ->
+            mkImportSrc imported
+        _ -> mkImport imported
+
 -- TODO: this dependency should be refactored out and analyzed separately, particularly for cyclic deps.
 genImportInInterface :: DepCycles -> ClassModule -> [ImportDecl ()]
-genImportInInterface _ m =
-  let modsRaw = cmImportedModulesRaw m
+genImportInInterface depCycles m =
+  let modSelf = cmModule m <.> "Interface"
+      modsRaw = cmImportedModulesRaw m
       modsExt = cmImportedModulesExternal m
       modsInplace = cmImportedModulesInplace m
    in [mkImport (cmModule m <.> "RawType")]
@@ -350,11 +363,9 @@ genImportInInterface _ m =
           modsInplace
           ( \case
               Left t ->
-                -- TODO: *.Template in the same package needs to have hs-boot.
-                --       Currently, we do not have it yet.
-                mkImport (getTClassModuleBase t <.> "Template")
-              Right c -> mkImport (getClassModuleBase c <.> "Interface")
-              -- mkImportSrc (getClassModuleBase c <.> "Interface")
+                mkImportWithDepCycles depCycles modSelf (getTClassModuleBase t <.> "Template")
+              Right c ->
+                mkImportWithDepCycles depCycles modSelf (getClassModuleBase c <.> "Interface")
           )
 
 -- |
@@ -368,7 +379,7 @@ genImportInCast m =
 genImportInImplementation :: ClassModule -> [ImportDecl ()]
 genImportInImplementation m =
   let modsFFI = cmImportedModulesFFI m
-      modsParents = nub $ map Right $ class_allparents $ cihClass $ cmCIH m
+      modsParents = L.nub $ map Right $ class_allparents $ cihClass $ cmCIH m
       modsNonParents = filter (not . (flip elem modsParents)) modsFFI
    in [ mkImport (cmModule m <.> "RawType"),
         mkImport (cmModule m <.> "FFI"),
@@ -386,8 +397,8 @@ genImportForTLOrdinary :: TLOrdinary -> [ImportDecl ()]
 genImportForTLOrdinary f =
   let dep4func = extractClassDepForTLOrdinary f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
-      cmods = nub $ map getClassModuleBase $ rights ecs
-      tmods = nub $ map getTClassModuleBase $ lefts ecs
+      cmods = L.nub $ map getClassModuleBase $ rights ecs
+      tmods = L.nub $ map getTClassModuleBase $ lefts ecs
    in concatMap (\x -> map (\y -> mkImport (x <.> y)) ["RawType", "Cast", "Interface"]) cmods
         <> concatMap (\x -> map (\y -> mkImport (x <.> y)) ["Template"]) tmods
 
@@ -399,8 +410,8 @@ genImportForTLTemplate :: TLTemplate -> [ImportDecl ()]
 genImportForTLTemplate f =
   let dep4func = extractClassDepForTLTemplate f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
-      cmods = nub $ map getClassModuleBase $ rights ecs
-      tmods = nub $ map getTClassModuleBase $ lefts ecs
+      cmods = L.nub $ map getClassModuleBase $ rights ecs
+      tmods = L.nub $ map getTClassModuleBase $ lefts ecs
    in concatMap (\x -> map (\y -> mkImport (x <.> y)) ["RawType", "Cast", "Interface"]) cmods
         <> concatMap (\x -> map (\y -> mkImport (x <.> y)) ["Template"]) tmods
 

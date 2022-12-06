@@ -19,6 +19,10 @@ import FFICXX.Generate.Dependency
     mkHsBootCandidateList,
     mkPackageConfig,
   )
+import FFICXX.Generate.Dependency.Graph
+  ( constructDepGraph,
+    findDepCycles,
+  )
 import FFICXX.Generate.Type.Cabal
   ( AddCInc (..),
     AddCSrc (..),
@@ -30,6 +34,7 @@ import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     ClassModule (..),
     PackageConfig (..),
+    TemplateClassImportHeader (..),
     TemplateClassModule (..),
     TopLevelImportHeader (..),
   )
@@ -50,7 +55,6 @@ macrofy = map ((\x -> if x == '-' then '_' else x) . toUpper)
 
 simpleBuilder :: FFICXXConfig -> SimpleBuilderConfig -> IO ()
 simpleBuilder cfg sbc = do
-  let depCycles = []
   putStrLn "----------------------------------------------------"
   putStrLn "-- fficxx code generation for Haskell-C++ binding --"
   putStrLn "----------------------------------------------------"
@@ -80,6 +84,8 @@ simpleBuilder cfg sbc = do
       hsbootlst = mkHsBootCandidateList mods
       cabalFileName = unCabalName pkgname <.> "cabal"
       jsonFileName = unCabalName pkgname <.> "json"
+      allClasses = fmap (Left . tcihTClass) templates ++ fmap Right classes
+      depCycles = findDepCycles $ constructDepGraph allClasses toplevelfunctions
   --
   createDirectoryIfMissing True workingDir
   createDirectoryIfMissing True installDir
