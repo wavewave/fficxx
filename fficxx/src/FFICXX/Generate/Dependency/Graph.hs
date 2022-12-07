@@ -14,7 +14,6 @@ import FFICXX.Generate.Dependency
   ( calculateDependency,
     class_allparents,
     mkModuleDepFFI,
-    mkModuleDepInplace,
     mkTopLevelDep,
   )
 import FFICXX.Generate.Name (subModuleName)
@@ -62,13 +61,8 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     mkInterfaceDep c =
       let interface = subModuleName $ Right (CSTInterface, c)
           depRawSelf = subModuleName $ Right (CSTRawType, c)
-          depsRawExt = fmap subModuleName $ calculateDependency $ Right (CSTInterface, c)
-          depsInplace =
-            let ds = mkModuleDepInplace (Right c)
-                format' (Left tcl) = subModuleName $ Left (TCSTTemplate, tcl)
-                format' (Right cls) = subModuleName $ Right (CSTInterface, cls)
-             in fmap format' ds
-       in (interface, [depRawSelf] ++ depsRawExt ++ depsInplace)
+          deps = fmap subModuleName $ calculateDependency $ Right (CSTInterface, c)
+       in (interface, depRawSelf : deps)
     -- Cast
     mkCastDep :: Class -> (String, [String])
     mkCastDep c =
@@ -96,25 +90,13 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     mkTemplateDep :: TemplateClass -> (String, [String])
     mkTemplateDep t =
       let template = subModuleName $ Left (TCSTTemplate, t)
-          depsRaw = fmap subModuleName $ calculateDependency $ Left (TCSTTemplate, t)
-          depsInplace =
-            let ds = mkModuleDepInplace (Left t)
-                format' (Left tcl) = subModuleName $ Left (TCSTTemplate, tcl)
-                format' (Right cls) = subModuleName $ Right (CSTInterface, cls)
-             in fmap format' ds
-       in (template, depsRaw ++ depsInplace)
+          deps = fmap subModuleName $ calculateDependency $ Left (TCSTTemplate, t)
+       in (template, deps)
     -- <TClass>.TH
     mkTHDep :: TemplateClass -> (String, [String])
     mkTHDep t =
       let th = subModuleName $ Left (TCSTTH, t)
-          deps =
-            let dsRaw = fmap subModuleName $ calculateDependency $ Left (TCSTTH, t)
-                dsInplace = mkModuleDepInplace (Left t)
-
-                format' (Left tcl) = [subModuleName $ Left (TCSTTemplate, tcl)]
-                format' (Right cls) =
-                  fmap (subModuleName . Right . (,cls)) [CSTRawType, CSTCast, CSTInterface]
-             in dsRaw ++ concatMap format' dsInplace
+          deps = fmap subModuleName $ calculateDependency $ Left (TCSTTH, t)
        in (th, deps)
     -- TopLevel
     topLevelDeps :: (String, [String])

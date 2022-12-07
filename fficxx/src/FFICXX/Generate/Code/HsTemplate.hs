@@ -19,10 +19,7 @@ import FFICXX.Generate.Code.Primitive
     functionSignatureTT,
     tmplAccessorToTFun,
   )
-import FFICXX.Generate.Dependency
-  ( calculateDependency,
-    mkModuleDepInplace,
-  )
+import FFICXX.Generate.Dependency (calculateDependency)
 import FFICXX.Generate.Name
   ( ffiTmplFuncName,
     getClassModuleBase,
@@ -238,19 +235,7 @@ genTMFInstance cih f =
 
 genImportInTemplate :: TemplateClass -> [ImportDecl ()]
 genImportInTemplate t0 =
-  let depsRaw =
-        fmap (mkImport . subModuleName) $
-          calculateDependency $
-            Left (TCSTTemplate, t0)
-      depsInplace = mkModuleDepInplace (Left t0)
-   in depsRaw
-        <> flip
-          map
-          depsInplace
-          ( \case
-              Left t -> mkImport (getTClassModuleBase t <.> "Template")
-              Right c -> mkImport (getClassModuleBase c <.> "Interface")
-          )
+  fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTemplate, t0)
 
 -- |
 genTmplInterface :: TemplateClass -> [Decl ()]
@@ -287,16 +272,7 @@ genTmplInterface t =
 -- |
 genImportInTH :: TemplateClass -> [ImportDecl ()]
 genImportInTH t0 =
-  let depsRaw = fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTH, t0)
-      depsInplace = mkModuleDepInplace (Left t0)
-   in depsRaw
-        <> flip
-          concatMap
-          depsInplace
-          ( \case
-              Left t -> [mkImport (getTClassModuleBase t <.> "Template")]
-              Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]
-          )
+  fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTH, t0)
 
 -- |
 genTmplImplementation :: TemplateClass -> [Decl ()]

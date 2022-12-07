@@ -32,14 +32,12 @@ import FFICXX.Generate.Name
     getClassModuleBase,
     getTClassModuleBase,
     hsClassName,
-    hsTemplateClassName,
   )
 import FFICXX.Generate.Type.Cabal
   ( AddCInc,
     AddCSrc,
     CabalName (..),
     cabal_cheaderprefix,
-    cabal_moduleprefix,
     cabal_pkgname,
     unCabalName,
   )
@@ -210,22 +208,30 @@ extractClassDepForTLTemplate f =
 --          we have (f :: (IA a, IB b) => a -> b -> IO C
 --          return class is concrete and argument class is constraint.
 calculateDependency :: UClassSubmodule -> [UClassSubmodule]
-calculateDependency (Left (TCSTTemplate, tcl)) =
-  fmap (bimap (TCSTTemplate,) (CSTRawType,)) $
-    L.nub $
-      filter (/= Left tcl) $
-        concatMap (returnDependency . extractClassDepForTmplFun) $
-          tclass_funcs tcl
-calculateDependency (Left (TCSTTH, tcl)) =
-  concatMap
-    ( \case
-        Left t -> [Left (TCSTTemplate, t)]
-        Right c -> fmap (Right . (,c)) [CSTRawType, CSTCast, CSTInterface]
-    )
-    $ L.nub $
-      filter (/= Left tcl) $
-        concatMap (returnDependency . extractClassDepForTmplFun) $
-          tclass_funcs tcl
+calculateDependency (Left (typ, tcl)) = raws <> inplaces
+  where
+    raws' =
+      L.nub $
+        filter (/= Left tcl) $
+          concatMap (returnDependency . extractClassDepForTmplFun) $
+            tclass_funcs tcl
+    raws =
+      case typ of
+        TCSTTemplate ->
+          fmap (bimap (TCSTTemplate,) (CSTRawType,)) raws'
+        TCSTTH ->
+          concatMap
+            ( \case
+                Left t -> [Left (TCSTTemplate, t)]
+                Right c -> fmap (Right . (,c)) [CSTRawType, CSTCast, CSTInterface]
+            )
+            raws'
+    inplaces =
+      let fs = tclass_funcs tcl
+       in fmap (bimap (TCSTTemplate,) (CSTInterface,)) $
+            L.nub $
+              filter (`isInSamePackageButNotInheritedBy` Left tcl) $
+                concatMap (argumentDependency . extractClassDepForTmplFun) fs
 calculateDependency (Right (CSTInterface, cls)) =
   let argDepClasses =
         concatMap (returnDependency . extractClassDep) (class_funcs cls)
@@ -237,7 +243,11 @@ calculateDependency (Right (CSTInterface, cls)) =
               filter (`isNotInSamePackageWith` Right cls) argDepClasses
             parents = map Right (class_parents cls)
          in fmap (bimap (TCSTTemplate,) (CSTInterface,)) $ L.nub (parents <> extclasses)
-   in raws ++ exts
+      inplaces =
+        fmap (bimap (TCSTTemplate,) (CSTInterface,)) $
+          L.nub $
+            filter (`isInSamePackageButNotInheritedBy` Right cls) $ argDepClasses
+   in raws ++ exts ++ inplaces
 calculateDependency _ = undefined
 
 -- |
@@ -256,18 +266,6 @@ isInSamePackageButNotInheritedBy ::
   Bool
 isInSamePackageButNotInheritedBy x y =
   x /= y && not (x `elem` getparents y) && (getPkgName x == getPkgName y)
-
-mkModuleDepInplace :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepInplace y@(Right c) =
-  L.nub $
-    filter (`isInSamePackageButNotInheritedBy` y) $
-      concatMap (argumentDependency . extractClassDep) (class_funcs c)
-        ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
-mkModuleDepInplace y@(Left t) =
-  let fs = tclass_funcs t
-   in L.nub $
-        filter (`isInSamePackageButNotInheritedBy` y) $
-          concatMap (argumentDependency . extractClassDepForTmplFun) fs
 
 -- |
 mkModuleDepCpp :: Either TemplateClass Class -> [Either TemplateClass Class]
@@ -350,9 +348,10 @@ mkClassModule getImports extra c =
       cmExtraImport = extraimports
     }
   where
+    -- ???
     exts = fmap (bimap snd snd) . calculateDependency $ Right (CSTInterface, c)
     raws = fmap (bimap snd snd) . calculateDependency $ Right (CSTInterface, c)
-    inplaces = mkModuleDepInplace (Right c)
+    inplaces = fmap (bimap snd snd) . calculateDependency $ Right (CSTInterface, c)
     ffis = mkModuleDepFFI (Right c)
     extraimports = fromMaybe [] (lookup (class_name c) extra)
 

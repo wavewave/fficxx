@@ -4,30 +4,11 @@ module FFICXX.Generate.Util.DepGraph
 where
 
 import Data.Foldable (for_)
-import qualified Data.HashMap.Strict as HM
-import qualified Data.List as L
-import Data.Maybe (mapMaybe)
-import Data.Tuple (swap)
 import FFICXX.Generate.Dependency.Graph
   ( constructDepGraph,
   )
-import FFICXX.Generate.Name
-  ( hsClassName,
-    hsTemplateClassName,
-    subModuleName,
-  )
-import FFICXX.Generate.Type.Class
-  ( Class (..),
-    TemplateClass (..),
-    TopLevel (..),
-  )
-import FFICXX.Generate.Type.Module
-  ( ClassSubmoduleType (..),
-    TemplateClassSubmoduleType (..),
-    UClass,
-  )
-import System.FilePath ((<.>))
-import System.IO (IOMode (..), hPutStrLn, withFile)
+import FFICXX.Generate.Type.Class (TopLevel (..))
+import FFICXX.Generate.Type.Module (UClass)
 import Text.Dot (Dot, NodeId, attribute, node, showDot, (.->.))
 
 src, box, diamond :: String -> Dot NodeId
