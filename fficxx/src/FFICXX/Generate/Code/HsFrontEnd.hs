@@ -343,10 +343,8 @@ mkImportWithDepCycles depCycles self imported =
 genImportInInterface :: DepCycles -> ClassModule -> [ImportDecl ()]
 genImportInInterface depCycles m =
   let modSelf = cmModule m <.> "Interface"
-      modSelfRaw = cmModule m <.> "RawType"
       imported = cmImportedSubmodulesForInterface m
-   in mkImport modSelfRaw :
-      fmap (\x -> mkImportWithDepCycles depCycles modSelf (subModuleName x)) imported
+   in fmap (\x -> mkImportWithDepCycles depCycles modSelf (subModuleName x)) imported
 
 -- |
 genImportInCast :: ClassModule -> [ImportDecl ()]

@@ -45,20 +45,20 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     mkRawTypeDep :: Class -> (String, [String])
     mkRawTypeDep c =
       let rawtype = subModuleName (Right (CSTRawType, c))
-       in (rawtype, [])
+          deps = fmap subModuleName $ calculateDependency $ Right (CSTRawType, c)
+       in (rawtype, deps)
     -- FFI
     mkFFIDep :: Class -> (String, [String])
     mkFFIDep c =
       let ffi = subModuleName (Right (CSTFFI, c))
-          depRawSelf = subModuleName (Right (CSTRawType, c))
           deps = fmap subModuleName $ calculateDependency $ Right (CSTFFI, c)
-       in (ffi, depRawSelf : deps)
+       in (ffi, deps)
+    -- Interface
     mkInterfaceDep :: Class -> (String, [String])
     mkInterfaceDep c =
       let interface = subModuleName $ Right (CSTInterface, c)
-          depRawSelf = subModuleName $ Right (CSTRawType, c)
           deps = fmap subModuleName $ calculateDependency $ Right (CSTInterface, c)
-       in (interface, depRawSelf : deps)
+       in (interface, deps)
     -- Cast
     mkCastDep :: Class -> (String, [String])
     mkCastDep c =
@@ -66,7 +66,6 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
           deps = fmap subModuleName $ calculateDependency (Right (CSTCast, c))
        in (cast, deps)
     -- Implementation
-    -- TODO: THIS IS INVOLVED! NEED TO REFACTOR THINGS OUT.
     mkImplementationDep :: Class -> (String, [String])
     mkImplementationDep c =
       let implementation = subModuleName $ Right (CSTImplementation, c)

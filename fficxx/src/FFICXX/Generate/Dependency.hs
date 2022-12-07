@@ -204,7 +204,8 @@ mkDepFFI :: Class -> [UClassSubmodule]
 mkDepFFI cls =
   let ps = map Right (class_allparents cls)
       alldeps' = concatMap go ps <> go (Right cls)
-   in fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) alldeps'
+      depSelf = Right (CSTRawType, cls)
+   in depSelf : (fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) alldeps')
   where
     go (Right c) =
       let fs = class_funcs c
@@ -259,6 +260,7 @@ calculateDependency (Right (CSTInterface, cls)) =
       argDepClasses =
         concatMap (argumentDependency . extractClassDep) (class_funcs cls)
           ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs cls)
+      rawSelf = Right (CSTRawType, cls)
       raws =
         fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) retDepClasses
       exts =
@@ -270,7 +272,7 @@ calculateDependency (Right (CSTInterface, cls)) =
         fmap (bimap (TCSTTemplate,) (CSTInterface,)) $
           L.nub $
             filter (`isInSamePackageButNotInheritedBy` Right cls) $ argDepClasses
-   in raws ++ exts ++ inplaces
+   in rawSelf : (raws ++ exts ++ inplaces)
 calculateDependency (Right (CSTCast, cls)) = [Right (CSTRawType, cls), Right (CSTInterface, cls)]
 calculateDependency (Right (CSTImplementation, cls)) =
   let depsSelf =
