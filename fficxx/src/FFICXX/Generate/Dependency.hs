@@ -201,8 +201,7 @@ extractClassDepForTLTemplate f =
     args = topleveltfunc_args f
 
 -- For raws:
--- TODO: Confirm the answer below is correct.
--- NOTE: Q: Why returnDependency only?
+-- NOTE: Q: Why returnDependency for RawTypes?
 --       A: Difference between argument and return:
 --          for a member function f,
 --          we have (f :: (IA a, IB b) => a -> b -> IO C
@@ -233,11 +232,14 @@ calculateDependency (Left (typ, tcl)) = raws <> inplaces
               filter (`isInSamePackageButNotInheritedBy` Left tcl) $
                 concatMap (argumentDependency . extractClassDepForTmplFun) fs
 calculateDependency (Right (CSTInterface, cls)) =
-  let argDepClasses =
+  let retDepClasses =
         concatMap (returnDependency . extractClassDep) (class_funcs cls)
           ++ concatMap (returnDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs cls)
+      argDepClasses =
+        concatMap (argumentDependency . extractClassDep) (class_funcs cls)
+          ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs cls)
       raws =
-        fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) argDepClasses
+        fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) retDepClasses
       exts =
         let extclasses =
               filter (`isNotInSamePackageWith` Right cls) argDepClasses
@@ -341,17 +343,12 @@ mkClassModule getImports extra c =
   ClassModule
     { cmModule = getClassModuleBase c,
       cmCIH = mkCIH getImports c,
-      cmImportedModulesExternal = exts,
-      cmImportedModulesRaw = raws,
-      cmImportedModulesInplace = inplaces,
+      cmImportedSubmodules = submods,
       cmImportedModulesFFI = ffis,
       cmExtraImport = extraimports
     }
   where
-    -- ???
-    exts = fmap (bimap snd snd) . calculateDependency $ Right (CSTInterface, c)
-    raws = fmap (bimap snd snd) . calculateDependency $ Right (CSTInterface, c)
-    inplaces = fmap (bimap snd snd) . calculateDependency $ Right (CSTInterface, c)
+    submods = calculateDependency $ Right (CSTInterface, c)
     ffis = mkModuleDepFFI (Right c)
     extraimports = fromMaybe [] (lookup (class_name c) extra)
 
@@ -394,12 +391,16 @@ mkPackageConfig (pkgname, getImports) (cs, fs, ts, extra) acincs acsrcs =
           pcfg_additional_c_srcs = acsrcs
         }
 
+-- for now
 mkHsBootCandidateList :: [ClassModule] -> [ClassModule]
-mkHsBootCandidateList ms =
+mkHsBootCandidateList ms = []
+
+{-
   let -- get only class dependencies, not template classes.
       cs = rights (concatMap cmImportedModulesInplace ms)
       candidateModBases = fmap getClassModuleBase cs
    in filter (\m -> cmModule m `elem` candidateModBases) ms
+-}
 
 -- |
 mkPkgHeaderFileName :: Class -> HeaderName

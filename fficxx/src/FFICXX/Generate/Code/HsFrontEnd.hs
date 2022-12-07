@@ -38,6 +38,7 @@ import FFICXX.Generate.Name
     hsFuncName,
     hscAccessorName,
     hscFuncName,
+    subModuleName,
     typeclassName,
   )
 import FFICXX.Generate.Type.Annotate (AnnotateMap)
@@ -336,37 +337,13 @@ mkImportWithDepCycles depCycles self imported =
             mkImportSrc imported
         _ -> mkImport imported
 
--- TODO: this dependency should be refactored out and analyzed separately, particularly for cyclic deps.
 genImportInInterface :: DepCycles -> ClassModule -> [ImportDecl ()]
 genImportInInterface depCycles m =
   let modSelf = cmModule m <.> "Interface"
-      modsRaw = cmImportedModulesRaw m
-      modsExt = cmImportedModulesExternal m
-      modsInplace = cmImportedModulesInplace m
-   in [mkImport (cmModule m <.> "RawType")]
-        <> flip
-          map
-          modsRaw
-          ( \case
-              Left t -> mkImport (getTClassModuleBase t <.> "Template")
-              Right c -> mkImport (getClassModuleBase c <.> "RawType")
-          )
-        <> flip
-          map
-          modsExt
-          ( \case
-              Left t -> mkImport (getTClassModuleBase t <.> "Template")
-              Right c -> mkImport (getClassModuleBase c <.> "Interface")
-          )
-        <> flip
-          map
-          modsInplace
-          ( \case
-              Left t ->
-                mkImportWithDepCycles depCycles modSelf (getTClassModuleBase t <.> "Template")
-              Right c ->
-                mkImportWithDepCycles depCycles modSelf (getClassModuleBase c <.> "Interface")
-          )
+      modSelfRaw = cmModule m <.> "RawType"
+      imported = cmImportedSubmodules m
+   in mkImport modSelfRaw :
+      fmap (\m -> mkImportWithDepCycles depCycles modSelf (subModuleName m)) imported
 
 -- |
 genImportInCast :: ClassModule -> [ImportDecl ()]

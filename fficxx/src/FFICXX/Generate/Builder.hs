@@ -169,11 +169,13 @@ simpleBuilder cfg sbc = do
       (prettyPrint (C.buildTHHs m))
   --
   -- TODO: Template.hs-boot need to be generated as well
+  {-
   putStrLn "Generating hs-boot file"
   for_ hsbootlst $ \m -> do
     gen
       (cmModule m <.> "Interface" <.> "hs-boot")
       (prettyPrint (C.buildInterfaceHsBoot depCycles m))
+  -}
   --
   putStrLn "Generating Module summary file"
   for_ mods $ \m ->

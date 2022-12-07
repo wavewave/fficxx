@@ -35,10 +35,12 @@ data ClassSubmoduleType
   | CSTImplementation
   | CSTFFI
   | CSTCast
+  deriving (Show)
 
 data TemplateClassSubmoduleType
   = TCSTTH
   | TCSTTemplate
+  deriving (Show)
 
 -- | UClass = Unified Class, either template class or ordinary class
 type UClass = Either TemplateClass Class
@@ -56,12 +58,8 @@ type DepCycles = [[String]]
 data ClassModule = ClassModule
   { cmModule :: String,
     cmCIH :: ClassImportHeader,
-    -- | imported modules external to the current package unit.
-    cmImportedModulesExternal :: [Either TemplateClass Class],
-    -- | imported modules for raw types.
-    cmImportedModulesRaw :: [Either TemplateClass Class],
-    -- | imported modules in the current package-in-place
-    cmImportedModulesInplace :: [Either TemplateClass Class],
+    -- | imported submodules
+    cmImportedSubmodules :: [UClassSubmodule],
     cmImportedModulesFFI :: [Either TemplateClass Class],
     cmExtraImport :: [String]
   }
