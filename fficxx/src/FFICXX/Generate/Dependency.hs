@@ -268,6 +268,7 @@ calculateDependency (Right (CSTInterface, cls)) =
           L.nub $
             filter (`isInSamePackageButNotInheritedBy` Right cls) $ argDepClasses
    in raws ++ exts ++ inplaces
+calculateDependency (Right (CSTCast, cls)) = [Right (CSTRawType, cls), Right (CSTInterface, cls)]
 calculateDependency _ = undefined
 
 -- |

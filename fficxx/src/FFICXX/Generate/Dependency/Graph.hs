@@ -63,8 +63,8 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     mkCastDep :: Class -> (String, [String])
     mkCastDep c =
       let cast = subModuleName $ Right (CSTCast, c)
-          depsSelf = fmap (subModuleName . Right . (,c)) [CSTRawType, CSTInterface]
-       in (cast, depsSelf)
+          deps = fmap subModuleName $ calculateDependency (Right (CSTCast, c))
+       in (cast, deps)
     -- Implementation
     -- TODO: THIS IS INVOLVED! NEED TO REFACTOR THINGS OUT.
     mkImplementationDep :: Class -> (String, [String])
