@@ -252,6 +252,7 @@ calculateDependency (Left (typ, tcl)) = raws <> inplaces
             L.nub $
               filter (`isInSamePackageButNotInheritedBy` Left tcl) $
                 concatMap (argumentDependency . extractClassDepForTmplFun) fs
+calculateDependency (Right (CSTRawType, _)) = []
 calculateDependency (Right (CSTFFI, cls)) = mkDepFFI cls
 calculateDependency (Right (CSTInterface, cls)) =
   let retDepClasses =

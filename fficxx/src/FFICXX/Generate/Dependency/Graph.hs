@@ -27,6 +27,7 @@ import FFICXX.Generate.Type.Module
     DepCycles,
     TemplateClassSubmoduleType (..),
     UClass,
+    UClassSubmodule,
   )
 
 -- TODO: Should be used everywhere.
@@ -39,51 +40,25 @@ constructDepGraph ::
   [TopLevel] ->
   -- | (all submodules, [(submodule, submodule dependencies)])
   ([String], [(Int, [Int])])
-constructDepGraph allclasses allTopLevels = (allSyms, depmap')
+constructDepGraph allClasses allTopLevels = (allSyms, depmap')
   where
-    -- RawType dependency is trivial
-    mkRawTypeDep :: Class -> (String, [String])
-    mkRawTypeDep c =
-      let rawtype = subModuleName (Right (CSTRawType, c))
-          deps = fmap subModuleName $ calculateDependency $ Right (CSTRawType, c)
-       in (rawtype, deps)
-    -- FFI
-    mkFFIDep :: Class -> (String, [String])
-    mkFFIDep c =
-      let ffi = subModuleName (Right (CSTFFI, c))
-          deps = fmap subModuleName $ calculateDependency $ Right (CSTFFI, c)
-       in (ffi, deps)
-    -- Interface
-    mkInterfaceDep :: Class -> (String, [String])
-    mkInterfaceDep c =
-      let interface = subModuleName $ Right (CSTInterface, c)
-          deps = fmap subModuleName $ calculateDependency $ Right (CSTInterface, c)
-       in (interface, deps)
-    -- Cast
-    mkCastDep :: Class -> (String, [String])
-    mkCastDep c =
-      let cast = subModuleName $ Right (CSTCast, c)
-          deps = fmap subModuleName $ calculateDependency (Right (CSTCast, c))
-       in (cast, deps)
-    -- Implementation
-    mkImplementationDep :: Class -> (String, [String])
-    mkImplementationDep c =
-      let implementation = subModuleName $ Right (CSTImplementation, c)
-          deps = fmap subModuleName $ calculateDependency $ Right (CSTImplementation, c)
-       in (implementation, deps)
-    -- Template Class part
-    -- <TClass>.Template
-    mkTemplateDep :: TemplateClass -> (String, [String])
-    mkTemplateDep t =
-      let template = subModuleName $ Left (TCSTTemplate, t)
-          deps = fmap subModuleName $ calculateDependency $ Left (TCSTTemplate, t)
-       in (template, deps)
-    -- <TClass>.TH
-    mkTHDep :: TemplateClass -> (String, [String])
-    mkTHDep t =
-      let th = subModuleName $ Left (TCSTTH, t)
-          deps = fmap subModuleName $ calculateDependency $ Left (TCSTTH, t)
-       in (th, deps)
+    -- for classes/template classes
+    mkDep :: UClass -> [(UClassSubmodule, [UClassSubmodule])]
+    mkDep c =
+      case c of
+        Left tcl ->
+          fmap
+            (build . Left . (,tcl))
+            [TCSTTemplate, TCSTTH]
+        Right cls ->
+          fmap
+            (build . Right . (,cls))
+            [CSTRawType, CSTFFI, CSTInterface, CSTCast, CSTImplementation]
+      where
+        build x = (x, calculateDependency x)
+
+    dep2Name :: [(UClassSubmodule, [UClassSubmodule])] -> [(String, [String])]
+    dep2Name = fmap (\(x, ys) -> (subModuleName x, fmap subModuleName ys))
     -- TopLevel
     topLevelDeps :: (String, [String])
     topLevelDeps =
@@ -91,22 +66,7 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
             L.nub . L.sort $ concatMap (fmap subModuleName . mkTopLevelDep) allTopLevels
        in ("[TopLevel]", deps)
 
-    depmapAllClasses =
-      concatMap
-        ( \case
-            Left tcl ->
-              [ mkTemplateDep tcl,
-                mkTHDep tcl
-              ]
-            Right cls ->
-              [ mkRawTypeDep cls,
-                mkFFIDep cls,
-                mkInterfaceDep cls,
-                mkCastDep cls,
-                mkImplementationDep cls
-              ]
-        )
-        allclasses
+    depmapAllClasses = concatMap (dep2Name . mkDep) allClasses
     depmap = topLevelDeps : depmapAllClasses
     allSyms =
       L.nub . L.sort $
