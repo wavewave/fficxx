@@ -6,7 +6,6 @@
 module FFICXX.Generate.Code.HsFrontEnd where
 
 import Control.Monad.Reader (Reader)
-import Data.Bifunctor (bimap)
 import Data.Either (lefts, rights)
 import qualified Data.List as L
 import FFICXX.Generate.Code.Primitive
@@ -21,8 +20,6 @@ import FFICXX.Generate.Code.Primitive
   )
 import FFICXX.Generate.Dependency
   ( argumentDependency,
-    calculateDependency,
-    class_allparents,
     extractClassDepForTLOrdinary,
     extractClassDepForTLTemplate,
     returnDependency,
@@ -60,9 +57,7 @@ import FFICXX.Generate.Type.Class
     virtualFuncs,
   )
 import FFICXX.Generate.Type.Module
-  ( ClassImportHeader (..),
-    ClassModule (..),
-    ClassSubmoduleType (..),
+  ( ClassModule (..),
     DepCycles,
     TemplateClassModule (..),
   )

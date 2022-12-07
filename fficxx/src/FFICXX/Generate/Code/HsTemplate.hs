@@ -22,8 +22,6 @@ import FFICXX.Generate.Code.Primitive
 import FFICXX.Generate.Dependency (calculateDependency)
 import FFICXX.Generate.Name
   ( ffiTmplFuncName,
-    getClassModuleBase,
-    getTClassModuleBase,
     hsTemplateClassName,
     hsTemplateMemberFunctionName,
     hsTemplateMemberFunctionNameTH,
@@ -109,7 +107,6 @@ import Language.Haskell.Exts.Build
     wildcard,
   )
 import Language.Haskell.Exts.Syntax (Boxed (Boxed), Decl (..), ImportDecl (..), Type (TyTuple))
-import System.FilePath ((<.>))
 
 ------------------------------
 -- Template member function --

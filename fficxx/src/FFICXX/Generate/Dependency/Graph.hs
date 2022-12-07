@@ -4,7 +4,6 @@
 module FFICXX.Generate.Dependency.Graph where
 
 import Data.Array (listArray)
-import Data.Bifunctor (bimap)
 import qualified Data.Graph as G
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
@@ -13,15 +12,10 @@ import Data.Tree (flatten)
 import Data.Tuple (swap)
 import FFICXX.Generate.Dependency
   ( calculateDependency,
-    class_allparents,
     mkTopLevelDep,
   )
 import FFICXX.Generate.Name (subModuleName)
-import FFICXX.Generate.Type.Class
-  ( Class (..),
-    TemplateClass (..),
-    TopLevel (..),
-  )
+import FFICXX.Generate.Type.Class (TopLevel (..))
 import FFICXX.Generate.Type.Module
   ( ClassSubmoduleType (..),
     DepCycles,

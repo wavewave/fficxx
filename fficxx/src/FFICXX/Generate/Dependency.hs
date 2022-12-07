@@ -290,11 +290,11 @@ calculateDependency (Right (CSTImplementation, cls)) =
       deps =
         concatMap
           ( \case
-              Left tcl -> [Left (TCSTTemplate, tcl)]
-              Right cls ->
-                [ Right (CSTRawType, cls),
-                  Right (CSTCast, cls),
-                  Right (CSTInterface, cls)
+              Left t -> [Left (TCSTTemplate, t)]
+              Right c ->
+                [ Right (CSTRawType, c),
+                  Right (CSTCast, c),
+                  Right (CSTInterface, c)
                 ]
           )
           (dsNonParents <> dsParents)
