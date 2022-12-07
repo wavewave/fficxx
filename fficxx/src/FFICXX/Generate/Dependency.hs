@@ -200,6 +200,26 @@ extractClassDepForTLTemplate f =
     ret = topleveltfunc_ret f
     args = topleveltfunc_args f
 
+mkDepFFI :: Class -> [UClassSubmodule]
+mkDepFFI cls =
+  let ps = map Right (class_allparents cls)
+      alldeps' = concatMap go ps <> go (Right cls)
+   in fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) alldeps'
+  where
+    go (Right c) =
+      let fs = class_funcs c
+          vs = class_vars c
+          tmfs = class_tmpl_funcs c
+       in concatMap (returnDependency . extractClassDep) fs
+            <> concatMap (argumentDependency . extractClassDep) fs
+            <> concatMap (classFromArg . unVariable) vs
+            <> concatMap (returnDependency . extractClassDep4TmplMemberFun) tmfs
+            <> concatMap (argumentDependency . extractClassDep4TmplMemberFun) tmfs
+    go (Left t) =
+      let fs = tclass_funcs t
+       in concatMap (returnDependency . extractClassDepForTmplFun) fs
+            <> concatMap (argumentDependency . extractClassDepForTmplFun) fs
+
 -- For raws:
 -- NOTE: Q: Why returnDependency for RawTypes?
 --       A: Difference between argument and return:
@@ -231,24 +251,7 @@ calculateDependency (Left (typ, tcl)) = raws <> inplaces
             L.nub $
               filter (`isInSamePackageButNotInheritedBy` Left tcl) $
                 concatMap (argumentDependency . extractClassDepForTmplFun) fs
-calculateDependency (Right (CSTFFI, cls)) =
-  let ps = map Right (class_allparents cls)
-      alldeps' = concatMap go ps <> go (Right cls)
-   in fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) alldeps'
-  where
-    go (Right c) =
-      let fs = class_funcs c
-          vs = class_vars c
-          tmfs = class_tmpl_funcs c
-       in concatMap (returnDependency . extractClassDep) fs
-            <> concatMap (argumentDependency . extractClassDep) fs
-            <> concatMap (classFromArg . unVariable) vs
-            <> concatMap (returnDependency . extractClassDep4TmplMemberFun) tmfs
-            <> concatMap (argumentDependency . extractClassDep4TmplMemberFun) tmfs
-    go (Left t) =
-      let fs = tclass_funcs t
-       in concatMap (returnDependency . extractClassDepForTmplFun) fs
-            <> concatMap (argumentDependency . extractClassDepForTmplFun) fs
+calculateDependency (Right (CSTFFI, cls)) = mkDepFFI cls
 calculateDependency (Right (CSTInterface, cls)) =
   let retDepClasses =
         concatMap (returnDependency . extractClassDep) (class_funcs cls)
@@ -269,7 +272,29 @@ calculateDependency (Right (CSTInterface, cls)) =
             filter (`isInSamePackageButNotInheritedBy` Right cls) $ argDepClasses
    in raws ++ exts ++ inplaces
 calculateDependency (Right (CSTCast, cls)) = [Right (CSTRawType, cls), Right (CSTInterface, cls)]
-calculateDependency _ = undefined
+calculateDependency (Right (CSTImplementation, cls)) =
+  let depsSelf =
+        [ Right (CSTRawType, cls),
+          Right (CSTFFI, cls),
+          Right (CSTInterface, cls),
+          Right (CSTCast, cls)
+        ]
+      dsFFI = fmap (bimap snd snd) $ mkDepFFI cls
+      dsParents = L.nub $ map Right $ class_allparents cls
+      dsNonParents = filter (not . (flip elem dsParents)) dsFFI
+
+      deps =
+        concatMap
+          ( \case
+              Left tcl -> [Left (TCSTTemplate, tcl)]
+              Right cls ->
+                [ Right (CSTRawType, cls),
+                  Right (CSTCast, cls),
+                  Right (CSTInterface, cls)
+                ]
+          )
+          (dsNonParents <> dsParents)
+   in depsSelf <> deps
 
 -- |
 isNotInSamePackageWith ::
@@ -335,6 +360,8 @@ mkClassModule getImports extra c =
       cmCIH = mkCIH getImports c,
       cmImportedSubmodulesForInterface = calculateDependency $ Right (CSTInterface, c),
       cmImportedSubmodulesForFFI = calculateDependency $ Right (CSTFFI, c),
+      cmImportedSubmodulesForCast = calculateDependency $ Right (CSTCast, c),
+      cmImportedSubmodulesForImplementation = calculateDependency $ Right (CSTImplementation, c),
       cmExtraImport = fromMaybe [] (lookup (class_name c) extra)
     }
 

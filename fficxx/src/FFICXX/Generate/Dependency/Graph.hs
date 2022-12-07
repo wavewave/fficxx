@@ -70,18 +70,8 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     mkImplementationDep :: Class -> (String, [String])
     mkImplementationDep c =
       let implementation = subModuleName $ Right (CSTImplementation, c)
-          depsSelf =
-            fmap (subModuleName . Right . (,c)) [CSTRawType, CSTFFI, CSTInterface, CSTCast]
-          deps =
-            let -- TODO: should not use CSTFFI.
-                dsFFI = fmap (bimap snd snd) $ calculateDependency (Right (CSTFFI, c))
-                dsParents = L.nub $ map Right $ class_allparents c
-                dsNonParents = filter (not . (flip elem dsParents)) dsFFI
-                format (Left tcl) = [subModuleName $ Left (TCSTTemplate, tcl)]
-                format (Right cls) =
-                  fmap (subModuleName . Right . (,cls)) [CSTRawType, CSTCast, CSTInterface]
-             in concatMap format (dsNonParents ++ dsParents)
-       in (implementation, depsSelf ++ deps)
+          deps = fmap subModuleName $ calculateDependency $ Right (CSTImplementation, c)
+       in (implementation, deps)
     -- Template Class part
     -- <TClass>.Template
     mkTemplateDep :: TemplateClass -> (String, [String])

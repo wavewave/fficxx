@@ -62,6 +62,11 @@ data ClassModule = ClassModule
     cmImportedSubmodulesForInterface :: [UClassSubmodule],
     -- | imported submodules for FFI.hs
     cmImportedSubmodulesForFFI :: [UClassSubmodule],
+    -- | imported submodules for Cast.hs
+    cmImportedSubmodulesForCast,
+    -- imported submodules for Implementation.hs
+    cmImportedSubmodulesForImplementation ::
+      [UClassSubmodule],
     cmExtraImport :: [String]
   }
   deriving (Show)

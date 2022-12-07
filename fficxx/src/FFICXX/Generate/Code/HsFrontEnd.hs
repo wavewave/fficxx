@@ -21,6 +21,7 @@ import FFICXX.Generate.Code.Primitive
   )
 import FFICXX.Generate.Dependency
   ( argumentDependency,
+    calculateDependency,
     class_allparents,
     extractClassDepForTLOrdinary,
     extractClassDepForTLTemplate,
@@ -61,6 +62,7 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     ClassModule (..),
+    ClassSubmoduleType (..),
     DepCycles,
     TemplateClassModule (..),
   )
@@ -349,23 +351,11 @@ genImportInInterface depCycles m =
 -- |
 genImportInCast :: ClassModule -> [ImportDecl ()]
 genImportInCast m =
-  [ mkImport (cmModule m <.> "RawType"),
-    mkImport (cmModule m <.> "Interface")
-  ]
+  fmap (mkImport . subModuleName) $ cmImportedSubmodulesForCast m
 
--- TODO: should not use FFI.
 genImportInImplementation :: ClassModule -> [ImportDecl ()]
 genImportInImplementation m =
-  let modsFFI = fmap (bimap snd snd) $ cmImportedSubmodulesForFFI m
-      modsParents = L.nub $ map Right $ class_allparents $ cihClass $ cmCIH m
-      modsNonParents = filter (not . (flip elem modsParents)) modsFFI
-   in [ mkImport (cmModule m <.> "RawType"),
-        mkImport (cmModule m <.> "FFI"),
-        mkImport (cmModule m <.> "Interface"),
-        mkImport (cmModule m <.> "Cast")
-      ]
-        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modsNonParents
-        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modsParents
+  fmap (mkImport . subModuleName) $ cmImportedSubmodulesForImplementation m
 
 -- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.
