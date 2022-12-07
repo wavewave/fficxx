@@ -227,13 +227,17 @@ calculateDependency (Left (TCSTTH, tcl)) =
         concatMap (returnDependency . extractClassDepForTmplFun) $
           tclass_funcs tcl
 calculateDependency (Right (CSTInterface, cls)) =
-  let raws =
-        fmap (bimap (TCSTTemplate,) (CSTRawType,)) $
-          L.nub $
-            filter (/= Right cls) $
-              concatMap (returnDependency . extractClassDep) (class_funcs cls)
-                ++ concatMap (returnDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs cls)
-   in raws
+  let argDepClasses =
+        concatMap (returnDependency . extractClassDep) (class_funcs cls)
+          ++ concatMap (returnDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs cls)
+      raws =
+        fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) argDepClasses
+      exts =
+        let extclasses =
+              filter (`isNotInSamePackageWith` Right cls) argDepClasses
+            parents = map Right (class_parents cls)
+         in fmap (bimap (TCSTTemplate,) (CSTInterface,)) $ L.nub (parents <> extclasses)
+   in raws ++ exts
 calculateDependency _ = undefined
 
 -- |
@@ -252,21 +256,6 @@ isInSamePackageButNotInheritedBy ::
   Bool
 isInSamePackageButNotInheritedBy x y =
   x /= y && not (x `elem` getparents y) && (getPkgName x == getPkgName y)
-
-mkModuleDepExternal :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepExternal y@(Right c) =
-  let extclasses =
-        filter (`isNotInSamePackageWith` y) $
-          concatMap (argumentDependency . extractClassDep) (class_funcs c)
-            ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
-      parents = map Right (class_parents c)
-   in L.nub (parents <> extclasses)
-mkModuleDepExternal y@(Left t) =
-  let fs = tclass_funcs t
-      extclasses =
-        filter (`isNotInSamePackageWith` y) $
-          concatMap (argumentDependency . extractClassDepForTmplFun) fs
-   in L.nub extclasses
 
 mkModuleDepInplace :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepInplace y@(Right c) =
@@ -361,7 +350,7 @@ mkClassModule getImports extra c =
       cmExtraImport = extraimports
     }
   where
-    exts = mkModuleDepExternal (Right c)
+    exts = fmap (bimap snd snd) . calculateDependency $ Right (CSTInterface, c)
     raws = fmap (bimap snd snd) . calculateDependency $ Right (CSTInterface, c)
     inplaces = mkModuleDepInplace (Right c)
     ffis = mkModuleDepFFI (Right c)

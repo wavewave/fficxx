@@ -4,27 +4,20 @@
 module FFICXX.Generate.Dependency.Graph where
 
 import Data.Array (listArray)
-import Data.Bifunctor (bimap)
-import Data.Foldable (for_)
 import qualified Data.Graph as G
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe (fromMaybe, mapMaybe)
-import Data.Tree (drawForest, flatten)
+import Data.Tree (flatten)
 import Data.Tuple (swap)
 import FFICXX.Generate.Dependency
   ( calculateDependency,
     class_allparents,
-    mkModuleDepExternal,
     mkModuleDepFFI,
     mkModuleDepInplace,
     mkTopLevelDep,
   )
-import FFICXX.Generate.Name
-  ( hsClassName,
-    hsTemplateClassName,
-    subModuleName,
-  )
+import FFICXX.Generate.Name (subModuleName)
 import FFICXX.Generate.Type.Class
   ( Class (..),
     TemplateClass (..),
@@ -36,8 +29,6 @@ import FFICXX.Generate.Type.Module
     TemplateClassSubmoduleType (..),
     UClass,
   )
-import System.FilePath ((<.>))
-import System.IO (IOMode (..), hPutStrLn, withFile)
 
 -- TODO: Should be used everywhere.
 
@@ -71,18 +62,13 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     mkInterfaceDep c =
       let interface = subModuleName $ Right (CSTInterface, c)
           depRawSelf = subModuleName $ Right (CSTRawType, c)
-          depsRaw = fmap subModuleName $ calculateDependency $ Right (CSTInterface, c)
-          depsExt =
-            let ds = mkModuleDepExternal (Right c)
-                format' (Left tcl) = subModuleName $ Left (TCSTTemplate, tcl)
-                format' (Right cls) = subModuleName $ Right (CSTInterface, cls)
-             in fmap format' ds
+          depsRawExt = fmap subModuleName $ calculateDependency $ Right (CSTInterface, c)
           depsInplace =
             let ds = mkModuleDepInplace (Right c)
                 format' (Left tcl) = subModuleName $ Left (TCSTTemplate, tcl)
                 format' (Right cls) = subModuleName $ Right (CSTInterface, cls)
              in fmap format' ds
-       in (interface, [depRawSelf] ++ depsRaw ++ depsExt ++ depsInplace)
+       in (interface, [depRawSelf] ++ depsRawExt ++ depsInplace)
     -- Cast
     mkCastDep :: Class -> (String, [String])
     mkCastDep c =
@@ -140,7 +126,10 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     depmapAllClasses =
       concatMap
         ( \case
-            Left tcl -> [mkTemplateDep tcl]
+            Left tcl ->
+              [ mkTemplateDep tcl,
+                mkTHDep tcl
+              ]
             Right cls ->
               [ mkRawTypeDep cls,
                 mkFFIDep cls,
@@ -156,7 +145,6 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
         fmap fst depmap ++ concatMap snd depmap
     allISyms :: [(Int, String)]
     allISyms = zip [0 ..] allSyms
-    symMap = HM.fromList allISyms
     symRevMap = HM.fromList $ fmap swap allISyms
     replace (c, ds) = do
       i <- HM.lookup c symRevMap
