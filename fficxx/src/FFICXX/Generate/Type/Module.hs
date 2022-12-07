@@ -49,7 +49,8 @@ type UClassSubmodule =
   Either (TemplateClassSubmoduleType, TemplateClass) (ClassSubmoduleType, Class)
 
 -- | Dependency cycle information. Currently just a string
-type DepCycles = [[String]]
+--                  self,    former,   latter
+type DepCycles = [[(String, ([String], [String]))]]
 
 --
 -- Module
