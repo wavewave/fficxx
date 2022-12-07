@@ -4,6 +4,7 @@
 module FFICXX.Generate.Dependency.Graph where
 
 import Data.Array (listArray)
+import Data.Bifunctor (bimap)
 import qualified Data.Graph as G
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
@@ -13,7 +14,6 @@ import Data.Tuple (swap)
 import FFICXX.Generate.Dependency
   ( calculateDependency,
     class_allparents,
-    mkModuleDepFFI,
     mkTopLevelDep,
   )
 import FFICXX.Generate.Name (subModuleName)
@@ -51,12 +51,8 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     mkFFIDep c =
       let ffi = subModuleName (Right (CSTFFI, c))
           depRawSelf = subModuleName (Right (CSTRawType, c))
-          depsFFI =
-            let ds = mkModuleDepFFI (Right c)
-                format' (Left tcl) = subModuleName $ Left (TCSTTemplate, tcl)
-                format' (Right cls) = subModuleName $ Right (CSTRawType, cls)
-             in fmap format' ds
-       in (ffi, [depRawSelf] ++ depsFFI)
+          deps = fmap subModuleName $ calculateDependency $ Right (CSTFFI, c)
+       in (ffi, depRawSelf : deps)
     mkInterfaceDep :: Class -> (String, [String])
     mkInterfaceDep c =
       let interface = subModuleName $ Right (CSTInterface, c)
@@ -77,7 +73,8 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
           depsSelf =
             fmap (subModuleName . Right . (,c)) [CSTRawType, CSTFFI, CSTInterface, CSTCast]
           deps =
-            let dsFFI = mkModuleDepFFI (Right c)
+            let -- TODO: should not use CSTFFI.
+                dsFFI = fmap (bimap snd snd) $ calculateDependency (Right (CSTFFI, c))
                 dsParents = L.nub $ map Right $ class_allparents c
                 dsNonParents = filter (not . (flip elem dsParents)) dsFFI
                 format (Left tcl) = [subModuleName $ Left (TCSTTemplate, tcl)]

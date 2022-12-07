@@ -6,6 +6,7 @@
 module FFICXX.Generate.Code.HsFrontEnd where
 
 import Control.Monad.Reader (Reader)
+import Data.Bifunctor (bimap)
 import Data.Either (lefts, rights)
 import qualified Data.List as L
 import FFICXX.Generate.Code.Primitive
@@ -341,9 +342,9 @@ genImportInInterface :: DepCycles -> ClassModule -> [ImportDecl ()]
 genImportInInterface depCycles m =
   let modSelf = cmModule m <.> "Interface"
       modSelfRaw = cmModule m <.> "RawType"
-      imported = cmImportedSubmodules m
+      imported = cmImportedSubmodulesForInterface m
    in mkImport modSelfRaw :
-      fmap (\m -> mkImportWithDepCycles depCycles modSelf (subModuleName m)) imported
+      fmap (\x -> mkImportWithDepCycles depCycles modSelf (subModuleName x)) imported
 
 -- |
 genImportInCast :: ClassModule -> [ImportDecl ()]
@@ -352,10 +353,10 @@ genImportInCast m =
     mkImport (cmModule m <.> "Interface")
   ]
 
--- |
+-- TODO: should not use FFI.
 genImportInImplementation :: ClassModule -> [ImportDecl ()]
 genImportInImplementation m =
-  let modsFFI = cmImportedModulesFFI m
+  let modsFFI = fmap (bimap snd snd) $ cmImportedSubmodulesForFFI m
       modsParents = L.nub $ map Right $ class_allparents $ cihClass $ cmCIH m
       modsNonParents = filter (not . (flip elem modsParents)) modsFFI
    in [ mkImport (cmModule m <.> "RawType"),

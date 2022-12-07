@@ -17,10 +17,9 @@ import FFICXX.Generate.Dependency
 import FFICXX.Generate.Name
   ( aliasedFuncName,
     ffiClassName,
-    getClassModuleBase,
-    getTClassModuleBase,
     hscAccessorName,
     hscFuncName,
+    subModuleName,
   )
 import FFICXX.Generate.Type.Class
   ( Accessor (Getter, Setter),
@@ -89,12 +88,8 @@ hsFFIAccessor c v a =
    in mkForImpCcall cname (hscAccessorName c v a) typ
 
 -- import for FFI
-
 genImportInFFI :: ClassModule -> [ImportDecl ()]
-genImportInFFI = map mkMod . cmImportedModulesFFI
-  where
-    mkMod (Left t) = mkImport (getTClassModuleBase t <.> "Template")
-    mkMod (Right c) = mkImport (getClassModuleBase c <.> "RawType")
+genImportInFFI = fmap (mkImport . subModuleName) . cmImportedSubmodulesForFFI
 
 ----------------------------
 -- for top level function --

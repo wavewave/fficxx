@@ -58,9 +58,10 @@ type DepCycles = [[String]]
 data ClassModule = ClassModule
   { cmModule :: String,
     cmCIH :: ClassImportHeader,
-    -- | imported submodules
-    cmImportedSubmodules :: [UClassSubmodule],
-    cmImportedModulesFFI :: [Either TemplateClass Class],
+    -- | imported submodules for Interface.hs
+    cmImportedSubmodulesForInterface :: [UClassSubmodule],
+    -- | imported submodules for FFI.hs
+    cmImportedSubmodulesForFFI :: [UClassSubmodule],
     cmExtraImport :: [String]
   }
   deriving (Show)

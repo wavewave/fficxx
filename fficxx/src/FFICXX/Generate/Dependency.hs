@@ -231,6 +231,24 @@ calculateDependency (Left (typ, tcl)) = raws <> inplaces
             L.nub $
               filter (`isInSamePackageButNotInheritedBy` Left tcl) $
                 concatMap (argumentDependency . extractClassDepForTmplFun) fs
+calculateDependency (Right (CSTFFI, cls)) =
+  let ps = map Right (class_allparents cls)
+      alldeps' = concatMap go ps <> go (Right cls)
+   in fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) alldeps'
+  where
+    go (Right c) =
+      let fs = class_funcs c
+          vs = class_vars c
+          tmfs = class_tmpl_funcs c
+       in concatMap (returnDependency . extractClassDep) fs
+            <> concatMap (argumentDependency . extractClassDep) fs
+            <> concatMap (classFromArg . unVariable) vs
+            <> concatMap (returnDependency . extractClassDep4TmplMemberFun) tmfs
+            <> concatMap (argumentDependency . extractClassDep4TmplMemberFun) tmfs
+    go (Left t) =
+      let fs = tclass_funcs t
+       in concatMap (returnDependency . extractClassDepForTmplFun) fs
+            <> concatMap (argumentDependency . extractClassDepForTmplFun) fs
 calculateDependency (Right (CSTInterface, cls)) =
   let retDepClasses =
         concatMap (returnDependency . extractClassDep) (class_funcs cls)
@@ -289,37 +307,8 @@ mkModuleDepCpp y@(Left t) =
           <> concatMap (argumentDependency . extractClassDepForTmplFun) fs
           <> getparents y
 
--- |
-mkModuleDepFFI1 :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepFFI1 (Right c) =
-  let fs = class_funcs c
-      vs = class_vars c
-      tmfs = class_tmpl_funcs c
-   in concatMap (returnDependency . extractClassDep) fs
-        <> concatMap (argumentDependency . extractClassDep) fs
-        <> concatMap (classFromArg . unVariable) vs
-        <> concatMap (returnDependency . extractClassDep4TmplMemberFun) tmfs
-        <> concatMap (argumentDependency . extractClassDep4TmplMemberFun) tmfs
-mkModuleDepFFI1 (Left t) =
-  let fs = tclass_funcs t
-   in concatMap (returnDependency . extractClassDepForTmplFun) fs
-        <> concatMap (argumentDependency . extractClassDepForTmplFun) fs
-
--- |
-mkModuleDepFFI :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepFFI y@(Right c) =
-  let ps = map Right (class_allparents c)
-      alldeps' = (concatMap mkModuleDepFFI1 ps) <> mkModuleDepFFI1 y
-   in L.nub (filter (/= y) alldeps')
-mkModuleDepFFI (Left _) = []
-
 -- | Find module-level dependency per each toplevel function/template function.
-mkTopLevelDep ::
-  TopLevel ->
-  [ Either
-      (TemplateClassSubmoduleType, TemplateClass)
-      (ClassSubmoduleType, Class)
-  ]
+mkTopLevelDep :: TopLevel -> [UClassSubmodule]
 mkTopLevelDep (TLOrdinary f) =
   let dep4func = extractClassDepForTLOrdinary f
       allDeps = returnDependency dep4func ++ argumentDependency dep4func
@@ -343,14 +332,10 @@ mkClassModule getImports extra c =
   ClassModule
     { cmModule = getClassModuleBase c,
       cmCIH = mkCIH getImports c,
-      cmImportedSubmodules = submods,
-      cmImportedModulesFFI = ffis,
-      cmExtraImport = extraimports
+      cmImportedSubmodulesForInterface = calculateDependency $ Right (CSTInterface, c),
+      cmImportedSubmodulesForFFI = calculateDependency $ Right (CSTFFI, c),
+      cmExtraImport = fromMaybe [] (lookup (class_name c) extra)
     }
-  where
-    submods = calculateDependency $ Right (CSTInterface, c)
-    ffis = mkModuleDepFFI (Right c)
-    extraimports = fromMaybe [] (lookup (class_name c) extra)
 
 -- |
 findModuleUnitImports :: ModuleUnitMap -> ModuleUnit -> ModuleUnitImports
