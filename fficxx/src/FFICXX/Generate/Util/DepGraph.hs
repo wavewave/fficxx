@@ -8,14 +8,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe (mapMaybe)
 import Data.Tuple (swap)
-import FFICXX.Generate.Dependency
-  ( class_allparents,
-    mkModuleDepExternal,
-    mkModuleDepFFI,
-    mkModuleDepInplace,
-    mkModuleDepRaw,
-    mkTopLevelDep,
-  )
 import FFICXX.Generate.Dependency.Graph
   ( constructDepGraph,
   )

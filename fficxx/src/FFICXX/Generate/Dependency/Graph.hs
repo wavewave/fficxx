@@ -4,6 +4,7 @@
 module FFICXX.Generate.Dependency.Graph where
 
 import Data.Array (listArray)
+import Data.Bifunctor (bimap)
 import Data.Foldable (for_)
 import qualified Data.Graph as G
 import qualified Data.HashMap.Strict as HM
@@ -12,11 +13,11 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Tree (drawForest, flatten)
 import Data.Tuple (swap)
 import FFICXX.Generate.Dependency
-  ( class_allparents,
+  ( calculateDependency,
+    class_allparents,
     mkModuleDepExternal,
     mkModuleDepFFI,
     mkModuleDepInplace,
-    mkModuleDepRaw,
     mkTopLevelDep,
   )
 import FFICXX.Generate.Name
@@ -70,11 +71,7 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     mkInterfaceDep c =
       let interface = subModuleName $ Right (CSTInterface, c)
           depRawSelf = subModuleName $ Right (CSTRawType, c)
-          depsRaw =
-            let ds = mkModuleDepRaw (Right c)
-                format' (Left tcl) = subModuleName $ Left (TCSTTemplate, tcl)
-                format' (Right cls) = subModuleName $ Right (CSTRawType, cls)
-             in fmap format' ds
+          depsRaw = fmap subModuleName $ calculateDependency $ Right (CSTInterface, c)
           depsExt =
             let ds = mkModuleDepExternal (Right c)
                 format' (Left tcl) = subModuleName $ Left (TCSTTemplate, tcl)
@@ -113,11 +110,7 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     mkTemplateDep :: TemplateClass -> (String, [String])
     mkTemplateDep t =
       let template = subModuleName $ Left (TCSTTemplate, t)
-          depsRaw =
-            let ds = mkModuleDepRaw (Left t)
-                format' (Left tcl) = subModuleName $ Left (TCSTTemplate, tcl)
-                format' (Right cls) = subModuleName $ Right (CSTRawType, cls)
-             in fmap format' ds
+          depsRaw = fmap subModuleName $ calculateDependency $ Left (TCSTTemplate, t)
           depsInplace =
             let ds = mkModuleDepInplace (Left t)
                 format' (Left tcl) = subModuleName $ Left (TCSTTemplate, tcl)
@@ -129,13 +122,13 @@ constructDepGraph allclasses allTopLevels = (allSyms, depmap')
     mkTHDep t =
       let th = subModuleName $ Left (TCSTTH, t)
           deps =
-            let dsRaw = mkModuleDepRaw (Left t)
+            let dsRaw = fmap subModuleName $ calculateDependency $ Left (TCSTTH, t)
                 dsInplace = mkModuleDepInplace (Left t)
 
                 format' (Left tcl) = [subModuleName $ Left (TCSTTemplate, tcl)]
                 format' (Right cls) =
                   fmap (subModuleName . Right . (,cls)) [CSTRawType, CSTCast, CSTInterface]
-             in concatMap format' (dsRaw ++ dsInplace)
+             in dsRaw ++ concatMap format' dsInplace
        in (th, deps)
     -- TopLevel
     topLevelDeps :: (String, [String])
