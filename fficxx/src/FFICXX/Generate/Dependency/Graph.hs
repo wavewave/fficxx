@@ -30,8 +30,6 @@ import FFICXX.Generate.Type.Module
     UClassSubmodule,
   )
 
--- TODO: Should be used everywhere.
-
 -- | construct dependency graph
 constructDepGraph ::
   -- | list of all classes, either template class or ordinary class.

@@ -59,6 +59,7 @@ import FFICXX.Generate.Type.Class
     Variable (unVariable),
     argsFromOpExp,
     filterTLOrdinary,
+    virtualFuncs,
   )
 import FFICXX.Generate.Type.Config
   ( ModuleUnit (..),
@@ -256,10 +257,10 @@ calculateDependency (Right (CSTRawType, _)) = []
 calculateDependency (Right (CSTFFI, cls)) = mkDepFFI cls
 calculateDependency (Right (CSTInterface, cls)) =
   let retDepClasses =
-        concatMap (returnDependency . extractClassDep) (class_funcs cls)
+        concatMap (returnDependency . extractClassDep) (virtualFuncs $ class_funcs cls)
           ++ concatMap (returnDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs cls)
       argDepClasses =
-        concatMap (argumentDependency . extractClassDep) (class_funcs cls)
+        concatMap (argumentDependency . extractClassDep) (virtualFuncs $ class_funcs cls)
           ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs cls)
       rawSelf = Right (CSTRawType, cls)
       raws =
