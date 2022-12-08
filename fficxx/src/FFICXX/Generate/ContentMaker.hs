@@ -71,12 +71,8 @@ import FFICXX.Generate.Code.HsTemplate
     genTmplInstance,
     genTmplInterface,
   )
-import FFICXX.Generate.Code.Primitive
-  ( classConstraints,
-  )
 import FFICXX.Generate.Dependency
   ( class_allparents,
-    getClassModuleBase,
     mkDaughterMap,
     mkDaughterSelfMap,
   )
@@ -84,7 +80,6 @@ import FFICXX.Generate.Name
   ( ffiClassName,
     hsClassName,
     hsFrontNameForTopLevel,
-    typeclassName,
   )
 import FFICXX.Generate.Type.Annotate (AnnotateMap)
 import FFICXX.Generate.Type.Class
@@ -100,6 +95,7 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     ClassModule (..),
+    DepCycles,
     TemplateClassImportHeader (..),
     TemplateClassModule (..),
     TopLevelImportHeader (..),
@@ -114,11 +110,9 @@ import FFICXX.Generate.Util.HaskellSrcExts
   ( emodule,
     evar,
     lang,
-    mkClass,
     mkImport,
     mkModule,
     mkModuleE,
-    mkTBind,
     unqual,
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
@@ -390,8 +384,12 @@ buildRawTypeHs m =
        in if isAbstractClass c then [] else hsClassRawType c
 
 -- |
-buildInterfaceHs :: AnnotateMap -> ClassModule -> Module ()
-buildInterfaceHs amap m =
+buildInterfaceHs ::
+  AnnotateMap ->
+  DepCycles ->
+  ClassModule ->
+  Module ()
+buildInterfaceHs amap depCycles m =
   mkModule
     (cmModule m <.> "Interface")
     [ lang
@@ -417,16 +415,16 @@ buildInterfaceHs amap m =
         mkImport "Foreign.Ptr",
         mkImport "FFICXX.Runtime.Cast"
       ]
-        <> genImportInInterface m
+        <> genImportInInterface False depCycles m
         <> genExtraImport m
     ifaceBody =
-      runReader (mapM genHsFrontDecl classes) amap
+      runReader (mapM (genHsFrontDecl False) classes) amap
         <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
         <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
 
 -- |
-buildInterfaceHsBoot :: ClassModule -> Module ()
-buildInterfaceHsBoot m =
+buildInterfaceHsBoot :: DepCycles -> ClassModule -> Module ()
+buildInterfaceHsBoot depCycles m =
   mkModule
     (cmModule m <.> "Interface")
     [ lang
@@ -452,10 +450,10 @@ buildInterfaceHsBoot m =
         mkImport "Foreign.Ptr",
         mkImport "FFICXX.Runtime.Cast"
       ]
-        <> genImportInInterface m
+        <> genImportInInterface True depCycles m
         <> genExtraImport m
     hsbootBody =
-      runReader (mapM genHsFrontDecl [c]) M.empty
+      runReader (mapM (genHsFrontDecl True) [c]) M.empty
 
 -- |
 buildCastHs :: ClassModule -> Module ()

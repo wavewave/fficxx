@@ -20,25 +20,24 @@ module FFICXX.Generate.Dependency where
 -- dependency class list and finally get the import list for the module corresponding to
 -- a given class.
 
+import Data.Bifunctor (bimap)
 import Data.Either (rights)
 import Data.Function (on)
 import qualified Data.HashMap.Strict as HM
-import Data.List (find, foldl', nub, nubBy)
+import qualified Data.List as L (find, foldl', nub, nubBy)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import FFICXX.Generate.Name
-  ( ClassModuleType (..),
-    TemplateClassModuleType (..),
-    ffiClassName,
+  ( ffiClassName,
+    getClassModuleBase,
+    getTClassModuleBase,
     hsClassName,
-    hsTemplateClassName,
   )
 import FFICXX.Generate.Type.Cabal
   ( AddCInc,
     AddCSrc,
     CabalName (..),
     cabal_cheaderprefix,
-    cabal_moduleprefix,
     cabal_pkgname,
     unCabalName,
   )
@@ -60,6 +59,7 @@ import FFICXX.Generate.Type.Class
     Variable (unVariable),
     argsFromOpExp,
     filterTLOrdinary,
+    virtualFuncs,
   )
 import FFICXX.Generate.Type.Config
   ( ModuleUnit (..),
@@ -70,10 +70,13 @@ import FFICXX.Generate.Type.Config
 import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     ClassModule (..),
+    ClassSubmoduleType (..),
     PackageConfig (..),
     TemplateClassImportHeader (..),
     TemplateClassModule (..),
+    TemplateClassSubmoduleType (..),
     TopLevelImportHeader (..),
+    UClassSubmodule,
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import System.FilePath ((<.>))
@@ -117,13 +120,7 @@ class_allparents c =
   let ps = class_parents c
    in if null ps
         then []
-        else nub (ps <> (concatMap class_allparents ps))
-
-getClassModuleBase :: Class -> String
-getClassModuleBase = (<.>) <$> (cabal_moduleprefix . class_cabal) <*> (fst . hsClassName)
-
-getTClassModuleBase :: TemplateClass -> String
-getTClassModuleBase = (<.>) <$> (cabal_moduleprefix . tclass_cabal) <*> (fst . hsTemplateClassName)
+        else L.nub (ps <> (concatMap class_allparents ps))
 
 -- | Daughter map not including itself
 mkDaughterMap :: [Class] -> DaughterMap
@@ -139,7 +136,7 @@ mkDaughterMap = foldl mkDaughterMapWorker M.empty
 
 -- | Daughter Map including itself as a daughter
 mkDaughterSelfMap :: [Class] -> DaughterMap
-mkDaughterSelfMap = foldl' worker M.empty
+mkDaughterSelfMap = L.foldl' worker M.empty
   where
     worker m c =
       let ps = map getClassModuleBase (c : class_allparents c)
@@ -204,20 +201,104 @@ extractClassDepForTLTemplate f =
     ret = topleveltfunc_ret f
     args = topleveltfunc_args f
 
--- TODO: Confirm the answer below is correct.
--- NOTE: Q: Why returnDependency only?
+mkDepFFI :: Class -> [UClassSubmodule]
+mkDepFFI cls =
+  let ps = map Right (class_allparents cls)
+      alldeps' = concatMap go ps <> go (Right cls)
+      depSelf = Right (CSTRawType, cls)
+   in depSelf : (fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) alldeps')
+  where
+    go (Right c) =
+      let fs = class_funcs c
+          vs = class_vars c
+          tmfs = class_tmpl_funcs c
+       in concatMap (returnDependency . extractClassDep) fs
+            <> concatMap (argumentDependency . extractClassDep) fs
+            <> concatMap (classFromArg . unVariable) vs
+            <> concatMap (returnDependency . extractClassDep4TmplMemberFun) tmfs
+            <> concatMap (argumentDependency . extractClassDep4TmplMemberFun) tmfs
+    go (Left t) =
+      let fs = tclass_funcs t
+       in concatMap (returnDependency . extractClassDepForTmplFun) fs
+            <> concatMap (argumentDependency . extractClassDepForTmplFun) fs
+
+-- For raws:
+-- NOTE: Q: Why returnDependency for RawTypes?
 --       A: Difference between argument and return:
 --          for a member function f,
 --          we have (f :: (IA a, IB b) => a -> b -> IO C
 --          return class is concrete and argument class is constraint.
-mkModuleDepRaw :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepRaw x@(Right c) =
-  nub $
-    filter (/= x) $
-      concatMap (returnDependency . extractClassDep) (class_funcs c)
-        ++ concatMap (returnDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
-mkModuleDepRaw x@(Left t) =
-  (nub . filter (/= x) . concatMap (returnDependency . extractClassDepForTmplFun) . tclass_funcs) t
+calculateDependency :: UClassSubmodule -> [UClassSubmodule]
+calculateDependency (Left (typ, tcl)) = raws <> inplaces
+  where
+    raws' =
+      L.nub $
+        filter (/= Left tcl) $
+          concatMap (returnDependency . extractClassDepForTmplFun) $
+            tclass_funcs tcl
+    raws =
+      case typ of
+        TCSTTemplate ->
+          fmap (bimap (TCSTTemplate,) (CSTRawType,)) raws'
+        TCSTTH ->
+          concatMap
+            ( \case
+                Left t -> [Left (TCSTTemplate, t)]
+                Right c -> fmap (Right . (,c)) [CSTRawType, CSTCast, CSTInterface]
+            )
+            raws'
+    inplaces =
+      let fs = tclass_funcs tcl
+       in fmap (bimap (TCSTTemplate,) (CSTInterface,)) $
+            L.nub $
+              filter (`isInSamePackageButNotInheritedBy` Left tcl) $
+                concatMap (argumentDependency . extractClassDepForTmplFun) fs
+calculateDependency (Right (CSTRawType, _)) = []
+calculateDependency (Right (CSTFFI, cls)) = mkDepFFI cls
+calculateDependency (Right (CSTInterface, cls)) =
+  let retDepClasses =
+        concatMap (returnDependency . extractClassDep) (virtualFuncs $ class_funcs cls)
+          ++ concatMap (returnDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs cls)
+      argDepClasses =
+        concatMap (argumentDependency . extractClassDep) (virtualFuncs $ class_funcs cls)
+          ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs cls)
+      rawSelf = Right (CSTRawType, cls)
+      raws =
+        fmap (bimap (TCSTTemplate,) (CSTRawType,)) $ L.nub $ filter (/= Right cls) retDepClasses
+      exts =
+        let extclasses =
+              filter (`isNotInSamePackageWith` Right cls) argDepClasses
+            parents = map Right (class_parents cls)
+         in fmap (bimap (TCSTTemplate,) (CSTInterface,)) $ L.nub (parents <> extclasses)
+      inplaces =
+        fmap (bimap (TCSTTemplate,) (CSTInterface,)) $
+          L.nub $
+            filter (`isInSamePackageButNotInheritedBy` Right cls) $ argDepClasses
+   in rawSelf : (raws ++ exts ++ inplaces)
+calculateDependency (Right (CSTCast, cls)) = [Right (CSTRawType, cls), Right (CSTInterface, cls)]
+calculateDependency (Right (CSTImplementation, cls)) =
+  let depsSelf =
+        [ Right (CSTRawType, cls),
+          Right (CSTFFI, cls),
+          Right (CSTInterface, cls),
+          Right (CSTCast, cls)
+        ]
+      dsFFI = fmap (bimap snd snd) $ mkDepFFI cls
+      dsParents = L.nub $ map Right $ class_allparents cls
+      dsNonParents = filter (not . (flip elem dsParents)) dsFFI
+
+      deps =
+        concatMap
+          ( \case
+              Left t -> [Left (TCSTTemplate, t)]
+              Right c ->
+                [ Right (CSTRawType, c),
+                  Right (CSTCast, c),
+                  Right (CSTInterface, c)
+                ]
+          )
+          (dsNonParents <> dsParents)
+   in depsSelf <> deps
 
 -- |
 isNotInSamePackageWith ::
@@ -236,45 +317,13 @@ isInSamePackageButNotInheritedBy ::
 isInSamePackageButNotInheritedBy x y =
   x /= y && not (x `elem` getparents y) && (getPkgName x == getPkgName y)
 
--- TODO: Confirm the following answer
--- NOTE: Q: why returnDependency is not considered?
---       A: See explanation in mkModuleDepRaw
-mkModuleDepExternal :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepExternal y@(Right c) =
-  let extclasses =
-        filter (`isNotInSamePackageWith` y) $
-          concatMap (argumentDependency . extractClassDep) (class_funcs c)
-            ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
-      parents = map Right (class_parents c)
-   in nub (parents <> extclasses)
-mkModuleDepExternal y@(Left t) =
-  let fs = tclass_funcs t
-      extclasses =
-        filter (`isNotInSamePackageWith` y) $
-          concatMap (argumentDependency . extractClassDepForTmplFun) fs
-   in nub extclasses
-
--- NOTE: Q: why returnDependency is not considered?
---       A: See explanation in mkModuleDepRaw
-mkModuleDepInplace :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepInplace y@(Right c) =
-  nub $
-    filter (`isInSamePackageButNotInheritedBy` y) $
-      concatMap (argumentDependency . extractClassDep) (class_funcs c)
-        ++ concatMap (argumentDependency . extractClassDep4TmplMemberFun) (class_tmpl_funcs c)
-mkModuleDepInplace y@(Left t) =
-  let fs = tclass_funcs t
-   in nub $
-        filter (`isInSamePackageButNotInheritedBy` y) $
-          concatMap (argumentDependency . extractClassDepForTmplFun) fs
-
 -- |
 mkModuleDepCpp :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepCpp y@(Right c) =
   let fs = class_funcs c
       vs = class_vars c
       tmfs = class_tmpl_funcs c
-   in nub . filter (/= y) $
+   in L.nub . filter (/= y) $
         concatMap (returnDependency . extractClassDep) fs
           <> concatMap (argumentDependency . extractClassDep) fs
           <> concatMap (classFromArg . unVariable) vs
@@ -283,53 +332,24 @@ mkModuleDepCpp y@(Right c) =
           <> getparents y
 mkModuleDepCpp y@(Left t) =
   let fs = tclass_funcs t
-   in nub . filter (/= y) $
+   in L.nub . filter (/= y) $
         concatMap (returnDependency . extractClassDepForTmplFun) fs
           <> concatMap (argumentDependency . extractClassDepForTmplFun) fs
           <> getparents y
 
--- |
-mkModuleDepFFI1 :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepFFI1 (Right c) =
-  let fs = class_funcs c
-      vs = class_vars c
-      tmfs = class_tmpl_funcs c
-   in concatMap (returnDependency . extractClassDep) fs
-        <> concatMap (argumentDependency . extractClassDep) fs
-        <> concatMap (classFromArg . unVariable) vs
-        <> concatMap (returnDependency . extractClassDep4TmplMemberFun) tmfs
-        <> concatMap (argumentDependency . extractClassDep4TmplMemberFun) tmfs
-mkModuleDepFFI1 (Left t) =
-  let fs = tclass_funcs t
-   in concatMap (returnDependency . extractClassDepForTmplFun) fs
-        <> concatMap (argumentDependency . extractClassDepForTmplFun) fs
-
--- |
-mkModuleDepFFI :: Either TemplateClass Class -> [Either TemplateClass Class]
-mkModuleDepFFI y@(Right c) =
-  let ps = map Right (class_allparents c)
-      alldeps' = (concatMap mkModuleDepFFI1 ps) <> mkModuleDepFFI1 y
-   in nub (filter (/= y) alldeps')
-mkModuleDepFFI (Left _) = []
-
 -- | Find module-level dependency per each toplevel function/template function.
-mkTopLevelDep ::
-  TopLevel ->
-  [ Either
-      (TemplateClassModuleType, TemplateClass)
-      (ClassModuleType, Class)
-  ]
+mkTopLevelDep :: TopLevel -> [UClassSubmodule]
 mkTopLevelDep (TLOrdinary f) =
   let dep4func = extractClassDepForTLOrdinary f
       allDeps = returnDependency dep4func ++ argumentDependency dep4func
-      mkTags (Left tcl) = [Left (TCMTTemplate, tcl)]
-      mkTags (Right cls) = fmap (Right . (,cls)) [CMTRawType, CMTCast, CMTInterface]
+      mkTags (Left tcl) = [Left (TCSTTemplate, tcl)]
+      mkTags (Right cls) = fmap (Right . (,cls)) [CSTRawType, CSTCast, CSTInterface]
    in concatMap mkTags allDeps
 mkTopLevelDep (TLTemplate f) =
   let dep4func = extractClassDepForTLTemplate f
       allDeps = returnDependency dep4func ++ argumentDependency dep4func
-      mkTags (Left tcl) = [Left (TCMTTemplate, tcl)]
-      mkTags (Right cls) = fmap (Right . (,cls)) [CMTRawType, CMTCast, CMTInterface]
+      mkTags (Left tcl) = [Left (TCSTTemplate, tcl)]
+      mkTags (Right cls) = fmap (Right . (,cls)) [CSTRawType, CSTCast, CSTInterface]
    in concatMap mkTags allDeps
 
 -- |
@@ -342,18 +362,12 @@ mkClassModule getImports extra c =
   ClassModule
     { cmModule = getClassModuleBase c,
       cmCIH = mkCIH getImports c,
-      cmImportedModulesExternal = exts,
-      cmImportedModulesRaw = raws,
-      cmImportedModulesInplace = inplaces,
-      cmImportedModulesFFI = ffis,
-      cmExtraImport = extraimports
+      cmImportedSubmodulesForInterface = calculateDependency $ Right (CSTInterface, c),
+      cmImportedSubmodulesForFFI = calculateDependency $ Right (CSTFFI, c),
+      cmImportedSubmodulesForCast = calculateDependency $ Right (CSTCast, c),
+      cmImportedSubmodulesForImplementation = calculateDependency $ Right (CSTImplementation, c),
+      cmExtraImport = fromMaybe [] (lookup (class_name c) extra)
     }
-  where
-    exts = mkModuleDepExternal (Right c)
-    raws = mkModuleDepRaw (Right c)
-    inplaces = mkModuleDepInplace (Right c)
-    ffis = mkModuleDepFFI (Right c)
-    extraimports = fromMaybe [] (lookup (class_name c) extra)
 
 -- |
 findModuleUnitImports :: ModuleUnitMap -> ModuleUnit -> ModuleUnitImports
@@ -379,7 +393,7 @@ mkPackageConfig ::
 mkPackageConfig (pkgname, getImports) (cs, fs, ts, extra) acincs acsrcs =
   let ms = map (mkClassModule getImports extra) cs
       cmpfunc x y = class_name (cihClass x) == class_name (cihClass y)
-      cihs = nubBy cmpfunc (map cmCIH ms)
+      cihs = L.nubBy cmpfunc (map cmCIH ms)
       --
       tih = mkTIH pkgname getImports cihs fs
       tcms = map mkTCM ts
@@ -393,13 +407,6 @@ mkPackageConfig (pkgname, getImports) (cs, fs, ts, extra) acincs acsrcs =
           pcfg_additional_c_incs = acincs,
           pcfg_additional_c_srcs = acsrcs
         }
-
-mkHsBootCandidateList :: [ClassModule] -> [ClassModule]
-mkHsBootCandidateList ms =
-  let -- get only class dependencies, not template classes.
-      cs = rights (concatMap cmImportedModulesInplace ms)
-      candidateModBases = fmap getClassModuleBase cs
-   in filter (\m -> cmModule m `elem` candidateModBases) ms
 
 -- |
 mkPkgHeaderFileName :: Class -> HeaderName
@@ -422,7 +429,7 @@ mkPkgIncludeHeadersInH :: Class -> [HeaderName]
 mkPkgIncludeHeadersInH c =
   let pkgname = (cabal_pkgname . class_cabal) c
       extclasses = filter ((/= pkgname) . getPkgName) . mkModuleDepCpp $ Right c
-      extheaders = nub . map ((<> "Type.h") . unCabalName . getPkgName) $ extclasses
+      extheaders = L.nub . map ((<> "Type.h") . unCabalName . getPkgName) $ extclasses
    in map mkPkgHeaderFileName (class_allparents c) <> map HdrName extheaders
 
 -- |
@@ -458,20 +465,20 @@ mkTIH pkgname getImports cihs fs =
   let ofs = filterTLOrdinary fs
       tl_cs1 = concatMap (argumentDependency . extractClassDepForTLOrdinary) ofs
       tl_cs2 = concatMap (returnDependency . extractClassDepForTLOrdinary) ofs
-      tl_cs = nubBy ((==) `on` either tclass_name ffiClassName) (tl_cs1 <> tl_cs2)
+      tl_cs = L.nubBy ((==) `on` either tclass_name ffiClassName) (tl_cs1 <> tl_cs2)
       -- NOTE: Select only class dependencies in the current package.
       -- TODO: This is clearly not a good impl. we need to look into this again
       --       after reconsidering multi-package generation.
       tl_cihs = catMaybes (foldr fn [] tl_cs)
         where
           fn c ys =
-            let y = find (\x -> (ffiClassName . cihClass) x == getFFIName c) cihs
+            let y = L.find (\x -> (ffiClassName . cihClass) x == getFFIName c) cihs
              in y : ys
       -- NOTE: The remaining class dependencies outside the current package
       extclasses = filter ((/= pkgname) . getPkgName) tl_cs
       extheaders =
         map HdrName $
-          nub $
+          L.nub $
             map ((<> "Type.h") . unCabalName . getPkgName) extclasses
    in TopLevelImportHeader
         { tihHeaderFileName = unCabalName pkgname <> "TopLevel",

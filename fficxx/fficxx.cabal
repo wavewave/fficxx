@@ -20,6 +20,7 @@ Library
   Build-Depends: base == 4.*
                , aeson
                , aeson-pretty
+               , array
                , bytestring
                , Cabal
                , containers
@@ -54,6 +55,7 @@ Library
                FFICXX.Generate.Code.Primitive
                FFICXX.Generate.ContentMaker
                FFICXX.Generate.Dependency
+               FFICXX.Generate.Dependency.Graph
                FFICXX.Generate.Name
                FFICXX.Generate.QQ.Verbatim
                FFICXX.Generate.Util

@@ -5,6 +5,7 @@ module FFICXX.Runtime.CodeGen.Cxx where
 
 import Data.Functor.Identity (Identity)
 import Data.Hashable (Hashable)
+import Data.Kind (Type)
 import Data.List (intercalate)
 import Data.String (IsString (..))
 
@@ -23,9 +24,9 @@ instance IsString Namespace where
 data PragmaParam = Once
 
 -- | parts for interpolation
-newtype NamePart (f :: * -> *) = NamePart String
+newtype NamePart (f :: Type -> Type) = NamePart String
 
-newtype CName (f :: * -> *) = CName [NamePart f]
+newtype CName (f :: Type -> Type) = CName [NamePart f]
 
 sname :: String -> CName Identity
 sname s = CName [NamePart s]
@@ -34,7 +35,7 @@ renderCName :: CName Identity -> String
 renderCName (CName ps) = intercalate "##" $ map (\(NamePart p) -> p) ps
 
 -- | Types
-data CType (f :: * -> *)
+data CType (f :: Type -> Type)
   = CTVoid
   | CTSimple (CName f)
   | CTStar (CType f)
@@ -56,7 +57,7 @@ renderCOp :: COp -> String
 renderCOp CArrow = "->"
 renderCOp CAssign = "="
 
-data CExp (f :: * -> *)
+data CExp (f :: Type -> Type)
   = -- | variable
     CVar (CName f)
   | -- | C function app:  f(a1,a2,..)
@@ -84,11 +85,11 @@ data CExp (f :: * -> *)
   | -- | empty C expression. (for convenience)
     CNull
 
-data CFunDecl (f :: * -> *)
+data CFunDecl (f :: Type -> Type)
   = -- | type func( type1 arg1, type2 arg2, ... )
     CFunDecl (CType f) (CName f) [(CType f, CName f)]
 
-data CVarDecl (f :: * -> *)
+data CVarDecl (f :: Type -> Type)
   = CVarDecl
       (CType f)
       -- ^ type
@@ -97,7 +98,7 @@ data CVarDecl (f :: * -> *)
 
 data CQual = Inline
 
-data CStatement (f :: * -> *)
+data CStatement (f :: Type -> Type)
   = -- | using namespace <namespace>;
     UsingNamespace Namespace
   | -- | typedef origtype newname;
@@ -125,7 +126,7 @@ data CStatement (f :: * -> *)
   | -- | temporary verbatim
     CVerbatim String
 
-data CMacro (f :: * -> *)
+data CMacro (f :: Type -> Type)
   = -- | regular C++ statement
     CRegular (CStatement f)
   | -- | #include "<header>"
@@ -141,7 +142,7 @@ data CMacro (f :: * -> *)
   | -- | temporary verbatim
     Verbatim String
 
-data CBlock (f :: * -> *) = ExternC [CMacro f] -- extern "C" with #ifdef __cplusplus guard.
+data CBlock (f :: Type -> Type) = ExternC [CMacro f] -- extern "C" with #ifdef __cplusplus guard.
 
 renderPragmaParam :: PragmaParam -> String
 renderPragmaParam Once = "once"

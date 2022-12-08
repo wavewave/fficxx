@@ -7,7 +7,7 @@ module FFICXX.Generate.Code.HsFrontEnd where
 
 import Control.Monad.Reader (Reader)
 import Data.Either (lefts, rights)
-import Data.List (nub)
+import qualified Data.List as L
 import FFICXX.Generate.Code.Primitive
   ( CFunSig (..),
     HsFunSig (..),
@@ -20,21 +20,25 @@ import FFICXX.Generate.Code.Primitive
   )
 import FFICXX.Generate.Dependency
   ( argumentDependency,
-    class_allparents,
     extractClassDepForTLOrdinary,
     extractClassDepForTLTemplate,
-    getClassModuleBase,
-    getTClassModuleBase,
     returnDependency,
+  )
+import FFICXX.Generate.Dependency.Graph
+  ( getCyclicDepSubmodules,
+    locateInDepCycles,
   )
 import FFICXX.Generate.Name
   ( accessorName,
     aliasedFuncName,
+    getClassModuleBase,
+    getTClassModuleBase,
     hsClassName,
     hsFrontNameForTopLevel,
     hsFuncName,
     hscAccessorName,
     hscFuncName,
+    subModuleName,
     typeclassName,
   )
 import FFICXX.Generate.Type.Annotate (AnnotateMap)
@@ -54,8 +58,8 @@ import FFICXX.Generate.Type.Class
     virtualFuncs,
   )
 import FFICXX.Generate.Type.Module
-  ( ClassImportHeader (..),
-    ClassModule (..),
+  ( ClassModule (..),
+    DepCycles,
     TemplateClassModule (..),
   )
 import FFICXX.Generate.Util (toLowers)
@@ -80,7 +84,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
     mkFun,
     mkFunSig,
     mkImport,
-    -- mkImportSrc,
+    mkImportSrc,
     mkInstance,
     mkNewtype,
     mkPVar,
@@ -100,19 +104,28 @@ import FFICXX.Generate.Util.HaskellSrcExts
     unqual,
   )
 import Language.Haskell.Exts.Build (app, letE, name, pApp)
-import Language.Haskell.Exts.Syntax (Decl (..), ExportSpec (..), ImportDecl (..))
+import Language.Haskell.Exts.Syntax
+  ( Context (CxTuple),
+    Decl (..),
+    ExportSpec (..),
+    ImportDecl (..),
+  )
 import System.FilePath ((<.>))
 
-genHsFrontDecl :: Class -> Reader AnnotateMap (Decl ())
-genHsFrontDecl c = do
+genHsFrontDecl :: Bool -> Class -> Reader AnnotateMap (Decl ())
+genHsFrontDecl isHsBoot c = do
   -- TODO: revive annotation
   -- for the time being, let's ignore annotation.
   -- amap <- ask
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap
   let cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
+      -- for hs-boot, we only have instance head.
+      cdecl' = mkClass (CxTuple () []) (typeclassName c) [mkTBind "a"] []
       sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
       body = map (clsDecl . sigdecl) . virtualFuncs . class_funcs $ c
-  return cdecl
+  if isHsBoot
+    then return cdecl'
+    else return cdecl
 
 -------------------
 
@@ -323,59 +336,37 @@ genExtraImport cm = map mkImport (cmExtraImport cm)
 genImportInModule :: Class -> [ImportDecl ()]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
 
--- TODO: this dependency should be refactored out and analyzed separately, particularly for cyclic deps.
-genImportInInterface :: ClassModule -> [ImportDecl ()]
-genImportInInterface m =
-  let modsRaw = cmImportedModulesRaw m
-      modsExt = cmImportedModulesExternal m
-      modsInplace = cmImportedModulesInplace m
-   in [mkImport (cmModule m <.> "RawType")]
-        <> flip
-          map
-          modsRaw
-          ( \case
-              Left t -> mkImport (getTClassModuleBase t <.> "Template")
-              Right c -> mkImport (getClassModuleBase c <.> "RawType")
-          )
-        <> flip
-          map
-          modsExt
-          ( \case
-              Left t -> mkImport (getTClassModuleBase t <.> "Template")
-              Right c -> mkImport (getClassModuleBase c <.> "Interface")
-          )
-        <> flip
-          map
-          modsInplace
-          ( \case
-              Left t ->
-                -- TODO: *.Template in the same package needs to have hs-boot.
-                --       Currently, we do not have it yet.
-                mkImport (getTClassModuleBase t <.> "Template")
-              Right c -> mkImport (getClassModuleBase c <.> "Interface")
-              -- mkImportSrc (getClassModuleBase c <.> "Interface")
-          )
+mkImportWithDepCycles :: DepCycles -> String -> String -> ImportDecl ()
+mkImportWithDepCycles depCycles self imported =
+  let mloc = locateInDepCycles (self, imported) depCycles
+   in case mloc of
+        Just (idxSelf, idxImported)
+          | idxImported > idxSelf ->
+            mkImportSrc imported
+        _ -> mkImport imported
+
+genImportInInterface :: Bool -> DepCycles -> ClassModule -> [ImportDecl ()]
+genImportInInterface isHsBoot depCycles m =
+  let modSelf = cmModule m <.> "Interface"
+      imported = cmImportedSubmodulesForInterface m
+      (rdepsU, rdepsD) = getCyclicDepSubmodules modSelf depCycles
+   in if isHsBoot
+        then -- for hs-boot file, we ignore all module imports in the cycle.
+        -- TODO: This is likely to be broken in more general cases.
+        --       Keep improving this as hs-boot allows.
+
+          let imported' = fmap subModuleName imported L.\\ (rdepsU <> rdepsD)
+           in fmap mkImport imported'
+        else fmap (mkImportWithDepCycles depCycles modSelf . subModuleName) imported
 
 -- |
 genImportInCast :: ClassModule -> [ImportDecl ()]
 genImportInCast m =
-  [ mkImport (cmModule m <.> "RawType"),
-    mkImport (cmModule m <.> "Interface")
-  ]
+  fmap (mkImport . subModuleName) $ cmImportedSubmodulesForCast m
 
--- |
 genImportInImplementation :: ClassModule -> [ImportDecl ()]
 genImportInImplementation m =
-  let modsFFI = cmImportedModulesFFI m
-      modsParents = nub $ map Right $ class_allparents $ cihClass $ cmCIH m
-      modsNonParents = filter (not . (flip elem modsParents)) modsFFI
-   in [ mkImport (cmModule m <.> "RawType"),
-        mkImport (cmModule m <.> "FFI"),
-        mkImport (cmModule m <.> "Interface"),
-        mkImport (cmModule m <.> "Cast")
-      ]
-        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modsNonParents
-        <> concatMap (\case Left t -> [mkImport (getTClassModuleBase t <.> "Template")]; Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]) modsParents
+  fmap (mkImport . subModuleName) $ cmImportedSubmodulesForImplementation m
 
 -- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.
@@ -385,8 +376,8 @@ genImportForTLOrdinary :: TLOrdinary -> [ImportDecl ()]
 genImportForTLOrdinary f =
   let dep4func = extractClassDepForTLOrdinary f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
-      cmods = nub $ map getClassModuleBase $ rights ecs
-      tmods = nub $ map getTClassModuleBase $ lefts ecs
+      cmods = L.nub $ map getClassModuleBase $ rights ecs
+      tmods = L.nub $ map getTClassModuleBase $ lefts ecs
    in concatMap (\x -> map (\y -> mkImport (x <.> y)) ["RawType", "Cast", "Interface"]) cmods
         <> concatMap (\x -> map (\y -> mkImport (x <.> y)) ["Template"]) tmods
 
@@ -398,8 +389,8 @@ genImportForTLTemplate :: TLTemplate -> [ImportDecl ()]
 genImportForTLTemplate f =
   let dep4func = extractClassDepForTLTemplate f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
-      cmods = nub $ map getClassModuleBase $ rights ecs
-      tmods = nub $ map getTClassModuleBase $ lefts ecs
+      cmods = L.nub $ map getClassModuleBase $ rights ecs
+      tmods = L.nub $ map getTClassModuleBase $ lefts ecs
    in concatMap (\x -> map (\y -> mkImport (x <.> y)) ["RawType", "Cast", "Interface"]) cmods
         <> concatMap (\x -> map (\y -> mkImport (x <.> y)) ["Template"]) tmods
 

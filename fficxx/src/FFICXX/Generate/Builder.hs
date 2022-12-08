@@ -8,6 +8,7 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Char (toUpper)
 import Data.Digest.Pure.MD5 (md5)
 import Data.Foldable (for_)
+import qualified Data.Text as T
 import FFICXX.Generate.Code.Cabal (buildCabalFile, buildJSONFile)
 import FFICXX.Generate.Config
   ( FFICXXConfig (..),
@@ -16,9 +17,12 @@ import FFICXX.Generate.Config
 import qualified FFICXX.Generate.ContentMaker as C
 import FFICXX.Generate.Dependency
   ( findModuleUnitImports,
-    getClassModuleBase,
-    mkHsBootCandidateList,
     mkPackageConfig,
+  )
+import FFICXX.Generate.Dependency.Graph
+  ( constructDepGraph,
+    findDepCycles,
+    gatherHsBootSubmodules,
   )
 import FFICXX.Generate.Type.Cabal
   ( AddCInc (..),
@@ -31,6 +35,7 @@ import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     ClassModule (..),
     PackageConfig (..),
+    TemplateClassImportHeader (..),
     TemplateClassModule (..),
     TopLevelImportHeader (..),
   )
@@ -77,9 +82,20 @@ simpleBuilder cfg sbc = do
           (classes, toplevelfunctions, templates, extramods)
           (cabal_additional_c_incs cabal)
           (cabal_additional_c_srcs cabal)
-      hsbootlst = mkHsBootCandidateList mods
       cabalFileName = unCabalName pkgname <.> "cabal"
       jsonFileName = unCabalName pkgname <.> "json"
+      allClasses = fmap (Left . tcihTClass) templates ++ fmap Right classes
+      depCycles =
+        findDepCycles $
+          constructDepGraph allClasses toplevelfunctions
+      -- for now, put this function here
+      -- This function is a little ad hoc, only for Interface.hs.
+      -- But as of now, we support hs-boot for ordinary class only.
+      mkHsBootCandidateList :: [ClassModule] -> [ClassModule]
+      mkHsBootCandidateList ms =
+        let hsbootSubmods = gatherHsBootSubmodules depCycles
+         in filter (\c -> cmModule c <.> "Interface" `elem` hsbootSubmods) ms
+      hsbootlst = mkHsBootCandidateList mods
   --
   createDirectoryIfMissing True workingDir
   createDirectoryIfMissing True installDir
@@ -131,7 +147,7 @@ simpleBuilder cfg sbc = do
   for_ mods $ \m ->
     gen
       (cmModule m <.> "Interface" <.> "hs")
-      (prettyPrint (C.buildInterfaceHs mempty m))
+      (prettyPrint (C.buildInterfaceHs mempty depCycles m))
   --
   putStrLn "Generating Cast.hs"
   for_ mods $ \m ->
@@ -164,10 +180,14 @@ simpleBuilder cfg sbc = do
   --
   -- TODO: Template.hs-boot need to be generated as well
   putStrLn "Generating hs-boot file"
+  -- This is a hack since haskell-src-exts always codegen () => instead of empty
+  -- string for an empty context, which have different meanings in hs-boot file.
+  -- Therefore, we get rid of them.
+  let hsBootHackClearEmptyContexts = T.unpack . T.replace "() =>" "" . T.pack
   for_ hsbootlst $ \m -> do
     gen
       (cmModule m <.> "Interface" <.> "hs-boot")
-      (prettyPrint (C.buildInterfaceHsBoot m))
+      (hsBootHackClearEmptyContexts $ prettyPrint (C.buildInterfaceHsBoot depCycles m))
   --
   putStrLn "Generating Module summary file"
   for_ mods $ \m ->

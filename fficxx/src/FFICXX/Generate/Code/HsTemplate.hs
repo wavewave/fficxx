@@ -19,12 +19,7 @@ import FFICXX.Generate.Code.Primitive
     functionSignatureTT,
     tmplAccessorToTFun,
   )
-import FFICXX.Generate.Dependency
-  ( getClassModuleBase,
-    getTClassModuleBase,
-    mkModuleDepInplace,
-    mkModuleDepRaw,
-  )
+import FFICXX.Generate.Dependency (calculateDependency)
 import FFICXX.Generate.Name
   ( ffiTmplFuncName,
     hsTemplateClassName,
@@ -32,6 +27,7 @@ import FFICXX.Generate.Name
     hsTemplateMemberFunctionNameTH,
     hsTmplFuncName,
     hsTmplFuncNameTH,
+    subModuleName,
     tmplAccessorName,
     typeclassNameT,
   )
@@ -49,6 +45,7 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
   ( ClassImportHeader (..),
     TemplateClassImportHeader (..),
+    TemplateClassSubmoduleType (..),
     TopLevelImportHeader (..),
   )
 import FFICXX.Generate.Util (firstUpper)
@@ -110,7 +107,6 @@ import Language.Haskell.Exts.Build
     wildcard,
   )
 import Language.Haskell.Exts.Syntax (Boxed (Boxed), Decl (..), ImportDecl (..), Type (TyTuple))
-import System.FilePath ((<.>))
 
 ------------------------------
 -- Template member function --
@@ -236,22 +232,7 @@ genTMFInstance cih f =
 
 genImportInTemplate :: TemplateClass -> [ImportDecl ()]
 genImportInTemplate t0 =
-  let depsRaw = mkModuleDepRaw (Left t0)
-      depsInplace = mkModuleDepInplace (Left t0)
-   in flip
-        map
-        depsRaw
-        ( \case
-            Left t -> mkImport (getTClassModuleBase t <.> "Template")
-            Right c -> mkImport (getClassModuleBase c <.> "RawType")
-        )
-        <> flip
-          map
-          depsInplace
-          ( \case
-              Left t -> mkImport (getTClassModuleBase t <.> "Template")
-              Right c -> mkImport (getClassModuleBase c <.> "Interface")
-          )
+  fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTemplate, t0)
 
 -- |
 genTmplInterface :: TemplateClass -> [Decl ()]
@@ -288,22 +269,7 @@ genTmplInterface t =
 -- |
 genImportInTH :: TemplateClass -> [ImportDecl ()]
 genImportInTH t0 =
-  let depsRaw = mkModuleDepRaw (Left t0)
-      depsInplace = mkModuleDepInplace (Left t0)
-   in flip
-        concatMap
-        depsRaw
-        ( \case
-            Left t -> [mkImport (getTClassModuleBase t <.> "Template")]
-            Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]
-        )
-        <> flip
-          concatMap
-          depsInplace
-          ( \case
-              Left t -> [mkImport (getTClassModuleBase t <.> "Template")]
-              Right c -> map (\y -> mkImport (getClassModuleBase c <.> y)) ["RawType", "Cast", "Interface"]
-          )
+  fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTH, t0)
 
 -- |
 genTmplImplementation :: TemplateClass -> [Decl ()]

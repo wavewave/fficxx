@@ -5,7 +5,9 @@ import FFICXX.Generate.Type.Cabal (AddCInc, AddCSrc)
 import FFICXX.Generate.Type.Class (Class, TemplateClass, TopLevel)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..), Namespace (..))
 
--- | C++ side
+--
+-- Import/Header
+--
 --   HPkg is generated C++ headers by fficxx, CPkg is original C++ headers
 data ClassImportHeader = ClassImportHeader
   { cihClass :: Class,
@@ -23,20 +25,49 @@ data ClassImportHeader = ClassImportHeader
   }
   deriving (Show)
 
--------------------------
--- Haskell side module --
--------------------------
+--
+-- Submodule
+--
+
+data ClassSubmoduleType
+  = CSTRawType
+  | CSTInterface
+  | CSTImplementation
+  | CSTFFI
+  | CSTCast
+  deriving (Show)
+
+data TemplateClassSubmoduleType
+  = TCSTTH
+  | TCSTTemplate
+  deriving (Show)
+
+-- | UClass = Unified Class, either template class or ordinary class
+type UClass = Either TemplateClass Class
+
+type UClassSubmodule =
+  Either (TemplateClassSubmoduleType, TemplateClass) (ClassSubmoduleType, Class)
+
+-- | Dependency cycle information. Currently just a string
+--                  self,    former,   latter
+type DepCycles = [[(String, ([String], [String]))]]
+
+--
+-- Module
+--
 
 data ClassModule = ClassModule
   { cmModule :: String,
     cmCIH :: ClassImportHeader,
-    -- | imported modules external to the current package unit.
-    cmImportedModulesExternal :: [Either TemplateClass Class],
-    -- | imported modules for raw types.
-    cmImportedModulesRaw :: [Either TemplateClass Class],
-    -- | imported modules in the current package-in-place
-    cmImportedModulesInplace :: [Either TemplateClass Class],
-    cmImportedModulesFFI :: [Either TemplateClass Class],
+    -- | imported submodules for Interface.hs
+    cmImportedSubmodulesForInterface :: [UClassSubmodule],
+    -- | imported submodules for FFI.hs
+    cmImportedSubmodulesForFFI :: [UClassSubmodule],
+    -- | imported submodules for Cast.hs
+    cmImportedSubmodulesForCast,
+    -- imported submodules for Implementation.hs
+    cmImportedSubmodulesForImplementation ::
+      [UClassSubmodule],
     cmExtraImport :: [String]
   }
   deriving (Show)
@@ -66,6 +97,10 @@ data TopLevelImportHeader = TopLevelImportHeader
     tihExtraHeadersInCPP :: [HeaderName]
   }
   deriving (Show)
+
+--
+-- Package-level
+--
 
 data PackageConfig = PkgConfig
   { pcfg_classModules :: [ClassModule],

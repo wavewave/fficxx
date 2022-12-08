@@ -5,6 +5,7 @@ module FFICXX.Generate.Name where
 
 import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
+import FFICXX.Generate.Type.Cabal (cabal_moduleprefix)
 import FFICXX.Generate.Type.Class
   ( Accessor (..),
     Arg (..),
@@ -20,18 +21,12 @@ import FFICXX.Generate.Type.Class
     TopLevel (..),
     Variable (..),
   )
+import FFICXX.Generate.Type.Module
+  ( ClassSubmoduleType (..),
+    TemplateClassSubmoduleType (..),
+  )
 import FFICXX.Generate.Util (firstLower, toLowers)
-
-data ClassModuleType
-  = CMTRawType
-  | CMTInterface
-  | CMTImplementation
-  | CMTFFI
-  | CMTCast
-
-data TemplateClassModuleType
-  = TCMTTH
-  | TCMTTemplate
+import System.FilePath ((<.>))
 
 hsFrontNameForTopLevel :: TopLevel -> String
 hsFrontNameForTopLevel tfn =
@@ -172,3 +167,35 @@ nonvirtualName c str = (firstLower . fst . hsClassName) c <> "_" <> str
 
 destructorName :: String
 destructorName = "delete"
+
+--
+-- Module base and Submodule names in ClassModule
+--
+
+getClassModuleBase :: Class -> String
+getClassModuleBase = (<.>) <$> (cabal_moduleprefix . class_cabal) <*> (fst . hsClassName)
+
+getTClassModuleBase :: TemplateClass -> String
+getTClassModuleBase = (<.>) <$> (cabal_moduleprefix . tclass_cabal) <*> (fst . hsTemplateClassName)
+
+subModuleName ::
+  Either
+    (TemplateClassSubmoduleType, TemplateClass)
+    (ClassSubmoduleType, Class) ->
+  String
+subModuleName (Left (typ, tcl)) = modBase <.> submod
+  where
+    modBase = getTClassModuleBase tcl
+    submod = case typ of
+      TCSTTH -> "TH"
+      TCSTTemplate -> "Template"
+subModuleName (Right (typ, cls)) = modBase <.> submod
+  where
+    modBase = getClassModuleBase cls
+    submod =
+      case typ of
+        CSTRawType -> "RawType"
+        CSTInterface -> "Interface"
+        CSTImplementation -> "Implementation"
+        CSTFFI -> "FFI"
+        CSTCast -> "Cast"

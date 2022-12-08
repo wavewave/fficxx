@@ -12,6 +12,7 @@ module FFICXX.Runtime.Cast where
 
 import Data.ByteString.Char8 (ByteString, packCString, useAsCString)
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Kind (Type)
 import Data.Word (Word16, Word32, Word64, Word8)
 import Foreign.C
   ( CBool,
@@ -55,14 +56,14 @@ class Castable a b where
   uncast :: b -> (a -> IO r) -> IO r
 
 class FPtr a where
-  type Raw a :: *
+  type Raw a :: Type
   get_fptr :: a -> Ptr (Raw a)
   cast_fptr_to_obj :: Ptr (Raw a) -> a
 
 class FunPtrWrappable a where
-  type FunPtrHsType a :: *
-  type FunPtrType a :: *
-  data FunPtrWrapped a :: *
+  type FunPtrHsType a :: Type
+  type FunPtrType a :: Type
+  data FunPtrWrapped a :: Type
   fptrWrap :: FunPtrWrapped a -> IO (FunPtr (FunPtrType a))
   wrap :: FunPtrHsType a -> FunPtrWrapped a
 
