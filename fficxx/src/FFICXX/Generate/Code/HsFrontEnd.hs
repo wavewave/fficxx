@@ -25,7 +25,8 @@ import FFICXX.Generate.Dependency
     returnDependency,
   )
 import FFICXX.Generate.Dependency.Graph
-  ( locateInDepCycles,
+  ( getCyclicDepSubmodules,
+    locateInDepCycles,
   )
 import FFICXX.Generate.Name
   ( accessorName,
@@ -103,19 +104,28 @@ import FFICXX.Generate.Util.HaskellSrcExts
     unqual,
   )
 import Language.Haskell.Exts.Build (app, letE, name, pApp)
-import Language.Haskell.Exts.Syntax (Decl (..), ExportSpec (..), ImportDecl (..))
+import Language.Haskell.Exts.Syntax
+  ( Context (CxTuple),
+    Decl (..),
+    ExportSpec (..),
+    ImportDecl (..),
+  )
 import System.FilePath ((<.>))
 
-genHsFrontDecl :: Class -> Reader AnnotateMap (Decl ())
-genHsFrontDecl c = do
+genHsFrontDecl :: Bool -> Class -> Reader AnnotateMap (Decl ())
+genHsFrontDecl isHsBoot c = do
   -- TODO: revive annotation
   -- for the time being, let's ignore annotation.
   -- amap <- ask
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap
   let cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
+      -- for hs-boot, we only have instance head.
+      cdecl' = mkClass (CxTuple () []) (typeclassName c) [mkTBind "a"] []
       sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
       body = map (clsDecl . sigdecl) . virtualFuncs . class_funcs $ c
-  return cdecl
+  if isHsBoot
+    then return cdecl'
+    else return cdecl
 
 -------------------
 
@@ -335,11 +345,19 @@ mkImportWithDepCycles depCycles self imported =
             mkImportSrc imported
         _ -> mkImport imported
 
-genImportInInterface :: DepCycles -> ClassModule -> [ImportDecl ()]
-genImportInInterface depCycles m =
+genImportInInterface :: Bool -> DepCycles -> ClassModule -> [ImportDecl ()]
+genImportInInterface isHsBoot depCycles m =
   let modSelf = cmModule m <.> "Interface"
       imported = cmImportedSubmodulesForInterface m
-   in fmap (\x -> mkImportWithDepCycles depCycles modSelf (subModuleName x)) imported
+      (rdepsU, rdepsD) = getCyclicDepSubmodules modSelf depCycles
+   in if isHsBoot
+        then -- for hs-boot file, we ignore all module imports in the cycle.
+        -- TODO: This is likely to be broken in more general cases.
+        --       Keep improving this as hs-boot allows.
+
+          let imported' = fmap subModuleName imported L.\\ (rdepsU <> rdepsD)
+           in fmap mkImport imported'
+        else fmap (mkImportWithDepCycles depCycles modSelf . subModuleName) imported
 
 -- |
 genImportInCast :: ClassModule -> [ImportDecl ()]

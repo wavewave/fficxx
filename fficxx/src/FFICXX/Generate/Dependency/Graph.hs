@@ -95,6 +95,11 @@ findDepCycles (syms, deps) =
         fmap lookupSymAndRestrictDeps $ filter (\xs -> length xs > 1) $ fmap flatten (G.scc gr)
    in cycleGroups
 
+getCyclicDepSubmodules :: String -> DepCycles -> ([String], [String])
+getCyclicDepSubmodules self depCycles = fromMaybe ([], []) $ do
+  cycl <- L.find (\xs -> self `L.elem` fmap fst xs) depCycles
+  L.lookup self cycl
+
 -- | locate importing module and imported module in dependency cycles
 locateInDepCycles :: (String, String) -> DepCycles -> Maybe (Int, Int)
 locateInDepCycles (self, imported) depCycles = do

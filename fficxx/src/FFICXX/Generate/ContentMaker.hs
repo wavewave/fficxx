@@ -415,10 +415,10 @@ buildInterfaceHs amap depCycles m =
         mkImport "Foreign.Ptr",
         mkImport "FFICXX.Runtime.Cast"
       ]
-        <> genImportInInterface depCycles m
+        <> genImportInInterface False depCycles m
         <> genExtraImport m
     ifaceBody =
-      runReader (mapM genHsFrontDecl classes) amap
+      runReader (mapM (genHsFrontDecl False) classes) amap
         <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
         <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
 
@@ -450,10 +450,10 @@ buildInterfaceHsBoot depCycles m =
         mkImport "Foreign.Ptr",
         mkImport "FFICXX.Runtime.Cast"
       ]
-        <> genImportInInterface depCycles m
+        <> genImportInInterface True depCycles m
         <> genExtraImport m
     hsbootBody =
-      runReader (mapM genHsFrontDecl [c]) M.empty
+      runReader (mapM (genHsFrontDecl True) [c]) M.empty
 
 -- |
 buildCastHs :: ClassModule -> Module ()

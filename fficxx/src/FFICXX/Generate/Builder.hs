@@ -8,6 +8,7 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Char (toUpper)
 import Data.Digest.Pure.MD5 (md5)
 import Data.Foldable (for_)
+import qualified Data.Text as T
 import FFICXX.Generate.Code.Cabal (buildCabalFile, buildJSONFile)
 import FFICXX.Generate.Config
   ( FFICXXConfig (..),
@@ -179,10 +180,14 @@ simpleBuilder cfg sbc = do
   --
   -- TODO: Template.hs-boot need to be generated as well
   putStrLn "Generating hs-boot file"
+  -- This is a hack since haskell-src-exts always codegen () => instead of empty
+  -- string for an empty context, which have different meanings in hs-boot file.
+  -- Therefore, we get rid of them.
+  let hsBootHackClearEmptyContexts = T.unpack . T.replace "() =>" "" . T.pack
   for_ hsbootlst $ \m -> do
     gen
       (cmModule m <.> "Interface" <.> "hs-boot")
-      (prettyPrint (C.buildInterfaceHsBoot depCycles m))
+      (hsBootHackClearEmptyContexts $ prettyPrint (C.buildInterfaceHsBoot depCycles m))
   --
   putStrLn "Generating Module summary file"
   for_ mods $ \m ->
