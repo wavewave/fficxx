@@ -139,7 +139,7 @@ genPkgDeps cs =
 -- |
 cabalTemplate :: Text
 cabalTemplate =
-  "Cabal-version:  2.2\n\
+  "Cabal-version:  3.0\n\
   \Name:                $pkgname\n\
   \Version:     $version\n\
   \Synopsis:    $synopsis\n\

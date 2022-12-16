@@ -1,5 +1,6 @@
+Cabal-Version:  3.0
 Name:           fficxx-test
-Version:        0.6
+Version:        0.7.0.0
 Synopsis:       test for fficxx
 Description:    test for fficxx (with stdcxx)
 License:        BSD3
@@ -8,7 +9,6 @@ Author:         Ian-Woo Kim
 Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>
 Build-Type:     Simple
 Category:       FFI Tools
-Cabal-Version:  >= 1.8
 
 Source-repository head
   type: git
