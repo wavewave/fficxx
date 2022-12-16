@@ -4,7 +4,7 @@ Version:        0.7.0.0
 Synopsis:       Runtime for fficxx-generated library
 Description:    Runtime for fficxx-generated library.
                 fficxx is an automatic haskell Foreign Function Interface (FFI) generator to C++.
-License:        BSD3
+License:        BSD-2-Clause
 License-file:   LICENSE
 Author:         Ian-Woo Kim
 Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>
