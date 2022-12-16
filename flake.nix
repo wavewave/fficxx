@@ -1,9 +1,7 @@
 {
   description = "fficxx";
   inputs = {
-    # nixpkgs/master on 2022-10-21
-    nixpkgs.url =
-      "github:NixOS/nixpkgs/71c5816834f93840dd301ec384c9d7947e97c27d";
+    nixpkgs.url = "github:NixOS/nixpkgs/master";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = { self, nixpkgs, flake-utils }:
