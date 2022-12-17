@@ -3,7 +3,7 @@ Name:           tmpl-dup-inst
 Version:        0.0
 Synopsis:       test for fficxx template instatiation duplication
 Description:    test for fficxx template instatiation duplication
-License:        BSD3
+License:        BSD-2-Clause
 License-file:   LICENSE
 Author:         Ian-Woo Kim
 Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>

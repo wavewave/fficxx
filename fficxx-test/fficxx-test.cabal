@@ -3,7 +3,7 @@ Name:           fficxx-test
 Version:        0.7.0.0
 Synopsis:       test for fficxx
 Description:    test for fficxx (with stdcxx)
-License:        BSD3
+License:        BSD-2-Clause
 License-file:   LICENSE
 Author:         Ian-Woo Kim
 Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>
