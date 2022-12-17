@@ -130,8 +130,8 @@ genOtherModules _cmods = [""]
 genPkgDeps :: [CabalName] -> [String]
 genPkgDeps cs =
   [ "base > 4 && < 5",
-    "fficxx >= 0.5",
-    "fficxx-runtime >= 0.5",
+    "fficxx >= 0.7",
+    "fficxx-runtime >= 0.7",
     "template-haskell"
   ]
     ++ map unCabalName cs
@@ -150,7 +150,7 @@ cabalTemplate =
   \Author:              $author\n\
   \Maintainer:  $maintainer\n\
   \Category:       $category\n\
-  \Tested-with:    GHC >= 7.6\n\
+  \Tested-with:    GHC == 9.0.2 || == 9.2.4 || == 9.4.2 \n\
   \$buildtype\n\
   \Extra-source-files:\n\
   \$extraFiles\n\
