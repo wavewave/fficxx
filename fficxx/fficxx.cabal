@@ -1,14 +1,17 @@
+Cabal-Version:  3.0
 Name:           fficxx
-Version:        0.6.999
+Version:        0.7.0.0
 Synopsis:       Automatic C++ binding generation
 Description:    fficxx is an automatic haskell Foreign Function Interface (FFI) generator to C++.
-License:        BSD3
+License:        BSD-2-Clause
 License-file:   LICENSE
 Author:         Ian-Woo Kim
 Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>
 Build-Type:     Simple
+Tested-With:    GHC == 9.0.2 || == 9.2.4 || == 9.4.2
 Category:       FFI Tools
-Cabal-Version:  >= 1.10
+Extra-Source-Files:
+  ChangeLog.md
 
 Source-repository head
   type: git

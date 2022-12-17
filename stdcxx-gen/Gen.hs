@@ -57,13 +57,13 @@ cabal :: Cabal
 cabal =
   Cabal
     { cabal_pkgname = CabalName "stdcxx",
-      cabal_version = "0.6.999",
+      cabal_version = "0.7.0.0",
       cabal_cheaderprefix = "STD",
       cabal_moduleprefix = "STD",
       cabal_additional_c_incs = [],
       cabal_additional_c_srcs = [],
       cabal_additional_pkgdeps = [],
-      cabal_license = Just "BSD-3-Clause",
+      cabal_license = Just "BSD-2-Clause",
       cabal_licensefile = Just "LICENSE",
       cabal_extraincludedirs = [],
       cabal_extralibdirs = [],
