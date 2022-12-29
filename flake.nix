@@ -60,7 +60,12 @@
         mkShellFor = compiler:
           (hpkgsFor compiler).shellFor {
             packages = ps: [ ps.fficxx ps.fficxx-runtime ];
-            buildInputs = [ pkgs.cabal-install pkgs.ormolu pkgs.nixfmt ];
+            buildInputs = [
+              pkgs.cabal-install
+              pkgs.ormolu
+              pkgs.nixfmt
+              pkgs.sphinx
+            ];
             withHoogle = false;
           };
 
