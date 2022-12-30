@@ -1,8 +1,7 @@
 name: docs_pages_workflow
 
-on:
-  push:
-    branches: [ readthedocs ]
+on: [push]
+#    branches: [ readthedocs ]
 
 jobs:
   build_docs_job:
