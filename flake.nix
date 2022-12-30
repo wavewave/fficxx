@@ -58,9 +58,12 @@
         };
 
         mkShellFor = compiler:
-          (hpkgsFor compiler).shellFor {
+          let
+            pyenv = pkgs.python3.withPackages
+              (p: [ p.sphinx p.sphinx_rtd_theme p.myst-parser ]);
+          in (hpkgsFor compiler).shellFor {
             packages = ps: [ ps.fficxx ps.fficxx-runtime ];
-            buildInputs = [ pkgs.cabal-install pkgs.ormolu pkgs.nixfmt ];
+            buildInputs = [ pkgs.cabal-install pkgs.ormolu pkgs.nixfmt pyenv ];
             withHoogle = false;
           };
 
