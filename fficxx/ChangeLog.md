@@ -2,7 +2,7 @@
 
 ## 0.7.0.1
 
--
+- Remove unnecessary dependency (#210)
 
 ## 0.7.0.0
 
