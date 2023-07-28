@@ -1,6 +1,6 @@
 Cabal-Version:  3.0
 Name:           fficxx-test
-Version:        0.7.0.0
+Version:        0.7.0.1
 Synopsis:       test for fficxx
 Description:    test for fficxx (with stdcxx)
 License:        BSD-2-Clause

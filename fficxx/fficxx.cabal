@@ -1,6 +1,6 @@
 Cabal-Version:  3.0
 Name:           fficxx
-Version:        0.7.0.0
+Version:        0.7.0.1
 Synopsis:       Automatic C++ binding generation
 Description:    fficxx is an automatic haskell Foreign Function Interface (FFI) generator to C++.
 License:        BSD-2-Clause
