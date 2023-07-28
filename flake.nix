@@ -65,6 +65,9 @@
             packages = ps: [ ps.fficxx ps.fficxx-runtime ];
             buildInputs = [ pkgs.cabal-install pkgs.ormolu pkgs.nixfmt pyenv ];
             withHoogle = false;
+            shellHook = ''
+              export PS1="\n[fficxx:\w]$ \0"  
+            '';
           };
 
         supportedCompilers = [ "ghc902" "ghc924" "ghc942" ];
