@@ -4,13 +4,12 @@
 module FFICXX.Runtime.CodeGen.Cxx where
 
 import Data.Functor.Identity (Identity)
-import Data.Hashable (Hashable)
 import Data.Kind (Type)
 import Data.List (intercalate)
 import Data.String (IsString (..))
 
 newtype HeaderName = HdrName {unHdrName :: String}
-  deriving (Hashable, Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 instance IsString HeaderName where
   fromString = HdrName

@@ -1,5 +1,9 @@
 # Changelog for fficxx
 
+## 0.7.0.1
+
+- Remove unnecessary dependency (#210)
+
 ## 0.7.0.0
 
 - Show generated module dependency graph (#203)

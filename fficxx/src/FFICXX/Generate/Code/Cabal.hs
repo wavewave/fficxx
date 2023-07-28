@@ -130,8 +130,7 @@ genOtherModules _cmods = [""]
 genPkgDeps :: [CabalName] -> [String]
 genPkgDeps cs =
   [ "base > 4 && < 5",
-    "fficxx >= 0.7",
-    "fficxx-runtime >= 0.7",
+    "fficxx-runtime >= 0.7.0.1",
     "template-haskell"
   ]
     ++ map unCabalName cs
