@@ -24,7 +24,6 @@ Library
   Build-Depends:
                  base == 4.*,
                  bytestring,
-                 hashable,
                  template-haskell
   Exposed-Modules:
                    FFICXX.Runtime.Cast

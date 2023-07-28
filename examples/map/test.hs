@@ -12,6 +12,8 @@ import Foreign.Ptr
 import STD.CppString
 import qualified STD.Map.TH as TH
 import STD.Map.Template
+import STD.MapIterator.Template
+import STD.Pair.Template
 
 TH.genMapInstanceFor
   CPrim
