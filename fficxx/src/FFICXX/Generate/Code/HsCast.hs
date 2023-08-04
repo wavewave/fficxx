@@ -32,16 +32,16 @@ castBody =
 genHsFrontInstCastable :: Class -> Maybe (Decl ())
 genHsFrontInstCastable c
   | (not . isAbstractClass) c =
-    let iname = typeclassName c
-        (_, rname) = hsClassName c
-        a = mkTVar "a"
-        ctxt = cxTuple [classA (unqual iname) [a], classA (unqual "FPtr") [a]]
-     in Just (mkInstance ctxt "Castable" [a, tyapp tyPtr (tycon rname)] castBody)
+      let iname = typeclassName c
+          (_, rname) = hsClassName c
+          a = mkTVar "a"
+          ctxt = cxTuple [classA (unqual iname) [a], classA (unqual "FPtr") [a]]
+       in Just (mkInstance ctxt "Castable" [a, tyapp tyPtr (tycon rname)] castBody)
   | otherwise = Nothing
 
 genHsFrontInstCastableSelf :: Class -> Maybe (Decl ())
 genHsFrontInstCastableSelf c
   | (not . isAbstractClass) c =
-    let (cname, rname) = hsClassName c
-     in Just (mkInstance cxEmpty "Castable" [tycon cname, tyapp tyPtr (tycon rname)] castBody)
+      let (cname, rname) = hsClassName c
+       in Just (mkInstance cxEmpty "Castable" [tycon cname, tyapp tyPtr (tycon rname)] castBody)
   | otherwise = Nothing

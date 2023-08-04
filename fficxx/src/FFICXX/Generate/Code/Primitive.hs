@@ -632,7 +632,6 @@ tmplReturnCType b (TemplateParamPointer t) = case b of
 -- Template Member Function --
 -- ---------------------------
 
--- |
 tmplMemFuncArgToCTypVar :: Class -> Arg -> (R.CType Identity, R.CName Identity)
 tmplMemFuncArgToCTypVar _ (Arg (CT ctyp isconst) varname) =
   (ctypToCType ctyp isconst, R.sname varname)
@@ -658,7 +657,6 @@ tmplMemFuncArgToCTypVar _ (Arg (TemplateParam t) v) = (R.CTSimple (R.CName [R.Na
 tmplMemFuncArgToCTypVar _ (Arg (TemplateParamPointer t) v) = (R.CTSimple (R.CName [R.NamePart t, R.NamePart "_p"]), R.sname v)
 tmplMemFuncArgToCTypVar _ _ = error "tmplMemFuncArgToString: undefined"
 
--- |
 tmplMemFuncReturnCType :: Class -> Types -> R.CType Identity
 tmplMemFuncReturnCType _ (CT ctyp isconst) = ctypToCType ctyp isconst
 tmplMemFuncReturnCType _ Void = R.CTVoid
@@ -674,7 +672,6 @@ tmplMemFuncReturnCType _ (TemplateType _) = R.CTStar R.CTVoid
 tmplMemFuncReturnCType _ (TemplateParam t) = R.CTSimple $ R.CName [R.NamePart t, R.NamePart "_p"]
 tmplMemFuncReturnCType _ (TemplateParamPointer t) = R.CTSimple $ R.CName [R.NamePart t, R.NamePart "_p"]
 
--- |
 convertC2HS :: CTypes -> Type ()
 convertC2HS CTBool = tycon "CBool"
 convertC2HS CTChar = tycon "CChar"
@@ -719,7 +716,6 @@ convertC2HS (CEnum t _) = convertC2HS t
 convertC2HS (CPointer t) = tyapp (tycon "Ptr") (convertC2HS t)
 convertC2HS (CRef t) = tyapp (tycon "Ptr") (convertC2HS t)
 
--- |
 convertCpp2HS :: Maybe Class -> Types -> Type ()
 convertCpp2HS _c Void = unit_tycon
 convertCpp2HS (Just c) SelfType = tycon ((fst . hsClassName) c)
@@ -747,7 +743,6 @@ convertCpp2HS _c (TemplateType t) =
 convertCpp2HS _c (TemplateParam p) = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p) = mkTVar p
 
--- |
 convertCpp2HS4Tmpl ::
   -- | self
   Type () ->

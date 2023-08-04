@@ -93,7 +93,6 @@ getFFIName = either tclass_name ffiClassName
 getPkgName :: Either TemplateClass Class -> CabalName
 getPkgName = cabal_pkgname . getcabal
 
--- |
 extractClassFromType :: Types -> [Either TemplateClass Class]
 extractClassFromType Void = []
 extractClassFromType SelfType = []
@@ -152,7 +151,6 @@ data Dep4Func = Dep4Func
     argumentDependency :: [Either TemplateClass Class]
   }
 
--- |
 extractClassDep :: Function -> Dep4Func
 extractClassDep (Constructor args _) =
   Dep4Func [] (concatMap classFromArg args)
@@ -165,7 +163,6 @@ extractClassDep (Static ret _ args _) =
 extractClassDep (Destructor _) =
   Dep4Func [] []
 
--- |
 extractClassDepForTmplFun :: TemplateFunction -> Dep4Func
 extractClassDepForTmplFun (TFun ret _ _ args) =
   Dep4Func (extractClassFromType ret) (concatMap classFromArg args)
@@ -176,12 +173,10 @@ extractClassDepForTmplFun TFunDelete =
 extractClassDepForTmplFun (TFunOp ret _ e) =
   Dep4Func (extractClassFromType ret) (concatMap classFromArg $ argsFromOpExp e)
 
--- |
 extractClassDep4TmplMemberFun :: TemplateMemberFunction -> Dep4Func
 extractClassDep4TmplMemberFun (TemplateMemberFunction {..}) =
   Dep4Func (extractClassFromType tmf_ret) (concatMap classFromArg tmf_args)
 
--- |
 extractClassDepForTLOrdinary :: TLOrdinary -> Dep4Func
 extractClassDepForTLOrdinary f =
   Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType . arg_type) args)
@@ -193,7 +188,6 @@ extractClassDepForTLOrdinary f =
       TopLevelFunction {..} -> toplevelfunc_args
       TopLevelVariable {} -> []
 
--- |
 extractClassDepForTLTemplate :: TLTemplate -> Dep4Func
 extractClassDepForTLTemplate f =
   Dep4Func (extractClassFromType ret) (concatMap (extractClassFromType . arg_type) args)
@@ -273,7 +267,8 @@ calculateDependency (Right (CSTInterface, cls)) =
       inplaces =
         fmap (bimap (TCSTTemplate,) (CSTInterface,)) $
           L.nub $
-            filter (`isInSamePackageButNotInheritedBy` Right cls) $ argDepClasses
+            filter (`isInSamePackageButNotInheritedBy` Right cls) $
+              argDepClasses
    in rawSelf : (raws ++ exts ++ inplaces)
 calculateDependency (Right (CSTCast, cls)) = [Right (CSTRawType, cls), Right (CSTInterface, cls)]
 calculateDependency (Right (CSTImplementation, cls)) =
@@ -300,7 +295,6 @@ calculateDependency (Right (CSTImplementation, cls)) =
           (dsNonParents <> dsParents)
    in depsSelf <> deps
 
--- |
 isNotInSamePackageWith ::
   Either TemplateClass Class ->
   Either TemplateClass Class ->
@@ -317,7 +311,6 @@ isInSamePackageButNotInheritedBy ::
 isInSamePackageButNotInheritedBy x y =
   x /= y && not (x `elem` getparents y) && (getPkgName x == getPkgName y)
 
--- |
 mkModuleDepCpp :: Either TemplateClass Class -> [Either TemplateClass Class]
 mkModuleDepCpp y@(Right c) =
   let fs = class_funcs c
@@ -352,7 +345,6 @@ mkTopLevelDep (TLTemplate f) =
       mkTags (Right cls) = fmap (Right . (,cls)) [CSTRawType, CSTCast, CSTInterface]
    in concatMap mkTags allDeps
 
--- |
 mkClassModule ::
   (ModuleUnit -> ModuleUnitImports) ->
   [(String, [String])] ->
@@ -369,12 +361,10 @@ mkClassModule getImports extra c =
       cmExtraImport = fromMaybe [] (lookup (class_name c) extra)
     }
 
--- |
 findModuleUnitImports :: ModuleUnitMap -> ModuleUnit -> ModuleUnitImports
 findModuleUnitImports m u =
   fromMaybe emptyModuleUnitImports (HM.lookup u (unModuleUnitMap m))
 
--- |
 mkTCM ::
   TemplateClassImportHeader ->
   TemplateClassModule
@@ -382,7 +372,6 @@ mkTCM tcih =
   let t = tcihTClass tcih
    in TCM (getTClassModuleBase t) tcih
 
--- |
 mkPackageConfig ::
   -- | (package name,getImports)
   (CabalName, ModuleUnit -> ModuleUnitImports) ->
@@ -408,23 +397,20 @@ mkPackageConfig (pkgname, getImports) (cs, fs, ts, extra) acincs acsrcs =
           pcfg_additional_c_srcs = acsrcs
         }
 
--- |
 mkPkgHeaderFileName :: Class -> HeaderName
 mkPkgHeaderFileName c =
   HdrName
     ( (cabal_cheaderprefix . class_cabal) c
         <> fst (hsClassName c)
-        <.> "h"
+          <.> "h"
     )
 
--- |
 mkPkgCppFileName :: Class -> String
 mkPkgCppFileName c =
   (cabal_cheaderprefix . class_cabal) c
     <> fst (hsClassName c)
-    <.> "cpp"
+      <.> "cpp"
 
--- |
 mkPkgIncludeHeadersInH :: Class -> [HeaderName]
 mkPkgIncludeHeadersInH c =
   let pkgname = (cabal_pkgname . class_cabal) c
@@ -432,11 +418,9 @@ mkPkgIncludeHeadersInH c =
       extheaders = L.nub . map ((<> "Type.h") . unCabalName . getPkgName) $ extclasses
    in map mkPkgHeaderFileName (class_allparents c) <> map HdrName extheaders
 
--- |
 mkPkgIncludeHeadersInCPP :: Class -> [HeaderName]
 mkPkgIncludeHeadersInCPP = map mkPkgHeaderFileName . rights . mkModuleDepCpp . Right
 
--- |
 mkCIH ::
   -- | (mk namespace and include headers)
   (ModuleUnit -> ModuleUnitImports) ->

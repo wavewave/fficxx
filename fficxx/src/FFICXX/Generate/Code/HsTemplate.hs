@@ -234,7 +234,6 @@ genImportInTemplate :: TemplateClass -> [ImportDecl ()]
 genImportInTemplate t0 =
   fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTemplate, t0)
 
--- |
 genTmplInterface :: TemplateClass -> [Decl ()]
 genTmplInterface t =
   [ mkData rname (map mkTBind tps) [] Nothing,
@@ -266,12 +265,10 @@ genTmplInterface t =
         insDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
       ]
 
--- |
 genImportInTH :: TemplateClass -> [ImportDecl ()]
 genImportInTH t0 =
   fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTH, t0)
 
--- |
 genTmplImplementation :: TemplateClass -> [Decl ()]
 genTmplImplementation t =
   concatMap gen (tclass_funcs t) ++ concatMap genV (tclass_vars t)
@@ -313,7 +310,6 @@ genTmplImplementation t =
           f_s = tmplAccessorToTFun vf Setter
        in gen f_g ++ gen f_s
 
--- |
 genTmplInstance ::
   TemplateClassImportHeader ->
   [Decl ()]
@@ -386,7 +382,8 @@ genTmplInstance tcih =
     gen prefix nm f n =
       generator
         (p (prefix <> show n))
-        ( v nm `app` strE (hsTmplFuncName t f)
+        ( v nm
+            `app` strE (hsTmplFuncName t f)
             `app` v (hsTmplFuncNameTH t f)
             `app` typs_v
             `app` v "suffix"
@@ -502,7 +499,6 @@ genTmplInstance tcih =
 -- top-level --
 ---------------
 
--- |
 genTLTemplateInterface :: TLTemplate -> [Decl ()]
 genTLTemplateInterface t =
   [ mkClass cxEmpty (firstUpper (topleveltfunc_name t)) (map mkTBind tps) methods
@@ -514,7 +510,6 @@ genTLTemplateInterface t =
     sigdecl = mkFunSig (topleveltfunc_name t) $ foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
     methods = [clsDecl sigdecl]
 
--- |
 genTLTemplateImplementation :: TLTemplate -> [Decl ()]
 genTLTemplateImplementation t =
   mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
@@ -627,7 +622,8 @@ genTLTemplateInstance tih t =
     genstmt prefix n =
       generator
         (p (prefix <> show n))
-        ( v "mkFunc" `app` strE (topleveltfunc_name t)
+        ( v "mkFunc"
+            `app` strE (topleveltfunc_name t)
             `app` v ("t_" <> topleveltfunc_name t)
             `app` typs_v
             `app` v "suffix"
