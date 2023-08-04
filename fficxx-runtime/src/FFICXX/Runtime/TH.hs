@@ -51,11 +51,9 @@ data FunctionParamInfo = FPInfo
 con :: String -> Type
 con = ConT . mkNameS
 
--- |
 mkInstance :: Cxt -> Type -> [Dec] -> Dec
 mkInstance = InstanceD Nothing
 
--- |
 mkTFunc :: (types, String, String -> String, types -> Q Type) -> Q Exp
 mkTFunc (typs, suffix, nf, tyf) =
   do
@@ -66,7 +64,6 @@ mkTFunc (typs, suffix, nf, tyf) =
     addTopDecls [d]
     [|$(varE n)|]
 
--- |
 mkMember :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
 mkMember fname f typ suffix = do
   let x = mkNameS "x"
@@ -74,7 +71,6 @@ mkMember fname f typ suffix = do
   pure $
     FunD (mkNameS fname) [Clause [VarP x] (NormalB (AppE e (VarE x))) []]
 
--- |
 mkNew :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
 mkNew fname f typ suffix = do
   e <- f typ suffix
@@ -83,11 +79,9 @@ mkNew fname f typ suffix = do
       (mkNameS fname)
       [Clause [] (NormalB e) []]
 
--- |
 mkDelete :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
 mkDelete = mkMember
 
--- |
 mkFunc :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
 mkFunc fname f typ suffix = do
   let x = mkNameS "x"
