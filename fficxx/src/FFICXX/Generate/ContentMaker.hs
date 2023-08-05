@@ -580,12 +580,12 @@ buildModuleHs m =
   where
     c = cihClass (cmCIH m)
 
-buildEnumHs ::
+buildEnumHsc ::
   AnnotateMap ->
   String ->
   [EnumType] ->
   Module ()
-buildEnumHs amap modname enums =
+buildEnumHsc amap modname enums =
   mkModuleE modname [] [] [] body
   where
     body = runReader (traverse genHsEnumDecl enums) amap

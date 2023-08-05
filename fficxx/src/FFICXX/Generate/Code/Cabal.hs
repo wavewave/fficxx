@@ -111,7 +111,12 @@ genExposedModules summarymod (cmods, tmods) =
           $ cmods
       template = map ((<> ".Template") . tcmModule) tmods
       th = map ((<> ".TH") . tcmModule) tmods
-   in [summarymod, summarymod <> ".Ordinary", summarymod <> ".Template", summarymod <> ".TH"]
+   in [ summarymod,
+        summarymod <> ".Ordinary",
+        summarymod <> ".Template",
+        summarymod <> ".TH",
+        summarymod <> ".Enum"
+      ]
         <> cmodstrs
         <> rawType
         <> ffi
@@ -137,7 +142,7 @@ genPkgDeps cs =
 
 cabalTemplate :: Text
 cabalTemplate =
-  "Cabal-version:  3.0\n\
+  "Cabal-version:  3.6\n\
   \Name:                $pkgname\n\
   \Version:     $version\n\
   \Synopsis:    $synopsis\n\
@@ -160,7 +165,7 @@ cabalTemplate =
   \  default-language: Haskell2010\n\
   \  hs-source-dirs: src\n\
   \  ghc-options:  -Wall -funbox-strict-fields -fno-warn-unused-do-bind -fno-warn-orphans -fno-warn-unused-imports\n\
-  \  ghc-prof-options: -caf-all -auto-all\n\
+  \  hsc2hs-options: --cc=c++ --ld=c++\n\
   \  cxx-options: $cxxOptions\n\
   \  Build-Depends: $pkgdeps\n\
   \  Exposed-Modules:\n\
