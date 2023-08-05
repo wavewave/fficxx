@@ -135,7 +135,6 @@ genPkgDeps cs =
   ]
     ++ map unCabalName cs
 
--- |
 cabalTemplate :: Text
 cabalTemplate =
   "Cabal-version:  3.0\n\
@@ -261,7 +260,6 @@ genCabalFile GeneratedCabalInfo {..} =
           ("pkgconfigDepends", T.intercalate ", " gci_pkgconfigDepends)
         ]
 
--- |
 buildCabalFile ::
   Cabal ->
   String ->
@@ -278,7 +276,6 @@ buildCabalFile cabal summarymodule pkgconfig extralibs cxxopts cabalfile = do
       txt = genCabalFile cinfo
   TIO.writeFile cabalfile txt
 
--- |
 buildJSONFile ::
   Cabal ->
   String ->

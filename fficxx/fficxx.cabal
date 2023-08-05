@@ -1,6 +1,6 @@
 Cabal-Version:  3.0
 Name:           fficxx
-Version:        0.7.0.1
+Version:        0.8.0.0
 Synopsis:       Automatic C++ binding generation
 Description:    fficxx is an automatic haskell Foreign Function Interface (FFI) generator to C++.
 License:        BSD-2-Clause
@@ -8,7 +8,7 @@ License-file:   LICENSE
 Author:         Ian-Woo Kim
 Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>
 Build-Type:     Simple
-Tested-With:    GHC == 9.0.2 || == 9.2.4 || == 9.4.2
+Tested-With:    GHC == 9.2.7 || == 9.4.5 || == 9.6.2
 Category:       FFI Tools
 Extra-Source-Files:
   ChangeLog.md
@@ -25,12 +25,9 @@ Library
                , aeson-pretty
                , array
                , bytestring
-               , Cabal
                , containers
-               , data-default
                , directory
                , dotgen
-               , errors
                , fficxx-runtime
                , filepath>1
                , hashable
@@ -71,6 +68,7 @@ Library
                FFICXX.Generate.Type.Module
                FFICXX.Generate.Type.PackageInterface
   ghc-options: -Wall
+               -Wunused-packages
                -funbox-strict-fields
                -fno-warn-unused-do-bind
                -fno-warn-missing-signatures

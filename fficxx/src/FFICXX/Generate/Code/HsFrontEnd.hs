@@ -132,12 +132,12 @@ genHsFrontDecl isHsBoot c = do
 genHsFrontInst :: Class -> Class -> [Decl ()]
 genHsFrontInst parent child
   | (not . isAbstractClass) child =
-    let idecl = mkInstance cxEmpty (typeclassName parent) [convertCpp2HS (Just child) SelfType] body
-        defn f = mkBind1 (hsFuncName child f) [] rhs Nothing
-          where
-            rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName child f))
-        body = map (insDecl . defn) . virtualFuncs . class_funcs $ parent
-     in [idecl]
+      let idecl = mkInstance cxEmpty (typeclassName parent) [convertCpp2HS (Just child) SelfType] body
+          defn f = mkBind1 (hsFuncName child f) [] rhs Nothing
+            where
+              rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName child f))
+          body = map (insDecl . defn) . virtualFuncs . class_funcs $ parent
+       in [idecl]
   | otherwise = []
 
 ---------------------
@@ -342,7 +342,7 @@ mkImportWithDepCycles depCycles self imported =
    in case mloc of
         Just (idxSelf, idxImported)
           | idxImported > idxSelf ->
-            mkImportSrc imported
+              mkImportSrc imported
         _ -> mkImport imported
 
 genImportInInterface :: Bool -> DepCycles -> ClassModule -> [ImportDecl ()]
@@ -359,7 +359,6 @@ genImportInInterface isHsBoot depCycles m =
            in fmap mkImport imported'
         else fmap (mkImportWithDepCycles depCycles modSelf . subModuleName) imported
 
--- |
 genImportInCast :: ClassModule -> [ImportDecl ()]
 genImportInCast m =
   fmap (mkImport . subModuleName) $ cmImportedSubmodulesForCast m

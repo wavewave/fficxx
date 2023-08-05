@@ -70,7 +70,7 @@
             '';
           };
 
-        supportedCompilers = [ "ghc902" "ghc924" "ghc942" ];
+        supportedCompilers = [ "ghc927" "ghc945" "ghc962" ];
       in {
         packages =
           pkgs.lib.genAttrs supportedCompilers (compiler: hpkgsFor compiler);

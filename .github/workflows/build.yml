@@ -15,36 +15,38 @@ jobs:
       uses: cachix/install-nix-action@v16
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - name: build fficxx-runtime (GHC 9.4.2)
+    - name: build fficxx-runtime (GHC 9.6.2)
       run: |
-        nix build --print-build-logs .#ghc942.fficxx-runtime
-    - name: build fficxx (GHC 9.4.2)
+        nix build --print-build-logs .#ghc962.fficxx-runtime
+    - name: build fficxx (GHC 9.6.2)
       run: |
-        nix build --print-build-logs .#ghc942.fficxx
-    - name: build stdcxx (GHC 9.4.2)
+        nix build --print-build-logs .#ghc945.fficxx
+    - name: build stdcxx (GHC 9.6.2)
       run: |
-        nix build --print-build-logs .#ghc942.stdcxx
-    - name: build fficxx-test (GHC 9.4.2)
+        nix build --print-build-logs .#ghc962.stdcxx
+    - name: build fficxx-test (GHC 9.6.2)
       run: |
-        nix build --print-build-logs .#ghc942.fficxx-test
-    - name: build fficxx-multipkg-test (GHC 9.4.2)
+        nix build --print-build-logs .#ghc962.fficxx-test
+    - name: build fficxx-multipkg-test (GHC 9.6.2)
       run: |
-        nix build --print-build-logs .#ghc942.fficxx-multipkg-test
-    - name: build tmf-test (GHC 9.4.2)
+        nix build --print-build-logs .#ghc962.fficxx-multipkg-test
+    - name: build tmf-test (GHC 9.6.2)
       run: |
-        nix build --print-build-logs .#ghc942.tmf-test
-    - name: build tmpl-dep-test (GHC 9.4.2)
+        nix build --print-build-logs .#ghc962.tmf-test
+    - name: build tmpl-dep-test (GHC 9.6.2)
       run: |
-        nix build --print-build-logs .#ghc942.tmpl-dep-test
-    - name: build tmpl-dup-inst (GHC 9.4.2)
+        nix build --print-build-logs .#ghc962.tmpl-dep-test
+    - name: build tmpl-dup-inst (GHC 9.6.2)
       run: |
-        nix build --print-build-logs .#ghc942.tmpl-dup-inst
-    - name: build tmpl-toplevel-test (GHC 9.4.2)
+        nix build --print-build-logs .#ghc962.tmpl-dup-inst
+    - name: build tmpl-toplevel-test (GHC 9.6.2)
       run: |
-        nix build --print-build-logs .#ghc942.tmpl-toplevel-test
+        nix build --print-build-logs .#ghc962.tmpl-toplevel-test
   format:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-      # ormolu 0.3.0.1
-      - uses: mrkkrp/ormolu-action@v4
+      # ormolu 0.5.0.1
+      - uses: mrkkrp/ormolu-action@v14
+        with:
+          version: 0.5.0.1

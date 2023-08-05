@@ -341,7 +341,6 @@ genTmplVarCpp b t@TmplCls {..} var@(Variable (Arg {})) =
                 (R.CVar (R.CName (R.NamePart (tclass_name <> "_" <> ffiTmplFuncName f <> "_") : nsuffix)))
             ]
 
--- |
 genTmplClassCpp ::
   IsCPrimitive ->
   TemplateClass ->
@@ -363,7 +362,6 @@ genTmplClassCpp b TmplCls {..} (fs, vs) =
       map macro1 fs
         ++ (map macro1 . concatMap (\v -> [tmplAccessorToTFun v Getter, tmplAccessorToTFun v Setter])) vs
 
--- |
 returnCpp ::
   IsCPrimitive ->
   Types ->
@@ -499,60 +497,60 @@ returnCpp b ret caller =
 funcToDecl :: Class -> Function -> R.CFunDecl Identity
 funcToDecl c func
   | isNewFunc func || isStaticFunc func =
-    let ret = returnCType (genericFuncRet func)
-        fname =
-          R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
-        args = argsToCTypVarNoSelf (genericFuncArgs func)
-     in R.CFunDecl ret fname args
+      let ret = returnCType (genericFuncRet func)
+          fname =
+            R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
+          args = argsToCTypVarNoSelf (genericFuncArgs func)
+       in R.CFunDecl ret fname args
   | otherwise =
-    let ret = returnCType (genericFuncRet func)
-        fname =
-          R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
-        args = argsToCTypVar (genericFuncArgs func)
-     in R.CFunDecl ret fname args
+      let ret = returnCType (genericFuncRet func)
+          fname =
+            R.CName [R.NamePart "Type", R.NamePart ("_" <> aliasedFuncName c func)]
+          args = argsToCTypVar (genericFuncArgs func)
+       in R.CFunDecl ret fname args
 
 funcToDef :: Class -> Function -> R.CStatement Identity
 funcToDef c func
   | isNewFunc func =
-    let body =
-          [ R.CInit
-              (R.CVarDecl (R.CTStar (R.CTSimple (R.sname "Type"))) (R.sname "newp"))
-              (R.CNew (R.sname "Type") $ map argToCallCExp (genericFuncArgs func)),
-            R.CReturn $
-              R.CTApp
-                (R.sname "from_nonconst_to_nonconst")
-                [R.CTSimple (R.CName [R.NamePart "Type", R.NamePart "_t"]), R.CTSimple (R.sname "Type")]
-                [R.CVar (R.sname "newp")]
-          ]
-     in R.CDefinition Nothing (funcToDecl c func) body
+      let body =
+            [ R.CInit
+                (R.CVarDecl (R.CTStar (R.CTSimple (R.sname "Type"))) (R.sname "newp"))
+                (R.CNew (R.sname "Type") $ map argToCallCExp (genericFuncArgs func)),
+              R.CReturn $
+                R.CTApp
+                  (R.sname "from_nonconst_to_nonconst")
+                  [R.CTSimple (R.CName [R.NamePart "Type", R.NamePart "_t"]), R.CTSimple (R.sname "Type")]
+                  [R.CVar (R.sname "newp")]
+            ]
+       in R.CDefinition Nothing (funcToDecl c func) body
   | isDeleteFunc func =
-    let body =
-          [ R.CDelete $
-              R.CTApp
-                (R.sname "from_nonconst_to_nonconst")
-                [R.CTSimple (R.sname "Type"), R.CTSimple (R.CName [R.NamePart "Type", R.NamePart "_t"])]
-                [R.CVar (R.sname "p")]
-          ]
-     in R.CDefinition Nothing (funcToDecl c func) body
+      let body =
+            [ R.CDelete $
+                R.CTApp
+                  (R.sname "from_nonconst_to_nonconst")
+                  [R.CTSimple (R.sname "Type"), R.CTSimple (R.CName [R.NamePart "Type", R.NamePart "_t"])]
+                  [R.CVar (R.sname "p")]
+            ]
+       in R.CDefinition Nothing (funcToDecl c func) body
   | isStaticFunc func =
-    let body =
-          returnCpp NonCPrim (genericFuncRet func) $
-            R.CApp (R.CVar (R.sname (cppFuncName c func))) (map argToCallCExp (genericFuncArgs func))
-     in R.CDefinition Nothing (funcToDecl c func) body
+      let body =
+            returnCpp NonCPrim (genericFuncRet func) $
+              R.CApp (R.CVar (R.sname (cppFuncName c func))) (map argToCallCExp (genericFuncArgs func))
+       in R.CDefinition Nothing (funcToDecl c func) body
   | otherwise =
-    let caller =
-          R.CBinOp
-            R.CArrow
-            ( R.CApp
-                ( R.CEMacroApp
-                    (R.sname "TYPECASTMETHOD")
-                    [R.sname "Type", R.sname (aliasedFuncName c func), R.sname (class_name c)]
-                )
-                [R.CVar (R.sname "p")]
-            )
-            (R.CApp (R.CVar (R.sname (cppFuncName c func))) (map argToCallCExp (genericFuncArgs func)))
-        body = returnCpp NonCPrim (genericFuncRet func) caller
-     in R.CDefinition Nothing (funcToDecl c func) body
+      let caller =
+            R.CBinOp
+              R.CArrow
+              ( R.CApp
+                  ( R.CEMacroApp
+                      (R.sname "TYPECASTMETHOD")
+                      [R.sname "Type", R.sname (aliasedFuncName c func), R.sname (class_name c)]
+                  )
+                  [R.CVar (R.sname "p")]
+              )
+              (R.CApp (R.CVar (R.sname (cppFuncName c func))) (map argToCallCExp (genericFuncArgs func)))
+          body = returnCpp NonCPrim (genericFuncRet func) caller
+       in R.CDefinition Nothing (funcToDecl c func) body
 
 -- template function declaration and definition
 
@@ -674,7 +672,6 @@ topLevelTemplateFunToDef b t@TopLevelTemplateFunction {..} =
           typparams
           (map (tmplArgToCallCExp b) topleveltfunc_args)
 
--- |
 tmplVarToDef ::
   IsCPrimitive ->
   TemplateClass ->

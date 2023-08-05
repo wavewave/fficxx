@@ -270,7 +270,8 @@ renderCMacro (Include (HdrName hdr)) = "\n#include \"" <> hdr <> "\"\n"
 renderCMacro (Pragma param) = "\n#pragma " <> renderPragmaParam param <> "\n"
 renderCMacro (Undef n) = "\n#undef " <> renderCName n <> "\n"
 renderCMacro (Define m ts stmts) =
-  "\n#define " <> renderCName m
+  "\n#define "
+    <> renderCName m
     <> case ts of
       [] -> " "
       _ -> "(" <> intercalate ", " (map renderCName ts) <> ") \\\n"

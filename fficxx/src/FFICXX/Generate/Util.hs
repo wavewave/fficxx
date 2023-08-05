@@ -70,8 +70,8 @@ intercalateWith f mapper x
 intercalateWithM :: (Monad m) => (String -> String -> String) -> (a -> m String) -> [a] -> m String
 intercalateWithM f mapper x
   | not (null x) = do
-    ms <- mapM mapper x
-    return (foldl1 f ms)
+      ms <- mapM mapper x
+      return (foldl1 f ms)
   | otherwise = return ""
 
 -- TODO: deprecate this and use contextT

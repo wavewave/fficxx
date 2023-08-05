@@ -133,11 +133,9 @@ csrcDir installbasedir = installbasedir </> "csrc"
 
 ---- common function for daughter
 
--- |
 mkGlobal :: [Class] -> ClassGlobal
 mkGlobal = ClassGlobal <$> mkDaughterSelfMap <*> mkDaughterMap
 
--- |
 buildDaughterDef ::
   ((String, [Class]) -> String) ->
   DaughterMap ->
@@ -147,11 +145,9 @@ buildDaughterDef f m =
       f' (x, xs) = f (x, filter (not . isAbstractClass) xs)
    in (concatMap f' lst)
 
--- |
 buildParentDef :: ((Class, Class) -> [R.CStatement Identity]) -> Class -> [R.CStatement Identity]
 buildParentDef f cls = concatMap (\p -> f (p, cls)) . class_allparents $ cls
 
--- |
 mkProtectedFunctionList :: Class -> [R.CMacro Identity]
 mkProtectedFunctionList c =
   map (\x -> R.Define (R.sname ("IS_" <> class_name c <> "_" <> x <> "_PROTECTED")) [] [R.CVerbatim "()"])
@@ -159,7 +155,6 @@ mkProtectedFunctionList c =
     . class_protected
     $ c
 
--- |
 buildTypeDeclHeader ::
   [Class] ->
   String
@@ -171,7 +166,6 @@ buildTypeDeclHeader classes =
         R.ExternC $
           [R.Pragma R.Once, R.EmptyLine] <> typeDeclBodyStmts
 
--- |
 buildDeclHeader ::
   -- | C prefix
   String ->
@@ -211,7 +205,6 @@ buildDeclHeader cprefix header =
             <> [R.EmptyLine]
             <> map R.CRegular classDeclStmts
 
--- |
 buildDefMain ::
   ClassImportHeader ->
   String
@@ -267,7 +260,6 @@ buildDefMain cih =
             <> cppBodyStmts
         )
 
--- |
 buildTopLevelHeader ::
   -- | C prefix
   String ->
@@ -285,7 +277,6 @@ buildTopLevelHeader cprefix tih =
             <> [R.EmptyLine]
             <> map R.CRegular declBodyStmts
 
--- |
 buildTopLevelCppDef :: TopLevelImportHeader -> String
 buildTopLevelCppDef tih =
   let cihs = tihClassDep tih
@@ -335,7 +326,6 @@ buildTopLevelCppDef tih =
                ]
         )
 
--- |
 buildFFIHsc :: ClassModule -> Module ()
 buildFFIHsc m =
   mkModule
@@ -356,7 +346,6 @@ buildFFIHsc m =
         <> genExtraImport m
     hscBody = genHsFFI (cmCIH m)
 
--- |
 buildRawTypeHs :: ClassModule -> Module ()
 buildRawTypeHs m =
   mkModule
@@ -383,7 +372,6 @@ buildRawTypeHs m =
       let c = cihClass (cmCIH m)
        in if isAbstractClass c then [] else hsClassRawType c
 
--- |
 buildInterfaceHs ::
   AnnotateMap ->
   DepCycles ->
@@ -422,7 +410,6 @@ buildInterfaceHs amap depCycles m =
         <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
         <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
 
--- |
 buildInterfaceHsBoot :: DepCycles -> ClassModule -> Module ()
 buildInterfaceHsBoot depCycles m =
   mkModule
@@ -455,7 +442,6 @@ buildInterfaceHsBoot depCycles m =
     hsbootBody =
       runReader (mapM (genHsFrontDecl True) [c]) M.empty
 
--- |
 buildCastHs :: ClassModule -> Module ()
 buildCastHs m =
   mkModule
@@ -483,7 +469,6 @@ buildCastHs m =
       mapMaybe genHsFrontInstCastable classes
         <> mapMaybe genHsFrontInstCastableSelf classes
 
--- |
 buildImplementationHs :: AnnotateMap -> ClassModule -> Module ()
 buildImplementationHs amap m =
   mkModule
@@ -600,13 +585,11 @@ buildTHHs m =
     tmplImpls = genTmplImplementation t
     tmplInsts = genTmplInstance (tcmTCIH m)
 
--- |
 buildModuleHs :: ClassModule -> Module ()
 buildModuleHs m = mkModuleE (cmModule m) [] (genExport c) (genImportInModule c) []
   where
     c = cihClass (cmCIH m)
 
--- |
 buildTopLevelHs ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
@@ -655,7 +638,6 @@ buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
       map (genTopLevelFFI tih) (filterTLOrdinary tfns)
         ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
 
--- |
 buildTopLevelTemplateHs ::
   String ->
   TopLevelImportHeader ->
@@ -691,7 +673,6 @@ buildTopLevelTemplateHs modname tih =
         ++ concatMap genImportForTLTemplate tfns
     pkgBody = concatMap genTLTemplateInterface tfns
 
--- |
 buildTopLevelTHHs ::
   String ->
   TopLevelImportHeader ->
@@ -735,7 +716,6 @@ buildTopLevelTHHs modname tih =
       concatMap genTLTemplateImplementation tfns
         <> concatMap (genTLTemplateInstance tih) tfns
 
--- |
 buildPackageInterface ::
   PackageInterface ->
   PackageName ->
