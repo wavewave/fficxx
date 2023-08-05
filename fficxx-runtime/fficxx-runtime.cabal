@@ -9,7 +9,7 @@ License-file:   LICENSE
 Author:         Ian-Woo Kim
 Maintainer:     Ian-Woo Kim <ianwookim@gmail.com>
 Build-Type:     Simple
-Tested-With:    GHC == 9.2.7 || == 9.4.5
+Tested-With:    GHC == 9.2.7 || == 9.4.5 || == 9.6.2
 Category:       FFI Tools
 Extra-Source-Files:
   ChangeLog.md
