@@ -1,0 +1,6 @@
+packages:
+  ../../fficxx/
+  ../../fficxx-runtime/
+optional-packages:
+  ./stdcxx/
+  ./proxy-test/

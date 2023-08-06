@@ -1,5 +1,9 @@
-module FFICXX.Generate.Util.HaskellSrcExts
-  ( app,
+{-# LANGUAGE OverloadedStrings #-}
+
+module FFICXX.Generate.Util.GHCExactPrint
+  ( -- * module
+    mkModule,
+    {- app,
     app',
     unqual,
     tycon,
@@ -34,7 +38,6 @@ module FFICXX.Generate.Util.HaskellSrcExts
     mkData,
     mkNewtype,
     mkForImpCcall,
-    mkModule,
     mkModuleE,
     mkImport,
     mkImportExp,
@@ -73,13 +76,88 @@ module FFICXX.Generate.Util.HaskellSrcExts
     if_,
     urhs,
     match,
-    eWildCard,
-    prettyPrint,
+    eWildCard, -}
+
+    -- * utility
+    exactPrint,
   )
 where
 
 import Data.List (foldl')
 import Data.Maybe (maybeToList)
+import Data.String (IsString (fromString))
+import GHC.Hs
+  ( XModulePs (..),
+  )
+import GHC.Hs.Extension
+  ( GhcPs,
+  )
+import GHC.Parser.Annotation
+  ( EpAnn (..),
+    SrcSpanAnn' (SrcSpanAnn),
+    emptyComments,
+    noAnn,
+    noSrcSpanA,
+    spanAsAnchor,
+  )
+import GHC.Types.SrcLoc
+  ( GenLocated (L),
+    mkSrcLoc,
+    mkSrcSpan,
+    srcLocSpan,
+  )
+import qualified Language.Haskell.GHC.ExactPrint as Exact
+import Language.Haskell.Syntax
+  ( HsModule (..),
+    LayoutInfo (..),
+    ModuleName (..),
+  )
+
+mkModule ::
+  String ->
+  -- [ModulePragma ()] ->
+  -- [ImportDecl ()] ->
+  -- [Decl ()] ->
+  HsModule GhcPs
+mkModule name {- pragmas idecls decls -} = result
+  where
+    loc1 = mkSrcLoc "start" 1 1
+    -- loc2 = mkSrcLoc "end" 1 10
+    defAnchor = spanAsAnchor (srcLocSpan loc1) -- (mkSrcSpan loc1 loc2)
+    modName = ModuleName (fromString name)
+    -- mhead = ModuleHead () (ModuleName () n) Nothing Nothing
+    (result, _, _) = Exact.runTransform $ do
+      -- l0 <- Exact.uniqueu
+      l1 <- Exact.uniqueSrcSpanT
+      let ann1 = SrcSpanAnn noAnn l1
+
+      let expr =
+            HsModule
+              { hsmodExt =
+                  XModulePs
+                    { hsmodAnn = EpAnnNotUsed,
+                      hsmodLayout = NoLayoutInfo, -- VirtualBraces 0, -- NoLayoutInfo,
+                      hsmodDeprecMessage = Nothing,
+                      hsmodHaddockModHeader = Nothing
+                    },
+                hsmodName = Just (L ann1 modName),
+                hsmodExports = Nothing, -- Just -- (L noSrcSpanA []), -- Nothing,
+                hsmodImports = [],
+                hsmodDecls = []
+              } --  (Just mhead) pragmas idecls decls -}
+      pure $ Exact.setAnnotationAnchor expr defAnchor emptyComments
+
+--
+
+--
+-- utilities
+--
+
+-- | exact print
+exactPrint :: (Exact.ExactPrint ast) => ast -> String
+exactPrint = Exact.exactPrint . Exact.makeDeltaAst
+
+{-
 import Language.Haskell.Exts
   ( Alt (..),
     Asst (TypeA),
@@ -180,10 +258,11 @@ import Language.Haskell.Exts
         TyTuple,
         TyVar
       ),
-  )
-import qualified Language.Haskell.Exts as LHE
-import Language.Haskell.Exts.Syntax (CName)
+  ) -}
+-- import qualified Language.Haskell.Exts as LHE
+-- import Language.Haskell.Exts.Syntax (CName)
 
+{-
 app :: Exp () -> Exp () -> Exp ()
 app = LHE.app
 
@@ -306,11 +385,6 @@ mkNewtype n tbinds qdecls mderiv = DataDecl () (NewType ()) Nothing declhead qde
 
 mkForImpCcall :: String -> String -> Type () -> Decl ()
 mkForImpCcall quote n typ = ForImp () (CCall ()) (Just (PlayInterruptible ())) (Just quote) (Ident () n) typ
-
-mkModule :: String -> [ModulePragma ()] -> [ImportDecl ()] -> [Decl ()] -> Module ()
-mkModule n pragmas idecls decls = Module () (Just mhead) pragmas idecls decls
-  where
-    mhead = ModuleHead () (ModuleName () n) Nothing Nothing
 
 mkModuleE :: String -> [ModulePragma ()] -> [ExportSpec ()] -> [ImportDecl ()] -> [Decl ()] -> Module ()
 mkModuleE n pragmas exps idecls decls = Module () (Just mhead) pragmas idecls decls
@@ -447,6 +521,4 @@ match p e = Alt () p (urhs e) Nothing
 
 eWildCard :: Int -> EWildcard ()
 eWildCard = EWildcard ()
-
-prettyPrint :: (LHE.Pretty a) => a -> String
-prettyPrint = LHE.prettyPrint
+-}

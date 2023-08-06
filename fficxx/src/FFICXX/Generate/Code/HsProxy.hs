@@ -6,18 +6,22 @@ import qualified Data.List as L (foldr1)
 --
 
 import FFICXX.Generate.Util.HaskellSrcExts
-  ( con,
+  ( app,
+    con,
+    doE,
     inapp,
+    listE,
     mkFun,
     mkVar,
     op,
+    qualStmt,
     qualifier,
+    strE,
     tyapp,
     tycon,
     tylist,
   )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
-import Language.Haskell.Exts.Build (app, doE, listE, qualStmt, strE)
 import Language.Haskell.Exts.Syntax (Decl)
 
 genProxyInstance :: [Decl ()]

@@ -44,9 +44,11 @@ Library
                , haskell-src-exts
   if impl (ghc >= 9.6)
     Build-Depends:
+      ghc >= 9.6,
       ghc-exactprint >= 1.7.0.0
   else
     Build-Depends:
+      ghc,
       ghc-exactprint
 
   Exposed-Modules:
@@ -67,6 +69,7 @@ Library
                FFICXX.Generate.QQ.Verbatim
                FFICXX.Generate.Util
                FFICXX.Generate.Util.DepGraph
+               FFICXX.Generate.Util.GHCExactPrint
                FFICXX.Generate.Util.HaskellSrcExts
                FFICXX.Generate.Type.Annotate
                FFICXX.Generate.Type.Cabal
