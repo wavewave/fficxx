@@ -105,10 +105,9 @@ import FFICXX.Generate.Util.HaskellSrcExts
   )
 import Language.Haskell.Exts.Build (app, letE, name, pApp)
 import Language.Haskell.Exts.Syntax
-  ( Context (CxTuple),
-    Decl (..),
-    ExportSpec (..),
-    ImportDecl (..),
+  ( Decl,
+    ExportSpec,
+    ImportDecl,
   )
 import System.FilePath ((<.>))
 
@@ -120,7 +119,7 @@ genHsFrontDecl isHsBoot c = do
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap
   let cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
       -- for hs-boot, we only have instance head.
-      cdecl' = mkClass (CxTuple () []) (typeclassName c) [mkTBind "a"] []
+      cdecl' = mkClass (cxTuple []) (typeclassName c) [mkTBind "a"] []
       sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
       body = map (clsDecl . sigdecl) . virtualFuncs . class_funcs $ c
   if isHsBoot

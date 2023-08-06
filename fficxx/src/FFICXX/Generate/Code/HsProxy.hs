@@ -18,7 +18,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
   )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import Language.Haskell.Exts.Build (app, doE, listE, qualStmt, strE)
-import Language.Haskell.Exts.Syntax (Decl (..))
+import Language.Haskell.Exts.Syntax (Decl)
 
 genProxyInstance :: [Decl ()]
 genProxyInstance =

@@ -40,8 +40,8 @@ import FFICXX.Generate.Type.Module
     TopLevelImportHeader (..),
   )
 import FFICXX.Generate.Util (moduleDirFile)
+import FFICXX.Generate.Util.HaskellSrcExts (prettyPrint)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
-import Language.Haskell.Exts.Pretty (prettyPrint)
 import System.Directory
   ( copyFile,
     createDirectoryIfMissing,

@@ -99,12 +99,19 @@ import Language.Haskell.Exts
         TyList,
         TyParen,
         TySplice,
+        TyTuple,
         TyVar
       ),
-    app,
     unit_tycon,
   )
+import qualified Language.Haskell.Exts as LHE
 import Language.Haskell.Exts.Syntax (CName)
+
+app :: Exp () -> Exp () -> Exp ()
+app = LHE.app
+
+app' :: String -> String -> Exp ()
+app' x y = App () (mkVar x) (mkVar y)
 
 unqual :: String -> QName ()
 unqual = UnQual () . Ident ()
@@ -140,9 +147,6 @@ qualConDecl = QualConDecl ()
 
 recDecl :: String -> [FieldDecl ()] -> ConDecl ()
 recDecl n rs = RecDecl () (Ident () n) rs
-
-app' :: String -> String -> Exp ()
-app' x y = App () (mkVar x) (mkVar y)
 
 lit :: Literal () -> Exp ()
 lit = Lit ()
@@ -271,6 +275,9 @@ cxTuple = CxTuple ()
 tySplice :: Splice () -> Type ()
 tySplice = TySplice ()
 
+tyTupleBoxed :: [Type ()] -> Type ()
+tyTupleBoxed = TyTuple () LHE.Boxed
+
 parenSplice :: Exp () -> Splice ()
 parenSplice = ParenSplice ()
 
@@ -348,3 +355,12 @@ urhs = UnGuardedRhs ()
 -- | case pattern match p -> e
 match :: Pat () -> Exp () -> Alt ()
 match p e = Alt () p (urhs e) Nothing
+
+eThingWith :: EWildcard () -> QName () -> [CName ()] -> ExportSpec ()
+eThingWith = EThingWith ()
+
+eWildCard :: Int -> EWildcard ()
+eWildCard = EWildcard ()
+
+prettyPrint :: (LHE.Pretty a) => a -> String
+prettyPrint = LHE.prettyPrint

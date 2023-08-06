@@ -107,7 +107,9 @@ import FFICXX.Generate.Type.PackageInterface
   )
 import FFICXX.Generate.Util (firstUpper)
 import FFICXX.Generate.Util.HaskellSrcExts
-  ( emodule,
+  ( eThingWith,
+    eWildCard,
+    emodule,
     evar,
     lang,
     mkImport,
@@ -118,10 +120,8 @@ import FFICXX.Generate.Util.HaskellSrcExts
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import Language.Haskell.Exts.Syntax
-  ( Decl (..),
-    EWildcard (EWildcard),
-    ExportSpec (EThingWith),
-    Module (..),
+  ( Decl,
+    Module,
   )
 import System.FilePath ((<.>), (</>))
 
@@ -658,7 +658,7 @@ buildTopLevelTemplateHs modname tih =
       ]
     pkgExports =
       map
-        ( (\n -> EThingWith () (EWildcard () 1) n [])
+        ( (\n -> eThingWith (eWildCard 1) n [])
             . unqual
             . firstUpper
             . hsFrontNameForTopLevel

@@ -41,6 +41,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
     mkTVar,
     mkVar,
     parenSplice,
+    tyForall,
     tyPtr,
     tySplice,
     tyapp,
@@ -51,7 +52,11 @@ import FFICXX.Generate.Util.HaskellSrcExts
   )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
-import Language.Haskell.Exts.Syntax (Asst (..), Context, Type (..))
+import Language.Haskell.Exts.Syntax
+  ( Asst,
+    Context,
+    Type,
+  )
 
 data CFunSig = CFunSig
   { cArgTypes :: [Arg],
@@ -869,7 +874,7 @@ functionSignature c f =
         | isVirtualFunc f = (mkTVar "a" :)
         | isNonVirtualFunc f = (mkTVar (fst (hsClassName c)) :)
         | otherwise = id
-   in TyForall () Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
+   in tyForall Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
 
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureT t TFun {..} =
@@ -948,7 +953,7 @@ accessorSignature c v accessor =
       HsFunSig typs assts = extractArgRetTypes (Just c) False csig
       ctxt = cxTuple assts
       arg0 = (mkTVar (fst (hsClassName c)) :)
-   in TyForall () Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
+   in tyForall Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
 
 -- | this is for FFI type.
 hsFFIFuncTyp :: Maybe (Selfness, Class) -> CFunSig -> Type ()

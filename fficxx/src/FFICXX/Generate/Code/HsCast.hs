@@ -4,7 +4,8 @@ module FFICXX.Generate.Code.HsCast where
 import FFICXX.Generate.Name (hsClassName, typeclassName)
 import FFICXX.Generate.Type.Class (Class (..), isAbstractClass)
 import FFICXX.Generate.Util.HaskellSrcExts
-  ( classA,
+  ( app,
+    classA,
     cxEmpty,
     cxTuple,
     insDecl,
@@ -18,8 +19,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
     tycon,
     unqual,
   )
-import Language.Haskell.Exts.Build (app)
-import Language.Haskell.Exts.Syntax (Decl (..), InstDecl (..))
+import Language.Haskell.Exts.Syntax (Decl, InstDecl)
 
 -----
 

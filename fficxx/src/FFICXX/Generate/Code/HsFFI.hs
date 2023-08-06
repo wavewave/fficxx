@@ -42,7 +42,7 @@ import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Util (toLowers)
 import FFICXX.Generate.Util.HaskellSrcExts (mkForImpCcall, mkImport)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
-import Language.Haskell.Exts.Syntax (Decl (..), ImportDecl (..))
+import Language.Haskell.Exts.Syntax (Decl, ImportDecl)
 import System.FilePath ((<.>))
 
 genHsFFI :: ClassImportHeader -> [Decl ()]
