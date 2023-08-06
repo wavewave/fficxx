@@ -1,4 +1,78 @@
-module FFICXX.Generate.Util.HaskellSrcExts where
+module FFICXX.Generate.Util.HaskellSrcExts
+  ( app,
+    app',
+    unqual,
+    tycon,
+    tyapp,
+    tyfun,
+    tylist,
+    unit_tycon,
+    conDecl,
+    qualConDecl,
+    recDecl,
+    lit,
+    mkVar,
+    con,
+    mkTVar,
+    mkPVar,
+    mkIVar,
+    mkPVarSig,
+    pbind,
+    pbind_,
+    mkTBind,
+    mkBind1,
+    mkFun,
+    mkFunSig,
+    mkClass,
+    dhead,
+    mkDeclHead,
+    mkInstance,
+    mkData,
+    mkNewtype,
+    mkForImpCcall,
+    mkModule,
+    mkModuleE,
+    mkImport,
+    mkImportExp,
+    mkImportSrc,
+    lang,
+    dot,
+    tyForall,
+    tyParen,
+    tyPtr,
+    tyForeignPtr,
+    classA,
+    cxEmpty,
+    cxTuple,
+    tySplice,
+    tyTupleBoxed,
+    parenSplice,
+    bracketExp,
+    typeBracket,
+    mkDeriving,
+    irule,
+    ihcon,
+    evar,
+    eabs,
+    ethingwith,
+    ethingall,
+    emodule,
+    nonamespace,
+    insType,
+    insDecl,
+    generator,
+    qualifier,
+    clsDecl,
+    unkindedVar,
+    op,
+    inapp,
+    if_,
+    urhs,
+    match,
+    eWildCard,
+    prettyPrint,
+  )
+where
 
 import Data.List (foldl')
 import Data.Maybe (maybeToList)
@@ -102,7 +176,6 @@ import Language.Haskell.Exts
         TyTuple,
         TyVar
       ),
-    unit_tycon,
   )
 import qualified Language.Haskell.Exts as LHE
 import Language.Haskell.Exts.Syntax (CName)
@@ -133,7 +206,7 @@ tylist :: Type () -> Type ()
 tylist = TyList ()
 
 unit_tycon :: Type ()
-unit_tycon = Language.Haskell.Exts.unit_tycon ()
+unit_tycon = LHE.unit_tycon ()
 
 conDecl :: String -> [Type ()] -> ConDecl ()
 conDecl n ys = ConDecl () (Ident () n) ys
@@ -355,9 +428,6 @@ urhs = UnGuardedRhs ()
 -- | case pattern match p -> e
 match :: Pat () -> Exp () -> Alt ()
 match p e = Alt () p (urhs e) Nothing
-
-eThingWith :: EWildcard () -> QName () -> [CName ()] -> ExportSpec ()
-eThingWith = EThingWith ()
 
 eWildCard :: Int -> EWildcard ()
 eWildCard = EWildcard ()
