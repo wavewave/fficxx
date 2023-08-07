@@ -2,3 +2,6 @@
 {-# OPTIONS_GHC -w #-}
 
 module MyModule where
+
+
+test :: Double

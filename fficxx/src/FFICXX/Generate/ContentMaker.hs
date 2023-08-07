@@ -532,12 +532,9 @@ buildProxyHs m =
       Ex.mkImport "Language.Haskell.TH.Syntax",
       Ex.mkImport "FFICXX.Runtime.CodeGen.Cxx"
     ]
-
-{-
     body
   where
-    body = [] -- genProxyInstance
--}
+    body = genProxyInstance
 
 buildTemplateHs :: TemplateClassModule -> Module ()
 buildTemplateHs m =

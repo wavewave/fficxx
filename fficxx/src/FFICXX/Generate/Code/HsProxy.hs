@@ -5,6 +5,7 @@ module FFICXX.Generate.Code.HsProxy where
 import qualified Data.List as L (foldr1)
 --
 
+{-
 import FFICXX.Generate.Util.HaskellSrcExts
   ( app,
     con,
@@ -21,14 +22,23 @@ import FFICXX.Generate.Util.HaskellSrcExts
     tycon,
     tylist,
   )
+-}
+import FFICXX.Generate.Util.GHCExactPrint
+  ( mkFun,
+    testTyp,
+  )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
-import Language.Haskell.Exts.Syntax (Decl)
+import GHC.Hs.Extension
+  ( GhcPs,
+  )
+import Language.Haskell.Syntax.Decls (HsDecl)
 
-genProxyInstance :: [Decl ()]
-genProxyInstance =
-  mkFun fname sig [] rhs Nothing
+genProxyInstance :: [HsDecl GhcPs]
+genProxyInstance = mkFun fname testTyp
   where
     fname = "genImplProxy"
+
+{-  mkFun fname sig [] rhs Nothing
     v = mkVar
     sig = tycon "Q" `tyapp` tylist (tycon "Dec")
     rhs = doE [foreignSrcStmt, qualStmt retstmt]
@@ -49,3 +59,4 @@ genProxyInstance =
               (<> "\n")
               [R.renderCMacro (R.Include "MacroPatternMatch.h")]
     retstmt = v "pure" `app` listE []
+-}
