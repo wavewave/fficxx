@@ -3,6 +3,8 @@
 module FFICXX.Generate.Util.GHCExactPrint
   ( -- * module
     mkModule,
+    -- * decls
+    mkImport,
     {- app,
     app',
     unqual,
@@ -39,7 +41,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkNewtype,
     mkForImpCcall,
     mkModuleE,
-    mkImport,
     mkImportExp,
     mkImportSrc,
     lang,
@@ -93,6 +94,9 @@ import GHC.Hs
 import GHC.Hs.Extension
   ( GhcPs,
   )
+import GHC.Hs.ImpExp
+  ( XImportDeclPass (..),
+  )
 import GHC.Parser.Annotation
   ( AddEpAnn (..),
     Anchor (..),
@@ -105,11 +109,18 @@ import GHC.Parser.Annotation
     EpaComment (..),
     EpaCommentTok (EpaLineComment),
     EpaLocation (..),
+    SrcAnn,
     SrcSpanAnn' (SrcSpanAnn),
     emptyComments,
     noAnn,
     noSrcSpanA,
     spanAsAnchor,
+  )
+import GHC.Types.PkgQual
+  ( RawPkgQual (..),
+  )
+import GHC.Types.SourceText
+  ( SourceText (..),
   )
 import GHC.Types.SrcLoc
   ( GenLocated (L),
@@ -122,74 +133,97 @@ import GHC.Types.SrcLoc
 import qualified Language.Haskell.GHC.ExactPrint as Exact
 import Language.Haskell.Syntax
   ( HsModule (..),
+    ImportDecl (..),
     LayoutInfo (..),
     ModuleName (..),
   )
+import Language.Haskell.Syntax.ImpExp
+  ( ImportDeclQualifiedStyle (..),
+    IsBootInterface (..),
+  )
 
 mkRelAnchor :: Bool -> SrcSpan -> Anchor
-mkRelAnchor isSameLine spn = 
+mkRelAnchor isSameLine spn =
   let a' = spanAsAnchor spn
    in if isSameLine
         then a' {anchor_op = MovedAnchor (SameLine 1)}
         else a' {anchor_op = MovedAnchor (DifferentLine 1 0)}
+
+mkRelSrcSpanAnn :: Bool -> SrcSpan -> ann -> SrcAnn ann
+mkRelSrcSpanAnn isSameLine spn ann =
+  SrcSpanAnn (EpAnn (mkRelAnchor isSameLine spn) ann emptyComments) spn
+
+defSrcSpan :: (SrcSpan, RealSrcSpan)
+defSrcSpan = (spn, rspn)
+  where
+    sloc = mkSrcLoc "test" 1 1
+    spn = srcLocSpan sloc
+    RealSrcSpan rspn _ = spn
 
 mkModule ::
   -- | Module name
   String ->
   -- | Pragmas
   [String] ->
-  -- [ImportDecl ()] ->
+  [ImportDecl GhcPs] ->
   -- [Decl ()] ->
   HsModule GhcPs
-mkModule name pragmas {- idecls decls -} = result
+mkModule name pragmas idecls {- decls -} =
+  HsModule
+    { hsmodExt =
+        XModulePs
+          { hsmodAnn = EpAnn (spanAsAnchor s1) a1 emptyComments,
+            hsmodLayout = VirtualBraces 1,
+            hsmodDeprecMessage = Nothing,
+            hsmodHaddockModHeader = Nothing
+          },
+      hsmodName = Just (L (mkRelSrcSpanAnn True s1 (AnnListItem [])) modName),
+      hsmodExports = Nothing,
+      hsmodImports =
+        fmap (\idecl -> L (mkRelSrcSpanAnn False s1 (AnnListItem [])) idecl) idecls,
+      hsmodDecls = []
+    }
   where
+    (s1, rs1) = defSrcSpan
     modName = ModuleName (fromString name)
-    -- mhead = ModuleHead () (ModuleName () n) Nothing Nothing
-    (result, _, _) = Exact.runTransform $ do
-      s1 <- Exact.uniqueSrcSpanT
-      let rs1 = case s1 of
-                  RealSrcSpan r _ -> r
-                  _ -> undefined
-      let pragmaComments =
-            let a = mkRelAnchor False s1
-                ls =
-                  fmap
-                    (\p ->
-                       let a = mkRelAnchor False s1
-                           str = "{-# LANGUAGE " <> p <> " #-}"
-                           c = EpaComment (EpaLineComment str) rs1
-                        in L a c
-                    )
-                    pragmas
-             in ls
+    pragmaComments =
+      let ls =
+            fmap
+              (\p ->
+                 let a = mkRelAnchor False s1
+                     str = "{-# LANGUAGE " <> p <> " #-}"
+                     c = EpaComment (EpaLineComment str) rs1
+                  in L a c
+              )
+              pragmas
+       in ls
 
-          a1 =
-            AnnsModule
-              [ AddEpAnn AnnModule (EpaDelta (DifferentLine 2 0) pragmaComments),
-                AddEpAnn AnnWhere (EpaDelta (SameLine 1) [])
-              ]
-              (AnnList Nothing Nothing Nothing [] [])
-          e1 = EpAnn (spanAsAnchor s1) a1 emptyComments
-          --
-          anchor3 = mkRelAnchor True s1
-          e3 =
-           SrcSpanAnn (EpAnn anchor3 (AnnListItem []) emptyComments) s1
-          --
-          expr =
-            HsModule
-              { hsmodExt =
-                  XModulePs
-                    { hsmodAnn = e1,
-                      hsmodLayout = VirtualBraces 1,
-                      hsmodDeprecMessage = Nothing,
-                      hsmodHaddockModHeader = Nothing
-                    },
-                hsmodName = Just (L e3 modName),
-                hsmodExports = Nothing,
-                hsmodImports = [],
-                hsmodDecls = []
-              }
-      pure expr
+    a1 =
+      AnnsModule
+        [ AddEpAnn AnnModule (EpaDelta (DifferentLine 2 0) pragmaComments),
+          AddEpAnn AnnWhere (EpaDelta (SameLine 1) [])
+        ]
+        (AnnList Nothing Nothing Nothing [] [])
+
+mkImport ::
+  -- | Module name
+  String ->
+  ImportDecl GhcPs
+mkImport name =
+  ImportDecl
+    { ideclExt = XImportDeclPass noAnn NoSourceText False,
+      ideclName = L (mkRelSrcSpanAnn True s1 (AnnListItem [])) modName,
+      ideclPkgQual = NoRawPkgQual,
+      ideclSource = NotBoot,
+      ideclSafe = False,
+      ideclQualified = NotQualified,
+      ideclAs = Nothing,
+      ideclImportList = Nothing
+    }
+  where
+    (s1, rs1) = defSrcSpan
+    modName = ModuleName (fromString name)
+
 
 --
 
@@ -436,8 +470,6 @@ mkModuleE n pragmas exps idecls decls = Module () (Just mhead) pragmas idecls de
     mhead = ModuleHead () (ModuleName () n) Nothing (Just eslist)
     eslist = ExportSpecList () exps
 
-mkImport :: String -> ImportDecl ()
-mkImport m = ImportDecl () (ModuleName () m) False False False Nothing Nothing Nothing
 
 mkImportExp :: String -> [String] -> ImportDecl ()
 mkImportExp m lst =

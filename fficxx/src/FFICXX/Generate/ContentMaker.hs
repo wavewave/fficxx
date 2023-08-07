@@ -522,15 +522,9 @@ buildProxyHs :: ClassModule -> HsModule GhcPs
 buildProxyHs m =
   Ex.mkModule
     (cmModule m <.> "Proxy")
-    [ "ForeignFunctionInterface",
-      "FlexibleInstances"
-    ]
-
-{-  [ Ex.lang
-        [ "FlexibleInstances",
-          "OverloadedStrings",
-          "TemplateHaskell"
-        ]
+    [ "FlexibleInstances",
+      "OverloadedStrings",
+      "TemplateHaskell"
     ]
     [ Ex.mkImport "Foreign.Ptr",
       Ex.mkImport "FFICXX.Runtime.Cast",
@@ -538,6 +532,8 @@ buildProxyHs m =
       Ex.mkImport "Language.Haskell.TH.Syntax",
       Ex.mkImport "FFICXX.Runtime.CodeGen.Cxx"
     ]
+
+{-
     body
   where
     body = [] -- genProxyInstance
