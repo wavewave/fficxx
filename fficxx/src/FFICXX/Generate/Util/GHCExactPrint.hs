@@ -87,13 +87,22 @@ import Data.List (foldl')
 import Data.Maybe (maybeToList)
 import Data.String (IsString (fromString))
 import GHC.Hs
-  ( XModulePs (..),
+  ( AnnsModule (..),
+    XModulePs (..),
   )
 import GHC.Hs.Extension
   ( GhcPs,
   )
 import GHC.Parser.Annotation
-  ( EpAnn (..),
+  ( AddEpAnn (..),
+    Anchor (..),
+    AnchorOperation (..),
+    AnnKeywordId (..),
+    AnnList (..),
+    AnnListItem (..),
+    DeltaPos (..),
+    EpAnn (..),
+    EpaLocation (..),
     SrcSpanAnn' (SrcSpanAnn),
     emptyComments,
     noAnn,
@@ -121,30 +130,38 @@ mkModule ::
   HsModule GhcPs
 mkModule name {- pragmas idecls decls -} = result
   where
-    loc1 = mkSrcLoc "start" 1 1
-    -- loc2 = mkSrcLoc "end" 1 10
-    defAnchor = spanAsAnchor (srcLocSpan loc1) -- (mkSrcSpan loc1 loc2)
     modName = ModuleName (fromString name)
     -- mhead = ModuleHead () (ModuleName () n) Nothing Nothing
     (result, _, _) = Exact.runTransform $ do
-      -- l0 <- Exact.uniqueu
-      l1 <- Exact.uniqueSrcSpanT
-      let ann1 = SrcSpanAnn noAnn l1
-
-      let expr =
+      s1 <- Exact.uniqueSrcSpanT
+      let a1 =
+            AnnsModule
+              [ AddEpAnn AnnModule (EpaDelta (SameLine 0) []),
+                AddEpAnn AnnWhere (EpaDelta (SameLine 1) [])
+              ]
+              (AnnList Nothing Nothing Nothing [] [])
+          e1 = EpAnn (spanAsAnchor s1) a1 emptyComments
+          --
+          anchor3 =
+            let a' = spanAsAnchor s1
+             in a' {anchor_op = MovedAnchor (SameLine 1)}
+          e3 =
+           SrcSpanAnn (EpAnn anchor3 (AnnListItem []) emptyComments) s1
+          --
+          expr =
             HsModule
               { hsmodExt =
                   XModulePs
-                    { hsmodAnn = EpAnnNotUsed,
-                      hsmodLayout = NoLayoutInfo, -- VirtualBraces 0, -- NoLayoutInfo,
+                    { hsmodAnn = e1,
+                      hsmodLayout = VirtualBraces 1,
                       hsmodDeprecMessage = Nothing,
                       hsmodHaddockModHeader = Nothing
                     },
-                hsmodName = Just (L ann1 modName),
-                hsmodExports = Nothing, -- Just -- (L noSrcSpanA []), -- Nothing,
+                hsmodName = Just (L e3 modName),
+                hsmodExports = Nothing,
                 hsmodImports = [],
                 hsmodDecls = []
-              } --  (Just mhead) pragmas idecls decls -}
+              }
       pure $ Exact.setAnnotationAnchor expr defAnchor emptyComments
 
 --
