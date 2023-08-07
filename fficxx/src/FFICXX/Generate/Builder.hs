@@ -168,7 +168,9 @@ simpleBuilder cfg sbc = do
     when (hasProxy . cihClass . cmCIH $ m) $ do
       let x = C.buildProxyHs m
       putStrLn (Exact.showAst x)
-      print (exactPrint (C.buildProxyHs m))
+      putStrLn "-------"
+      putStrLn (exactPrint (C.buildProxyHs m))
+      putStrLn "-------"
       gen (cmModule m <.> "Proxy" <.> "hs") (exactPrint (C.buildProxyHs m))
   --
   putStrLn "Generating Template.hs"

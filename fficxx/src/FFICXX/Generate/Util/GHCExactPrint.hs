@@ -102,6 +102,8 @@ import GHC.Parser.Annotation
     AnnListItem (..),
     DeltaPos (..),
     EpAnn (..),
+    EpaComment (..),
+    EpaCommentTok (EpaLineComment),
     EpaLocation (..),
     SrcSpanAnn' (SrcSpanAnn),
     emptyComments,
@@ -111,6 +113,8 @@ import GHC.Parser.Annotation
   )
 import GHC.Types.SrcLoc
   ( GenLocated (L),
+    RealSrcSpan,
+    SrcSpan (..),
     mkSrcLoc,
     mkSrcSpan,
     srcLocSpan,
@@ -122,29 +126,52 @@ import Language.Haskell.Syntax
     ModuleName (..),
   )
 
+mkRelAnchor :: Bool -> SrcSpan -> Anchor
+mkRelAnchor isSameLine spn = 
+  let a' = spanAsAnchor spn
+   in if isSameLine
+        then a' {anchor_op = MovedAnchor (SameLine 1)}
+        else a' {anchor_op = MovedAnchor (DifferentLine 1 0)}
+
 mkModule ::
+  -- | Module name
   String ->
-  -- [ModulePragma ()] ->
+  -- | Pragmas
+  [String] ->
   -- [ImportDecl ()] ->
   -- [Decl ()] ->
   HsModule GhcPs
-mkModule name {- pragmas idecls decls -} = result
+mkModule name pragmas {- idecls decls -} = result
   where
     modName = ModuleName (fromString name)
     -- mhead = ModuleHead () (ModuleName () n) Nothing Nothing
     (result, _, _) = Exact.runTransform $ do
       s1 <- Exact.uniqueSrcSpanT
-      let a1 =
+      let rs1 = case s1 of
+                  RealSrcSpan r _ -> r
+                  _ -> undefined
+      let pragmaComments =
+            let a = mkRelAnchor False s1
+                ls =
+                  fmap
+                    (\p ->
+                       let a = mkRelAnchor False s1
+                           str = "{-# LANGUAGE " <> p <> " #-}"
+                           c = EpaComment (EpaLineComment str) rs1
+                        in L a c
+                    )
+                    pragmas
+             in ls
+
+          a1 =
             AnnsModule
-              [ AddEpAnn AnnModule (EpaDelta (SameLine 0) []),
+              [ AddEpAnn AnnModule (EpaDelta (DifferentLine 2 0) pragmaComments),
                 AddEpAnn AnnWhere (EpaDelta (SameLine 1) [])
               ]
               (AnnList Nothing Nothing Nothing [] [])
           e1 = EpAnn (spanAsAnchor s1) a1 emptyComments
           --
-          anchor3 =
-            let a' = spanAsAnchor s1
-             in a' {anchor_op = MovedAnchor (SameLine 1)}
+          anchor3 = mkRelAnchor True s1
           e3 =
            SrcSpanAnn (EpAnn anchor3 (AnnListItem []) emptyComments) s1
           --
@@ -162,7 +189,7 @@ mkModule name {- pragmas idecls decls -} = result
                 hsmodImports = [],
                 hsmodDecls = []
               }
-      pure $ Exact.setAnnotationAnchor expr defAnchor emptyComments
+      pure expr
 
 --
 

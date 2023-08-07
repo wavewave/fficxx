@@ -522,6 +522,9 @@ buildProxyHs :: ClassModule -> HsModule GhcPs
 buildProxyHs m =
   Ex.mkModule
     (cmModule m <.> "Proxy")
+    [ "ForeignFunctionInterface",
+      "FlexibleInstances"
+    ]
 
 {-  [ Ex.lang
         [ "FlexibleInstances",
