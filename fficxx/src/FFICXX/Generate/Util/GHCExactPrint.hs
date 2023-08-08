@@ -208,48 +208,51 @@ import Language.Haskell.Syntax.Basic
   ( SrcStrictness (NoSrcStrict),
   )
 
-mkRelAnchor :: Int -> SrcSpan -> Anchor
-mkRelAnchor nLines spn =
-  let a' = spanAsAnchor spn
+mkRelAnchor :: Int -> Anchor
+mkRelAnchor nLines =
+  let a' = spanAsAnchor defSrcSpan
    in if
           | nLines < -1 -> error "mkRelAnchor: cannot go backward further"
           | nLines == -1 -> a' {anchor_op = MovedAnchor (SameLine 0)}
           | nLines == 0 -> a' {anchor_op = MovedAnchor (SameLine 1)}
           | nLines > 0 -> a' {anchor_op = MovedAnchor (DifferentLine nLines 0)}
 
-mkRelEpAnn :: Int -> SrcSpan -> ann -> EpAnn ann
-mkRelEpAnn nLines spn ann = EpAnn (mkRelAnchor nLines spn) ann emptyComments
+mkRelEpAnn :: Int -> ann -> EpAnn ann
+mkRelEpAnn nLines ann = EpAnn (mkRelAnchor nLines) ann emptyComments
 
-mkRelSrcSpanAnn :: Int -> SrcSpan -> ann -> SrcAnn ann
-mkRelSrcSpanAnn nLines spn ann =
-  SrcSpanAnn (mkRelEpAnn nLines spn ann) spn
+mkRelSrcSpanAnn :: Int -> ann -> SrcAnn ann
+mkRelSrcSpanAnn nLines ann =
+  SrcSpanAnn (mkRelEpAnn nLines ann) defSrcSpan
 
-defSrcSpan :: (SrcSpan, RealSrcSpan)
-defSrcSpan = (spn, rspn)
+defSrcSpan :: SrcSpan
+defSrcSpan = spn
   where
     sloc = mkSrcLoc "test" 1 1
     spn = srcLocSpan sloc
-    RealSrcSpan rspn _ = spn
 
-paragraphLines :: SrcSpan -> [a] -> [GenLocated SrcSpanAnnA a]
-paragraphLines spn zs =
+defRealSrcSpan :: RealSrcSpan
+defRealSrcSpan = rspn
+  where RealSrcSpan rspn _ = defSrcSpan
+
+paragraphLines :: [a] -> [GenLocated SrcSpanAnnA a]
+paragraphLines zs =
   case zs of
     x : xs ->
-      let x' = L (mkRelSrcSpanAnn 2 spn (AnnListItem [])) x
-          xs' = fmap (L (mkRelSrcSpanAnn 1 spn (AnnListItem []))) xs
+      let x' = L (mkRelSrcSpanAnn 2 (AnnListItem [])) x
+          xs' = fmap (L (mkRelSrcSpanAnn 1 (AnnListItem []))) xs
        in x' : xs'
     [] -> []
 
 -- | can place the group of items with arbitrary indentation.
-paragraphLines' :: SrcSpan -> DeltaPos -> [a] -> [GenLocated SrcSpanAnnA a]
-paragraphLines' spn delta zs =
+paragraphLines' :: DeltaPos -> [a] -> [GenLocated SrcSpanAnnA a]
+paragraphLines' delta zs =
   case zs of
     x : xs ->
-      let a = spanAsAnchor spn
+      let a = spanAsAnchor defSrcSpan
           a' = a {anchor_op = MovedAnchor delta}
-          ann' = SrcSpanAnn (EpAnn a' (AnnListItem []) emptyComments) spn
+          ann' = SrcSpanAnn (EpAnn a' (AnnListItem []) emptyComments) defSrcSpan
           x' = L ann' x
-          xs' = fmap (L (mkRelSrcSpanAnn 1 spn (AnnListItem []))) xs
+          xs' = fmap (L (mkRelSrcSpanAnn 1 (AnnListItem []))) xs
        in x' : xs'
     [] -> []
 
@@ -276,26 +279,25 @@ mkModule name pragmas idecls decls =
   HsModule
     { hsmodExt =
         XModulePs
-          { hsmodAnn = mkRelEpAnn (-1) s1 a1,
+          { hsmodAnn = mkRelEpAnn (-1) a1,
             hsmodLayout = VirtualBraces 1,
             hsmodDeprecMessage = Nothing,
             hsmodHaddockModHeader = Nothing
           },
-      hsmodName = Just (L (mkRelSrcSpanAnn 0 s1 noAnnListItem) modName),
+      hsmodName = Just (L (mkRelSrcSpanAnn 0 noAnnListItem) modName),
       hsmodExports = Nothing,
-      hsmodImports = paragraphLines s1 idecls,
-      hsmodDecls = paragraphLines s1 decls
+      hsmodImports = paragraphLines idecls,
+      hsmodDecls = paragraphLines decls
     }
   where
-    (s1, rs1) = defSrcSpan
     modName = ModuleName (fromString name)
     pragmaComments =
       let ls =
             fmap
               ( \p ->
-                  let a = mkRelAnchor 1 s1
+                  let a = mkRelAnchor 1
                       str = "{-# LANGUAGE " <> p <> " #-}"
-                      c = EpaComment (EpaLineComment str) rs1
+                      c = EpaComment (EpaLineComment str) defRealSrcSpan
                    in L a c
               )
               pragmas
@@ -318,7 +320,7 @@ mkImport ::
 mkImport name =
   ImportDecl
     { ideclExt = XImportDeclPass noAnn NoSourceText False,
-      ideclName = L (mkRelSrcSpanAnn 0 s1 (AnnListItem [])) modName,
+      ideclName = L (mkRelSrcSpanAnn 0 (AnnListItem [])) modName,
       ideclPkgQual = NoRawPkgQual,
       ideclSource = NotBoot,
       ideclSafe = False,
@@ -327,7 +329,6 @@ mkImport name =
       ideclImportList = Nothing
     }
   where
-    (s1, rs1) = defSrcSpan
     modName = ModuleName (fromString name)
 
 --
@@ -346,9 +347,7 @@ tycon name =
   HsTyVar
     noAnn
     NotPromoted
-    (L (mkRelSrcSpanAnn (-1) s1 (NameAnnTrailing [])) (unqual (mkTyVarOcc name)))
-  where
-    (s1, _) = defSrcSpan
+    (L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) (unqual (mkTyVarOcc name)))
 
 -- TODO: deprecate this later
 mkTVar :: String -> HsType GhcPs
@@ -358,22 +357,20 @@ tyapp :: HsType GhcPs -> HsType GhcPs -> HsType GhcPs
 tyapp x y =
   HsAppTy noExtField lx ly
   where
-    (s1, _) = defSrcSpan
-    lx = L (mkRelSrcSpanAnn (-1) s1 (AnnListItem [])) x
-    ly = L (mkRelSrcSpanAnn 0 s1 (AnnListItem [])) y
+    lx = L (mkRelSrcSpanAnn (-1) (AnnListItem [])) x
+    ly = L (mkRelSrcSpanAnn 0 (AnnListItem [])) y
 
 tylist :: HsType GhcPs -> HsType GhcPs
 tylist x =
-  HsListTy (mkRelEpAnn (-1) s1 ann) lx
+  HsListTy (mkRelEpAnn (-1) ann) lx
   where
-    (s1, _) = defSrcSpan
     ann =
       AnnParen
         { ap_adornment = AnnParensSquare,
           ap_open = EpaDelta (SameLine 0) [],
           ap_close = EpaDelta (SameLine 0) []
         }
-    lx = L (mkRelSrcSpanAnn (-1) s1 (AnnListItem [])) x
+    lx = L (mkRelSrcSpanAnn (-1) (AnnListItem [])) x
 
 --
 -- Function
@@ -405,18 +402,17 @@ mkFunSig ::
 mkFunSig fname typ =
   SigD noExtField (TypeSig ann [lid] bndr)
   where
-    (s1, rs1) = defSrcSpan
     ann =
-      mkRelEpAnn (-1) s1 (AnnSig (AddEpAnn AnnDcolon (EpaDelta (SameLine 1) [])) [])
+      mkRelEpAnn (-1) (AnnSig (AddEpAnn AnnDcolon (EpaDelta (SameLine 1) [])) [])
 
     id' = unqual (mkVarOcc fname)
-    lid = L (mkRelSrcSpanAnn (-1) s1 (NameAnnTrailing [])) id'
-    bndr = HsWC noExtField (L (mkRelSrcSpanAnn 0 s1 (AnnListItem [])) hsSigType)
+    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+    bndr = HsWC noExtField (L (mkRelSrcSpanAnn 0 (AnnListItem [])) hsSigType)
     hsSigType =
       HsSig
         noExtField
         (HsOuterImplicit noExtField)
-        (L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) typ)
+        (L (mkRelSrcSpanAnn (-1) noAnnListItem) typ)
 
 mkBind1 ::
   String ->
@@ -427,27 +423,21 @@ mkBind1 ::
 mkBind1 fname pats rhs mbinds =
   ValD noExtField (FunBind noExtField lid payload)
   where
-    (s1, rs1) = defSrcSpan
     id' = unqual (mkVarOcc fname)
-    lid = L (mkRelSrcSpanAnn (-1) s1 (NameAnnTrailing [])) id'
+    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
 
     lpats = [] -- fmap (L ) pats
-    lrhs = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) rhs
+    lrhs = L (mkRelSrcSpanAnn (-1) noAnnListItem) rhs
     glrhs =
       let ann =
             mkRelEpAnn
               (-1)
-              s1
               (GrhsAnn Nothing (AddEpAnn AnnEqual (EpaDelta (SameLine 1) [])))
        in GRHS ann [] (lrhs)
-    lglrhs = L (mkRelSrcSpanAnn (-1) s1 NoEpAnns) glrhs
+    lglrhs = L (mkRelSrcSpanAnn (-1) NoEpAnns) glrhs
     match =
       Match
-        { m_ext =
-            mkRelEpAnn
-              (-1)
-              s1
-              [],
+        { m_ext = mkRelEpAnn (-1) [],
           m_ctxt = FunRhs lid Prefix NoSrcStrict,
           m_pats = lpats,
           m_grhss =
@@ -457,13 +447,8 @@ mkBind1 fname pats rhs mbinds =
                 grhssLocalBinds = EmptyLocalBinds noExtField
               }
         }
-    lmatch = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) match
-    payload = MG FromSource (L (mkRelSrcSpanAnn (-1) s1 noAnnList) [lmatch])
-    -- [Match (Ident () n) pat (UnGuardedRhs () rhs) mbinds]
-
---              [ AddEpAnn AnnEqual (EpaDelta (SameLine 1) [])
---              ],
-
+    lmatch = L (mkRelSrcSpanAnn (-1) noAnnListItem) match
+    payload = MG FromSource (L (mkRelSrcSpanAnn (-1) noAnnList) [lmatch])
 
 --
 -- Expr
@@ -471,28 +456,25 @@ mkBind1 fname pats rhs mbinds =
 
 app :: HsExpr GhcPs -> HsExpr GhcPs -> HsExpr GhcPs
 app x y =
-  HsApp (mkRelEpAnn (-1) s1 NoEpAnns) lx ly
+  HsApp (mkRelEpAnn (-1) NoEpAnns) lx ly
   where
-    (s1, _) = defSrcSpan
-    lx = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) x
-    ly = L (mkRelSrcSpanAnn 0 s1 noAnnListItem) y
+    lx = L (mkRelSrcSpanAnn (-1) noAnnListItem) x
+    ly = L (mkRelSrcSpanAnn 0 noAnnListItem) y
 
 mkVar :: String -> HsExpr GhcPs
 mkVar name =
   HsVar noExtField lid
   where
-    (s1, _) = defSrcSpan
     id' = unqual (mkVarOcc name)
-    lid = L (mkRelSrcSpanAnn (-1) s1 (NameAnnTrailing [])) id'
+    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
 
 doE :: [StmtLR GhcPs GhcPs (LHsExpr GhcPs)] -> HsExpr GhcPs
 doE stmts =
   HsDo
-    (mkRelEpAnn (-1) s1 annDo)
+    (mkRelEpAnn (-1) annDo)
     (DoExpr Nothing)
     llstmts
   where
-    (s1, _) = defSrcSpan
     annDo =
       AnnList
         Nothing
@@ -501,9 +483,9 @@ doE stmts =
         [AddEpAnn AnnDo (EpaDelta (SameLine 1) [])]
         []
     lstmts =
-      paragraphLines' s1 (DifferentLine 1 2) stmts
+      paragraphLines' (DifferentLine 1 2) stmts
     llstmts =
-      let ann = mkRelSrcSpanAnn (-1) s1 noAnnList
+      let ann = mkRelSrcSpanAnn (-1) noAnnList
        in L ann lstmts
 
 listE :: [HsExpr GhcPs] -> HsExpr GhcPs
@@ -521,17 +503,15 @@ listE itms =
                 AddEpAnn AnnCloseS (EpaDelta (SameLine 0) [])
               ]
               []
-          litms = fmap (L (mkRelSrcSpanAnn (-1) s1 noAnnListItem)) itms
-       in ExplicitList (mkRelEpAnn (-1) s1 ann) litms
+          litms = fmap (L (mkRelSrcSpanAnn (-1) noAnnListItem)) itms
+       in ExplicitList (mkRelEpAnn (-1) ann) litms
   where
-    (s1, _) = defSrcSpan
 
 mkBodyStmt :: HsExpr GhcPs -> StmtLR GhcPs GhcPs (LHsExpr GhcPs)
 mkBodyStmt expr =
   BodyStmt noExtField body noExtField noExtField
   where
-    (s1, _) = defSrcSpan
-    body = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) expr
+    body = L (mkRelSrcSpanAnn (-1) noAnnListItem) expr
 
 
 --
@@ -694,9 +674,6 @@ listE = LHE.listE
 
 strE :: String -> Exp ()
 strE = LHE.strE
-
-qualStmt :: Exp () -> Stmt ()
-qualStmt = LHE.qualStmt
 
 mkPVar :: String -> Pat ()
 mkPVar = PVar () . Ident ()

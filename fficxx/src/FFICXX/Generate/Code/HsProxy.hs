@@ -10,7 +10,6 @@ import FFICXX.Generate.Util.HaskellSrcExts
   ( con,
     inapp,
     op,
-    qualStmt,
     qualifier,
     strE,
   )
