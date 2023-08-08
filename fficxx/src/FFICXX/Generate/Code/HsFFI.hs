@@ -44,17 +44,14 @@ import FFICXX.Generate.Util.GHCExactPrint
   ( mkForImpCcall,
     mkImport,
   )
--- import FFICXX.Generate.Util.HaskellSrcExts (mkForImpCcall, mkImport)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import GHC.Hs
   ( GhcPs,
   )
 import Language.Haskell.Syntax
   ( ForeignDecl,
-    HsDecl,
     ImportDecl,
   )
--- import Language.Haskell.Exts.Syntax (Decl, ImportDecl)
 import System.FilePath ((<.>))
 
 genHsFFI :: ClassImportHeader -> [ForeignDecl GhcPs]

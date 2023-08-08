@@ -8,6 +8,7 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Char (toUpper)
 import Data.Digest.Pure.MD5 (md5)
 import Data.Foldable (for_)
+import qualified Data.List as List
 import qualified Data.Text as T
 import FFICXX.Generate.Code.Cabal (buildCabalFile, buildJSONFile)
 import FFICXX.Generate.Config
@@ -55,6 +56,20 @@ import System.Process (readProcess)
 
 macrofy :: String -> String
 macrofy = map ((\x -> if x == '-' then '_' else x) . toUpper)
+
+postProcess :: String -> String
+postProcess txt = unlines ls'
+  where
+    ls = lines txt
+    ls' = fmap process ls
+    --
+    process line =
+      if "REPLACE_THIS_LINE" `List.isInfixOf` line
+        then
+          let (_, _ : xs) = List.break (== '|') line
+              (ys, _) = List.span (/= '|') xs
+           in ys
+        else line
 
 simpleBuilder :: FFICXXConfig -> SimpleBuilderConfig -> IO ()
 simpleBuilder cfg sbc = do
@@ -140,15 +155,10 @@ simpleBuilder cfg sbc = do
       (prettyPrint (C.buildRawTypeHs m))
   --
   putStrLn "Generating FFI.hsc"
-  for_ mods $ \m -> do
-    let x = C.buildFFIHsc m
-    putStrLn (Exact.showAst x)
-    putStrLn "-------"
-    putStrLn (exactPrint x)
-    putStrLn "-------"
+  for_ mods $ \m ->
     gen
       (cmModule m <.> "FFI" <.> "hsc")
-      ({- prettyPrint -} exactPrint (C.buildFFIHsc m))
+      (postProcess $ exactPrint (C.buildFFIHsc m))
   --
   putStrLn "Generating Interface.hs"
   for_ mods $ \m ->

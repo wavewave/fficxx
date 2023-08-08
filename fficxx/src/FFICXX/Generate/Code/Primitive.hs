@@ -726,6 +726,51 @@ convertC2HS (CEnum t _) = convertC2HS t
 convertC2HS (CPointer t) = tyapp (tycon "Ptr") (convertC2HS t)
 convertC2HS (CRef t) = tyapp (tycon "Ptr") (convertC2HS t)
 
+-- new
+c2HsType :: CTypes -> HsType GhcPs
+c2HsType CTBool = Ex.tycon "CBool"
+c2HsType CTChar = Ex.tycon "CChar"
+c2HsType CTClock = Ex.tycon "CClock"
+c2HsType CTDouble = Ex.tycon "CDouble"
+c2HsType CTFile = Ex.tycon "CFile"
+c2HsType CTFloat = Ex.tycon "CFloat"
+c2HsType CTFpos = Ex.tycon "CFpos"
+c2HsType CTInt = Ex.tycon "CInt"
+c2HsType CTIntMax = Ex.tycon "CIntMax"
+c2HsType CTIntPtr = Ex.tycon "CIntPtr"
+c2HsType CTJmpBuf = Ex.tycon "CJmpBuf"
+c2HsType CTLLong = Ex.tycon "CLLong"
+c2HsType CTLong = Ex.tycon "CLong"
+c2HsType CTPtrdiff = Ex.tycon "CPtrdiff"
+c2HsType CTSChar = Ex.tycon "CSChar"
+c2HsType CTSUSeconds = Ex.tycon "CSUSeconds"
+c2HsType CTShort = Ex.tycon "CShort"
+c2HsType CTSigAtomic = Ex.tycon "CSigAtomic"
+c2HsType CTSize = Ex.tycon "CSize"
+c2HsType CTTime = Ex.tycon "CTime"
+c2HsType CTUChar = Ex.tycon "CUChar"
+c2HsType CTUInt = Ex.tycon "CUInt"
+c2HsType CTUIntMax = Ex.tycon "CUIntMax"
+c2HsType CTUIntPtr = Ex.tycon "CUIntPtr"
+c2HsType CTULLong = Ex.tycon "CULLong"
+c2HsType CTULong = Ex.tycon "CULong"
+c2HsType CTUSeconds = Ex.tycon "CUSeconds"
+c2HsType CTUShort = Ex.tycon "CUShort"
+c2HsType CTWchar = Ex.tycon "CWchar"
+c2HsType CTInt8 = Ex.tycon "Int8"
+c2HsType CTInt16 = Ex.tycon "Int16"
+c2HsType CTInt32 = Ex.tycon "Int32"
+c2HsType CTInt64 = Ex.tycon "Int64"
+c2HsType CTUInt8 = Ex.tycon "Word8"
+c2HsType CTUInt16 = Ex.tycon "Word16"
+c2HsType CTUInt32 = Ex.tycon "Word32"
+c2HsType CTUInt64 = Ex.tycon "Word64"
+c2HsType CTString = Ex.tycon "CString"
+c2HsType CTVoidStar = Ex.tyapp (Ex.tycon "Ptr") Ex.unit_tycon
+c2HsType (CEnum t _) = c2HsType t
+c2HsType (CPointer t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
+c2HsType (CRef t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
+
 convertCpp2HS :: Maybe Class -> Types -> Type ()
 convertCpp2HS _c Void = unit_tycon
 convertCpp2HS (Just c) SelfType = tycon ((fst . hsClassName) c)
@@ -1082,7 +1127,7 @@ hsFFIFunType msc (CFunSig args ret) =
       Nothing -> error "hsFFIFuncTyp: no self for top level function"
     --
     hsargtype :: Types -> HsType GhcPs
-    -- hsargtype (CT ctype _) = convertC2HS ctype
+    hsargtype (CT ctype _) = c2HsType ctype
     hsargtype (CPT (CPTClass d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
@@ -1127,7 +1172,7 @@ hsFFIFunType msc (CFunSig args ret) =
     ---------------------------------------------------------
     hsrettype Void = Ex.unit_tycon
     hsrettype SelfType = selftyp
-    -- hsrettype (CT ctype _) = convertC2HS ctype
+    hsrettype (CT ctype _) = c2HsType ctype
     hsrettype (CPT (CPTClass d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
