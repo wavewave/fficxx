@@ -40,8 +40,10 @@ import FFICXX.Generate.Type.Module
     TopLevelImportHeader (..),
   )
 import FFICXX.Generate.Util (moduleDirFile)
+import FFICXX.Generate.Util.GHCExactPrint (exactPrint)
+import FFICXX.Generate.Util.HaskellSrcExts (prettyPrint)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
-import Language.Haskell.Exts.Pretty (prettyPrint)
+import qualified Language.Haskell.GHC.ExactPrint as Exact
 import System.Directory
   ( copyFile,
     createDirectoryIfMissing,
@@ -163,8 +165,13 @@ simpleBuilder cfg sbc = do
   --
   putStrLn "Generating Proxy.hs"
   for_ mods $ \m ->
-    when (hasProxy . cihClass . cmCIH $ m) $
-      gen (cmModule m <.> "Proxy" <.> "hs") (prettyPrint (C.buildProxyHs m))
+    when (hasProxy . cihClass . cmCIH $ m) $ do
+      let x = C.buildProxyHs m
+      putStrLn (Exact.showAst x)
+      putStrLn "-------"
+      putStrLn (exactPrint (C.buildProxyHs m))
+      putStrLn "-------"
+      gen (cmModule m <.> "Proxy" <.> "hs") (exactPrint (C.buildProxyHs m))
   --
   putStrLn "Generating Template.hs"
   for_ tcms $ \m ->

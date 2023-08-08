@@ -11,10 +11,8 @@ import FFICXX.Generate.Type.Class (TopLevel (..))
 import FFICXX.Generate.Type.Module (UClass)
 import Text.Dot (Dot, NodeId, attribute, node, showDot, (.->.))
 
-src, box, diamond :: String -> Dot NodeId
-src label = node $ [("shape", "none"), ("label", label)]
+box :: String -> Dot NodeId
 box label = node $ [("shape", "box"), ("style", "rounded"), ("label", label)]
-diamond label = node $ [("shape", "diamond"), ("label", label), ("fontsize", "10")]
 
 -- | Draw dependency graph of modules in graphviz dot format.
 drawDepGraph ::

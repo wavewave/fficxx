@@ -106,8 +106,11 @@ import FFICXX.Generate.Type.PackageInterface
     PackageName (..),
   )
 import FFICXX.Generate.Util (firstUpper)
+import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
 import FFICXX.Generate.Util.HaskellSrcExts
-  ( emodule,
+  ( eWildCard,
+    emodule,
+    ethingwith,
     evar,
     lang,
     mkImport,
@@ -117,12 +120,12 @@ import FFICXX.Generate.Util.HaskellSrcExts
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
+import GHC.Hs.Extension (GhcPs)
 import Language.Haskell.Exts.Syntax
-  ( Decl (..),
-    EWildcard (EWildcard),
-    ExportSpec (EThingWith),
-    Module (..),
+  ( Decl,
+    Module,
   )
+import Language.Haskell.Syntax (HsModule)
 import System.FilePath ((<.>), (</>))
 
 srcDir :: FilePath -> FilePath
@@ -515,21 +518,19 @@ buildImplementationHs amap m =
         <> concatMap genHsFrontInstVariables classes
         <> genTemplateMemberFunctions (cmCIH m)
 
-buildProxyHs :: ClassModule -> Module ()
+buildProxyHs :: ClassModule -> HsModule GhcPs
 buildProxyHs m =
-  mkModule
+  Ex.mkModule
     (cmModule m <.> "Proxy")
-    [ lang
-        [ "FlexibleInstances",
-          "OverloadedStrings",
-          "TemplateHaskell"
-        ]
+    [ "FlexibleInstances",
+      "OverloadedStrings",
+      "TemplateHaskell"
     ]
-    [ mkImport "Foreign.Ptr",
-      mkImport "FFICXX.Runtime.Cast",
-      mkImport "Language.Haskell.TH",
-      mkImport "Language.Haskell.TH.Syntax",
-      mkImport "FFICXX.Runtime.CodeGen.Cxx"
+    [ Ex.mkImport "Foreign.Ptr",
+      Ex.mkImport "FFICXX.Runtime.Cast",
+      Ex.mkImport "Language.Haskell.TH",
+      Ex.mkImport "Language.Haskell.TH.Syntax",
+      Ex.mkImport "FFICXX.Runtime.CodeGen.Cxx"
     ]
     body
   where
@@ -658,7 +659,7 @@ buildTopLevelTemplateHs modname tih =
       ]
     pkgExports =
       map
-        ( (\n -> EThingWith () (EWildcard () 1) n [])
+        ( (\n -> ethingwith (eWildCard 1) n [])
             . unqual
             . firstUpper
             . hsFrontNameForTopLevel

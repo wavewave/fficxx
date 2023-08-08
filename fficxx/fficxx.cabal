@@ -1,4 +1,4 @@
-Cabal-Version:  3.0
+Cabal-Version:  3.6
 Name:           fficxx
 Version:        0.8.0.0
 Synopsis:       Automatic C++ binding generation
@@ -31,7 +31,6 @@ Library
                , fficxx-runtime
                , filepath>1
                , hashable
-               , haskell-src-exts >= 1.22
                , lens > 3
                , mtl>2
                , process
@@ -42,6 +41,16 @@ Library
                , template-haskell
                , text
                , unordered-containers
+               , haskell-src-exts
+  if impl (ghc >= 9.6)
+    Build-Depends:
+      ghc >= 9.6,
+      ghc-exactprint >= 1.7.0.0
+  else
+    Build-Depends:
+      ghc,
+      ghc-exactprint
+
   Exposed-Modules:
                FFICXX.Generate.Builder
                FFICXX.Generate.Config
@@ -60,6 +69,7 @@ Library
                FFICXX.Generate.QQ.Verbatim
                FFICXX.Generate.Util
                FFICXX.Generate.Util.DepGraph
+               FFICXX.Generate.Util.GHCExactPrint
                FFICXX.Generate.Util.HaskellSrcExts
                FFICXX.Generate.Type.Annotate
                FFICXX.Generate.Type.Cabal

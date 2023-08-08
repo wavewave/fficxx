@@ -79,6 +79,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
     qualifier,
     tyPtr,
     tySplice,
+    tyTupleBoxed,
     tyapp,
     tycon,
     tyfun,
@@ -106,7 +107,10 @@ import Language.Haskell.Exts.Build
     tuple,
     wildcard,
   )
-import Language.Haskell.Exts.Syntax (Boxed (Boxed), Decl (..), ImportDecl (..), Type (TyTuple))
+import Language.Haskell.Exts.Syntax
+  ( Decl,
+    ImportDecl,
+  )
 
 ------------------------------
 -- Template member function --
@@ -127,7 +131,7 @@ genTMFExp c f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
     itps = zip ([1 ..] :: [Int]) (tmf_params f)
     tvars = map (\(i, _) -> "typ" ++ show i) itps
     nparams = length itps
-    tparams = if nparams == 1 then tycon "Type" else TyTuple () Boxed (replicate nparams (tycon "Type"))
+    tparams = if nparams == 1 then tycon "Type" else tyTupleBoxed (replicate nparams (tycon "Type"))
     sig = foldr1 tyfun [tparams, tycon "String", tyapp (tycon "Q") (tycon "Exp")]
     tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
     lit' = strE (hsTemplateMemberFunctionName c f <> "_")
@@ -165,7 +169,7 @@ genTMFInstance cih f =
     v = mkVar
     sig =
       tycon "IsCPrimitive"
-        `tyfun` TyTuple () Boxed [tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo"]
+        `tyfun` tyTupleBoxed [tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo"]
         `tyfun` (tycon "Q" `tyapp` tylist (tycon "Dec"))
     rhs = doE [suffixstmt, qtypstmt, genstmt, foreignSrcStmt, letStmt lststmt, qualStmt retstmt]
     suffixstmt = letStmt [pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param")]
@@ -278,7 +282,7 @@ genTmplImplementation t =
     itps = zip ([1 ..] :: [Int]) (tclass_params t)
     tvars = map (\(i, _) -> "typ" ++ show i) itps
     nparams = length itps
-    tparams = if nparams == 1 then tycon "Type" else TyTuple () Boxed (replicate nparams (tycon "Type"))
+    tparams = if nparams == 1 then tycon "Type" else tyTupleBoxed (replicate nparams (tycon "Type"))
     sig = foldr1 tyfun [tparams, tycon "String", tyapp (tycon "Q") (tycon "Exp")]
     tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
     prefix = tclass_name t
@@ -340,7 +344,7 @@ genTmplInstance tcih =
         [tycon "IsCPrimitive"]
           ++ replicate
             nparams
-            (TyTuple () Boxed [tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo"])
+            (tyTupleBoxed [tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo"])
           ++ [tycon "Q" `tyapp` tylist (tycon "Dec")]
     nfs = zip ([1 ..] :: [Int]) fs
     nvfs = zip ([1 ..] :: [Int]) vfs
@@ -519,7 +523,7 @@ genTLTemplateImplementation t =
     itps = zip ([1 ..] :: [Int]) (topleveltfunc_params t)
     tvars = map (\(i, _) -> "typ" ++ show i) itps
     nparams = length itps
-    tparams = if nparams == 1 then tycon "Type" else TyTuple () Boxed (replicate nparams (tycon "Type"))
+    tparams = if nparams == 1 then tycon "Type" else tyTupleBoxed (replicate nparams (tycon "Type"))
     sig = foldr1 tyfun [tparams, tycon "String", tyapp (tycon "Q") (tycon "Exp")]
     tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
     prefix = "TL"
@@ -578,7 +582,7 @@ genTLTemplateInstance tih t =
         [tycon "IsCPrimitive"]
           ++ replicate
             nparams
-            (TyTuple () Boxed [tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo"])
+            (tyTupleBoxed [tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo"])
           ++ [tycon "Q" `tyapp` tylist (tycon "Dec")]
     -- nvfs = zip ([1..] :: [Int]) vfs
 

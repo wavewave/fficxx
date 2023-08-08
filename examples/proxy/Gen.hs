@@ -45,7 +45,8 @@ import FFICXX.Generate.Type.Class
     Class (..),
     Function (..),
     ProtectedMethod (..),
-    TopLevelFunction (..),
+    TLOrdinary (..),
+    TopLevel (..),
     Variable (..),
   )
 import FFICXX.Generate.Type.Config
@@ -69,7 +70,7 @@ stdcxx_cabal :: Cabal
 stdcxx_cabal =
   Cabal
     { cabal_pkgname = CabalName "stdcxx",
-      cabal_version = "0.7.0.1",
+      cabal_version = "0.8",
       cabal_cheaderprefix = "STD",
       cabal_moduleprefix = "STD",
       cabal_additional_c_incs = [],
@@ -97,54 +98,6 @@ deletable =
       class_vars = [],
       class_tmpl_funcs = []
     }
-
--- import from stdcxx
-string :: Class
-string =
-  Class
-    stdcxx_cabal
-    "string"
-    [deletable]
-    mempty
-    (Just (ClassAlias {caHaskellName = "CppString", caFFIName = "string"}))
-    [ Constructor [cstring "p"] Nothing,
-      NonVirtual cstring_ "c_str" [] Nothing,
-      NonVirtual (cppclassref_ string) "append" [cppclassref string "str"] Nothing,
-      NonVirtual (cppclassref_ string) "erase" [] Nothing
-    ]
-    []
-    []
-    False
-
-t_vector :: TemplateClass
-t_vector =
-  TmplCls
-    stdcxx_cabal
-    "Vector"
-    "std::vector"
-    ["tp1"]
-    [ TFunNew [] Nothing,
-      TFun void_ "push_back" "push_back" [Arg (TemplateParam "tp1") "x"] Nothing,
-      TFun void_ "pop_back" "pop_back" [] Nothing,
-      TFun (TemplateParam "tp1") "at" "at" [int "n"] Nothing,
-      TFun int_ "size" "size" [] Nothing,
-      TFunDelete
-    ]
-
-t_unique_ptr :: TemplateClass
-t_unique_ptr =
-  TmplCls
-    stdcxx_cabal
-    "UniquePtr"
-    "std::unique_ptr"
-    ["tp1"]
-    [ TFunNew [] (Just "newUniquePtr0"),
-      TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing,
-      TFun (TemplateParamPointer "tp1") "get" "get" [] Nothing,
-      TFun (TemplateParamPointer "tp1") "release" "release" [] Nothing,
-      TFun void_ "reset" "reset" [] Nothing,
-      TFunDelete
-    ]
 
 -- -------------------------------------------------------------------
 -- proxy-test
@@ -218,7 +171,7 @@ main = do
   let tmpldir =
         if length args == 1
           then args !! 0
-          else "../template"
+          else "./template"
 
   cwd <- getCurrentDirectory
 

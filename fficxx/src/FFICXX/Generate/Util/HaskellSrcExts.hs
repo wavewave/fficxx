@@ -1,4 +1,82 @@
-module FFICXX.Generate.Util.HaskellSrcExts where
+module FFICXX.Generate.Util.HaskellSrcExts
+  ( app,
+    app',
+    unqual,
+    tycon,
+    tyapp,
+    tyfun,
+    tylist,
+    unit_tycon,
+    conDecl,
+    qualConDecl,
+    recDecl,
+    lit,
+    mkVar,
+    con,
+    doE,
+    listE,
+    strE,
+    qualStmt,
+    mkTVar,
+    mkPVar,
+    mkIVar,
+    mkPVarSig,
+    pbind,
+    pbind_,
+    mkTBind,
+    mkBind1,
+    mkFun,
+    mkFunSig,
+    mkClass,
+    dhead,
+    mkDeclHead,
+    mkInstance,
+    mkData,
+    mkNewtype,
+    mkForImpCcall,
+    mkModule,
+    mkModuleE,
+    mkImport,
+    mkImportExp,
+    mkImportSrc,
+    lang,
+    dot,
+    tyForall,
+    tyParen,
+    tyPtr,
+    tyForeignPtr,
+    classA,
+    cxEmpty,
+    cxTuple,
+    tySplice,
+    tyTupleBoxed,
+    parenSplice,
+    bracketExp,
+    typeBracket,
+    mkDeriving,
+    irule,
+    ihcon,
+    evar,
+    eabs,
+    ethingwith,
+    ethingall,
+    emodule,
+    nonamespace,
+    insType,
+    insDecl,
+    generator,
+    qualifier,
+    clsDecl,
+    unkindedVar,
+    op,
+    inapp,
+    if_,
+    urhs,
+    match,
+    eWildCard,
+    prettyPrint,
+  )
+where
 
 import Data.List (foldl')
 import Data.Maybe (maybeToList)
@@ -99,12 +177,18 @@ import Language.Haskell.Exts
         TyList,
         TyParen,
         TySplice,
+        TyTuple,
         TyVar
       ),
-    app,
-    unit_tycon,
   )
+import qualified Language.Haskell.Exts as LHE
 import Language.Haskell.Exts.Syntax (CName)
+
+app :: Exp () -> Exp () -> Exp ()
+app = LHE.app
+
+app' :: String -> String -> Exp ()
+app' x y = App () (mkVar x) (mkVar y)
 
 unqual :: String -> QName ()
 unqual = UnQual () . Ident ()
@@ -126,7 +210,7 @@ tylist :: Type () -> Type ()
 tylist = TyList ()
 
 unit_tycon :: Type ()
-unit_tycon = Language.Haskell.Exts.unit_tycon ()
+unit_tycon = LHE.unit_tycon ()
 
 conDecl :: String -> [Type ()] -> ConDecl ()
 conDecl n ys = ConDecl () (Ident () n) ys
@@ -141,9 +225,6 @@ qualConDecl = QualConDecl ()
 recDecl :: String -> [FieldDecl ()] -> ConDecl ()
 recDecl n rs = RecDecl () (Ident () n) rs
 
-app' :: String -> String -> Exp ()
-app' x y = App () (mkVar x) (mkVar y)
-
 lit :: Literal () -> Exp ()
 lit = Lit ()
 
@@ -152,6 +233,18 @@ mkVar = Var () . unqual
 
 con :: String -> Exp ()
 con = Con () . unqual
+
+doE :: [Stmt ()] -> Exp ()
+doE = LHE.doE
+
+listE :: [Exp ()] -> Exp ()
+listE = LHE.listE
+
+strE :: String -> Exp ()
+strE = LHE.strE
+
+qualStmt :: Exp () -> Stmt ()
+qualStmt = LHE.qualStmt
 
 mkTVar :: String -> Type ()
 mkTVar = TyVar () . Ident ()
@@ -271,6 +364,9 @@ cxTuple = CxTuple ()
 tySplice :: Splice () -> Type ()
 tySplice = TySplice ()
 
+tyTupleBoxed :: [Type ()] -> Type ()
+tyTupleBoxed = TyTuple () LHE.Boxed
+
 parenSplice :: Exp () -> Splice ()
 parenSplice = ParenSplice ()
 
@@ -348,3 +444,9 @@ urhs = UnGuardedRhs ()
 -- | case pattern match p -> e
 match :: Pat () -> Exp () -> Alt ()
 match p e = Alt () p (urhs e) Nothing
+
+eWildCard :: Int -> EWildcard ()
+eWildCard = EWildcard ()
+
+prettyPrint :: (LHE.Pretty a) => a -> String
+prettyPrint = LHE.prettyPrint
