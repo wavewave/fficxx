@@ -140,10 +140,15 @@ simpleBuilder cfg sbc = do
       (prettyPrint (C.buildRawTypeHs m))
   --
   putStrLn "Generating FFI.hsc"
-  for_ mods $ \m ->
+  for_ mods $ \m -> do
+    {- let x = C.buildFFIHsc m
+    putStrLn (Exact.showAst x)
+    putStrLn "-------"
+    putStrLn (exactPrint x)
+    putStrLn "-------" -}
     gen
       (cmModule m <.> "FFI" <.> "hsc")
-      (prettyPrint (C.buildFFIHsc m))
+      (prettyPrint {- exactPrint -} (C.buildFFIHsc m))
   --
   putStrLn "Generating Interface.hs"
   for_ mods $ \m ->
@@ -166,12 +171,9 @@ simpleBuilder cfg sbc = do
   putStrLn "Generating Proxy.hs"
   for_ mods $ \m ->
     when (hasProxy . cihClass . cmCIH $ m) $ do
-      let x = C.buildProxyHs m
-      putStrLn (Exact.showAst x)
-      putStrLn "-------"
-      putStrLn (exactPrint (C.buildProxyHs m))
-      putStrLn "-------"
-      gen (cmModule m <.> "Proxy" <.> "hs") (exactPrint (C.buildProxyHs m))
+      gen
+        (cmModule m <.> "Proxy" <.> "hs")
+        (exactPrint (C.buildProxyHs m))
   --
   putStrLn "Generating Template.hs"
   for_ tcms $ \m ->
