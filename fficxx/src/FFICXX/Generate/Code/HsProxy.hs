@@ -3,8 +3,6 @@
 module FFICXX.Generate.Code.HsProxy where
 
 import qualified Data.List as L (foldr1)
---
-
 import FFICXX.Generate.Util.GHCExactPrint
   ( app,
     con,
@@ -43,10 +41,11 @@ genProxyInstance = mkFun fname sig [] rhs Nothing
           `app` par
             ( v "addForeignSource"
                 `app` con "LangCxx"
-                `app` ( L.foldr1
-                          (\x y -> inapp x (op "++") y)
-                          [includeStatic]
-                      )
+                `app` par
+                  ( L.foldr1
+                      (\x y -> inapp x (op "++") y)
+                      [includeStatic]
+                  )
             )
       where
         includeStatic =

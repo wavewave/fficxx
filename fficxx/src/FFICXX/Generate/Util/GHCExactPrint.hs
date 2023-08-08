@@ -263,8 +263,8 @@ noAnnList = AnnList Nothing Nothing Nothing [] []
 noAnnListItem :: AnnListItem
 noAnnListItem = AnnListItem []
 
-mkLExpr :: HsExpr GhcPs -> LHsExpr GhcPs
-mkLExpr = L (mkRelSrcSpanAnn (-1) noAnnListItem)
+mkL :: Int -> a -> GenLocated SrcSpanAnnA a
+mkL nLines = L (mkRelSrcSpanAnn nLines noAnnListItem)
 
 --
 -- Modules
@@ -360,8 +360,8 @@ tyapp :: HsType GhcPs -> HsType GhcPs -> HsType GhcPs
 tyapp x y =
   HsAppTy noExtField lx ly
   where
-    lx = L (mkRelSrcSpanAnn (-1) (AnnListItem [])) x
-    ly = L (mkRelSrcSpanAnn 0 (AnnListItem [])) y
+    lx = mkL (-1) x
+    ly = mkL 0 y
 
 tylist :: HsType GhcPs -> HsType GhcPs
 tylist x =
@@ -373,7 +373,7 @@ tylist x =
           ap_open = EpaDelta (SameLine 0) [],
           ap_close = EpaDelta (SameLine 0) []
         }
-    lx = L (mkRelSrcSpanAnn (-1) (AnnListItem [])) x
+    lx = mkL (-1) x
 
 --
 -- Function
@@ -415,7 +415,7 @@ mkFunSig fname typ =
       HsSig
         noExtField
         (HsOuterImplicit noExtField)
-        (L (mkRelSrcSpanAnn (-1) noAnnListItem) typ)
+        (mkL (-1) typ)
 
 mkBind1 ::
   String ->
@@ -430,7 +430,7 @@ mkBind1 fname pats rhs mbinds =
     lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
 
     lpats = [] -- fmap (L ) pats
-    lrhs = L (mkRelSrcSpanAnn (-1) noAnnListItem) rhs
+    lrhs = mkL (-1) rhs
     glrhs =
       let ann =
             mkRelEpAnn
@@ -450,7 +450,7 @@ mkBind1 fname pats rhs mbinds =
                 grhssLocalBinds = EmptyLocalBinds noExtField
               }
         }
-    lmatch = L (mkRelSrcSpanAnn (-1) noAnnListItem) match
+    lmatch = mkL (-1) match
     payload = MG FromSource (L (mkRelSrcSpanAnn (-1) noAnnList) [lmatch])
 
 --
@@ -461,8 +461,8 @@ app :: HsExpr GhcPs -> HsExpr GhcPs -> HsExpr GhcPs
 app x y =
   HsApp (mkRelEpAnn (-1) NoEpAnns) lx ly
   where
-    lx = L (mkRelSrcSpanAnn (-1) noAnnListItem) x
-    ly = L (mkRelSrcSpanAnn 0 noAnnListItem) y
+    lx = mkL (-1) x
+    ly = mkL 0 y
 
 -- NOTE: in ghc API, no difference between constructor and variable
 con :: String -> HsExpr GhcPs
@@ -500,9 +500,9 @@ inapp x o y =
   OpApp ann lx lo ly
   where
     ann = mkRelEpAnn (-1) []
-    lx = L (mkRelSrcSpanAnn (-1) noAnnListItem) x
-    lo = L (mkRelSrcSpanAnn (-1) noAnnListItem) o
-    ly = L (mkRelSrcSpanAnn (-1) noAnnListItem) y
+    lx = mkL (-1) x
+    lo = mkL (-1) o
+    ly = mkL (-1) y
 
 listE :: [HsExpr GhcPs] -> HsExpr GhcPs
 listE itms =
@@ -519,7 +519,7 @@ listE itms =
                 AddEpAnn AnnCloseS (EpaDelta (SameLine 0) [])
               ]
               []
-          litms = fmap (L (mkRelSrcSpanAnn (-1) noAnnListItem)) itms
+          litms = fmap (mkL (-1)) itms
        in ExplicitList (mkRelEpAnn (-1) ann) litms
   where
 
@@ -535,7 +535,7 @@ op = mkVar
 
 par :: HsExpr GhcPs -> HsExpr GhcPs
 par expr =
-  HsPar ann tokOpen (mkLExpr expr) tokClose
+  HsPar ann tokOpen (mkL (-1) expr) tokClose
   where
     ann = mkRelEpAnn (-1) NoEpAnns
     tokOpen = L (TokenLoc (EpaDelta (SameLine 0) [])) HsTok
@@ -556,7 +556,7 @@ mkBodyStmt :: HsExpr GhcPs -> StmtLR GhcPs GhcPs (LHsExpr GhcPs)
 mkBodyStmt expr =
   BodyStmt noExtField body noExtField noExtField
   where
-    body = L (mkRelSrcSpanAnn (-1) noAnnListItem) expr
+    body = mkL (-1) expr
 
 --
 -- utilities

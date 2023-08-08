@@ -8,4 +8,3 @@ data K = K Int
 test :: IO ()
 test = do
   addModFinalizer (addForeignSource LangCxx "\n#include \"test\"")
-
