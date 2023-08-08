@@ -20,7 +20,7 @@ jobs:
         nix build --print-build-logs .#ghc962.fficxx-runtime
     - name: build fficxx (GHC 9.6.2)
       run: |
-        nix build --print-build-logs .#ghc945.fficxx
+        nix build --print-build-logs .#ghc962.fficxx
     - name: build stdcxx (GHC 9.6.2)
       run: |
         nix build --print-build-logs .#ghc962.stdcxx
