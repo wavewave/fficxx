@@ -109,6 +109,9 @@ import GHC.Hs
 import GHC.Hs.Binds
   ( AnnSig (..),
   )
+import GHC.Hs
+  ( GrhsAnn (..),
+  )
 import GHC.Hs.Extension
   ( GhcPs,
   )
@@ -236,6 +239,20 @@ paragraphLines spn zs =
           xs' = fmap (L (mkRelSrcSpanAnn 1 spn (AnnListItem []))) xs
        in x' : xs'
     [] -> []
+
+-- | can place the group of items with arbitrary indentation.
+paragraphLines' :: SrcSpan -> DeltaPos -> [a] -> [GenLocated SrcSpanAnnA a]
+paragraphLines' spn delta zs =
+  case zs of
+    x : xs ->
+      let a = spanAsAnchor spn
+          a' = a {anchor_op = MovedAnchor delta}
+          ann' = SrcSpanAnn (EpAnn a' (AnnListItem []) emptyComments) spn
+          x' = L ann' x
+          xs' = fmap (L (mkRelSrcSpanAnn 1 spn (AnnListItem []))) xs
+       in x' : xs'
+    [] -> []
+
 
 noAnnList :: AnnList
 noAnnList = AnnList Nothing Nothing Nothing [] []
@@ -416,11 +433,21 @@ mkBind1 fname pats rhs mbinds =
 
     lpats = [] -- fmap (L ) pats
     lrhs = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) rhs
-    glrhs = GRHS noAnn [] (lrhs)
+    glrhs =
+      let ann =
+            mkRelEpAnn
+              (-1)
+              s1
+              (GrhsAnn Nothing (AddEpAnn AnnEqual (EpaDelta (SameLine 1) [])))
+       in GRHS ann [] (lrhs)
     lglrhs = L (mkRelSrcSpanAnn (-1) s1 NoEpAnns) glrhs
     match =
       Match
-        { m_ext = mkRelEpAnn (-1) s1 [],
+        { m_ext =
+            mkRelEpAnn
+              (-1)
+              s1
+              [],
           m_ctxt = FunRhs lid Prefix NoSrcStrict,
           m_pats = lpats,
           m_grhss =
@@ -434,6 +461,9 @@ mkBind1 fname pats rhs mbinds =
     payload = MG FromSource (L (mkRelSrcSpanAnn (-1) s1 noAnnList) [lmatch])
     -- [Match (Ident () n) pat (UnGuardedRhs () rhs) mbinds]
 
+--              [ AddEpAnn AnnEqual (EpaDelta (SameLine 1) [])
+--              ],
+
 
 --
 -- Expr
@@ -445,7 +475,7 @@ app x y =
   where
     (s1, _) = defSrcSpan
     lx = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) x
-    ly = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) y
+    ly = L (mkRelSrcSpanAnn 0 s1 noAnnListItem) y
 
 mkVar :: String -> HsExpr GhcPs
 mkVar name =
@@ -458,21 +488,43 @@ mkVar name =
 doE :: [StmtLR GhcPs GhcPs (LHsExpr GhcPs)] -> HsExpr GhcPs
 doE stmts =
   HsDo
-    (mkRelEpAnn (-1) s1 noAnnList)
+    (mkRelEpAnn (-1) s1 annDo)
     (DoExpr Nothing)
     llstmts
   where
     (s1, _) = defSrcSpan
+    annDo =
+      AnnList
+        Nothing
+        Nothing
+        Nothing
+        [AddEpAnn AnnDo (EpaDelta (SameLine 1) [])]
+        []
+    lstmts =
+      paragraphLines' s1 (DifferentLine 1 2) stmts
     llstmts =
-      L (mkRelSrcSpanAnn (-1) s1 noAnnList) lstmts
-    lstmts = fmap (L (mkRelSrcSpanAnn 1 s1 noAnnListItem)) stmts
+      let ann = mkRelSrcSpanAnn (-1) s1 noAnnList
+       in L ann lstmts
 
 listE :: [HsExpr GhcPs] -> HsExpr GhcPs
 listE itms =
-  ExplicitList (mkRelEpAnn (-1) s1 noAnnList) litms
+  case itms of
+    -- NOTE: More correct way is to use GHC.Builtin.Names, but for codegen, this is enough.
+    [] -> mkVar "[]"
+    _ : _ ->
+      let ann =
+            AnnList
+              Nothing
+              Nothing
+              Nothing
+              [ AddEpAnn AnnOpenS (EpaDelta (SameLine 0) []),
+                AddEpAnn AnnCloseS (EpaDelta (SameLine 0) [])
+              ]
+              []
+          litms = fmap (L (mkRelSrcSpanAnn (-1) s1 noAnnListItem)) itms
+       in ExplicitList (mkRelEpAnn (-1) s1 ann) litms
   where
     (s1, _) = defSrcSpan
-    litms = fmap (L (mkRelSrcSpanAnn (-1) s1 noAnnListItem)) itms
 
 mkBodyStmt :: HsExpr GhcPs -> StmtLR GhcPs GhcPs (LHsExpr GhcPs)
 mkBodyStmt expr =

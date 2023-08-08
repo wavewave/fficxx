@@ -6,4 +6,4 @@ module MyModule where
 
 test :: IO ()
 test = do
-  pure ()
+  pure ( )
