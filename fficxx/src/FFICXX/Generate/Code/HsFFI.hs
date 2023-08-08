@@ -11,6 +11,8 @@ import FFICXX.Generate.Code.Primitive
     genericFuncRet,
     hsFFIFunType,
   )
+--
+import qualified FFICXX.Generate.Code.Primitive as O (hsFFIFuncTyp)
 import FFICXX.Generate.Dependency
   ( class_allparents,
   )
@@ -44,10 +46,12 @@ import FFICXX.Generate.Util.GHCExactPrint
   ( mkForImpCcall,
     mkImport,
   )
+import qualified FFICXX.Generate.Util.HaskellSrcExts as O
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import GHC.Hs
   ( GhcPs,
   )
+import qualified Language.Haskell.Exts.Syntax as O
 import Language.Haskell.Syntax
   ( ForeignDecl,
     ImportDecl,
@@ -118,3 +122,16 @@ genTopLevelFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) c
     -- TODO: This must be exposed as a top-level function
     cfname = "c_" <> toLowers fname
     typ = hsFFIFunType Nothing (CFunSig args ret)
+
+-- TODO: Remove
+genTopLevelFFI_ :: TopLevelImportHeader -> TLOrdinary -> O.Decl ()
+genTopLevelFFI_ header tfn = O.mkForImpCcall (hfilename <> " TopLevel_" <> fname) cfname typ
+  where
+    (fname, args, ret) =
+      case tfn of
+        TopLevelFunction {..} -> (fromMaybe toplevelfunc_name toplevelfunc_alias, toplevelfunc_args, toplevelfunc_ret)
+        TopLevelVariable {..} -> (fromMaybe toplevelvar_name toplevelvar_alias, [], toplevelvar_ret)
+    hfilename = tihHeaderFileName header <.> "h"
+    -- TODO: This must be exposed as a top-level function
+    cfname = "c_" <> toLowers fname
+    typ = O.hsFFIFuncTyp Nothing (CFunSig args ret)

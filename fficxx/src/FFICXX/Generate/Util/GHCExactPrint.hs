@@ -18,6 +18,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     tycon,
     tyfun,
     tylist,
+    tyParen,
     tyPtr,
     unit_tycon,
 
@@ -447,6 +448,16 @@ tylist x =
         }
     lx = mkL (-1) x
 
+tyParen :: HsType GhcPs -> HsType GhcPs
+tyParen typ =
+  HsParTy (mkRelEpAnn (-1) ann) (mkL (-1) typ)
+  where
+    ann =
+      AnnParen
+        AnnParens
+        (EpaDelta (SameLine 0) [])
+        (EpaDelta (SameLine 0) [])
+
 tyPtr :: HsType GhcPs
 tyPtr = tycon "Ptr"
 
@@ -854,9 +865,6 @@ tyForall ::
   Type () ->
   Type ()
 tyForall = TyForall ()
-
-tyParen :: Type () -> Type ()
-tyParen = TyParen ()
 
 tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"

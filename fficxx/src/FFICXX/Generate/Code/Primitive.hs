@@ -1120,7 +1120,7 @@ hsFFIFunType msc (CFunSig args ret) =
     argtyps = map (hsargtype . arg_type) args
     --
     rettyp :: HsType GhcPs
-    rettyp = hsrettype ret
+    rettyp = Ex.tyParen (hsrettype ret)
     --
     selftyp = case msc of
       Just (_, c) -> Ex.tyapp Ex.tyPtr (Ex.tycon (snd (hsClassName c)))

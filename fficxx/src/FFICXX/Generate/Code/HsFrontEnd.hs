@@ -63,6 +63,8 @@ import FFICXX.Generate.Type.Module
     TemplateClassModule (..),
   )
 import FFICXX.Generate.Util (toLowers)
+--
+import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
 import FFICXX.Generate.Util.HaskellSrcExts
   ( classA,
     clsDecl,
@@ -103,12 +105,14 @@ import FFICXX.Generate.Util.HaskellSrcExts
     unkindedVar,
     unqual,
   )
+import qualified GHC.Hs as Ex
 import Language.Haskell.Exts.Build (app, letE, name, pApp)
 import Language.Haskell.Exts.Syntax
   ( Decl,
     ExportSpec,
     ImportDecl,
   )
+import qualified Language.Haskell.Syntax as Ex
 import System.FilePath ((<.>))
 
 genHsFrontDecl :: Bool -> Class -> Reader AnnotateMap (Decl ())
@@ -329,8 +333,13 @@ genExportStatic c = map (evar . unqual) fns
 -- Import --
 ------------
 
-genExtraImport :: ClassModule -> [ImportDecl ()]
-genExtraImport cm = map mkImport (cmExtraImport cm)
+-- TODO: Remvoe
+genExtraImport_ :: ClassModule -> [ImportDecl ()]
+genExtraImport_ cm = map mkImport (cmExtraImport cm)
+
+-- This is the new version.
+genExtraImport :: ClassModule -> [Ex.ImportDecl Ex.GhcPs]
+genExtraImport cm = fmap Ex.mkImport (cmExtraImport cm)
 
 genImportInModule :: Class -> [ImportDecl ()]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
