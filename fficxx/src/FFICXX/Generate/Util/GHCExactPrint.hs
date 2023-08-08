@@ -8,27 +8,37 @@ module FFICXX.Generate.Util.GHCExactPrint
     -- * import
     mkImport,
 
+    -- * names
+    unqual,
+
+    -- * types
+    mkTVar,
+    tycon,
+    tyapp,
+    tylist,
+
     -- * function
     mkFun,
     mkFunSig,
-    testTyp,
+    mkBind1,
 
-    {- app,
-    app',
-    unqual,
-    tycon,
-    tyapp,
+    -- * expr
+    app,
+    doE,
+    listE,
+    mkVar,
+
+    -- * stmt
+    mkBodyStmt,
+
+    {- app',
     tyfun,
-    tylist,
     unit_tycon,
     conDecl,
     qualConDecl,
     recDecl,
     lit,
-    mkVar,
     con,
-    doE,
-    listE,
     strE,
     qualStmt,
     mkTVar,
@@ -38,7 +48,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     pbind,
     pbind_,
     mkTBind,
-    mkBind1,
     mkClass,
     dhead,
     mkDeclHead,
@@ -113,12 +122,15 @@ import GHC.Parser.Annotation
     AnnKeywordId (..),
     AnnList (..),
     AnnListItem (..),
+    AnnParen (..),
     DeltaPos (..),
     EpAnn (..),
     EpaComment (..),
     EpaCommentTok (EpaLineComment),
     EpaLocation (..),
     NameAnn (..),
+    NoEpAnns (..),
+    ParenType (AnnParensSquare),
     SrcAnn,
     SrcSpanAnn' (SrcSpanAnn),
     SrcSpanAnnA,
@@ -127,13 +139,20 @@ import GHC.Parser.Annotation
     noSrcSpanA,
     spanAsAnchor,
   )
+import GHC.Types.Basic
+  ( Origin (FromSource),
+  )
+import GHC.Types.Fixity
+  ( LexicalFixity (Prefix),
+  )
 import GHC.Types.Name.Occurrence
-  ( mkOccName,
-    mkVarOcc,
+  ( OccName,
+    mkOccName,
     mkTyVarOcc,
+    mkVarOcc,
   )
 import GHC.Types.Name.Reader
-  ( RdrName (Unqual)
+  ( RdrName (Unqual),
   )
 import GHC.Types.PkgQual
   ( RawPkgQual (..),
@@ -151,44 +170,56 @@ import GHC.Types.SrcLoc
   )
 import qualified Language.Haskell.GHC.ExactPrint as Exact
 import Language.Haskell.Syntax
-  ( HsModule (..),
-    ImportDecl (..),
-    LayoutInfo (..),
-    ModuleName (..),
-  )
-import Language.Haskell.Syntax.Binds
-  ( Sig (TypeSig),
-  )
-import Language.Haskell.Syntax.Decls
-  ( HsDecl (..),
-  )
-import Language.Haskell.Syntax.Extension
   ( Anno,
-    noExtField,
-  )
-import Language.Haskell.Syntax.ImpExp
-  ( ImportDeclQualifiedStyle (..),
-    IsBootInterface (..),
-  )
-import Language.Haskell.Syntax.Type
-  ( HsOuterTyVarBndrs (HsOuterImplicit),
+    ExprLStmt,
+    GRHS (..),
+    GRHSs (..),
+    HsBind (..),
+    HsBindLR (..),
+    HsDecl (..),
+    HsDoFlavour (..),
+    HsExpr (..),
+    HsLocalBinds,
+    HsLocalBindsLR (..),
+    HsMatchContext (FunRhs),
+    HsModule (..),
+    HsOuterTyVarBndrs (HsOuterImplicit),
     HsSigType (HsSig),
     HsType (..),
     HsWildCardBndrs (HsWC),
+    ImportDecl (..),
+    ImportDeclQualifiedStyle (..),
+    IsBootInterface (..),
+    LayoutInfo (..),
+    LHsExpr,
+    Match (..),
+    MatchGroup (..),
+    ModuleName (..),
+    Pat (..),
     PromotionFlag (..),
+    Sig (TypeSig),
+    StmtLR (..),
+    noExtField,
+  )
+import Language.Haskell.Syntax.Basic
+  ( SrcStrictness (NoSrcStrict),
   )
 
 mkRelAnchor :: Int -> SrcSpan -> Anchor
 mkRelAnchor nLines spn =
   let a' = spanAsAnchor spn
-   in if | nLines < -1 -> error "mkRelAnchor: cannot go backward further"
-         | nLines == -1 -> a' {anchor_op = MovedAnchor (SameLine 0)}
-         | nLines == 0 -> a' {anchor_op = MovedAnchor (SameLine 1)}
-         | nLines > 0 -> a' {anchor_op = MovedAnchor (DifferentLine nLines 0)}
+   in if
+          | nLines < -1 -> error "mkRelAnchor: cannot go backward further"
+          | nLines == -1 -> a' {anchor_op = MovedAnchor (SameLine 0)}
+          | nLines == 0 -> a' {anchor_op = MovedAnchor (SameLine 1)}
+          | nLines > 0 -> a' {anchor_op = MovedAnchor (DifferentLine nLines 0)}
+
+mkRelEpAnn :: Int -> SrcSpan -> ann -> EpAnn ann
+mkRelEpAnn nLines spn ann = EpAnn (mkRelAnchor nLines spn) ann emptyComments
 
 mkRelSrcSpanAnn :: Int -> SrcSpan -> ann -> SrcAnn ann
 mkRelSrcSpanAnn nLines spn ann =
-  SrcSpanAnn (EpAnn (mkRelAnchor nLines spn) ann emptyComments) spn
+  SrcSpanAnn (mkRelEpAnn nLines spn ann) spn
 
 defSrcSpan :: (SrcSpan, RealSrcSpan)
 defSrcSpan = (spn, rspn)
@@ -206,6 +237,11 @@ paragraphLines spn zs =
        in x' : xs'
     [] -> []
 
+noAnnList :: AnnList
+noAnnList = AnnList Nothing Nothing Nothing [] []
+
+noAnnListItem :: AnnListItem
+noAnnListItem = AnnListItem []
 
 --
 -- Modules
@@ -223,12 +259,12 @@ mkModule name pragmas idecls decls =
   HsModule
     { hsmodExt =
         XModulePs
-          { hsmodAnn = EpAnn (spanAsAnchor s1) a1 emptyComments,
+          { hsmodAnn = mkRelEpAnn (-1) s1 a1,
             hsmodLayout = VirtualBraces 1,
             hsmodDeprecMessage = Nothing,
             hsmodHaddockModHeader = Nothing
           },
-      hsmodName = Just (L (mkRelSrcSpanAnn 0 s1 (AnnListItem [])) modName),
+      hsmodName = Just (L (mkRelSrcSpanAnn 0 s1 noAnnListItem) modName),
       hsmodExports = Nothing,
       hsmodImports = paragraphLines s1 idecls,
       hsmodDecls = paragraphLines s1 decls
@@ -239,11 +275,11 @@ mkModule name pragmas idecls decls =
     pragmaComments =
       let ls =
             fmap
-              (\p ->
-                 let a = mkRelAnchor 1 s1
-                     str = "{-# LANGUAGE " <> p <> " #-}"
-                     c = EpaComment (EpaLineComment str) rs1
-                  in L a c
+              ( \p ->
+                  let a = mkRelAnchor 1 s1
+                      str = "{-# LANGUAGE " <> p <> " #-}"
+                      c = EpaComment (EpaLineComment str) rs1
+                   in L a c
               )
               pragmas
        in ls
@@ -278,19 +314,71 @@ mkImport name =
     modName = ModuleName (fromString name)
 
 --
+-- names
+--
+
+unqual :: OccName -> RdrName
+unqual = Unqual
+
+--
+-- types
+--
+
+tycon :: String -> HsType GhcPs
+tycon name =
+  HsTyVar
+    noAnn
+    NotPromoted
+    (L (mkRelSrcSpanAnn (-1) s1 (NameAnnTrailing [])) (unqual (mkTyVarOcc name)))
+  where
+    (s1, _) = defSrcSpan
+
+-- TODO: deprecate this later
+mkTVar :: String -> HsType GhcPs
+mkTVar = tycon
+
+tyapp :: HsType GhcPs -> HsType GhcPs -> HsType GhcPs
+tyapp x y =
+  HsAppTy noExtField lx ly
+  where
+    (s1, _) = defSrcSpan
+    lx = L (mkRelSrcSpanAnn (-1) s1 (AnnListItem [])) x
+    ly = L (mkRelSrcSpanAnn 0 s1 (AnnListItem [])) y
+
+tylist :: HsType GhcPs -> HsType GhcPs
+tylist x =
+  HsListTy (mkRelEpAnn (-1) s1 ann) lx
+  where
+    (s1, _) = defSrcSpan
+    ann =
+      AnnParen
+        { ap_adornment = AnnParensSquare,
+          ap_open = EpaDelta (SameLine 0) [],
+          ap_close = EpaDelta (SameLine 0) []
+        }
+    lx = L (mkRelSrcSpanAnn (-1) s1 (AnnListItem [])) x
+
+--
 -- Function
 --
 
 mkFun ::
   -- | function name
   String ->
+  -- | function type
   HsType GhcPs ->
-  -- [Pat ()] ->
-  -- Exp () ->
-  -- Maybe (Binds ()) ->
+  -- | arg pattern
+  [Pat GhcPs] ->
+  -- | RHS
+  HsExpr GhcPs ->
+  -- | where
+  Maybe (HsLocalBinds GhcPs) ->
+  -- | decls
   [HsDecl GhcPs]
-mkFun fname typ {- pats rhs mbinds -} = [mkFunSig fname typ] -- , mkBind1 fname pats rhs mbinds]
-  where
+mkFun fname typ pats rhs mbinds =
+  [ mkFunSig fname typ,
+    mkBind1 fname pats rhs mbinds
+  ]
 
 mkFunSig ::
   -- | function name
@@ -298,33 +386,101 @@ mkFunSig ::
   HsType GhcPs ->
   HsDecl GhcPs
 mkFunSig fname typ =
-  SigD noExtField (TypeSig ann [lid] bndr) -- [Ident () fname] typ
+  SigD noExtField (TypeSig ann [lid] bndr)
   where
     (s1, rs1) = defSrcSpan
     ann =
-      EpAnn
-        (mkRelAnchor (-1) s1)
-        (AnnSig (AddEpAnn AnnDcolon (EpaDelta (SameLine 1) [])) [])
-        emptyComments
+      mkRelEpAnn (-1) s1 (AnnSig (AddEpAnn AnnDcolon (EpaDelta (SameLine 1) [])) [])
 
-    id' = Unqual (mkVarOcc fname)
+    id' = unqual (mkVarOcc fname)
     lid = L (mkRelSrcSpanAnn (-1) s1 (NameAnnTrailing [])) id'
     bndr = HsWC noExtField (L (mkRelSrcSpanAnn 0 s1 (AnnListItem [])) hsSigType)
     hsSigType =
       HsSig
         noExtField
         (HsOuterImplicit noExtField)
-        (L (mkRelSrcSpanAnn (-1) s1 (AnnListItem [])) typ)
+        (L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) typ)
 
-testTyp :: HsType GhcPs
-testTyp =
-  HsTyVar
-    noAnn
-    NotPromoted
-    (L (mkRelSrcSpanAnn (-1) s1 (NameAnnTrailing [])) (Unqual (mkTyVarOcc "Double")))
+mkBind1 ::
+  String ->
+  [Pat GhcPs] ->
+  HsExpr GhcPs ->
+  Maybe (HsLocalBinds GhcPs) ->
+  HsDecl GhcPs
+mkBind1 fname pats rhs mbinds =
+  ValD noExtField (FunBind noExtField lid payload)
+  where
+    (s1, rs1) = defSrcSpan
+    id' = unqual (mkVarOcc fname)
+    lid = L (mkRelSrcSpanAnn (-1) s1 (NameAnnTrailing [])) id'
+
+    lpats = [] -- fmap (L ) pats
+    lrhs = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) rhs
+    glrhs = GRHS noAnn [] (lrhs)
+    lglrhs = L (mkRelSrcSpanAnn (-1) s1 NoEpAnns) glrhs
+    match =
+      Match
+        { m_ext = mkRelEpAnn (-1) s1 [],
+          m_ctxt = FunRhs lid Prefix NoSrcStrict,
+          m_pats = lpats,
+          m_grhss =
+            GRHSs
+              { grhssExt = emptyComments,
+                grhssGRHSs = [lglrhs],
+                grhssLocalBinds = EmptyLocalBinds noExtField
+              }
+        }
+    lmatch = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) match
+    payload = MG FromSource (L (mkRelSrcSpanAnn (-1) s1 noAnnList) [lmatch])
+    -- [Match (Ident () n) pat (UnGuardedRhs () rhs) mbinds]
+
+
+--
+-- Expr
+--
+
+app :: HsExpr GhcPs -> HsExpr GhcPs -> HsExpr GhcPs
+app x y =
+  HsApp (mkRelEpAnn (-1) s1 NoEpAnns) lx ly
   where
     (s1, _) = defSrcSpan
---
+    lx = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) x
+    ly = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) y
+
+mkVar :: String -> HsExpr GhcPs
+mkVar name =
+  HsVar noExtField lid
+  where
+    (s1, _) = defSrcSpan
+    id' = unqual (mkVarOcc name)
+    lid = L (mkRelSrcSpanAnn (-1) s1 (NameAnnTrailing [])) id'
+
+doE :: [StmtLR GhcPs GhcPs (LHsExpr GhcPs)] -> HsExpr GhcPs
+doE stmts =
+  HsDo
+    (mkRelEpAnn (-1) s1 noAnnList)
+    (DoExpr Nothing)
+    llstmts
+  where
+    (s1, _) = defSrcSpan
+    llstmts =
+      L (mkRelSrcSpanAnn (-1) s1 noAnnList) lstmts
+    lstmts = fmap (L (mkRelSrcSpanAnn 1 s1 noAnnListItem)) stmts
+
+listE :: [HsExpr GhcPs] -> HsExpr GhcPs
+listE itms =
+  ExplicitList (mkRelEpAnn (-1) s1 noAnnList) litms
+  where
+    (s1, _) = defSrcSpan
+    litms = fmap (L (mkRelSrcSpanAnn (-1) s1 noAnnListItem)) itms
+
+mkBodyStmt :: HsExpr GhcPs -> StmtLR GhcPs GhcPs (LHsExpr GhcPs)
+mkBodyStmt expr =
+  BodyStmt noExtField body noExtField noExtField
+  where
+    (s1, _) = defSrcSpan
+    body = L (mkRelSrcSpanAnn (-1) s1 noAnnListItem) expr
+
 
 --
 -- utilities
@@ -449,21 +605,12 @@ app' x y = App () (mkVar x) (mkVar y)
 unqual :: String -> QName ()
 unqual = UnQual () . Ident ()
 
-tycon :: String -> Type ()
-tycon = TyCon () . unqual
-
-tyapp :: Type () -> Type () -> Type ()
-tyapp = TyApp ()
-
 infixl 2 `tyapp`
 
 tyfun :: Type () -> Type () -> Type ()
 tyfun = TyFun ()
 
 infixr 2 `tyfun`
-
-tylist :: Type () -> Type ()
-tylist = TyList ()
 
 unit_tycon :: Type ()
 unit_tycon = LHE.unit_tycon ()
@@ -490,9 +637,6 @@ mkVar = Var () . unqual
 con :: String -> Exp ()
 con = Con () . unqual
 
-doE :: [Stmt ()] -> Exp ()
-doE = LHE.doE
-
 listE :: [Exp ()] -> Exp ()
 listE = LHE.listE
 
@@ -501,9 +645,6 @@ strE = LHE.strE
 
 qualStmt :: Exp () -> Stmt ()
 qualStmt = LHE.qualStmt
-
-mkTVar :: String -> Type ()
-mkTVar = TyVar () . Ident ()
 
 mkPVar :: String -> Pat ()
 mkPVar = PVar () . Ident ()
@@ -523,9 +664,6 @@ pbind_ p e = pbind p e Nothing
 mkTBind :: String -> TyVarBind ()
 mkTBind = UnkindedVar () . Ident ()
 
-mkBind1 :: String -> [Pat ()] -> Exp () -> Maybe (Binds ()) -> Decl ()
-mkBind1 n pat rhs mbinds =
-  FunBind () [Match () (Ident () n) pat (UnGuardedRhs () rhs) mbinds]
 
 mkClass :: Context () -> String -> [TyVarBind ()] -> [ClassDecl ()] -> Decl ()
 mkClass ctxt n tbinds cdecls = ClassDecl () (Just ctxt) (mkDeclHead n tbinds) [] (Just cdecls)
@@ -562,7 +700,6 @@ mkModuleE n pragmas exps idecls decls = Module () (Just mhead) pragmas idecls de
   where
     mhead = ModuleHead () (ModuleName () n) Nothing (Just eslist)
     eslist = ExportSpecList () exps
-
 
 mkImportExp :: String -> [String] -> ImportDecl ()
 mkImportExp m lst =

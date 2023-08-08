@@ -7,25 +7,24 @@ import qualified Data.List as L (foldr1)
 
 {-
 import FFICXX.Generate.Util.HaskellSrcExts
-  ( app,
-    con,
-    doE,
+  ( con,
     inapp,
-    listE,
-    mkFun,
-    mkVar,
     op,
     qualStmt,
     qualifier,
     strE,
-    tyapp,
-    tycon,
-    tylist,
   )
 -}
 import FFICXX.Generate.Util.GHCExactPrint
-  ( mkFun,
-    testTyp,
+  ( app,
+    doE,
+    listE,
+    mkBodyStmt,
+    mkFun,
+    mkVar,
+    tyapp,
+    tycon,
+    tylist,
   )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import GHC.Hs.Extension
@@ -34,15 +33,16 @@ import GHC.Hs.Extension
 import Language.Haskell.Syntax.Decls (HsDecl)
 
 genProxyInstance :: [HsDecl GhcPs]
-genProxyInstance = mkFun fname testTyp
+genProxyInstance = mkFun fname sig [] rhs Nothing
   where
     fname = "genImplProxy"
-
-{-  mkFun fname sig [] rhs Nothing
-    v = mkVar
     sig = tycon "Q" `tyapp` tylist (tycon "Dec")
-    rhs = doE [foreignSrcStmt, qualStmt retstmt]
-    foreignSrcStmt =
+    rhs = doE [retstmt] -- [foreignSrcStmt, qualStmt retstmt]
+
+    v = mkVar
+    retstmt = mkBodyStmt (v "pure" `app` listE [])
+
+{-  foreignSrcStmt =
       qualifier $
         (v "addModFinalizer")
           `app` ( v "addForeignSource"
@@ -58,5 +58,4 @@ genProxyInstance = mkFun fname testTyp
             concatMap
               (<> "\n")
               [R.renderCMacro (R.Include "MacroPatternMatch.h")]
-    retstmt = v "pure" `app` listE []
 -}

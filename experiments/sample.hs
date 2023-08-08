@@ -4,4 +4,6 @@
 module MyModule where
 
 
-test :: Double
+test :: IO ()
+test = do
+  pure ()
