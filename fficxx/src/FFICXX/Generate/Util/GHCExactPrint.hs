@@ -119,7 +119,7 @@ import GHC.Parser.Annotation
     DeltaPos (..),
     EpAnn (..),
     EpaComment (..),
-    EpaCommentTok (EpaLineComment),
+    EpaCommentTok (..),
     EpaLocation (..),
     NameAnn (..),
     NoEpAnns (..),
@@ -345,6 +345,10 @@ mkImport name =
   where
     modName = ModuleName (fromString name)
 
+
+-- NOTE: Unfortunately, the location annotation of GHC API for foreign import is not fully relative,
+-- i.e. we cannot place correct spaces between "import", "ccall" and "safe", and the generated result
+-- is not a valid Haskell code. So as a workaround we need to put a place holder in comment.
 mkForImpCcall :: String -> String -> HsType GhcPs -> ForeignDecl GhcPs
 mkForImpCcall quote fname typ =
   ForeignImport (mkRelEpAnn (-1) anns) lid lsigty forImp
@@ -352,7 +356,13 @@ mkForImpCcall quote fname typ =
     quote' = show quote
     anns =
       [ AddEpAnn AnnForeign (EpaDelta (SameLine 0) []),
-        AddEpAnn AnnImport (EpaDelta (SameLine 1) []),
+        AddEpAnn
+          AnnImport
+          ( EpaDelta
+              (SameLine 1)
+              [ L (mkRelAnchor 0) (EpaComment (EpaBlockComment ("{- REPLACE_THIS_LINE |foreign import ccall interruptible \"" <> quote <> "\"| -}")) defRealSrcSpan)
+              ]
+          ),
         AddEpAnn AnnDcolon (EpaDelta (SameLine 1) [])
       ]
     id' = unqual (mkVarOcc fname)
@@ -366,11 +376,11 @@ mkForImpCcall quote fname typ =
     forImp =
       CImport
         (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} (SourceText quote'))
-        (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} CCallConv)
-        (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} PlaySafe)
+        (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} StdCallConv)
+        (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} PlayInterruptible)
         Nothing
         ( CFunction
-            (StaticTarget (SourceText quote) (fromString quote) Nothing False)
+            (StaticTarget (SourceText quote) (fromString quote) Nothing True)
         )
 
 --
