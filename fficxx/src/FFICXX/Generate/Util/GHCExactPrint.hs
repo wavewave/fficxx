@@ -102,9 +102,9 @@ import Data.List (foldl')
 import Data.Maybe (maybeToList)
 import Data.String (IsString (fromString))
 import GHC.Hs
-  ( AnnSig (..),    
+  ( AnnSig (..),
     AnnsModule (..),
-    GhcPs,    
+    GhcPs,
     GrhsAnn (..),
     XImportDeclPass (..),
     XModulePs (..),

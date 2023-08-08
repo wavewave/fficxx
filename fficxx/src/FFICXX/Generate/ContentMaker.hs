@@ -36,7 +36,7 @@ import FFICXX.Generate.Code.HsCast
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
     genImportInFFI,
-    genTopLevelFFI,
+    -- genTopLevelFFI,
   )
 import FFICXX.Generate.Code.HsFrontEnd
   ( genExport,
@@ -329,24 +329,24 @@ buildTopLevelCppDef tih =
                ]
         )
 
-buildFFIHsc :: ClassModule -> Module ()
+buildFFIHsc :: ClassModule -> HsModule GhcPs
 buildFFIHsc m =
-  mkModule
+  Ex.mkModule
     (mname <.> "FFI")
-    [lang ["ForeignFunctionInterface", "InterruptibleFFI"]]
+    ["ForeignFunctionInterface", "InterruptibleFFI"]
     ffiImports
     hscBody
   where
     mname = cmModule m
     ffiImports =
-      [ mkImport "Data.Word",
-        mkImport "Data.Int",
-        mkImport "Foreign.C",
-        mkImport "Foreign.Ptr",
-        mkImport (mname <.> "RawType")
+      [ Ex.mkImport "Data.Word",
+        Ex.mkImport "Data.Int",
+        Ex.mkImport "Foreign.C",
+        Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport (mname <.> "RawType")
       ]
         <> genImportInFFI m
-        <> genExtraImport m
+    -- <> genExtraImport m
     hscBody = genHsFFI (cmCIH m)
 
 buildRawTypeHs :: ClassModule -> Module ()
@@ -636,8 +636,9 @@ buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
         ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
         ++ concatMap genImportForTLOrdinary (filterTLOrdinary tfns)
     pkgBody =
-      map (genTopLevelFFI tih) (filterTLOrdinary tfns)
-        ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
+      -- map (genTopLevelFFI tih) (filterTLOrdinary tfns)
+      --  ++
+      concatMap genTopLevelDef (filterTLOrdinary tfns)
 
 buildTopLevelTemplateHs ::
   String ->

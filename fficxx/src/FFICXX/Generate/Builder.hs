@@ -141,14 +141,14 @@ simpleBuilder cfg sbc = do
   --
   putStrLn "Generating FFI.hsc"
   for_ mods $ \m -> do
-    {- let x = C.buildFFIHsc m
+    let x = C.buildFFIHsc m
     putStrLn (Exact.showAst x)
     putStrLn "-------"
     putStrLn (exactPrint x)
-    putStrLn "-------" -}
+    putStrLn "-------"
     gen
       (cmModule m <.> "FFI" <.> "hsc")
-      (prettyPrint {- exactPrint -} (C.buildFFIHsc m))
+      ({- prettyPrint -} exactPrint (C.buildFFIHsc m))
   --
   putStrLn "Generating Interface.hs"
   for_ mods $ \m ->
