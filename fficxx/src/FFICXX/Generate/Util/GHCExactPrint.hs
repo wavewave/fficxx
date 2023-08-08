@@ -5,17 +5,20 @@ module FFICXX.Generate.Util.GHCExactPrint
   ( -- * module
     mkModule,
 
-    -- * import
+    -- * import and FFI
     mkImport,
+    mkForImpCcall,
 
     -- * names
     unqual,
 
     -- * types
     mkTVar,
-    tycon,
     tyapp,
+    tycon,
+    tyfun,
     tylist,
+    tyPtr,
 
     -- * function
     mkFun,
@@ -36,7 +39,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     -- * stmt
     mkBodyStmt,
     {- app',
-    tyfun,
     unit_tycon,
     conDecl,
     qualConDecl,
@@ -55,7 +57,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkInstance,
     mkData,
     mkNewtype,
-    mkForImpCcall,
     mkModuleE,
     mkImportExp,
     mkImportSrc,
@@ -63,7 +64,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     dot,
     tyForall,
     tyParen,
-    tyPtr,
     tyForeignPtr,
     classA,
     cxEmpty,
@@ -140,6 +140,11 @@ import GHC.Types.Basic
 import GHC.Types.Fixity
   ( LexicalFixity (Prefix),
   )
+import GHC.Types.ForeignCall
+  ( CCallConv (..),
+    CCallTarget (StaticTarget),
+    Safety (..),
+  )
 import GHC.Types.Name.Occurrence
   ( OccName,
     mkOccName,
@@ -166,9 +171,13 @@ import GHC.Types.SrcLoc
 import qualified Language.Haskell.GHC.ExactPrint as Exact
 import Language.Haskell.Syntax
   ( Anno,
+    CImportSpec (CFunction),
     ExprLStmt,
+    ForeignDecl (..),
+    ForeignImport (CImport),
     GRHS (..),
     GRHSs (..),
+    HsArrow (..),
     HsBind (..),
     HsBindLR (..),
     HsDecl (..),
@@ -183,6 +192,7 @@ import Language.Haskell.Syntax
     HsSigType (HsSig),
     HsToken (..),
     HsType (..),
+    HsUniToken (..),
     HsWildCardBndrs (HsWC),
     ImportDecl (..),
     ImportDeclQualifiedStyle (..),
@@ -209,7 +219,7 @@ mkRelAnchor nLines =
           | nLines < -1 -> error "mkRelAnchor: cannot go backward further"
           | nLines == -1 -> a' {anchor_op = MovedAnchor (SameLine 0)}
           | nLines == 0 -> a' {anchor_op = MovedAnchor (SameLine 1)}
-          | nLines > 0 -> a' {anchor_op = MovedAnchor (DifferentLine nLines 0)}
+          | otherwise -> a' {anchor_op = MovedAnchor (DifferentLine nLines 0)}
 
 mkRelEpAnn :: Int -> ann -> EpAnn ann
 mkRelEpAnn nLines ann = EpAnn (mkRelAnchor nLines) ann emptyComments
@@ -259,6 +269,13 @@ noAnnListItem = AnnListItem []
 
 mkL :: Int -> a -> GenLocated SrcSpanAnnA a
 mkL nLines = L (mkRelSrcSpanAnn nLines noAnnListItem)
+
+tokLoc :: Int -> TokenLocation
+tokLoc nLines
+  | nLines < -1 = error "tokLoc: cannot go below -1"
+  | nLines == -1 = TokenLoc (EpaDelta (SameLine 0) [])
+  | nLines == 0 = TokenLoc (EpaDelta (SameLine 1) [])
+  | otherwise = TokenLoc (EpaDelta (DifferentLine nLines 0) [])
 
 --
 -- Modules
@@ -328,6 +345,26 @@ mkImport name =
   where
     modName = ModuleName (fromString name)
 
+mkForImpCcall :: String -> String -> HsType GhcPs -> ForeignDecl GhcPs
+mkForImpCcall quote fname typ =
+  ForeignImport ann lid lsigty forImp
+  where
+    ann = mkRelEpAnn (-1) []
+    id' = unqual (mkVarOcc fname)
+    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+    outer = HsOuterImplicit noExtField
+    sigty = HsSig noExtField outer (mkL (-1) typ)
+    lsigty = mkL (-1) sigty
+    forImp =
+      CImport
+        (L defSrcSpan (SourceText quote))
+        (L defSrcSpan CCallConv)
+        (L defSrcSpan PlaySafe)
+        Nothing
+        ( CFunction
+            (StaticTarget (SourceText quote) (fromString quote) Nothing False)
+        )
+
 --
 -- names
 --
@@ -357,6 +394,19 @@ tyapp x y =
     lx = mkL (-1) x
     ly = mkL 0 y
 
+infixl 2 `tyapp`
+
+tyfun :: HsType GhcPs -> HsType GhcPs -> HsType GhcPs
+tyfun x y =
+  HsFunTy ann arrow lx ly
+  where
+    ann = mkRelEpAnn (-1) NoEpAnns
+    arrow = HsUnrestrictedArrow (L (tokLoc (-1)) HsNormalTok)
+    lx = mkL (-1) x
+    ly = mkL 0 y
+
+infixr 2 `tyfun`
+
 tylist :: HsType GhcPs -> HsType GhcPs
 tylist x =
   HsListTy (mkRelEpAnn (-1) ann) lx
@@ -368,6 +418,9 @@ tylist x =
           ap_close = EpaDelta (SameLine 0) []
         }
     lx = mkL (-1) x
+
+tyPtr :: HsType GhcPs
+tyPtr = tycon "Ptr"
 
 --
 -- Function
@@ -532,8 +585,8 @@ par expr =
   HsPar ann tokOpen (mkL (-1) expr) tokClose
   where
     ann = mkRelEpAnn (-1) NoEpAnns
-    tokOpen = L (TokenLoc (EpaDelta (SameLine 0) [])) HsTok
-    tokClose = L (TokenLoc (EpaDelta (SameLine 0) [])) HsTok
+    tokOpen = L (tokLoc (-1)) HsTok
+    tokClose = L (tokLoc (-1)) HsTok
 
 strE :: String -> HsExpr GhcPs
 strE str = HsLit ann1 (HsString ann2 (fromString str))
@@ -675,13 +728,6 @@ app' x y = App () (mkVar x) (mkVar y)
 unqual :: String -> QName ()
 unqual = UnQual () . Ident ()
 
-infixl 2 `tyapp`
-
-tyfun :: Type () -> Type () -> Type ()
-tyfun = TyFun ()
-
-infixr 2 `tyfun`
-
 unit_tycon :: Type ()
 unit_tycon = LHE.unit_tycon ()
 
@@ -746,9 +792,6 @@ mkNewtype n tbinds qdecls mderiv = DataDecl () (NewType ()) Nothing declhead qde
   where
     declhead = mkDeclHead n tbinds
 
-mkForImpCcall :: String -> String -> Type () -> Decl ()
-mkForImpCcall quote n typ = ForImp () (CCall ()) (Just (PlayInterruptible ())) (Just quote) (Ident () n) typ
-
 mkModuleE :: String -> [ModulePragma ()] -> [ExportSpec ()] -> [ImportDecl ()] -> [Decl ()] -> Module ()
 mkModuleE n pragmas exps idecls decls = Module () (Just mhead) pragmas idecls decls
   where
@@ -779,9 +822,6 @@ tyForall = TyForall ()
 
 tyParen :: Type () -> Type ()
 tyParen = TyParen ()
-
-tyPtr :: Type ()
-tyPtr = tycon "Ptr"
 
 tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"

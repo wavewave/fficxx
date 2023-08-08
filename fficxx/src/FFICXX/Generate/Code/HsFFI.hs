@@ -9,7 +9,7 @@ import FFICXX.Generate.Code.Primitive
     accessorCFunSig,
     genericFuncArgs,
     genericFuncRet,
-    hsFFIFuncTyp,
+    hsFFIFunType,
   )
 import FFICXX.Generate.Dependency
   ( class_allparents,
@@ -41,7 +41,7 @@ import FFICXX.Generate.Type.Module
   )
 import FFICXX.Generate.Util (toLowers)
 import FFICXX.Generate.Util.GHCExactPrint
-  ( -- mkForImpCcall,
+  ( mkForImpCcall,
     mkImport,
   )
 -- import FFICXX.Generate.Util.HaskellSrcExts (mkForImpCcall, mkImport)
@@ -50,13 +50,14 @@ import GHC.Hs
   ( GhcPs,
   )
 import Language.Haskell.Syntax
-  ( HsDecl,
+  ( ForeignDecl,
+    HsDecl,
     ImportDecl,
   )
 -- import Language.Haskell.Exts.Syntax (Decl, ImportDecl)
 import System.FilePath ((<.>))
 
-genHsFFI :: ClassImportHeader -> [HsDecl GhcPs]
+genHsFFI :: ClassImportHeader -> [ForeignDecl GhcPs]
 genHsFFI header =
   let c = cihClass header
       -- TODO: This C header information should not be necessary according to up-to-date
@@ -71,16 +72,12 @@ genHsFFI header =
           (virtualFuncs . class_funcs)
           (class_allparents c)
           <> (class_funcs c)
-   in []
-
-{-      mapMaybe (hsFFIClassFunc h c) allfns
+   in mapMaybe (hsFFIClassFunc h c) allfns
         <> concatMap
           (\v -> [hsFFIAccessor c v Getter, hsFFIAccessor c v Setter])
           (class_vars c)
--}
 
-{-
-hsFFIClassFunc :: HeaderName -> Class -> Function -> Maybe (Decl ())
+hsFFIClassFunc :: HeaderName -> Class -> Function -> Maybe (ForeignDecl GhcPs)
 hsFFIClassFunc headerfilename c f =
   if isAbstractClass c
     then Nothing
@@ -91,19 +88,19 @@ hsFFIClassFunc headerfilename c f =
           csig = CFunSig (genericFuncArgs f) (genericFuncRet f)
           typ =
             if (isNewFunc f || isStaticFunc f)
-              then hsFFIFuncTyp (Just (NoSelf, c)) csig
-              else hsFFIFuncTyp (Just (Self, c)) csig
+              then hsFFIFunType (Just (NoSelf, c)) csig
+              else hsFFIFunType (Just (Self, c)) csig
        in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
--}
 
-{-
-hsFFIAccessor :: Class -> Variable -> Accessor -> Decl ()
+hsFFIAccessor :: Class -> Variable -> Accessor -> ForeignDecl GhcPs
 hsFFIAccessor c v a =
   let -- TODO: make this a separate function
       cname = ffiClassName c <> "_" <> arg_name (unVariable v) <> "_" <> (case a of Getter -> "get"; Setter -> "set")
-      typ = hsFFIFuncTyp (Just (Self, c)) (accessorCFunSig (arg_type (unVariable v)) a)
+      typ =
+        hsFFIFunType
+          (Just (Self, c))
+          (accessorCFunSig (arg_type (unVariable v)) a)
    in mkForImpCcall cname (hscAccessorName c v a) typ
--}
 
 -- import for FFI
 genImportInFFI :: ClassModule -> [ImportDecl GhcPs]
@@ -113,8 +110,7 @@ genImportInFFI = fmap (mkImport . subModuleName) . cmImportedSubmodulesForFFI
 -- for top level function --
 ----------------------------
 
-{-
-genTopLevelFFI :: TopLevelImportHeader -> TLOrdinary -> HsDecl GhcPs
+genTopLevelFFI :: TopLevelImportHeader -> TLOrdinary -> ForeignDecl GhcPs
 genTopLevelFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) cfname typ
   where
     (fname, args, ret) =
@@ -124,5 +120,4 @@ genTopLevelFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) c
     hfilename = tihHeaderFileName header <.> "h"
     -- TODO: This must be exposed as a top-level function
     cfname = "c_" <> toLowers fname
-    typ = hsFFIFuncTyp Nothing (CFunSig args ret)
--}
+    typ = hsFFIFunType Nothing (CFunSig args ret)

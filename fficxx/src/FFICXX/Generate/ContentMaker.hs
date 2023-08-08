@@ -36,7 +36,7 @@ import FFICXX.Generate.Code.HsCast
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
     genImportInFFI,
-    -- genTopLevelFFI,
+    genTopLevelFFI,
   )
 import FFICXX.Generate.Code.HsFrontEnd
   ( genExport,
@@ -125,7 +125,11 @@ import Language.Haskell.Exts.Syntax
   ( Decl,
     Module,
   )
-import Language.Haskell.Syntax (HsModule)
+import Language.Haskell.Syntax
+  ( HsDecl (ForD),
+    HsModule,
+    noExtField,
+  )
 import System.FilePath ((<.>), (</>))
 
 srcDir :: FilePath -> FilePath
@@ -347,7 +351,7 @@ buildFFIHsc m =
       ]
         <> genImportInFFI m
     -- <> genExtraImport m
-    hscBody = genHsFFI (cmCIH m)
+    hscBody = fmap (ForD noExtField) (genHsFFI (cmCIH m))
 
 buildRawTypeHs :: ClassModule -> Module ()
 buildRawTypeHs m =
