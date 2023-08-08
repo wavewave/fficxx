@@ -125,7 +125,7 @@ import Language.Haskell.Exts.Syntax
   ( Decl,
     Module,
   )
-import Language.Haskell.Syntax (HsModule, ModuleName)
+import Language.Haskell.Syntax (HsModule)
 import System.FilePath ((<.>), (</>))
 
 srcDir :: FilePath -> FilePath

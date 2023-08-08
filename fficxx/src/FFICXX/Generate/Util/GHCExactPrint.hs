@@ -24,13 +24,17 @@ module FFICXX.Generate.Util.GHCExactPrint
 
     -- * expr
     app,
+    con,
     doE,
+    inapp,
     listE,
     mkVar,
+    op,
+    par,
+    strE,
 
     -- * stmt
     mkBodyStmt,
-
     {- app',
     tyfun,
     unit_tycon,
@@ -38,9 +42,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     qualConDecl,
     recDecl,
     lit,
-    con,
-    strE,
-    qualStmt,
     mkTVar,
     mkPVar,
     mkIVar,
@@ -87,8 +88,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     qualifier,
     clsDecl,
     unkindedVar,
-    op,
-    inapp,
     if_,
     urhs,
     match,
@@ -104,13 +103,11 @@ import Data.Maybe (maybeToList)
 import Data.String (IsString (fromString))
 import GHC.Hs
   ( AnnsModule (..),
+    GrhsAnn (..),
     XModulePs (..),
   )
 import GHC.Hs.Binds
   ( AnnSig (..),
-  )
-import GHC.Hs
-  ( GrhsAnn (..),
   )
 import GHC.Hs.Extension
   ( GhcPs,
@@ -137,6 +134,7 @@ import GHC.Parser.Annotation
     SrcAnn,
     SrcSpanAnn' (SrcSpanAnn),
     SrcSpanAnnA,
+    TokenLocation (..),
     emptyComments,
     noAnn,
     noSrcSpanA,
@@ -182,19 +180,21 @@ import Language.Haskell.Syntax
     HsDecl (..),
     HsDoFlavour (..),
     HsExpr (..),
+    HsLit (..),
     HsLocalBinds,
     HsLocalBindsLR (..),
     HsMatchContext (FunRhs),
     HsModule (..),
     HsOuterTyVarBndrs (HsOuterImplicit),
     HsSigType (HsSig),
+    HsToken (..),
     HsType (..),
     HsWildCardBndrs (HsWC),
     ImportDecl (..),
     ImportDeclQualifiedStyle (..),
     IsBootInterface (..),
-    LayoutInfo (..),
     LHsExpr,
+    LayoutInfo (..),
     Match (..),
     MatchGroup (..),
     ModuleName (..),
@@ -232,7 +232,8 @@ defSrcSpan = spn
 
 defRealSrcSpan :: RealSrcSpan
 defRealSrcSpan = rspn
-  where RealSrcSpan rspn _ = defSrcSpan
+  where
+    RealSrcSpan rspn _ = defSrcSpan
 
 paragraphLines :: [a] -> [GenLocated SrcSpanAnnA a]
 paragraphLines zs =
@@ -256,12 +257,14 @@ paragraphLines' delta zs =
        in x' : xs'
     [] -> []
 
-
 noAnnList :: AnnList
 noAnnList = AnnList Nothing Nothing Nothing [] []
 
 noAnnListItem :: AnnListItem
 noAnnListItem = AnnListItem []
+
+mkLExpr :: HsExpr GhcPs -> LHsExpr GhcPs
+mkLExpr = L (mkRelSrcSpanAnn (-1) noAnnListItem)
 
 --
 -- Modules
@@ -461,12 +464,9 @@ app x y =
     lx = L (mkRelSrcSpanAnn (-1) noAnnListItem) x
     ly = L (mkRelSrcSpanAnn 0 noAnnListItem) y
 
-mkVar :: String -> HsExpr GhcPs
-mkVar name =
-  HsVar noExtField lid
-  where
-    id' = unqual (mkVarOcc name)
-    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+-- NOTE: in ghc API, no difference between constructor and variable
+con :: String -> HsExpr GhcPs
+con = mkVar
 
 doE :: [StmtLR GhcPs GhcPs (LHsExpr GhcPs)] -> HsExpr GhcPs
 doE stmts =
@@ -488,6 +488,22 @@ doE stmts =
       let ann = mkRelSrcSpanAnn (-1) noAnnList
        in L ann lstmts
 
+inapp ::
+  -- | left arg
+  HsExpr GhcPs ->
+  -- | operator
+  HsExpr GhcPs ->
+  -- | right arg
+  HsExpr GhcPs ->
+  HsExpr GhcPs
+inapp x o y =
+  OpApp ann lx lo ly
+  where
+    ann = mkRelEpAnn (-1) []
+    lx = L (mkRelSrcSpanAnn (-1) noAnnListItem) x
+    lo = L (mkRelSrcSpanAnn (-1) noAnnListItem) o
+    ly = L (mkRelSrcSpanAnn (-1) noAnnListItem) y
+
 listE :: [HsExpr GhcPs] -> HsExpr GhcPs
 listE itms =
   case itms of
@@ -507,12 +523,40 @@ listE itms =
        in ExplicitList (mkRelEpAnn (-1) ann) litms
   where
 
+mkVar :: String -> HsExpr GhcPs
+mkVar name =
+  HsVar noExtField lid
+  where
+    id' = unqual (mkVarOcc name)
+    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+
+op :: String -> HsExpr GhcPs
+op = mkVar
+
+par :: HsExpr GhcPs -> HsExpr GhcPs
+par expr =
+  HsPar ann tokOpen (mkLExpr expr) tokClose
+  where
+    ann = mkRelEpAnn (-1) NoEpAnns
+    tokOpen = L (TokenLoc (EpaDelta (SameLine 0) [])) HsTok
+    tokClose = L (TokenLoc (EpaDelta (SameLine 0) [])) HsTok
+
+strE :: String -> HsExpr GhcPs
+strE str = HsLit ann1 (HsString ann2 (fromString str))
+  where
+    str' = show str
+    ann1 = mkRelEpAnn (-1) NoEpAnns
+    ann2 = SourceText str'
+
+--
+-- Statements
+--
+
 mkBodyStmt :: HsExpr GhcPs -> StmtLR GhcPs GhcPs (LHsExpr GhcPs)
 mkBodyStmt expr =
   BodyStmt noExtField body noExtField noExtField
   where
     body = L (mkRelSrcSpanAnn (-1) noAnnListItem) expr
-
 
 --
 -- utilities
@@ -663,18 +707,6 @@ recDecl n rs = RecDecl () (Ident () n) rs
 lit :: Literal () -> Exp ()
 lit = Lit ()
 
-mkVar :: String -> Exp ()
-mkVar = Var () . unqual
-
-con :: String -> Exp ()
-con = Con () . unqual
-
-listE :: [Exp ()] -> Exp ()
-listE = LHE.listE
-
-strE :: String -> Exp ()
-strE = LHE.strE
-
 mkPVar :: String -> Pat ()
 mkPVar = PVar () . Ident ()
 
@@ -692,7 +724,6 @@ pbind_ p e = pbind p e Nothing
 
 mkTBind :: String -> TyVarBind ()
 mkTBind = UnkindedVar () . Ident ()
-
 
 mkClass :: Context () -> String -> [TyVarBind ()] -> [ClassDecl ()] -> Decl ()
 mkClass ctxt n tbinds cdecls = ClassDecl () (Just ctxt) (mkDeclHead n tbinds) [] (Just cdecls)
@@ -837,12 +868,6 @@ clsDecl = ClsDecl ()
 
 unkindedVar :: Name () -> TyVarBind ()
 unkindedVar = UnkindedVar ()
-
-op :: String -> QOp ()
-op = QVarOp () . UnQual () . Symbol ()
-
-inapp :: Exp () -> QOp () -> Exp () -> Exp ()
-inapp = InfixApp ()
 
 if_ :: Exp () -> Exp () -> Exp () -> Exp ()
 if_ = If ()

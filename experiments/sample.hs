@@ -3,7 +3,9 @@
 
 module MyModule where
 
+data K = K Int
 
 test :: IO ()
 test = do
-  pure ( )
+  addModFinalizer (addForeignSource LangCxx "\n#include \"test\"")
+
