@@ -1081,95 +1081,93 @@ hsFFIFunType msc (CFunSig args ret) =
       Just (_, c) -> Ex.tyapp Ex.tyPtr (Ex.tycon (snd (hsClassName c)))
       Nothing -> error "hsFFIFuncTyp: no self for top level function"
     --
-    hsargtype = undefined
-    hsrettype = undefined
-
-{-    hsargtype :: Types -> HsType GhcPs
-    hsargtype (CT ctype _) = convertC2HS ctype
-    hsargtype (CPT (CPTClass d) _) = tyapp tyPtr (tycon rawname)
+    hsargtype :: Types -> HsType GhcPs
+    -- hsargtype (CT ctype _) = convertC2HS ctype
+    hsargtype (CPT (CPTClass d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
-    hsargtype (CPT (CPTClassRef d) _) = tyapp tyPtr (tycon rawname)
+    hsargtype (CPT (CPTClassRef d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
-    hsargtype (CPT (CPTClassMove d) _) = tyapp tyPtr (tycon rawname)
+    hsargtype (CPT (CPTClassMove d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
-    hsargtype (CPT (CPTClassCopy d) _) = tyapp tyPtr (tycon rawname)
+    hsargtype (CPT (CPTClassCopy d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
     hsargtype (TemplateApp x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
             rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsargtype (TemplateAppRef x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
             rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsargtype (TemplateAppMove x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
             rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsargtype (TemplateType t) = tyapp tyPtr $ foldl1 tyapp (tycon rawname : map mkTVar (tclass_params t))
+    hsargtype (TemplateType t) =
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp (Ex.tycon rawname : map Ex.mkTVar (tclass_params t))
       where
         rawname = snd (hsTemplateClassName t)
-    hsargtype (TemplateParam p) = mkTVar p
+    hsargtype (TemplateParam p) = Ex.mkTVar p
     hsargtype SelfType = selftyp
     hsargtype _ = error "hsFuncTyp: undefined hsargtype"
     ---------------------------------------------------------
-    hsrettype Void = unit_tycon
+    hsrettype Void = Ex.unit_tycon
     hsrettype SelfType = selftyp
-    hsrettype (CT ctype _) = convertC2HS ctype
-    hsrettype (CPT (CPTClass d) _) = tyapp tyPtr (tycon rawname)
+    -- hsrettype (CT ctype _) = convertC2HS ctype
+    hsrettype (CPT (CPTClass d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
-    hsrettype (CPT (CPTClassRef d) _) = tyapp tyPtr (tycon rawname)
+    hsrettype (CPT (CPTClassRef d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
-    hsrettype (CPT (CPTClassCopy d) _) = tyapp tyPtr (tycon rawname)
+    hsrettype (CPT (CPTClassCopy d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
-    hsrettype (CPT (CPTClassMove d) _) = tyapp tyPtr (tycon rawname)
+    hsrettype (CPT (CPTClassMove d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
     hsrettype (TemplateApp x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
             rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsrettype (TemplateAppRef x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
             rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsrettype (TemplateAppMove x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
             rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
     hsrettype (TemplateType t) =
-      tyapp tyPtr $
-        foldl1 tyapp (tycon rawname : map mkTVar (tclass_params t))
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp (Ex.tycon rawname : map Ex.mkTVar (tclass_params t))
       where
         rawname = snd (hsTemplateClassName t)
-    hsrettype (TemplateParam p) = mkTVar p
-    hsrettype (TemplateParamPointer p) = mkTVar p
--}
+    hsrettype (TemplateParam p) = Ex.mkTVar p
+    hsrettype (TemplateParamPointer p) = Ex.mkTVar p
 
 genericFuncRet :: Function -> Types
 genericFuncRet f =

@@ -19,7 +19,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     tyfun,
     tylist,
     tyPtr,
-
+    unit_tycon,
     -- * function
     mkFun,
     mkFunSig,
@@ -39,7 +39,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     -- * stmt
     mkBodyStmt,
     {- app',
-    unit_tycon,
     conDecl,
     qualConDecl,
     recDecl,
@@ -124,7 +123,7 @@ import GHC.Parser.Annotation
     EpaLocation (..),
     NameAnn (..),
     NoEpAnns (..),
-    ParenType (AnnParensSquare),
+    ParenType (AnnParens, AnnParensSquare),
     SrcAnn,
     SrcSpanAnn' (SrcSpanAnn),
     SrcSpanAnnA,
@@ -191,6 +190,7 @@ import Language.Haskell.Syntax
     HsOuterTyVarBndrs (HsOuterImplicit),
     HsSigType (HsSig),
     HsToken (..),
+    HsTupleSort (..),
     HsType (..),
     HsUniToken (..),
     HsWildCardBndrs (HsWC),
@@ -347,19 +347,27 @@ mkImport name =
 
 mkForImpCcall :: String -> String -> HsType GhcPs -> ForeignDecl GhcPs
 mkForImpCcall quote fname typ =
-  ForeignImport ann lid lsigty forImp
+  ForeignImport (mkRelEpAnn (-1) anns) lid lsigty forImp
   where
-    ann = mkRelEpAnn (-1) []
+    quote' = show quote
+    anns =
+      [ AddEpAnn AnnForeign (EpaDelta (SameLine 0) []),
+        AddEpAnn AnnImport (EpaDelta (SameLine 1) []),
+        AddEpAnn AnnDcolon (EpaDelta (SameLine 1) [])
+      ]
     id' = unqual (mkVarOcc fname)
-    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+    lid =
+     let a = spanAsAnchor defSrcSpan
+         a' = a {anchor_op = MovedAnchor (DifferentLine 1 2)}
+      in L (SrcSpanAnn (EpAnn a' (NameAnnTrailing []) emptyComments) defSrcSpan) id'
     outer = HsOuterImplicit noExtField
     sigty = HsSig noExtField outer (mkL (-1) typ)
-    lsigty = mkL (-1) sigty
+    lsigty = mkL 0 sigty
     forImp =
       CImport
-        (L defSrcSpan (SourceText quote))
-        (L defSrcSpan CCallConv)
-        (L defSrcSpan PlaySafe)
+        (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} (SourceText quote'))
+        (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} CCallConv)
+        (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} PlaySafe)
         Nothing
         ( CFunction
             (StaticTarget (SourceText quote) (fromString quote) Nothing False)
@@ -421,6 +429,16 @@ tylist x =
 
 tyPtr :: HsType GhcPs
 tyPtr = tycon "Ptr"
+
+unit_tycon :: HsType GhcPs
+unit_tycon =
+  HsTupleTy (mkRelEpAnn (-1) ann) HsBoxedOrConstraintTuple []
+  where
+    ann =
+      AnnParen
+        AnnParens
+        (EpaDelta (SameLine 0) [])
+        (EpaDelta (SameLine 0) [])
 
 --
 -- Function
@@ -727,9 +745,6 @@ app' x y = App () (mkVar x) (mkVar y)
 
 unqual :: String -> QName ()
 unqual = UnQual () . Ident ()
-
-unit_tycon :: Type ()
-unit_tycon = LHE.unit_tycon ()
 
 conDecl :: String -> [Type ()] -> ConDecl ()
 conDecl n ys = ConDecl () (Ident () n) ys
