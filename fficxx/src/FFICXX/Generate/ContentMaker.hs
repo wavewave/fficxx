@@ -42,22 +42,24 @@ import FFICXX.Generate.Code.HsFrontEnd
   ( genExport,
     genExtraImport,
     genExtraImport_,
-    genHsFrontDecl,
-    genHsFrontDowncastClass,
     genHsFrontInst,
     genHsFrontInstNew,
     genHsFrontInstNonVirtual,
     genHsFrontInstStatic,
     genHsFrontInstVariables,
-    genHsFrontUpcastClass,
     genImportForTLOrdinary,
     genImportForTLTemplate,
     genImportInCast,
     genImportInImplementation,
-    genImportInInterface,
     genImportInModule,
     genImportInTopLevel,
     genTopLevelDef,
+  )
+import FFICXX.Generate.Code.HsInterface
+  ( genHsFrontDecl,
+    genHsFrontDowncastClass,
+    genHsFrontUpcastClass,
+    genImportInInterface,
   )
 import FFICXX.Generate.Code.HsProxy (genProxyInstance)
 import FFICXX.Generate.Code.HsRawType (hsClassRawType)

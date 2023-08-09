@@ -115,21 +115,6 @@ import Language.Haskell.Exts.Syntax
 import qualified Language.Haskell.Syntax as Ex
 import System.FilePath ((<.>))
 
-genHsFrontDecl :: Bool -> Class -> Reader AnnotateMap (Decl ())
-genHsFrontDecl isHsBoot c = do
-  -- TODO: revive annotation
-  -- for the time being, let's ignore annotation.
-  -- amap <- ask
-  -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap
-  let cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
-      -- for hs-boot, we only have instance head.
-      cdecl' = mkClass (cxTuple []) (typeclassName c) [mkTBind "a"] []
-      sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
-      body = map (clsDecl . sigdecl) . virtualFuncs . class_funcs $ c
-  if isHsBoot
-    then return cdecl'
-    else return cdecl
-
 -------------------
 
 genHsFrontInst :: Class -> Class -> [Decl ()]
@@ -188,58 +173,6 @@ genHsFrontInstVariables c =
           <> mkFun (accessorName c v Setter) (accessorSignature c v Setter) [] (rhs Setter) Nothing
 
 --------------------------
-
-------------
--- upcast --
-------------
-
-genHsFrontUpcastClass :: Class -> [Decl ()]
-genHsFrontUpcastClass c = mkFun ("upcast" <> highname) typ [mkPVar "h"] rhs Nothing
-  where
-    (highname, rawname) = hsClassName c
-    hightype = tycon highname
-    rawtype = tycon rawname
-    iname = typeclassName c
-    a_bind = unkindedVar (name "a")
-    a_tvar = mkTVar "a"
-    typ =
-      tyForall
-        (Just [a_bind])
-        (Just (cxTuple [classA (unqual "FPtr") [a_tvar], classA (unqual iname) [a_tvar]]))
-        (tyfun a_tvar hightype)
-    rhs =
-      letE
-        [ pbind (mkPVar "fh") (app (mkVar "get_fptr") (mkVar "h")) Nothing,
-          pbind
-            (mkPVarSig "fh2" (tyapp tyPtr rawtype))
-            (app (mkVar "castPtr") (mkVar "fh"))
-            Nothing
-        ]
-        (mkVar "cast_fptr_to_obj" `app` mkVar "fh2")
-
---------------
--- downcast --
---------------
-
-genHsFrontDowncastClass :: Class -> [Decl ()]
-genHsFrontDowncastClass c = mkFun ("downcast" <> highname) typ [mkPVar "h"] rhs Nothing
-  where
-    (highname, _rawname) = hsClassName c
-    hightype = tycon highname
-    iname = typeclassName c
-    a_bind = unkindedVar (name "a")
-    a_tvar = mkTVar "a"
-    typ =
-      tyForall
-        (Just [a_bind])
-        (Just (cxTuple [classA (unqual "FPtr") [a_tvar], classA (unqual iname) [a_tvar]]))
-        (tyfun hightype a_tvar)
-    rhs =
-      letE
-        [ pbind (mkPVar "fh") (app (mkVar "get_fptr") (mkVar "h")) Nothing,
-          pbind (mkPVar "fh2") (app (mkVar "castPtr") (mkVar "fh")) Nothing
-        ]
-        (mkVar "cast_fptr_to_obj" `app` mkVar "fh2")
 
 ------------------------
 -- Top Level Function --
@@ -310,7 +243,7 @@ genExportStatic c = map (evar . unqual) fns
 -- Import --
 ------------
 
--- TODO: Remvoe
+-- TODO: Remove
 genExtraImport_ :: ClassModule -> [ImportDecl ()]
 genExtraImport_ cm = map mkImport (cmExtraImport cm)
 
@@ -320,29 +253,6 @@ genExtraImport cm = fmap Ex.mkImport (cmExtraImport cm)
 
 genImportInModule :: Class -> [ImportDecl ()]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
-
-mkImportWithDepCycles :: DepCycles -> String -> String -> ImportDecl ()
-mkImportWithDepCycles depCycles self imported =
-  let mloc = locateInDepCycles (self, imported) depCycles
-   in case mloc of
-        Just (idxSelf, idxImported)
-          | idxImported > idxSelf ->
-              mkImportSrc imported
-        _ -> mkImport imported
-
-genImportInInterface :: Bool -> DepCycles -> ClassModule -> [ImportDecl ()]
-genImportInInterface isHsBoot depCycles m =
-  let modSelf = cmModule m <.> "Interface"
-      imported = cmImportedSubmodulesForInterface m
-      (rdepsU, rdepsD) = getCyclicDepSubmodules modSelf depCycles
-   in if isHsBoot
-        then -- for hs-boot file, we ignore all module imports in the cycle.
-        -- TODO: This is likely to be broken in more general cases.
-        --       Keep improving this as hs-boot allows.
-
-          let imported' = fmap subModuleName imported L.\\ (rdepsU <> rdepsD)
-           in fmap mkImport imported'
-        else fmap (mkImportWithDepCycles depCycles modSelf . subModuleName) imported
 
 -- OLD
 -- TODO: Remove
