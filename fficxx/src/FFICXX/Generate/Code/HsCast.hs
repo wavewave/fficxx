@@ -21,7 +21,12 @@ import FFICXX.Generate.Util.HaskellSrcExts
   )
 import Language.Haskell.Exts.Syntax (Decl, InstDecl)
 
+{-
+import GHC.Hs (GhcPs)
+import Language.Haskell.Syntax (HsDecl)
+-}
 -----
+
 
 castBody :: [InstDecl ()]
 castBody =
@@ -29,7 +34,7 @@ castBody =
     insDecl (mkBind1 "uncast" [mkPVar "x", mkPVar "f"] (app (mkVar "f") (app (mkVar "cast_fptr_to_obj") (app (mkVar "castPtr") (mkVar "x")))) Nothing)
   ]
 
-genHsFrontInstCastable :: Class -> Maybe (Decl ())
+genHsFrontInstCastable :: Class -> Maybe (Decl ()) -- (HsDecl GhcPs)
 genHsFrontInstCastable c
   | (not . isAbstractClass) c =
       let iname = typeclassName c
@@ -39,7 +44,7 @@ genHsFrontInstCastable c
        in Just (mkInstance ctxt "Castable" [a, tyapp tyPtr (tycon rname)] castBody)
   | otherwise = Nothing
 
-genHsFrontInstCastableSelf :: Class -> Maybe (Decl ())
+genHsFrontInstCastableSelf :: Class -> Maybe (Decl ()) -- (HsDecl GhcPs)
 genHsFrontInstCastableSelf c
   | (not . isAbstractClass) c =
       let (cname, rname) = hsClassName c
