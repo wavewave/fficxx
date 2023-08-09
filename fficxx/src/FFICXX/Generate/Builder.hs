@@ -175,8 +175,7 @@ simpleBuilder cfg sbc = do
       (prettyPrint (C.buildInterfaceHs mempty depCycles m))
   --
   putStrLn "Generating Cast.hs"
-  for_ mods $ \m -> do
-    debugExactPrint (C.buildCastHs m)
+  for_ mods $ \m ->
     gen
       (cmModule m <.> "Cast" <.> "hs")
       (exactPrint (C.buildCastHs m))

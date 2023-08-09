@@ -576,7 +576,7 @@ cxTuple :: [HsType GhcPs] -> HsContext GhcPs
 cxTuple typs =
   case typs of
     [] -> []
-    (x : []) -> [mkL (-1) typs]
+    (x : []) -> [mkL (-1) x]
     _ ->
       let typs' = init typs
           lastTyp = last typs
@@ -584,7 +584,7 @@ cxTuple typs =
             fmap
               (L (mkRelSrcSpanAnn (-1) (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
               typs'
-       in (typs' ++ [mkL (-1) lastTyp])
+       in (typs'' ++ [mkL (-1) lastTyp])
 
 classA :: String -> [HsType GhcPs] -> HsType GhcPs
 classA name typs = foldl' tyapp (tycon name) typs'

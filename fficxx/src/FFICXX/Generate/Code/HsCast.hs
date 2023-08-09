@@ -13,6 +13,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     mkPVar,
     mkTVar,
     mkVar,
+    par,
     tyPtr,
     tyapp,
     tycon,
@@ -53,12 +54,37 @@ castBody =
   [ mkBind1
       "cast"
       [mkPVar "x", mkPVar "f"]
-      (app (mkVar "f") (app (mkVar "castPtr") (app (mkVar "get_fptr") (mkVar "x"))))
+      ( app (mkVar "f")
+          ( par
+              ( app
+                  (mkVar "castPtr")
+                  ( par
+                      ( app
+                          (mkVar "get_fptr")
+                          (mkVar "x")
+                      )
+                  )
+              )
+          )
+      )
       Nothing,
     mkBind1
       "uncast"
       [mkPVar "x", mkPVar "f"]
-      (app (mkVar "f") (app (mkVar "cast_fptr_to_obj") (app (mkVar "castPtr") (mkVar "x"))))
+      ( app
+          (mkVar "f")
+          ( par
+            ( app
+                (mkVar "cast_fptr_to_obj")
+                ( par
+                    ( app
+                        (mkVar "castPtr")
+                        (mkVar "x")
+                    )
+                )
+            )
+          )
+      )
       Nothing
   ]
 

@@ -3,10 +3,7 @@ rm -rf stdcxx
 rm -rf tmf-test
 rm -rf proxy-test
 rm -rf working
-cabal new-build fficxx
-sleep 1s
-cabal new-exec runhaskell ../stdcxx-gen/Gen.hs
-cabal new-build stdcxx
+cabal new-build fficxx && cabal new-exec runhaskell ../stdcxx-gen/Gen.hs && cabal new-build stdcxx
 
 # map
 rm map/test.o map/test
