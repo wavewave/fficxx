@@ -134,6 +134,7 @@ import GHC.Parser.Annotation
     EpaComment (..),
     EpaCommentTok (..),
     EpaLocation (..),
+    IsUnicodeSyntax (NormalSyntax),
     NameAnn (..),
     NoEpAnns (..),
     ParenType (AnnParens, AnnParensSquare),
@@ -141,6 +142,7 @@ import GHC.Parser.Annotation
     SrcSpanAnn' (SrcSpanAnn),
     SrcSpanAnnA,
     TokenLocation (..),
+    TrailingAnn (..),
     emptyComments,
     noAnn,
     noSrcSpanA,
@@ -540,7 +542,7 @@ mkBind1 fname pats rhs mbinds =
     lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
 
     lpats = fmap (mkL 0) pats
-    lrhs = mkL (-1) rhs
+    lrhs = mkL 0 rhs
     glrhs =
       let ann =
             mkRelEpAnn
@@ -571,10 +573,23 @@ cxEmpty :: HsContext GhcPs
 cxEmpty = []
 
 cxTuple :: [HsType GhcPs] -> HsContext GhcPs
-cxTuple typs = fmap (mkL (-1)) typs
+cxTuple typs =
+  case typs of
+    [] -> []
+    (x : []) -> [mkL (-1) typs]
+    _ ->
+      let typs' = init typs
+          lastTyp = last typs
+          typs'' =
+            fmap
+              (L (mkRelSrcSpanAnn (-1) (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
+              typs'
+       in (typs' ++ [mkL (-1) lastTyp])
 
 classA :: String -> [HsType GhcPs] -> HsType GhcPs
-classA name = foldl' tyapp (tycon name)
+classA name typs = foldl' tyapp (tycon name) typs'
+  where
+    typs' = fmap tyParen typs
 
 mkInstance ::
   -- | Context
@@ -592,16 +607,21 @@ mkInstance ctxt name typs bnds =
     { cid_ext = ann,
       cid_poly_ty =
         mkL (-1) (HsSig noExtField (HsOuterImplicit noExtField) (mkL (-1) typcls)),
-      cid_binds = listToBag [],
+      cid_binds = bnds',
       cid_sigs = [],
       cid_tyfam_insts = [],
       cid_datafam_insts = [],
       cid_overlap_mode = Nothing
     }
   where
+    bnds' = listToBag $ fmap (L ann') bnds
+      where
+        a = spanAsAnchor defSrcSpan
+        a' = a {anchor_op = MovedAnchor (DifferentLine 1 2)}
+        ann' = SrcSpanAnn (EpAnn a' noAnnListItem emptyComments) defSrcSpan
     ann =
       ( mkRelEpAnn
-          (-1)
+          1
           [ AddEpAnn AnnInstance (mkEpaDelta (-1)),
             AddEpAnn AnnWhere (mkEpaDelta 0)
           ],
@@ -610,14 +630,14 @@ mkInstance ctxt name typs bnds =
     typcls =
       HsQualTy
         { hst_xqual = noExtField,
-          hst_ctxt = L (mkRelSrcSpanAnn (-1) annCtxt) ctxt,
-          hst_body = mkL (-1) insttyp
+          hst_ctxt = L (mkRelSrcSpanAnn 0 annCtxt) ctxt,
+          hst_body = mkL 0 insttyp
         }
     annCtxt =
       AnnContext
-        { ac_darrow = Nothing,
-          ac_open = [],
-          ac_close = []
+        { ac_darrow = Just (NormalSyntax, mkEpaDelta 0),
+          ac_open = [mkEpaDelta (-1)],
+          ac_close = [mkEpaDelta (-1)]
         }
     insttyp = foldl' f (tycon name) typs
       where

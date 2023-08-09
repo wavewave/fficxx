@@ -1,6 +1,5 @@
 module FFICXX.Generate.Code.HsCast where
 
---
 import FFICXX.Generate.Name (hsClassName, typeclassName)
 import FFICXX.Generate.Type.Class (Class (..), isAbstractClass)
 import FFICXX.Generate.Util.GHCExactPrint
@@ -17,7 +16,6 @@ import FFICXX.Generate.Util.GHCExactPrint
     tyPtr,
     tyapp,
     tycon,
-    unqual,
   )
 --
 
