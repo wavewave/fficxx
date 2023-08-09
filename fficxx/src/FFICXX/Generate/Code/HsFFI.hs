@@ -9,8 +9,10 @@ import FFICXX.Generate.Code.Primitive
     accessorCFunSig,
     genericFuncArgs,
     genericFuncRet,
-    hsFFIFuncTyp,
+    hsFFIFunType,
   )
+--
+import qualified FFICXX.Generate.Code.Primitive as O (hsFFIFuncTyp)
 import FFICXX.Generate.Dependency
   ( class_allparents,
   )
@@ -40,12 +42,23 @@ import FFICXX.Generate.Type.Module
     TopLevelImportHeader (..),
   )
 import FFICXX.Generate.Util (toLowers)
-import FFICXX.Generate.Util.HaskellSrcExts (mkForImpCcall, mkImport)
+import FFICXX.Generate.Util.GHCExactPrint
+  ( mkForImpCcall,
+    mkImport,
+  )
+import qualified FFICXX.Generate.Util.HaskellSrcExts as O
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
-import Language.Haskell.Exts.Syntax (Decl, ImportDecl)
+import GHC.Hs
+  ( GhcPs,
+  )
+import qualified Language.Haskell.Exts.Syntax as O
+import Language.Haskell.Syntax
+  ( ForeignDecl,
+    ImportDecl,
+  )
 import System.FilePath ((<.>))
 
-genHsFFI :: ClassImportHeader -> [Decl ()]
+genHsFFI :: ClassImportHeader -> [ForeignDecl GhcPs]
 genHsFFI header =
   let c = cihClass header
       -- TODO: This C header information should not be necessary according to up-to-date
@@ -65,7 +78,7 @@ genHsFFI header =
           (\v -> [hsFFIAccessor c v Getter, hsFFIAccessor c v Setter])
           (class_vars c)
 
-hsFFIClassFunc :: HeaderName -> Class -> Function -> Maybe (Decl ())
+hsFFIClassFunc :: HeaderName -> Class -> Function -> Maybe (ForeignDecl GhcPs)
 hsFFIClassFunc headerfilename c f =
   if isAbstractClass c
     then Nothing
@@ -76,26 +89,29 @@ hsFFIClassFunc headerfilename c f =
           csig = CFunSig (genericFuncArgs f) (genericFuncRet f)
           typ =
             if (isNewFunc f || isStaticFunc f)
-              then hsFFIFuncTyp (Just (NoSelf, c)) csig
-              else hsFFIFuncTyp (Just (Self, c)) csig
+              then hsFFIFunType (Just (NoSelf, c)) csig
+              else hsFFIFunType (Just (Self, c)) csig
        in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
 
-hsFFIAccessor :: Class -> Variable -> Accessor -> Decl ()
+hsFFIAccessor :: Class -> Variable -> Accessor -> ForeignDecl GhcPs
 hsFFIAccessor c v a =
   let -- TODO: make this a separate function
       cname = ffiClassName c <> "_" <> arg_name (unVariable v) <> "_" <> (case a of Getter -> "get"; Setter -> "set")
-      typ = hsFFIFuncTyp (Just (Self, c)) (accessorCFunSig (arg_type (unVariable v)) a)
+      typ =
+        hsFFIFunType
+          (Just (Self, c))
+          (accessorCFunSig (arg_type (unVariable v)) a)
    in mkForImpCcall cname (hscAccessorName c v a) typ
 
 -- import for FFI
-genImportInFFI :: ClassModule -> [ImportDecl ()]
+genImportInFFI :: ClassModule -> [ImportDecl GhcPs]
 genImportInFFI = fmap (mkImport . subModuleName) . cmImportedSubmodulesForFFI
 
 ----------------------------
 -- for top level function --
 ----------------------------
 
-genTopLevelFFI :: TopLevelImportHeader -> TLOrdinary -> Decl ()
+genTopLevelFFI :: TopLevelImportHeader -> TLOrdinary -> ForeignDecl GhcPs
 genTopLevelFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) cfname typ
   where
     (fname, args, ret) =
@@ -105,4 +121,17 @@ genTopLevelFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) c
     hfilename = tihHeaderFileName header <.> "h"
     -- TODO: This must be exposed as a top-level function
     cfname = "c_" <> toLowers fname
-    typ = hsFFIFuncTyp Nothing (CFunSig args ret)
+    typ = hsFFIFunType Nothing (CFunSig args ret)
+
+-- TODO: Remove
+genTopLevelFFI_ :: TopLevelImportHeader -> TLOrdinary -> O.Decl ()
+genTopLevelFFI_ header tfn = O.mkForImpCcall (hfilename <> " TopLevel_" <> fname) cfname typ
+  where
+    (fname, args, ret) =
+      case tfn of
+        TopLevelFunction {..} -> (fromMaybe toplevelfunc_name toplevelfunc_alias, toplevelfunc_args, toplevelfunc_ret)
+        TopLevelVariable {..} -> (fromMaybe toplevelvar_name toplevelvar_alias, [], toplevelvar_ret)
+    hfilename = tihHeaderFileName header <.> "h"
+    -- TODO: This must be exposed as a top-level function
+    cfname = "c_" <> toLowers fname
+    typ = O.hsFFIFuncTyp Nothing (CFunSig args ret)

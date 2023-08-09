@@ -57,7 +57,7 @@ cabal :: Cabal
 cabal =
   Cabal
     { cabal_pkgname = CabalName "stdcxx",
-      cabal_version = "0.7.0.1",
+      cabal_version = "0.8.0.0",
       cabal_cheaderprefix = "STD",
       cabal_moduleprefix = "STD",
       cabal_additional_c_incs = [],

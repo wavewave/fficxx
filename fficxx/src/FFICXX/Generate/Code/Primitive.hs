@@ -35,6 +35,7 @@ import FFICXX.Generate.Type.Class
     isNonVirtualFunc,
     isVirtualFunc,
   )
+import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
 import FFICXX.Generate.Util.HaskellSrcExts
   ( classA,
     cxTuple,
@@ -52,10 +53,14 @@ import FFICXX.Generate.Util.HaskellSrcExts
   )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
+import GHC.Hs (GhcPs)
 import Language.Haskell.Exts.Syntax
   ( Asst,
     Context,
     Type,
+  )
+import Language.Haskell.Syntax
+  ( HsType,
   )
 
 data CFunSig = CFunSig
@@ -721,6 +726,51 @@ convertC2HS (CEnum t _) = convertC2HS t
 convertC2HS (CPointer t) = tyapp (tycon "Ptr") (convertC2HS t)
 convertC2HS (CRef t) = tyapp (tycon "Ptr") (convertC2HS t)
 
+-- new
+c2HsType :: CTypes -> HsType GhcPs
+c2HsType CTBool = Ex.tycon "CBool"
+c2HsType CTChar = Ex.tycon "CChar"
+c2HsType CTClock = Ex.tycon "CClock"
+c2HsType CTDouble = Ex.tycon "CDouble"
+c2HsType CTFile = Ex.tycon "CFile"
+c2HsType CTFloat = Ex.tycon "CFloat"
+c2HsType CTFpos = Ex.tycon "CFpos"
+c2HsType CTInt = Ex.tycon "CInt"
+c2HsType CTIntMax = Ex.tycon "CIntMax"
+c2HsType CTIntPtr = Ex.tycon "CIntPtr"
+c2HsType CTJmpBuf = Ex.tycon "CJmpBuf"
+c2HsType CTLLong = Ex.tycon "CLLong"
+c2HsType CTLong = Ex.tycon "CLong"
+c2HsType CTPtrdiff = Ex.tycon "CPtrdiff"
+c2HsType CTSChar = Ex.tycon "CSChar"
+c2HsType CTSUSeconds = Ex.tycon "CSUSeconds"
+c2HsType CTShort = Ex.tycon "CShort"
+c2HsType CTSigAtomic = Ex.tycon "CSigAtomic"
+c2HsType CTSize = Ex.tycon "CSize"
+c2HsType CTTime = Ex.tycon "CTime"
+c2HsType CTUChar = Ex.tycon "CUChar"
+c2HsType CTUInt = Ex.tycon "CUInt"
+c2HsType CTUIntMax = Ex.tycon "CUIntMax"
+c2HsType CTUIntPtr = Ex.tycon "CUIntPtr"
+c2HsType CTULLong = Ex.tycon "CULLong"
+c2HsType CTULong = Ex.tycon "CULong"
+c2HsType CTUSeconds = Ex.tycon "CUSeconds"
+c2HsType CTUShort = Ex.tycon "CUShort"
+c2HsType CTWchar = Ex.tycon "CWchar"
+c2HsType CTInt8 = Ex.tycon "Int8"
+c2HsType CTInt16 = Ex.tycon "Int16"
+c2HsType CTInt32 = Ex.tycon "Int32"
+c2HsType CTInt64 = Ex.tycon "Int64"
+c2HsType CTUInt8 = Ex.tycon "Word8"
+c2HsType CTUInt16 = Ex.tycon "Word16"
+c2HsType CTUInt32 = Ex.tycon "Word32"
+c2HsType CTUInt64 = Ex.tycon "Word64"
+c2HsType CTString = Ex.tycon "CString"
+c2HsType CTVoidStar = Ex.tyapp (Ex.tycon "Ptr") Ex.unit_tycon
+c2HsType (CEnum t _) = c2HsType t
+c2HsType (CPointer t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
+c2HsType (CRef t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
+
 convertCpp2HS :: Maybe Class -> Types -> Type ()
 convertCpp2HS _c Void = unit_tycon
 convertCpp2HS (Just c) SelfType = tycon ((fst . hsClassName) c)
@@ -955,7 +1005,7 @@ accessorSignature c v accessor =
       arg0 = (mkTVar (fst (hsClassName c)) :)
    in tyForall Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
 
--- | this is for FFI type.
+-- | old function. this is for FFI type.
 hsFFIFuncTyp :: Maybe (Selfness, Class) -> CFunSig -> Type ()
 hsFFIFuncTyp msc (CFunSig args ret) =
   foldr1 tyfun $ case msc of
@@ -1055,6 +1105,114 @@ hsFFIFuncTyp msc (CFunSig args ret) =
         rawname = snd (hsTemplateClassName t)
     hsrettype (TemplateParam p) = mkTVar p
     hsrettype (TemplateParamPointer p) = mkTVar p
+
+-- | new function
+hsFFIFunType :: Maybe (Selfness, Class) -> CFunSig -> HsType GhcPs
+hsFFIFunType msc (CFunSig args ret) =
+  foldr1 Ex.tyfun allTypes
+  where
+    allTypes =
+      case msc of
+        Nothing -> argtyps <> [Ex.tyapp (Ex.tycon "IO") rettyp]
+        Just (Self, _) -> selftyp : argtyps <> [Ex.tyapp (Ex.tycon "IO") rettyp]
+        Just (NoSelf, _) -> argtyps <> [Ex.tyapp (Ex.tycon "IO") rettyp]
+    argtyps :: [HsType GhcPs]
+    argtyps = map (hsargtype . arg_type) args
+    --
+    rettyp :: HsType GhcPs
+    rettyp = Ex.tyParen (hsrettype ret)
+    --
+    selftyp = case msc of
+      Just (_, c) -> Ex.tyapp Ex.tyPtr (Ex.tycon (snd (hsClassName c)))
+      Nothing -> error "hsFFIFuncTyp: no self for top level function"
+    --
+    hsargtype :: Types -> HsType GhcPs
+    hsargtype (CT ctype _) = c2HsType ctype
+    hsargtype (CPT (CPTClass d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
+      where
+        rawname = snd (hsClassName d)
+    hsargtype (CPT (CPTClassRef d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
+      where
+        rawname = snd (hsClassName d)
+    hsargtype (CPT (CPTClassMove d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
+      where
+        rawname = snd (hsClassName d)
+    hsargtype (CPT (CPTClassCopy d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
+      where
+        rawname = snd (hsClassName d)
+    hsargtype (TemplateApp x) =
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
+      where
+        rawname = snd (hsTemplateClassName (tapp_tclass x))
+    hsargtype (TemplateAppRef x) =
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
+      where
+        rawname = snd (hsTemplateClassName (tapp_tclass x))
+    hsargtype (TemplateAppMove x) =
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
+      where
+        rawname = snd (hsTemplateClassName (tapp_tclass x))
+    hsargtype (TemplateType t) =
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp (Ex.tycon rawname : map Ex.mkTVar (tclass_params t))
+      where
+        rawname = snd (hsTemplateClassName t)
+    hsargtype (TemplateParam p) = Ex.mkTVar p
+    hsargtype SelfType = selftyp
+    hsargtype _ = error "hsFuncTyp: undefined hsargtype"
+    ---------------------------------------------------------
+    hsrettype Void = Ex.unit_tycon
+    hsrettype SelfType = selftyp
+    hsrettype (CT ctype _) = c2HsType ctype
+    hsrettype (CPT (CPTClass d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
+      where
+        rawname = snd (hsClassName d)
+    hsrettype (CPT (CPTClassRef d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
+      where
+        rawname = snd (hsClassName d)
+    hsrettype (CPT (CPTClassCopy d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
+      where
+        rawname = snd (hsClassName d)
+    hsrettype (CPT (CPTClassMove d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
+      where
+        rawname = snd (hsClassName d)
+    hsrettype (TemplateApp x) =
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
+      where
+        rawname = snd (hsTemplateClassName (tapp_tclass x))
+    hsrettype (TemplateAppRef x) =
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
+      where
+        rawname = snd (hsTemplateClassName (tapp_tclass x))
+    hsrettype (TemplateAppMove x) =
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp $
+          map Ex.tycon $
+            rawname : map hsClassNameForTArg (tapp_tparams x)
+      where
+        rawname = snd (hsTemplateClassName (tapp_tclass x))
+    hsrettype (TemplateType t) =
+      Ex.tyapp Ex.tyPtr $
+        foldl1 Ex.tyapp (Ex.tycon rawname : map Ex.mkTVar (tclass_params t))
+      where
+        rawname = snd (hsTemplateClassName t)
+    hsrettype (TemplateParam p) = Ex.mkTVar p
+    hsrettype (TemplateParamPointer p) = Ex.mkTVar p
 
 genericFuncRet :: Function -> Types
 genericFuncRet f =

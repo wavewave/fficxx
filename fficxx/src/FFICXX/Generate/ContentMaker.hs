@@ -37,10 +37,12 @@ import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
     genImportInFFI,
     genTopLevelFFI,
+    genTopLevelFFI_,
   )
 import FFICXX.Generate.Code.HsFrontEnd
   ( genExport,
     genExtraImport,
+    genExtraImport_,
     genHsFrontDecl,
     genHsFrontDowncastClass,
     genHsFrontInst,
@@ -125,7 +127,11 @@ import Language.Haskell.Exts.Syntax
   ( Decl,
     Module,
   )
-import Language.Haskell.Syntax (HsModule)
+import Language.Haskell.Syntax
+  ( HsDecl (ForD),
+    HsModule,
+    noExtField,
+  )
 import System.FilePath ((<.>), (</>))
 
 srcDir :: FilePath -> FilePath
@@ -329,25 +335,25 @@ buildTopLevelCppDef tih =
                ]
         )
 
-buildFFIHsc :: ClassModule -> Module ()
+buildFFIHsc :: ClassModule -> HsModule GhcPs
 buildFFIHsc m =
-  mkModule
+  Ex.mkModule
     (mname <.> "FFI")
-    [lang ["ForeignFunctionInterface", "InterruptibleFFI"]]
+    ["ForeignFunctionInterface", "InterruptibleFFI"]
     ffiImports
     hscBody
   where
     mname = cmModule m
     ffiImports =
-      [ mkImport "Data.Word",
-        mkImport "Data.Int",
-        mkImport "Foreign.C",
-        mkImport "Foreign.Ptr",
-        mkImport (mname <.> "RawType")
+      [ Ex.mkImport "Data.Word",
+        Ex.mkImport "Data.Int",
+        Ex.mkImport "Foreign.C",
+        Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport (mname <.> "RawType")
       ]
         <> genImportInFFI m
         <> genExtraImport m
-    hscBody = genHsFFI (cmCIH m)
+    hscBody = fmap (ForD noExtField) (genHsFFI (cmCIH m))
 
 buildRawTypeHs :: ClassModule -> Module ()
 buildRawTypeHs m =
@@ -407,7 +413,7 @@ buildInterfaceHs amap depCycles m =
         mkImport "FFICXX.Runtime.Cast"
       ]
         <> genImportInInterface False depCycles m
-        <> genExtraImport m
+        <> genExtraImport_ m
     ifaceBody =
       runReader (mapM (genHsFrontDecl False) classes) amap
         <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
@@ -441,7 +447,7 @@ buildInterfaceHsBoot depCycles m =
         mkImport "FFICXX.Runtime.Cast"
       ]
         <> genImportInInterface True depCycles m
-        <> genExtraImport m
+        <> genExtraImport_ m
     hsbootBody =
       runReader (mapM (genHsFrontDecl True) [c]) M.empty
 
@@ -507,7 +513,7 @@ buildImplementationHs amap m =
         mkImport "FFICXX.Runtime.TH" -- for template member
       ]
         <> genImportInImplementation m
-        <> genExtraImport m
+        <> genExtraImport_ m
     f :: Class -> [Decl ()]
     f y = concatMap (flip genHsFrontInst y) (y : class_allparents y)
     implBody =
@@ -636,7 +642,7 @@ buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
         ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
         ++ concatMap genImportForTLOrdinary (filterTLOrdinary tfns)
     pkgBody =
-      map (genTopLevelFFI tih) (filterTLOrdinary tfns)
+      map (genTopLevelFFI_ tih) (filterTLOrdinary tfns)
         ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
 
 buildTopLevelTemplateHs ::
