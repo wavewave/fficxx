@@ -54,7 +54,8 @@ castBody =
   [ mkBind1
       "cast"
       [mkPVar "x", mkPVar "f"]
-      ( app (mkVar "f")
+      ( app
+          (mkVar "f")
           ( par
               ( app
                   (mkVar "castPtr")
@@ -74,15 +75,15 @@ castBody =
       ( app
           (mkVar "f")
           ( par
-            ( app
-                (mkVar "cast_fptr_to_obj")
-                ( par
-                    ( app
-                        (mkVar "castPtr")
-                        (mkVar "x")
-                    )
-                )
-            )
+              ( app
+                  (mkVar "cast_fptr_to_obj")
+                  ( par
+                      ( app
+                          (mkVar "castPtr")
+                          (mkVar "x")
+                      )
+                  )
+              )
           )
       )
       Nothing
