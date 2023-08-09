@@ -189,29 +189,6 @@ genHsFrontInstVariables c =
 
 --------------------------
 
-hsClassRawType :: Class -> [Decl ()]
-hsClassRawType c =
-  [ mkData rawname [] [] Nothing,
-    mkNewtype highname [] [qualConDecl Nothing Nothing (conDecl highname [tyapp tyPtr rawtype])] mderiv,
-    mkInstance
-      cxEmpty
-      "FPtr"
-      [hightype]
-      [ insType (tyapp (tycon "Raw") hightype) rawtype,
-        insDecl (mkBind1 "get_fptr" [pApp (name highname) [mkPVar "ptr"]] (mkVar "ptr") Nothing),
-        insDecl (mkBind1 "cast_fptr_to_obj" [] (con highname) Nothing)
-      ]
-  ]
-  where
-    (highname, rawname) = hsClassName c
-    hightype = tycon highname
-    rawtype = tycon rawname
-    mderiv = Just (mkDeriving [i_eq, i_ord, i_show])
-      where
-        i_eq = irule Nothing Nothing (ihcon (unqual "Eq"))
-        i_ord = irule Nothing Nothing (ihcon (unqual "Ord"))
-        i_show = irule Nothing Nothing (ihcon (unqual "Show"))
-
 ------------
 -- upcast --
 ------------

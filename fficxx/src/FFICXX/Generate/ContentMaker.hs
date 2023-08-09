@@ -36,7 +36,6 @@ import FFICXX.Generate.Code.HsCast
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
     genImportInFFI,
-    genTopLevelFFI,
     genTopLevelFFI_,
   )
 import FFICXX.Generate.Code.HsFrontEnd
@@ -59,9 +58,9 @@ import FFICXX.Generate.Code.HsFrontEnd
     genImportInModule,
     genImportInTopLevel,
     genTopLevelDef,
-    hsClassRawType,
   )
 import FFICXX.Generate.Code.HsProxy (genProxyInstance)
+import FFICXX.Generate.Code.HsRawType (hsClassRawType)
 import FFICXX.Generate.Code.HsTemplate
   ( genImportInTH,
     genImportInTemplate,

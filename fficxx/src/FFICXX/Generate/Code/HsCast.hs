@@ -18,8 +18,6 @@ import FFICXX.Generate.Util.GHCExactPrint
     tyapp,
     tycon,
   )
---
-
 import qualified FFICXX.Generate.Util.HaskellSrcExts as O
   ( app,
     classA,
