@@ -30,8 +30,12 @@ module FFICXX.Generate.Util.GHCExactPrint
     -- * Typeclass
     cxEmpty,
     cxTuple,
+    classA,
     mkInstance,
     instD,
+
+    -- * pattern
+    mkPVar,
 
     -- * expr
     app,
@@ -500,7 +504,7 @@ mkFun ::
   [HsDecl GhcPs]
 mkFun fname typ pats rhs mbinds =
   [ mkFunSig fname typ,
-    mkBind1 fname pats rhs mbinds
+    ValD noExtField (mkBind1 fname pats rhs mbinds)
   ]
 
 mkFunSig ::
@@ -528,14 +532,14 @@ mkBind1 ::
   [Pat GhcPs] ->
   HsExpr GhcPs ->
   Maybe (HsLocalBinds GhcPs) ->
-  HsDecl GhcPs
+  HsBind GhcPs
 mkBind1 fname pats rhs mbinds =
-  ValD noExtField (FunBind noExtField lid payload)
+  FunBind noExtField lid payload
   where
     id' = unqual (mkVarOcc fname)
     lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
 
-    lpats = [] -- fmap (L ) pats
+    lpats = fmap (mkL 0) pats
     lrhs = mkL (-1) rhs
     glrhs =
       let ann =
@@ -569,6 +573,9 @@ cxEmpty = []
 cxTuple :: [HsType GhcPs] -> HsContext GhcPs
 cxTuple typs = fmap (mkL (-1)) typs
 
+classA :: String -> [HsType GhcPs] -> HsType GhcPs
+classA name = foldl' tyapp (tycon name)
+
 mkInstance ::
   -- | Context
   HsContext GhcPs ->
@@ -585,34 +592,34 @@ mkInstance ctxt name typs bnds =
     { cid_ext = ann,
       cid_poly_ty =
         mkL (-1) (HsSig noExtField (HsOuterImplicit noExtField) (mkL (-1) typcls)),
-      cid_binds = listToBag [ ],
+      cid_binds = listToBag [],
       cid_sigs = [],
       cid_tyfam_insts = [],
       cid_datafam_insts = [],
       cid_overlap_mode = Nothing
     }
-   where
-     ann =
-       ( mkRelEpAnn
-           (-1)
-           [ AddEpAnn AnnInstance (mkEpaDelta (-1)),
-             AddEpAnn AnnWhere (mkEpaDelta 0)
-           ],
-         NoAnnSortKey
-       )
-     typcls =
-       HsQualTy
-         { hst_xqual = noExtField,
-           hst_ctxt = L (mkRelSrcSpanAnn (-1) annCtxt) ctxt,
-           hst_body = mkL (-1) insttyp
-         }
-     annCtxt =
-       AnnContext
-         { ac_darrow = Nothing,
-           ac_open = [],
-           ac_close = []
-         }
-     insttyp = foldl' f (tycon name) typs
+  where
+    ann =
+      ( mkRelEpAnn
+          (-1)
+          [ AddEpAnn AnnInstance (mkEpaDelta (-1)),
+            AddEpAnn AnnWhere (mkEpaDelta 0)
+          ],
+        NoAnnSortKey
+      )
+    typcls =
+      HsQualTy
+        { hst_xqual = noExtField,
+          hst_ctxt = L (mkRelSrcSpanAnn (-1) annCtxt) ctxt,
+          hst_body = mkL (-1) insttyp
+        }
+    annCtxt =
+      AnnContext
+        { ac_darrow = Nothing,
+          ac_open = [],
+          ac_close = []
+        }
+    insttyp = foldl' f (tycon name) typs
       where
         f acc x = tyapp acc (tyParen x)
 
@@ -891,7 +898,6 @@ dhead n = DHead () (Ident () n)
 mkDeclHead :: String -> [TyVarBind ()] -> DeclHead ()
 mkDeclHead n tbinds = foldl' (DHApp ()) (dhead n) tbinds
 
-
 mkData :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
 mkData n tbinds qdecls mderiv = DataDecl () (DataType ()) Nothing declhead qdecls (maybeToList mderiv)
   where
@@ -932,9 +938,6 @@ tyForall = TyForall ()
 
 tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
-
-classA :: QName () -> [Type ()] -> Asst ()
-classA n = TypeA () . foldl' tyapp (TyCon () n)
 
 tySplice :: Splice () -> Type ()
 tySplice = TySplice ()

@@ -451,27 +451,25 @@ buildInterfaceHsBoot depCycles m =
     hsbootBody =
       runReader (mapM (genHsFrontDecl True) [c]) M.empty
 
-buildCastHs :: ClassModule -> Module ()
+buildCastHs :: ClassModule -> HsModule GhcPs
 buildCastHs m =
-  mkModule
+  Ex.mkModule
     (cmModule m <.> "Cast")
-    [ lang
-        [ "FlexibleInstances",
-          "FlexibleContexts",
-          "TypeFamilies",
-          "MultiParamTypeClasses",
-          "OverlappingInstances",
-          "IncoherentInstances"
-        ]
+    [ "FlexibleInstances",
+      "FlexibleContexts",
+      "TypeFamilies",
+      "MultiParamTypeClasses",
+      "OverlappingInstances",
+      "IncoherentInstances"
     ]
     castImports
     body
   where
     classes = [cihClass (cmCIH m)]
     castImports =
-      [ mkImport "Foreign.Ptr",
-        mkImport "FFICXX.Runtime.Cast",
-        mkImport "System.IO.Unsafe"
+      [ Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "FFICXX.Runtime.Cast",
+        Ex.mkImport "System.IO.Unsafe"
       ]
         <> genImportInCast m
     body =
