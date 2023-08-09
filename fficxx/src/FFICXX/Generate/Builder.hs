@@ -6,6 +6,7 @@ module FFICXX.Generate.Builder where
 import Control.Monad (void, when)
 import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Char (toUpper)
+import Data.Data (Data)
 import Data.Digest.Pure.MD5 (md5)
 import Data.Foldable (for_)
 import qualified Data.List as List
@@ -70,6 +71,13 @@ postProcess txt = unlines ls'
               (ys, _) = List.span (/= '|') xs
            in ys
         else line
+
+debugExactPrint :: (Exact.ExactPrint a, Data a) => a -> IO ()
+debugExactPrint x = do
+  putStrLn (Exact.showAst x)
+  putStrLn "-------"
+  putStrLn (exactPrint x)
+  putStrLn "-------"
 
 simpleBuilder :: FFICXXConfig -> SimpleBuilderConfig -> IO ()
 simpleBuilder cfg sbc = do
@@ -170,7 +178,7 @@ simpleBuilder cfg sbc = do
   for_ mods $ \m ->
     gen
       (cmModule m <.> "Cast" <.> "hs")
-      (prettyPrint (C.buildCastHs m))
+      (exactPrint (C.buildCastHs m))
   --
   putStrLn "Generating Implementation.hs"
   for_ mods $ \m ->

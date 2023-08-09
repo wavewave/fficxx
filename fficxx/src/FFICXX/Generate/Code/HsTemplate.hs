@@ -10,7 +10,7 @@ import FFICXX.Generate.Code.Cpp
     genTmplFunCpp,
     genTmplVarCpp,
   )
-import FFICXX.Generate.Code.HsCast (castBody)
+import FFICXX.Generate.Code.HsCast (castBody_)
 import FFICXX.Generate.Code.Primitive
   ( convertCpp2HS,
     convertCpp2HS4Tmpl,
@@ -248,7 +248,7 @@ genTmplInterface t =
       Nothing,
     mkClass cxEmpty (typeclassNameT t) (map mkTBind tps) methods,
     mkInstance cxEmpty "FPtr" [hightype] fptrbody,
-    mkInstance cxEmpty "Castable" [hightype, tyapp tyPtr rawtype] castBody
+    mkInstance cxEmpty "Castable" [hightype, tyapp tyPtr rawtype] castBody_
   ]
   where
     (hname, rname) = hsTemplateClassName t

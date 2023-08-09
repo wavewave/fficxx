@@ -367,9 +367,16 @@ genImportInInterface isHsBoot depCycles m =
            in fmap mkImport imported'
         else fmap (mkImportWithDepCycles depCycles modSelf . subModuleName) imported
 
-genImportInCast :: ClassModule -> [ImportDecl ()]
-genImportInCast m =
+-- OLD
+-- TODO: Remove
+genImportInCast_ :: ClassModule -> [ImportDecl ()]
+genImportInCast_ m =
   fmap (mkImport . subModuleName) $ cmImportedSubmodulesForCast m
+
+-- NEW
+genImportInCast :: ClassModule -> [Ex.ImportDecl Ex.GhcPs]
+genImportInCast m =
+  fmap (Ex.mkImport . subModuleName) $ cmImportedSubmodulesForCast m
 
 genImportInImplementation :: ClassModule -> [ImportDecl ()]
 genImportInImplementation m =

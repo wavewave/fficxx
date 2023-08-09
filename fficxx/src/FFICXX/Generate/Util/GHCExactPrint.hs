@@ -27,6 +27,16 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkFunSig,
     mkBind1,
 
+    -- * Typeclass
+    cxEmpty,
+    cxTuple,
+    classA,
+    mkInstance,
+    instD,
+
+    -- * pattern
+    mkPVar,
+
     -- * expr
     app,
     con,
@@ -67,8 +77,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     tyParen,
     tyForeignPtr,
     classA,
-    cxEmpty,
-    cxTuple,
     tySplice,
     tyTupleBoxed,
     parenSplice,
@@ -102,6 +110,7 @@ where
 import Data.List (foldl')
 import Data.Maybe (maybeToList)
 import Data.String (IsString (fromString))
+import GHC.Data.Bag (listToBag)
 import GHC.Hs
   ( AnnSig (..),
     AnnsModule (..),
@@ -114,15 +123,18 @@ import GHC.Parser.Annotation
   ( AddEpAnn (..),
     Anchor (..),
     AnchorOperation (..),
+    AnnContext (..),
     AnnKeywordId (..),
     AnnList (..),
     AnnListItem (..),
     AnnParen (..),
+    AnnSortKey (..),
     DeltaPos (..),
     EpAnn (..),
     EpaComment (..),
     EpaCommentTok (..),
     EpaLocation (..),
+    IsUnicodeSyntax (NormalSyntax),
     NameAnn (..),
     NoEpAnns (..),
     ParenType (AnnParens, AnnParensSquare),
@@ -130,6 +142,7 @@ import GHC.Parser.Annotation
     SrcSpanAnn' (SrcSpanAnn),
     SrcSpanAnnA,
     TokenLocation (..),
+    TrailingAnn (..),
     emptyComments,
     noAnn,
     noSrcSpanA,
@@ -173,6 +186,7 @@ import qualified Language.Haskell.GHC.ExactPrint as Exact
 import Language.Haskell.Syntax
   ( Anno,
     CImportSpec (CFunction),
+    ClsInstDecl (..),
     ExprLStmt,
     ForeignDecl (..),
     ForeignImport (CImport),
@@ -181,6 +195,7 @@ import Language.Haskell.Syntax
     HsArrow (..),
     HsBind (..),
     HsBindLR (..),
+    HsContext (..),
     HsDecl (..),
     HsDoFlavour (..),
     HsExpr (..),
@@ -198,8 +213,10 @@ import Language.Haskell.Syntax
     HsWildCardBndrs (HsWC),
     ImportDecl (..),
     ImportDeclQualifiedStyle (..),
+    InstDecl (..),
     IsBootInterface (..),
     LHsExpr,
+    LIdP,
     LayoutInfo (..),
     Match (..),
     MatchGroup (..),
@@ -214,14 +231,23 @@ import Language.Haskell.Syntax.Basic
   ( SrcStrictness (NoSrcStrict),
   )
 
+mkDeltaPos :: Int -> DeltaPos
+mkDeltaPos nLines
+  | nLines < -1 = error "mkDeltaPos: cannot go backward further"
+  | nLines == -1 = SameLine 0
+  | nLines == 0 = SameLine 1
+  | otherwise = DifferentLine nLines 0
+
+mkEpaDelta :: Int -> EpaLocation
+mkEpaDelta nLines = EpaDelta (mkDeltaPos nLines) []
+
+tokLoc :: Int -> TokenLocation
+tokLoc nLines = TokenLoc (mkEpaDelta nLines)
+
 mkRelAnchor :: Int -> Anchor
 mkRelAnchor nLines =
   let a' = spanAsAnchor defSrcSpan
-   in if
-          | nLines < -1 -> error "mkRelAnchor: cannot go backward further"
-          | nLines == -1 -> a' {anchor_op = MovedAnchor (SameLine 0)}
-          | nLines == 0 -> a' {anchor_op = MovedAnchor (SameLine 1)}
-          | otherwise -> a' {anchor_op = MovedAnchor (DifferentLine nLines 0)}
+   in a' {anchor_op = MovedAnchor (mkDeltaPos nLines)}
 
 mkRelEpAnn :: Int -> ann -> EpAnn ann
 mkRelEpAnn nLines ann = EpAnn (mkRelAnchor nLines) ann emptyComments
@@ -272,13 +298,6 @@ noAnnListItem = AnnListItem []
 mkL :: Int -> a -> GenLocated SrcSpanAnnA a
 mkL nLines = L (mkRelSrcSpanAnn nLines noAnnListItem)
 
-tokLoc :: Int -> TokenLocation
-tokLoc nLines
-  | nLines < -1 = error "tokLoc: cannot go below -1"
-  | nLines == -1 = TokenLoc (EpaDelta (SameLine 0) [])
-  | nLines == 0 = TokenLoc (EpaDelta (SameLine 1) [])
-  | otherwise = TokenLoc (EpaDelta (DifferentLine nLines 0) [])
-
 --
 -- Modules
 --
@@ -320,8 +339,8 @@ mkModule name pragmas idecls decls =
        in ls
     a1 =
       AnnsModule
-        [ AddEpAnn AnnModule (EpaDelta (DifferentLine 2 0) pragmaComments),
-          AddEpAnn AnnWhere (EpaDelta (SameLine 1) [])
+        [ AddEpAnn AnnModule (EpaDelta (mkDeltaPos 2) pragmaComments),
+          AddEpAnn AnnWhere (mkEpaDelta 0)
         ]
         (AnnList Nothing Nothing Nothing [] [])
 
@@ -359,7 +378,7 @@ mkForImpCcall quote fname typ =
       [ AddEpAnn
           AnnForeign
           ( EpaDelta
-              (SameLine 0)
+              (mkDeltaPos (-1))
               [ L
                   (mkRelAnchor 0)
                   ( EpaComment
@@ -373,8 +392,8 @@ mkForImpCcall quote fname typ =
                   )
               ]
           ),
-        AddEpAnn AnnImport (EpaDelta (SameLine 1) []),
-        AddEpAnn AnnDcolon (EpaDelta (SameLine 1) [])
+        AddEpAnn AnnImport (mkEpaDelta 0),
+        AddEpAnn AnnDcolon (mkEpaDelta 0)
       ]
     id' = unqual (mkVarOcc fname)
     lid =
@@ -400,6 +419,11 @@ mkForImpCcall quote fname typ =
 
 unqual :: OccName -> RdrName
 unqual = Unqual
+
+mkLIdP :: String -> LIdP GhcPs
+mkLIdP name = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+  where
+    id' = unqual (mkVarOcc name)
 
 --
 -- types
@@ -443,8 +467,8 @@ tylist x =
     ann =
       AnnParen
         { ap_adornment = AnnParensSquare,
-          ap_open = EpaDelta (SameLine 0) [],
-          ap_close = EpaDelta (SameLine 0) []
+          ap_open = mkEpaDelta (-1),
+          ap_close = mkEpaDelta (-1)
         }
     lx = mkL (-1) x
 
@@ -452,11 +476,7 @@ tyParen :: HsType GhcPs -> HsType GhcPs
 tyParen typ =
   HsParTy (mkRelEpAnn (-1) ann) (mkL (-1) typ)
   where
-    ann =
-      AnnParen
-        AnnParens
-        (EpaDelta (SameLine 0) [])
-        (EpaDelta (SameLine 0) [])
+    ann = AnnParen AnnParens (mkEpaDelta (-1)) (mkEpaDelta (-1))
 
 tyPtr :: HsType GhcPs
 tyPtr = tycon "Ptr"
@@ -465,11 +485,7 @@ unit_tycon :: HsType GhcPs
 unit_tycon =
   HsTupleTy (mkRelEpAnn (-1) ann) HsBoxedOrConstraintTuple []
   where
-    ann =
-      AnnParen
-        AnnParens
-        (EpaDelta (SameLine 0) [])
-        (EpaDelta (SameLine 0) [])
+    ann = AnnParen AnnParens (mkEpaDelta (-1)) (mkEpaDelta (-1))
 
 --
 -- Function
@@ -490,7 +506,7 @@ mkFun ::
   [HsDecl GhcPs]
 mkFun fname typ pats rhs mbinds =
   [ mkFunSig fname typ,
-    mkBind1 fname pats rhs mbinds
+    ValD noExtField (mkBind1 fname pats rhs mbinds)
   ]
 
 mkFunSig ::
@@ -502,7 +518,7 @@ mkFunSig fname typ =
   SigD noExtField (TypeSig ann [lid] bndr)
   where
     ann =
-      mkRelEpAnn (-1) (AnnSig (AddEpAnn AnnDcolon (EpaDelta (SameLine 1) [])) [])
+      mkRelEpAnn (-1) (AnnSig (AddEpAnn AnnDcolon (mkEpaDelta 0)) [])
 
     id' = unqual (mkVarOcc fname)
     lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
@@ -518,20 +534,20 @@ mkBind1 ::
   [Pat GhcPs] ->
   HsExpr GhcPs ->
   Maybe (HsLocalBinds GhcPs) ->
-  HsDecl GhcPs
+  HsBind GhcPs
 mkBind1 fname pats rhs mbinds =
-  ValD noExtField (FunBind noExtField lid payload)
+  FunBind noExtField lid payload
   where
     id' = unqual (mkVarOcc fname)
     lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
 
-    lpats = [] -- fmap (L ) pats
-    lrhs = mkL (-1) rhs
+    lpats = fmap (mkL 0) pats
+    lrhs = mkL 0 rhs
     glrhs =
       let ann =
             mkRelEpAnn
               (-1)
-              (GrhsAnn Nothing (AddEpAnn AnnEqual (EpaDelta (SameLine 1) [])))
+              (GrhsAnn Nothing (AddEpAnn AnnEqual (mkEpaDelta 0)))
        in GRHS ann [] (lrhs)
     lglrhs = L (mkRelSrcSpanAnn (-1) NoEpAnns) glrhs
     match =
@@ -548,6 +564,94 @@ mkBind1 fname pats rhs mbinds =
         }
     lmatch = mkL (-1) match
     payload = MG FromSource (L (mkRelSrcSpanAnn (-1) noAnnList) [lmatch])
+
+--
+-- Typeclass
+--
+
+cxEmpty :: HsContext GhcPs
+cxEmpty = []
+
+cxTuple :: [HsType GhcPs] -> HsContext GhcPs
+cxTuple typs =
+  case typs of
+    [] -> []
+    (x : []) -> [mkL (-1) x]
+    _ ->
+      let typs' = init typs
+          lastTyp = last typs
+          typs'' =
+            fmap
+              (L (mkRelSrcSpanAnn (-1) (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
+              typs'
+       in (typs'' ++ [mkL (-1) lastTyp])
+
+classA :: String -> [HsType GhcPs] -> HsType GhcPs
+classA name typs = foldl' tyapp (tycon name) typs'
+  where
+    typs' = fmap tyParen typs
+
+mkInstance ::
+  -- | Context
+  HsContext GhcPs ->
+  -- | Typeclass name
+  String ->
+  -- | instance types
+  [HsType GhcPs] ->
+  -- | instance definitions
+  [HsBind GhcPs] ->
+  -- | resultant declaration
+  ClsInstDecl GhcPs
+mkInstance ctxt name typs bnds =
+  ClsInstDecl
+    { cid_ext = ann,
+      cid_poly_ty =
+        mkL (-1) (HsSig noExtField (HsOuterImplicit noExtField) (mkL (-1) typcls)),
+      cid_binds = bnds',
+      cid_sigs = [],
+      cid_tyfam_insts = [],
+      cid_datafam_insts = [],
+      cid_overlap_mode = Nothing
+    }
+  where
+    bnds' = listToBag $ fmap (L ann') bnds
+      where
+        a = spanAsAnchor defSrcSpan
+        a' = a {anchor_op = MovedAnchor (DifferentLine 1 2)}
+        ann' = SrcSpanAnn (EpAnn a' noAnnListItem emptyComments) defSrcSpan
+    ann =
+      ( mkRelEpAnn
+          1
+          [ AddEpAnn AnnInstance (mkEpaDelta (-1)),
+            AddEpAnn AnnWhere (mkEpaDelta 0)
+          ],
+        NoAnnSortKey
+      )
+    typcls =
+      HsQualTy
+        { hst_xqual = noExtField,
+          hst_ctxt = L (mkRelSrcSpanAnn 0 annCtxt) ctxt,
+          hst_body = mkL 0 insttyp
+        }
+    annCtxt =
+      AnnContext
+        { ac_darrow = Just (NormalSyntax, mkEpaDelta 0),
+          ac_open = [mkEpaDelta (-1)],
+          ac_close = [mkEpaDelta (-1)]
+        }
+    insttyp = foldl' f (tycon name) typs
+      where
+        f acc x = tyapp acc (tyParen x)
+
+instD :: ClsInstDecl GhcPs -> HsDecl GhcPs
+instD = InstD noExtField . ClsInstD noExtField
+
+--
+-- Pattern
+--
+
+mkPVar :: String -> Pat GhcPs
+mkPVar name = VarPat noExtField (mkLIdP name)
 
 --
 -- Expr
@@ -621,10 +725,7 @@ listE itms =
 
 mkVar :: String -> HsExpr GhcPs
 mkVar name =
-  HsVar noExtField lid
-  where
-    id' = unqual (mkVarOcc name)
-    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+  HsVar noExtField (mkLIdP name)
 
 op :: String -> HsExpr GhcPs
 op = mkVar
@@ -793,9 +894,6 @@ recDecl n rs = RecDecl () (Ident () n) rs
 lit :: Literal () -> Exp ()
 lit = Lit ()
 
-mkPVar :: String -> Pat ()
-mkPVar = PVar () . Ident ()
-
 mkIVar :: String -> ImportSpec ()
 mkIVar = IVar () . Ident ()
 
@@ -819,14 +917,6 @@ dhead n = DHead () (Ident () n)
 
 mkDeclHead :: String -> [TyVarBind ()] -> DeclHead ()
 mkDeclHead n tbinds = foldl' (DHApp ()) (dhead n) tbinds
-
-mkInstance :: Context () -> String -> [Type ()] -> [InstDecl ()] -> Decl ()
-mkInstance ctxt n typs idecls = InstDecl () Nothing instrule (Just idecls)
-  where
-    instrule = IRule () Nothing (Just ctxt) insthead
-    insthead = foldl' f (IHCon () (unqual n)) typs
-      where
-        f acc x = IHApp () acc (tyParen x)
 
 mkData :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
 mkData n tbinds qdecls mderiv = DataDecl () (DataType ()) Nothing declhead qdecls (maybeToList mderiv)
@@ -868,15 +958,6 @@ tyForall = TyForall ()
 
 tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
-
-classA :: QName () -> [Type ()] -> Asst ()
-classA n = TypeA () . foldl' tyapp (TyCon () n)
-
-cxEmpty :: Context ()
-cxEmpty = CxEmpty ()
-
-cxTuple :: [Asst ()] -> Context ()
-cxTuple = CxTuple ()
 
 tySplice :: Splice () -> Type ()
 tySplice = TySplice ()
@@ -930,9 +1011,6 @@ nonamespace = NoNamespace ()
 
 insType :: Type () -> Type () -> InstDecl ()
 insType = InsType ()
-
-insDecl :: Decl () -> InstDecl ()
-insDecl = InsDecl ()
 
 generator :: Pat () -> Exp () -> Stmt ()
 generator = Generator ()
