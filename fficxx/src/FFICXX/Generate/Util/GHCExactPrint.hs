@@ -28,8 +28,11 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkBind1,
 
     -- * Typeclass
+    cxEmpty,
+    cxTuple,
     mkInstance,
-    
+    instD,
+
     -- * expr
     app,
     con,
@@ -70,8 +73,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     tyParen,
     tyForeignPtr,
     classA,
-    cxEmpty,
-    cxTuple,
     tySplice,
     tyTupleBoxed,
     parenSplice,
@@ -105,6 +106,7 @@ where
 import Data.List (foldl')
 import Data.Maybe (maybeToList)
 import Data.String (IsString (fromString))
+import GHC.Data.Bag (listToBag)
 import GHC.Hs
   ( AnnSig (..),
     AnnsModule (..),
@@ -117,10 +119,12 @@ import GHC.Parser.Annotation
   ( AddEpAnn (..),
     Anchor (..),
     AnchorOperation (..),
+    AnnContext (..),
     AnnKeywordId (..),
     AnnList (..),
     AnnListItem (..),
     AnnParen (..),
+    AnnSortKey (..),
     DeltaPos (..),
     EpAnn (..),
     EpaComment (..),
@@ -185,6 +189,7 @@ import Language.Haskell.Syntax
     HsArrow (..),
     HsBind (..),
     HsBindLR (..),
+    HsContext (..),
     HsDecl (..),
     HsDoFlavour (..),
     HsExpr (..),
@@ -202,8 +207,10 @@ import Language.Haskell.Syntax
     HsWildCardBndrs (HsWC),
     ImportDecl (..),
     ImportDeclQualifiedStyle (..),
+    InstDecl (..),
     IsBootInterface (..),
     LHsExpr,
+    LIdP,
     LayoutInfo (..),
     Match (..),
     MatchGroup (..),
@@ -407,6 +414,11 @@ mkForImpCcall quote fname typ =
 unqual :: OccName -> RdrName
 unqual = Unqual
 
+mkLIdP :: String -> LIdP GhcPs
+mkLIdP name = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+  where
+    id' = unqual (mkVarOcc name)
+
 --
 -- types
 --
@@ -551,10 +563,15 @@ mkBind1 fname pats rhs mbinds =
 -- Typeclass
 --
 
+cxEmpty :: HsContext GhcPs
+cxEmpty = []
+
+cxTuple :: [HsType GhcPs] -> HsContext GhcPs
+cxTuple typs = fmap (mkL (-1)) typs
 
 mkInstance ::
   -- | Context
-  [HsType GhcPs] ->
+  HsContext GhcPs ->
   -- | Typeclass name
   String ->
   -- | instance types
@@ -563,11 +580,11 @@ mkInstance ::
   [HsBind GhcPs] ->
   -- | resultant declaration
   ClsInstDecl GhcPs
-mkInstance ctxts name typs bnds = undefined
-{-
+mkInstance ctxt name typs bnds =
   ClsInstDecl
     { cid_ext = ann,
-      cid_poly_ty = mkL hsSigTyp,
+      cid_poly_ty =
+        mkL (-1) (HsSig noExtField (HsOuterImplicit noExtField) (mkL (-1) typcls)),
       cid_binds = listToBag [ ],
       cid_sigs = [],
       cid_tyfam_insts = [],
@@ -578,20 +595,36 @@ mkInstance ctxts name typs bnds = undefined
      ann =
        ( mkRelEpAnn
            (-1)
-           [ AddEpAnn () (
+           [ AddEpAnn AnnInstance (mkEpaDelta (-1)),
+             AddEpAnn AnnWhere (mkEpaDelta 0)
            ],
          NoAnnSortKey
        )
-     hsSigTyp = 
--}
-{-
-  InstDecl () Nothing instrule (Just idecls)
-  where
-    instrule = IRule () Nothing (Just ctxt) insthead
-    insthead = foldl' f (IHCon () (unqual n)) typs
+     typcls =
+       HsQualTy
+         { hst_xqual = noExtField,
+           hst_ctxt = L (mkRelSrcSpanAnn (-1) annCtxt) ctxt,
+           hst_body = mkL (-1) insttyp
+         }
+     annCtxt =
+       AnnContext
+         { ac_darrow = Nothing,
+           ac_open = [],
+           ac_close = []
+         }
+     insttyp = foldl' f (tycon name) typs
       where
-        f acc x = IHApp () acc (tyParen x)
--}
+        f acc x = tyapp acc (tyParen x)
+
+instD :: ClsInstDecl GhcPs -> HsDecl GhcPs
+instD = InstD noExtField . ClsInstD noExtField
+
+--
+-- Pattern
+--
+
+mkPVar :: String -> Pat GhcPs
+mkPVar name = VarPat noExtField (mkLIdP name)
 
 --
 -- Expr
@@ -665,10 +698,7 @@ listE itms =
 
 mkVar :: String -> HsExpr GhcPs
 mkVar name =
-  HsVar noExtField lid
-  where
-    id' = unqual (mkVarOcc name)
-    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+  HsVar noExtField (mkLIdP name)
 
 op :: String -> HsExpr GhcPs
 op = mkVar
@@ -837,9 +867,6 @@ recDecl n rs = RecDecl () (Ident () n) rs
 lit :: Literal () -> Exp ()
 lit = Lit ()
 
-mkPVar :: String -> Pat ()
-mkPVar = PVar () . Ident ()
-
 mkIVar :: String -> ImportSpec ()
 mkIVar = IVar () . Ident ()
 
@@ -909,12 +936,6 @@ tyForeignPtr = tycon "ForeignPtr"
 classA :: QName () -> [Type ()] -> Asst ()
 classA n = TypeA () . foldl' tyapp (TyCon () n)
 
-cxEmpty :: Context ()
-cxEmpty = CxEmpty ()
-
-cxTuple :: [Asst ()] -> Context ()
-cxTuple = CxTuple ()
-
 tySplice :: Splice () -> Type ()
 tySplice = TySplice ()
 
@@ -967,9 +988,6 @@ nonamespace = NoNamespace ()
 
 insType :: Type () -> Type () -> InstDecl ()
 insType = InsType ()
-
-insDecl :: Decl () -> InstDecl ()
-insDecl = InsDecl ()
 
 generator :: Pat () -> Exp () -> Stmt ()
 generator = Generator ()

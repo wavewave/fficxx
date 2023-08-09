@@ -28,10 +28,20 @@ import Language.Haskell.Syntax (HsDecl)
 -----
 
 
-castBody :: [InstDecl ()]
+castBody :: [InstDecl ()] -- [HsBind GhcPs]
 castBody =
-  [ insDecl (mkBind1 "cast" [mkPVar "x", mkPVar "f"] (app (mkVar "f") (app (mkVar "castPtr") (app (mkVar "get_fptr") (mkVar "x")))) Nothing),
-    insDecl (mkBind1 "uncast" [mkPVar "x", mkPVar "f"] (app (mkVar "f") (app (mkVar "cast_fptr_to_obj") (app (mkVar "castPtr") (mkVar "x")))) Nothing)
+ fmap
+  insDecl
+  [ mkBind1
+     "cast"
+     [mkPVar "x", mkPVar "f"]
+     (app (mkVar "f") (app (mkVar "castPtr") (app (mkVar "get_fptr") (mkVar "x"))))
+     Nothing,
+    mkBind1
+      "uncast"
+      [mkPVar "x", mkPVar "f"]
+      (app (mkVar "f") (app (mkVar "cast_fptr_to_obj") (app (mkVar "castPtr") (mkVar "x"))))
+      Nothing
   ]
 
 genHsFrontInstCastable :: Class -> Maybe (Decl ()) -- (HsDecl GhcPs)
