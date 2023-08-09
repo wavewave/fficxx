@@ -5,6 +5,29 @@ where
 
 import FFICXX.Generate.Name (hsClassName)
 import FFICXX.Generate.Type.Class (Class (..))
+import FFICXX.Generate.Util.GHCExactPrint
+  ( con,
+    conDecl,
+    cxEmpty,
+    instD,
+    mkBind1,
+    mkData,
+    mkInstance,
+    mkNewtype,
+    mkPVar,
+    mkVar,
+    pApp,
+    tyPtr,
+    tyapp,
+    tycon,
+  )
+import GHC.Hs (GhcPs)
+import Language.Haskell.Syntax
+  ( HsDecl (TyClD),
+    noExtField,
+  )
+
+{-
 import FFICXX.Generate.Util.HaskellSrcExts
   ( con,
     conDecl,
@@ -14,7 +37,6 @@ import FFICXX.Generate.Util.HaskellSrcExts
     insType,
     irule,
     mkBind1,
-    mkData,
     mkDeriving,
     mkInstance,
     mkNewtype,
@@ -23,34 +45,44 @@ import FFICXX.Generate.Util.HaskellSrcExts
     qualConDecl,
     tyPtr,
     tyapp,
-    tycon,
     tyfun,
     unqual,
   )
-import Language.Haskell.Exts.Build (name, pApp)
+ import Language.Haskell.Exts.Build (name, pApp)
 import Language.Haskell.Exts.Syntax
   ( Decl,
   )
+-}
 
-hsClassRawType :: Class -> [Decl ()]
+hsClassRawType :: Class -> [HsDecl GhcPs]
 hsClassRawType c =
-  [ mkData rawname [] [] Nothing,
-    mkNewtype highname [] [qualConDecl Nothing Nothing (conDecl highname [tyapp tyPtr rawtype])] mderiv,
-    mkInstance
-      cxEmpty
-      "FPtr"
-      [hightype]
-      [ insType (tyapp (tycon "Raw") hightype) rawtype,
-        insDecl (mkBind1 "get_fptr" [pApp (name highname) [mkPVar "ptr"]] (mkVar "ptr") Nothing),
-        insDecl (mkBind1 "cast_fptr_to_obj" [] (con highname) Nothing)
-      ]
+  [ TyClD noExtField (mkData rawname [] []), -- [] -- ,
+    TyClD
+      noExtField
+      ( mkNewtype
+          highname
+          (conDecl highname [tyapp tyPtr rawtype])
+          []
+          {- [] [qualConDecl Nothing Nothing  mderiv -}
+      ),
+    instD $
+      mkInstance
+        cxEmpty
+        "FPtr"
+        [hightype]
+        [ -- insType (tyapp (tycon "Raw") hightype) rawtype,
+          mkBind1 "get_fptr" [pApp highname [mkPVar "ptr"]] (mkVar "ptr") Nothing,
+          mkBind1 "cast_fptr_to_obj" [] (con highname) Nothing
+        ]
   ]
   where
     (highname, rawname) = hsClassName c
     hightype = tycon highname
     rawtype = tycon rawname
-    mderiv = Just (mkDeriving [i_eq, i_ord, i_show])
+
+{-    mderiv = Just (mkDeriving [i_eq, i_ord, i_show])
       where
         i_eq = irule Nothing Nothing (ihcon (unqual "Eq"))
         i_ord = irule Nothing Nothing (ihcon (unqual "Ord"))
         i_show = irule Nothing Nothing (ihcon (unqual "Show"))
+-}

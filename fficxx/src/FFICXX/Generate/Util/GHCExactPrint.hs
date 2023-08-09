@@ -22,6 +22,11 @@ module FFICXX.Generate.Util.GHCExactPrint
     tyPtr,
     unit_tycon,
 
+    -- * data/newtype declaration
+    mkData,
+    mkNewtype,
+    conDecl,
+
     -- * function
     mkFun,
     mkFunSig,
@@ -36,6 +41,7 @@ module FFICXX.Generate.Util.GHCExactPrint
 
     -- * pattern
     mkPVar,
+    pApp,
 
     -- * expr
     app,
@@ -66,8 +72,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     dhead,
     mkDeclHead,
     mkInstance,
-    mkData,
-    mkNewtype,
     mkModuleE,
     mkImportExp,
     mkImportSrc,
@@ -187,6 +191,8 @@ import Language.Haskell.Syntax
   ( Anno,
     CImportSpec (CFunction),
     ClsInstDecl (..),
+    ConDecl (..),
+    DataDefnCons (..),
     ExprLStmt,
     ForeignDecl (..),
     ForeignImport (CImport),
@@ -195,8 +201,11 @@ import Language.Haskell.Syntax
     HsArrow (..),
     HsBind (..),
     HsBindLR (..),
+    HsConDetails (PrefixCon),
     HsContext (..),
+    HsDataDefn (..),
     HsDecl (..),
+    HsDeriving (..),
     HsDoFlavour (..),
     HsExpr (..),
     HsLit (..),
@@ -205,6 +214,7 @@ import Language.Haskell.Syntax
     HsMatchContext (FunRhs),
     HsModule (..),
     HsOuterTyVarBndrs (HsOuterImplicit),
+    HsScaled (..),
     HsSigType (HsSig),
     HsToken (..),
     HsTupleSort (..),
@@ -216,6 +226,7 @@ import Language.Haskell.Syntax
     InstDecl (..),
     IsBootInterface (..),
     LHsExpr,
+    LHsQTyVars (..),
     LIdP,
     LayoutInfo (..),
     Match (..),
@@ -225,7 +236,9 @@ import Language.Haskell.Syntax
     PromotionFlag (..),
     Sig (TypeSig),
     StmtLR (..),
+    TyClDecl (..),
     noExtField,
+    noTypeArgs,
   )
 import Language.Haskell.Syntax.Basic
   ( SrcStrictness (NoSrcStrict),
@@ -420,8 +433,8 @@ mkForImpCcall quote fname typ =
 unqual :: OccName -> RdrName
 unqual = Unqual
 
-mkLIdP :: String -> LIdP GhcPs
-mkLIdP name = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+mkLIdP :: Int -> String -> LIdP GhcPs
+mkLIdP nLines name = L (mkRelSrcSpanAnn nLines (NameAnnTrailing [])) id'
   where
     id' = unqual (mkVarOcc name)
 
@@ -486,6 +499,86 @@ unit_tycon =
   HsTupleTy (mkRelEpAnn (-1) ann) HsBoxedOrConstraintTuple []
   where
     ann = AnnParen AnnParens (mkEpaDelta (-1)) (mkEpaDelta (-1))
+
+--
+-- data/newtype declaration
+--
+
+mkData ::
+  -- | data type name
+  String ->
+  -- [TyVarBind ()] ->
+  [ConDecl GhcPs] ->
+  HsDeriving GhcPs ->
+  TyClDecl GhcPs
+mkData name {- tbinds -} cdecls deriv =
+  DataDecl (mkRelEpAnn (-1) anns) (mkLIdP 0 name) qty Prefix dfn
+  where
+    anns =
+      [ AddEpAnn AnnData (mkEpaDelta (-1))
+      ]
+    qty = HsQTvs noExtField []
+    dfn =
+      HsDataDefn
+        { dd_ext = noExtField,
+          dd_ctxt = Nothing,
+          dd_cType = Nothing,
+          dd_kindSig = Nothing,
+          dd_cons = DataTypeCons False (fmap (mkL (-1)) cdecls),
+          dd_derivs = deriv
+        }
+
+{-
+  DataDecl () (DataType ()) Nothing declhead qdecls (maybeToList mderiv)
+  where
+    declhead = mkDeclHead n tbinds
+-}
+
+mkNewtype ::
+  -- | newtype name
+  String ->
+  -- [TyVarBind ()] ->
+  ConDecl GhcPs ->
+  HsDeriving GhcPs ->
+  TyClDecl GhcPs
+mkNewtype name {- tbinds -} cdecl deriv =
+  DataDecl (mkRelEpAnn (-1) anns) (mkLIdP 0 name) qty Prefix dfn
+  where
+    anns =
+      [ AddEpAnn AnnNewtype (mkEpaDelta (-1))
+      ]
+    qty = HsQTvs noExtField []
+    dfn =
+      HsDataDefn
+        { dd_ext = noExtField,
+          dd_ctxt = Nothing,
+          dd_cType = Nothing,
+          dd_kindSig = Nothing,
+          dd_cons = NewTypeCon (mkL (-1) cdecl),
+          dd_derivs = deriv
+        }
+
+{- DataDecl () (NewType ()) Nothing declhead qdecls (maybeToList mderiv)
+  where
+    declhead = mkDeclHead n tbinds
+-}
+
+conDecl :: String -> [HsType GhcPs] -> ConDecl GhcPs
+conDecl name typs =
+  ConDeclH98
+    { con_ext = mkRelEpAnn (-1) [],
+      con_name = mkLIdP (-1) name,
+      con_forall = False,
+      con_ex_tvs = [],
+      con_mb_cxt = Nothing,
+      con_args = details,
+      con_doc = Nothing
+    }
+  where
+    details = PrefixCon noTypeArgs args
+    args =
+      fmap (HsScaled (HsUnrestrictedArrow (L (tokLoc (-1)) HsNormalTok))) ltyps
+    ltyps = fmap (mkL (-1)) typs
 
 --
 -- Function
@@ -651,7 +744,17 @@ instD = InstD noExtField . ClsInstD noExtField
 --
 
 mkPVar :: String -> Pat GhcPs
-mkPVar name = VarPat noExtField (mkLIdP name)
+mkPVar name = VarPat noExtField (mkLIdP (-1) name)
+
+pApp :: String -> [Pat GhcPs] -> Pat GhcPs
+pApp name pats =
+  ConPat
+    { pat_con_ext = mkRelEpAnn (-1) [],
+      pat_con = mkLIdP (-1) name,
+      pat_args = PrefixCon [] lpats
+    }
+  where
+    lpats = fmap (mkL (-1)) pats
 
 --
 -- Expr
@@ -725,7 +828,7 @@ listE itms =
 
 mkVar :: String -> HsExpr GhcPs
 mkVar name =
-  HsVar noExtField (mkLIdP name)
+  HsVar noExtField (mkLIdP (-1) name)
 
 op :: String -> HsExpr GhcPs
 op = mkVar
@@ -878,9 +981,6 @@ app' x y = App () (mkVar x) (mkVar y)
 unqual :: String -> QName ()
 unqual = UnQual () . Ident ()
 
-conDecl :: String -> [Type ()] -> ConDecl ()
-conDecl n ys = ConDecl () (Ident () n) ys
-
 qualConDecl ::
   Maybe [TyVarBind ()] ->
   Maybe (Context ()) ->
@@ -917,16 +1017,6 @@ dhead n = DHead () (Ident () n)
 
 mkDeclHead :: String -> [TyVarBind ()] -> DeclHead ()
 mkDeclHead n tbinds = foldl' (DHApp ()) (dhead n) tbinds
-
-mkData :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
-mkData n tbinds qdecls mderiv = DataDecl () (DataType ()) Nothing declhead qdecls (maybeToList mderiv)
-  where
-    declhead = mkDeclHead n tbinds
-
-mkNewtype :: String -> [TyVarBind ()] -> [QualConDecl ()] -> Maybe (Deriving ()) -> Decl ()
-mkNewtype n tbinds qdecls mderiv = DataDecl () (NewType ()) Nothing declhead qdecls (maybeToList mderiv)
-  where
-    declhead = mkDeclHead n tbinds
 
 mkModuleE :: String -> [ModulePragma ()] -> [ExportSpec ()] -> [ImportDecl ()] -> [Decl ()] -> Module ()
 mkModuleE n pragmas exps idecls decls = Module () (Just mhead) pragmas idecls decls

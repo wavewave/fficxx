@@ -354,27 +354,25 @@ buildFFIHsc m =
         <> genExtraImport m
     hscBody = fmap (ForD noExtField) (genHsFFI (cmCIH m))
 
-buildRawTypeHs :: ClassModule -> Module ()
+buildRawTypeHs :: ClassModule -> HsModule GhcPs
 buildRawTypeHs m =
-  mkModule
+  Ex.mkModule
     (cmModule m <.> "RawType")
-    [ lang
-        [ "ForeignFunctionInterface",
-          "TypeFamilies",
-          "MultiParamTypeClasses",
-          "FlexibleInstances",
-          "TypeSynonymInstances",
-          "EmptyDataDecls",
-          "ExistentialQuantification",
-          "ScopedTypeVariables"
-        ]
+    [ "ForeignFunctionInterface",
+      "TypeFamilies",
+      "MultiParamTypeClasses",
+      "FlexibleInstances",
+      "TypeSynonymInstances",
+      "EmptyDataDecls",
+      "ExistentialQuantification",
+      "ScopedTypeVariables"
     ]
     rawtypeImports
     rawtypeBody
   where
     rawtypeImports =
-      [ mkImport "Foreign.Ptr",
-        mkImport "FFICXX.Runtime.Cast"
+      [ Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "FFICXX.Runtime.Cast"
       ]
     rawtypeBody =
       let c = cihClass (cmCIH m)
