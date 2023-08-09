@@ -26,6 +26,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkData,
     mkNewtype,
     conDecl,
+    mkDeriving,
 
     -- * function
     mkFun,
@@ -37,6 +38,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     cxTuple,
     classA,
     mkInstance,
+    mkTypeFamInst,
     instD,
 
     -- * pattern
@@ -86,7 +88,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     parenSplice,
     bracketExp,
     typeBracket,
-    mkDeriving,
     irule,
     ihcon,
     evar,
@@ -193,11 +194,14 @@ import Language.Haskell.Syntax
     ClsInstDecl (..),
     ConDecl (..),
     DataDefnCons (..),
+    DerivClauseTys (..),
     ExprLStmt,
+    FamEqn (..),
     ForeignDecl (..),
     ForeignImport (CImport),
     GRHS (..),
     GRHSs (..),
+    HsArg (..),
     HsArrow (..),
     HsBind (..),
     HsBindLR (..),
@@ -206,6 +210,7 @@ import Language.Haskell.Syntax
     HsDataDefn (..),
     HsDecl (..),
     HsDeriving (..),
+    HsDerivingClause (..),
     HsDoFlavour (..),
     HsExpr (..),
     HsLit (..),
@@ -215,7 +220,7 @@ import Language.Haskell.Syntax
     HsModule (..),
     HsOuterTyVarBndrs (HsOuterImplicit),
     HsScaled (..),
-    HsSigType (HsSig),
+    HsSigType (..),
     HsToken (..),
     HsTupleSort (..),
     HsType (..),
@@ -237,6 +242,7 @@ import Language.Haskell.Syntax
     Sig (TypeSig),
     StmtLR (..),
     TyClDecl (..),
+    TyFamInstDecl (..),
     noExtField,
     noTypeArgs,
   )
@@ -580,6 +586,24 @@ conDecl name typs =
       fmap (HsScaled (HsUnrestrictedArrow (L (tokLoc (-1)) HsNormalTok))) ltyps
     ltyps = fmap (mkL (-1)) typs
 
+mkDeriving :: [HsType GhcPs] -> HsDeriving GhcPs
+mkDeriving typs = [L (mkRelSrcSpanAnn (-1) NoEpAnns) clause]
+  where
+    clause =
+      HsDerivingClause
+        { deriv_clause_ext = mkRelEpAnn (-1) [],
+          deriv_clause_strategy = Nothing,
+          deriv_clause_tys = L (mkRelSrcSpanAnn (-1) (AnnContext Nothing [] [])) typs'
+        }
+    typs' = DctMulti noExtField (fmap mkSigTy typs)
+    mkSigTy t =
+      mkL (-1) $
+        HsSig
+          { sig_ext = noExtField,
+            sig_bndrs = HsOuterImplicit noExtField,
+            sig_body = mkL (-1) t
+          }
+
 --
 -- Function
 --
@@ -691,18 +715,20 @@ mkInstance ::
   String ->
   -- | instance types
   [HsType GhcPs] ->
-  -- | instance definitions
+  -- | instance type family declarations
+  [TyFamInstDecl GhcPs] ->
+  -- | instance function definitions
   [HsBind GhcPs] ->
   -- | resultant declaration
   ClsInstDecl GhcPs
-mkInstance ctxt name typs bnds =
+mkInstance ctxt name typs tyfams bnds =
   ClsInstDecl
     { cid_ext = ann,
       cid_poly_ty =
         mkL (-1) (HsSig noExtField (HsOuterImplicit noExtField) (mkL (-1) typcls)),
       cid_binds = bnds',
       cid_sigs = [],
-      cid_tyfam_insts = [],
+      cid_tyfam_insts = fmap (mkL (-1)) tyfams,
       cid_datafam_insts = [],
       cid_overlap_mode = Nothing
     }
@@ -735,6 +761,20 @@ mkInstance ctxt name typs bnds =
     insttyp = foldl' f (tycon name) typs
       where
         f acc x = tyapp acc (tyParen x)
+
+mkTypeFamInst :: String -> [HsType GhcPs] -> HsType GhcPs -> TyFamInstDecl GhcPs
+mkTypeFamInst name args typ =
+  TyFamInstDecl (mkRelEpAnn (-1) []) eqn
+  where
+    eqn =
+      FamEqn
+        { feqn_ext = mkRelEpAnn (-1) [],
+          feqn_tycon = mkLIdP (-1) name,
+          feqn_bndrs = HsOuterImplicit noExtField,
+          feqn_pats = fmap (\t -> HsValArg (mkL (-1) t)) args,
+          feqn_fixity = Prefix,
+          feqn_rhs = mkL (-1) typ
+        }
 
 instD :: ClsInstDecl GhcPs -> HsDecl GhcPs
 instD = InstD noExtField . ClsInstD noExtField
@@ -1033,9 +1073,6 @@ mkImportExp m lst =
 mkImportSrc :: String -> ImportDecl ()
 mkImportSrc m = ImportDecl () (ModuleName () m) False True False Nothing Nothing Nothing
 
-lang :: [String] -> ModulePragma ()
-lang ns = LanguagePragma () (map (Ident ()) ns)
-
 dot :: Exp () -> Exp () -> Exp ()
 x `dot` y = x `app` mkVar "." `app` y
 
@@ -1064,19 +1101,6 @@ bracketExp = BracketExp ()
 typeBracket :: Type () -> Bracket ()
 typeBracket = TypeBracket ()
 
-mkDeriving :: [InstRule ()] -> Deriving ()
-mkDeriving = Deriving () Nothing
-
-irule ::
-  Maybe [TyVarBind ()] ->
-  Maybe (Context ()) ->
-  InstHead () ->
-  InstRule ()
-irule = IRule ()
-
-ihcon :: QName () -> InstHead ()
-ihcon = IHCon ()
-
 evar :: QName () -> ExportSpec ()
 evar = EVar ()
 
@@ -1098,9 +1122,6 @@ emodule nm = EModuleContents () (ModuleName () nm)
 
 nonamespace :: Namespace ()
 nonamespace = NoNamespace ()
-
-insType :: Type () -> Type () -> InstDecl ()
-insType = InsType ()
 
 generator :: Pat () -> Exp () -> Stmt ()
 generator = Generator ()

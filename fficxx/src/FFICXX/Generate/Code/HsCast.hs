@@ -94,12 +94,20 @@ genHsFrontInstCastable c
           (_, rname) = hsClassName c
           a = mkTVar "a"
           ctxt = cxTuple [classA iname [a], classA "FPtr" [a]]
-       in Just (instD (mkInstance ctxt "Castable" [a, tyapp tyPtr (tycon rname)] castBody))
+       in Just (instD (mkInstance ctxt "Castable" [a, tyapp tyPtr (tycon rname)] [] castBody))
   | otherwise = Nothing
 
 genHsFrontInstCastableSelf :: Class -> Maybe (HsDecl GhcPs)
 genHsFrontInstCastableSelf c
   | (not . isAbstractClass) c =
       let (cname, rname) = hsClassName c
-       in Just (instD (mkInstance cxEmpty "Castable" [tycon cname, tyapp tyPtr (tycon rname)] castBody))
+       in Just $
+            instD
+              ( mkInstance
+                  cxEmpty
+                  "Castable"
+                  [tycon cname, tyapp tyPtr (tycon rname)]
+                  []
+                  castBody
+              )
   | otherwise = Nothing
