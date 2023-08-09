@@ -44,6 +44,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     -- * pattern
     mkPVar,
     pApp,
+    parP,
 
     -- * expr
     app,
@@ -317,6 +318,13 @@ noAnnListItem = AnnListItem []
 mkL :: Int -> a -> GenLocated SrcSpanAnnA a
 mkL nLines = L (mkRelSrcSpanAnn nLines noAnnListItem)
 
+mkL' :: DeltaPos -> a -> GenLocated SrcSpanAnnA a
+mkL' delta = L anno'
+  where
+    a = spanAsAnchor defSrcSpan
+    a' = a {anchor_op = MovedAnchor delta}
+    anno' = SrcSpanAnn (EpAnn a' (AnnListItem []) emptyComments) defSrcSpan
+
 --
 -- Modules
 --
@@ -390,10 +398,10 @@ mkImport name =
 -- is not a valid Haskell code. So as a workaround we need to put a place holder in comment.
 mkForImpCcall :: String -> String -> HsType GhcPs -> ForeignDecl GhcPs
 mkForImpCcall quote fname typ =
-  ForeignImport (mkRelEpAnn (-1) anns) lid lsigty forImp
+  ForeignImport (mkRelEpAnn (-1) annos) lid lsigty forImp
   where
     quote' = show quote
-    anns =
+    annos =
       [ AddEpAnn
           AnnForeign
           ( EpaDelta
@@ -518,9 +526,9 @@ mkData ::
   HsDeriving GhcPs ->
   TyClDecl GhcPs
 mkData name {- tbinds -} cdecls deriv =
-  DataDecl (mkRelEpAnn (-1) anns) (mkLIdP 0 name) qty Prefix dfn
+  DataDecl (mkRelEpAnn (-1) annos) (mkLIdP 0 name) qty Prefix dfn
   where
-    anns =
+    annos =
       [ AddEpAnn AnnData (mkEpaDelta (-1))
       ]
     qty = HsQTvs noExtField []
@@ -534,12 +542,6 @@ mkData name {- tbinds -} cdecls deriv =
           dd_derivs = deriv
         }
 
-{-
-  DataDecl () (DataType ()) Nothing declhead qdecls (maybeToList mderiv)
-  where
-    declhead = mkDeclHead n tbinds
--}
-
 mkNewtype ::
   -- | newtype name
   String ->
@@ -548,10 +550,11 @@ mkNewtype ::
   HsDeriving GhcPs ->
   TyClDecl GhcPs
 mkNewtype name {- tbinds -} cdecl deriv =
-  DataDecl (mkRelEpAnn (-1) anns) (mkLIdP 0 name) qty Prefix dfn
+  DataDecl (mkRelEpAnn (-1) annos) (mkLIdP 0 name) qty Prefix dfn
   where
-    anns =
-      [ AddEpAnn AnnNewtype (mkEpaDelta (-1))
+    annos =
+      [ AddEpAnn AnnNewtype (mkEpaDelta (-1)),
+        AddEpAnn AnnEqual (mkEpaDelta 0)
       ]
     qty = HsQTvs noExtField []
     dfn =
@@ -560,14 +563,9 @@ mkNewtype name {- tbinds -} cdecl deriv =
           dd_ctxt = Nothing,
           dd_cType = Nothing,
           dd_kindSig = Nothing,
-          dd_cons = NewTypeCon (mkL (-1) cdecl),
+          dd_cons = NewTypeCon (mkL 0 cdecl),
           dd_derivs = deriv
         }
-
-{- DataDecl () (NewType ()) Nothing declhead qdecls (maybeToList mderiv)
-  where
-    declhead = mkDeclHead n tbinds
--}
 
 conDecl :: String -> [HsType GhcPs] -> ConDecl GhcPs
 conDecl name typs =
@@ -583,26 +581,40 @@ conDecl name typs =
   where
     details = PrefixCon noTypeArgs args
     args =
-      fmap (HsScaled (HsUnrestrictedArrow (L (tokLoc (-1)) HsNormalTok))) ltyps
-    ltyps = fmap (mkL (-1)) typs
+      fmap (HsScaled (HsUnrestrictedArrow (L NoTokenLoc HsNormalTok))) ltyps
+    ltyps = fmap (mkL 0 . tyParen) typs
 
 mkDeriving :: [HsType GhcPs] -> HsDeriving GhcPs
-mkDeriving typs = [L (mkRelSrcSpanAnn (-1) NoEpAnns) clause]
+mkDeriving typs = [L (mkRelSrcSpanAnn 0 NoEpAnns) clause]
   where
     clause =
       HsDerivingClause
-        { deriv_clause_ext = mkRelEpAnn (-1) [],
+        { deriv_clause_ext =
+            mkRelEpAnn
+              (-1)
+              [ AddEpAnn AnnDeriving (mkEpaDelta (-1))
+              ],
           deriv_clause_strategy = Nothing,
-          deriv_clause_tys = L (mkRelSrcSpanAnn (-1) (AnnContext Nothing [] [])) typs'
+          deriv_clause_tys =
+            L
+              ( mkRelSrcSpanAnn
+                  (-1)
+                  ( AnnContext
+                      { ac_darrow = Nothing,
+                        ac_open = [mkEpaDelta 0],
+                        ac_close = [mkEpaDelta (-1)]
+                      }
+                  )
+              )
+              typs'
         }
-    typs' = DctMulti noExtField (fmap mkSigTy typs)
+    typs' = DctMulti noExtField (tupleAnn $ fmap mkSigTy typs)
     mkSigTy t =
-      mkL (-1) $
-        HsSig
-          { sig_ext = noExtField,
-            sig_bndrs = HsOuterImplicit noExtField,
-            sig_body = mkL (-1) t
-          }
+      HsSig
+        { sig_ext = noExtField,
+          sig_bndrs = HsOuterImplicit noExtField,
+          sig_body = mkL (-1) t
+        }
 
 --
 -- Function
@@ -682,6 +694,18 @@ mkBind1 fname pats rhs mbinds =
     lmatch = mkL (-1) match
     payload = MG FromSource (L (mkRelSrcSpanAnn (-1) noAnnList) [lmatch])
 
+tupleAnn :: [a] -> [GenLocated SrcSpanAnnA a]
+tupleAnn [] = []
+tupleAnn (x : []) = [mkL (-1) x]
+tupleAnn xs =
+  let xs' = init xs
+      lastX = last xs
+      xs'' =
+        fmap
+          (L (mkRelSrcSpanAnn (-1) (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
+          xs'
+   in (xs'' ++ [mkL (-1) lastX])
+
 --
 -- Typeclass
 --
@@ -690,18 +714,7 @@ cxEmpty :: HsContext GhcPs
 cxEmpty = []
 
 cxTuple :: [HsType GhcPs] -> HsContext GhcPs
-cxTuple typs =
-  case typs of
-    [] -> []
-    (x : []) -> [mkL (-1) x]
-    _ ->
-      let typs' = init typs
-          lastTyp = last typs
-          typs'' =
-            fmap
-              (L (mkRelSrcSpanAnn (-1) (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
-              typs'
-       in (typs'' ++ [mkL (-1) lastTyp])
+cxTuple = tupleAnn
 
 classA :: String -> [HsType GhcPs] -> HsType GhcPs
 classA name typs = foldl' tyapp (tycon name) typs'
@@ -728,7 +741,7 @@ mkInstance ctxt name typs tyfams bnds =
         mkL (-1) (HsSig noExtField (HsOuterImplicit noExtField) (mkL (-1) typcls)),
       cid_binds = bnds',
       cid_sigs = [],
-      cid_tyfam_insts = fmap (mkL (-1)) tyfams,
+      cid_tyfam_insts = fmap (mkL' (DifferentLine 1 2)) tyfams,
       cid_datafam_insts = [],
       cid_overlap_mode = Nothing
     }
@@ -764,16 +777,23 @@ mkInstance ctxt name typs tyfams bnds =
 
 mkTypeFamInst :: String -> [HsType GhcPs] -> HsType GhcPs -> TyFamInstDecl GhcPs
 mkTypeFamInst name args typ =
-  TyFamInstDecl (mkRelEpAnn (-1) []) eqn
+  TyFamInstDecl (mkRelEpAnn (-1) annos) eqn
   where
+    annos =
+      [ AddEpAnn AnnType (mkEpaDelta (-1))
+      ]
     eqn =
       FamEqn
-        { feqn_ext = mkRelEpAnn (-1) [],
+        { feqn_ext =
+            mkRelEpAnn
+              0
+              [ AddEpAnn AnnEqual (mkEpaDelta 0)
+              ],
           feqn_tycon = mkLIdP (-1) name,
           feqn_bndrs = HsOuterImplicit noExtField,
-          feqn_pats = fmap (\t -> HsValArg (mkL (-1) t)) args,
+          feqn_pats = fmap (\t -> HsValArg (mkL 0 t)) args,
           feqn_fixity = Prefix,
-          feqn_rhs = mkL (-1) typ
+          feqn_rhs = mkL 0 typ
         }
 
 instD :: ClsInstDecl GhcPs -> HsDecl GhcPs
@@ -794,7 +814,15 @@ pApp name pats =
       pat_args = PrefixCon [] lpats
     }
   where
-    lpats = fmap (mkL (-1)) pats
+    lpats = fmap (mkL 0) pats
+
+parP :: Pat GhcPs -> Pat GhcPs
+parP p =
+  ParPat
+    (mkRelEpAnn (-1) NoEpAnns)
+    (L (tokLoc (-1)) HsTok)
+    (mkL (-1) p)
+    (L (tokLoc (-1)) HsTok)
 
 --
 -- Expr

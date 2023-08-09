@@ -19,6 +19,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     mkTypeFamInst,
     mkVar,
     pApp,
+    parP,
     tyPtr,
     tyapp,
     tycon,
@@ -46,7 +47,11 @@ hsClassRawType c =
         [hightype]
         [ mkTypeFamInst "Raw" [hightype] rawtype
         ]
-        [ mkBind1 "get_fptr" [pApp highname [mkPVar "ptr"]] (mkVar "ptr") Nothing,
+        [ mkBind1
+            "get_fptr"
+            [parP (pApp highname [mkPVar "ptr"])]
+            (mkVar "ptr")
+            Nothing,
           mkBind1 "cast_fptr_to_obj" [] (con highname) Nothing
         ]
   ]
