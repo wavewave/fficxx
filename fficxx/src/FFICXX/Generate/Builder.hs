@@ -157,8 +157,7 @@ simpleBuilder cfg sbc = do
   for_ (cabal_additional_c_srcs cabal) (\(AddCSrc hdr txt) -> gen hdr txt)
   --
   putStrLn "Generating RawType.hs"
-  for_ mods $ \m -> do
-    debugExactPrint (C.buildRawTypeHs m)
+  for_ mods $ \m ->
     gen
       (cmModule m <.> "RawType" <.> "hs")
       (exactPrint (C.buildRawTypeHs m))

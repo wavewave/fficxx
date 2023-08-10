@@ -1,7 +1,22 @@
-module FFICXX.Generate.Code.HsCast where
+module FFICXX.Generate.Code.HsCast
+  ( -- * imports
+    genImportInCast,
 
-import FFICXX.Generate.Name (hsClassName, typeclassName)
+    -- * code
+    castBody,
+    castBody_,
+    genHsFrontInstCastable,
+    genHsFrontInstCastableSelf,
+  )
+where
+
+import FFICXX.Generate.Name
+  ( hsClassName,
+    subModuleName,
+    typeclassName,
+  )
 import FFICXX.Generate.Type.Class (Class (..), isAbstractClass)
+import FFICXX.Generate.Type.Module (ClassModule (..))
 import FFICXX.Generate.Util.GHCExactPrint
   ( app,
     classA,
@@ -9,6 +24,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     cxTuple,
     instD,
     mkBind1,
+    mkImport,
     mkInstance,
     mkPVar,
     mkTVar,
@@ -20,27 +36,30 @@ import FFICXX.Generate.Util.GHCExactPrint
   )
 import qualified FFICXX.Generate.Util.HaskellSrcExts as O
   ( app,
-    classA,
-    cxEmpty,
-    cxTuple,
     insDecl,
     mkBind1,
-    mkInstance,
     mkPVar,
-    mkTVar,
     mkVar,
-    tyPtr,
-    tyapp,
-    tycon,
-    unqual,
   )
 import GHC.Hs (GhcPs)
-import qualified Language.Haskell.Exts.Syntax as O (Decl, InstDecl)
+import qualified Language.Haskell.Exts.Syntax as O (InstDecl)
 import Language.Haskell.Syntax
   ( HsBind,
     HsDecl,
+    ImportDecl,
   )
 
+--
+-- imports
+--
+
+genImportInCast :: ClassModule -> [ImportDecl GhcPs]
+genImportInCast m =
+  fmap (mkImport . subModuleName) $ cmImportedSubmodulesForCast m
+
+--
+-- code
+--
 castBody_ :: [O.InstDecl ()]
 castBody_ =
   [ O.insDecl (O.mkBind1 "cast" [O.mkPVar "x", O.mkPVar "f"] (O.app (O.mkVar "f") (O.app (O.mkVar "castPtr") (O.app (O.mkVar "get_fptr") (O.mkVar "x")))) Nothing),

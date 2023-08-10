@@ -32,32 +32,30 @@ import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.HsCast
   ( genHsFrontInstCastable,
     genHsFrontInstCastableSelf,
+    genImportInCast,
+  )
+import FFICXX.Generate.Code.HsCommon
+  ( genExtraImport,
+    genExtraImport_,
   )
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
     genImportInFFI,
     genTopLevelFFI_,
   )
-import FFICXX.Generate.Code.HsFrontEnd
-  ( genExport,
-    genExtraImport,
-    genExtraImport_,
-    genHsFrontDecl,
-    genHsFrontDowncastClass,
-    genHsFrontInst,
+import FFICXX.Generate.Code.HsImplementation
+  ( genHsFrontInst,
     genHsFrontInstNew,
     genHsFrontInstNonVirtual,
     genHsFrontInstStatic,
     genHsFrontInstVariables,
-    genHsFrontUpcastClass,
-    genImportForTLOrdinary,
-    genImportForTLTemplate,
-    genImportInCast,
     genImportInImplementation,
+  )
+import FFICXX.Generate.Code.HsInterface
+  ( genHsFrontDecl,
+    genHsFrontDowncastClass,
+    genHsFrontUpcastClass,
     genImportInInterface,
-    genImportInModule,
-    genImportInTopLevel,
-    genTopLevelDef,
   )
 import FFICXX.Generate.Code.HsProxy (genProxyInstance)
 import FFICXX.Generate.Code.HsRawType (hsClassRawType)
@@ -71,6 +69,14 @@ import FFICXX.Generate.Code.HsTemplate
     genTmplImplementation,
     genTmplInstance,
     genTmplInterface,
+  )
+import FFICXX.Generate.Code.HsTopLevel
+  ( genExport,
+    genImportForTLOrdinary,
+    genImportForTLTemplate,
+    genImportInModule,
+    genImportInTopLevel,
+    genTopLevelDef,
   )
 import FFICXX.Generate.Dependency
   ( class_allparents,
