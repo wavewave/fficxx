@@ -17,97 +17,45 @@ module FFICXX.Generate.Code.HsInterface
 where
 
 import Control.Monad.Reader (Reader)
-import Data.Either (lefts, rights)
 import qualified Data.List as L
 import FFICXX.Generate.Code.Primitive
-  ( CFunSig (..),
-    HsFunSig (..),
-    accessorSignature,
-    classConstraints,
-    convertCpp2HS,
-    extractArgRetTypes,
+  ( classConstraints,
     functionSignature,
-    hsFuncXformer,
-  )
-import FFICXX.Generate.Dependency
-  ( argumentDependency,
-    extractClassDepForTLOrdinary,
-    extractClassDepForTLTemplate,
-    returnDependency,
   )
 import FFICXX.Generate.Dependency.Graph
   ( getCyclicDepSubmodules,
     locateInDepCycles,
   )
 import FFICXX.Generate.Name
-  ( accessorName,
-    aliasedFuncName,
-    getClassModuleBase,
-    getTClassModuleBase,
-    hsClassName,
-    hsFrontNameForTopLevel,
+  ( hsClassName,
     hsFuncName,
-    hscAccessorName,
-    hscFuncName,
     subModuleName,
     typeclassName,
   )
 import FFICXX.Generate.Type.Annotate (AnnotateMap)
 import FFICXX.Generate.Type.Class
-  ( Accessor (..),
-    Class (..),
-    TLOrdinary (..),
-    TLTemplate,
-    TopLevel (TLOrdinary),
-    Types (..),
-    constructorFuncs,
-    isAbstractClass,
-    isNewFunc,
-    isVirtualFunc,
-    nonVirtualNotNewFuncs,
-    staticFuncs,
+  ( Class (..),
     virtualFuncs,
   )
 import FFICXX.Generate.Type.Module
   ( ClassModule (..),
     DepCycles,
-    TemplateClassModule (..),
   )
-import FFICXX.Generate.Util (toLowers)
---
-import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
 import FFICXX.Generate.Util.HaskellSrcExts
   ( classA,
     clsDecl,
-    con,
-    conDecl,
-    cxEmpty,
     cxTuple,
-    eabs,
-    ethingall,
-    evar,
-    ihcon,
-    insDecl,
-    insType,
-    irule,
-    mkBind1,
     mkClass,
-    mkData,
-    mkDeriving,
     mkFun,
     mkFunSig,
     mkImport,
     mkImportSrc,
-    mkInstance,
-    mkNewtype,
     mkPVar,
     mkPVarSig,
     mkTBind,
     mkTVar,
     mkVar,
-    nonamespace,
     pbind,
-    qualConDecl,
     tyForall,
     tyPtr,
     tyapp,
@@ -116,14 +64,11 @@ import FFICXX.Generate.Util.HaskellSrcExts
     unkindedVar,
     unqual,
   )
-import qualified GHC.Hs as Ex
-import Language.Haskell.Exts.Build (app, letE, name, pApp)
+import Language.Haskell.Exts.Build (app, letE, name)
 import Language.Haskell.Exts.Syntax
   ( Decl,
-    ExportSpec,
     ImportDecl,
   )
-import qualified Language.Haskell.Syntax as Ex
 import System.FilePath ((<.>))
 
 mkImportWithDepCycles :: DepCycles -> String -> String -> ImportDecl ()
