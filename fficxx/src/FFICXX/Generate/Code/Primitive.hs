@@ -56,11 +56,11 @@ import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
 import GHC.Hs (GhcPs)
 import Language.Haskell.Exts.Syntax
   ( Asst,
-    Context,
     Type,
   )
 import Language.Haskell.Syntax
-  ( HsType,
+  ( HsContext,
+    HsType,
   )
 
 data CFunSig = CFunSig
@@ -845,8 +845,9 @@ hsFuncXformer func =
   let len = length (genericFuncArgs func)
    in "xform" <> show len
 
-classConstraints :: Class -> Context ()
-classConstraints = cxTuple . map ((\n -> classA (unqual n) [mkTVar "a"]) . typeclassName) . class_parents
+classConstraints :: Class -> HsContext GhcPs
+classConstraints =
+  Ex.cxTuple . map ((\name -> Ex.classA name [Ex.mkTVar "a"]) . typeclassName) . class_parents
 
 extractArgRetTypes ::
   -- | class (Nothing for top-level function)
@@ -912,6 +913,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
         Void -> return unit_tycon
         _ -> error ("No such c type : " <> show typ)
 
+-- OLD
 functionSignature :: Class -> Function -> Type ()
 functionSignature c f =
   let HsFunSig typs assts =
@@ -926,6 +928,23 @@ functionSignature c f =
         | otherwise = id
    in tyForall Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
 
+-- NEW
+functionSignature' :: Class -> Function -> HsType GhcPs
+functionSignature' c f = undefined
+{-
+  let HsFunSig typs assts =
+        extractArgRetTypes
+          (Just c)
+          (isVirtualFunc f)
+          (CFunSig (genericFuncArgs f) (genericFuncRet f))
+      ctxt = cxTuple assts
+      arg0
+        | isVirtualFunc f = (mkTVar "a" :)
+        | isNonVirtualFunc f = (mkTVar (fst (hsClassName c)) :)
+        | otherwise = id
+   in tyForall Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
+-}
+  
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureT t TFun {..} =
   let (hname, _) = hsTemplateClassName t

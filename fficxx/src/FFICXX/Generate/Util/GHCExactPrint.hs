@@ -22,6 +22,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     tyParen,
     tyPtr,
     unit_tycon,
+    mkTBind,
 
     -- * data/newtype declaration
     mkData,
@@ -38,6 +39,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     cxEmpty,
     cxTuple,
     classA,
+    -- funSig2Bind,  
     mkClass,
     mkInstance,
     mkTypeFamInst,
@@ -72,10 +74,8 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkPVarSig,
     pbind,
     pbind_,
-    mkTBind,
     dhead,
     mkDeclHead,
-    mkInstance,
     mkModuleE,
     mkImportExp,
     mkImportSrc,
@@ -102,7 +102,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     insDecl,
     generator,
     qualifier,
-    clsDecl,
     unkindedVar,
     if_,
     urhs,
@@ -117,7 +116,7 @@ where
 import Data.List (foldl')
 import Data.Maybe (maybeToList)
 import Data.String (IsString (fromString))
-import GHC.Data.Bag (listToBag)
+import GHC.Data.Bag (emptyBag, listToBag)
 import GHC.Hs
   ( AnnSig (..),
     AnnsModule (..),
@@ -225,7 +224,7 @@ import Language.Haskell.Syntax
     HsSigType (..),
     HsToken (..),
     HsTupleSort (..),
-    HsTyVarBndr,
+    HsTyVarBndr (UserTyVar),
     HsType (..),
     HsUniToken (..),
     HsWildCardBndrs (HsWC),
@@ -534,6 +533,9 @@ unit_tycon =
   where
     ann = AnnParen AnnParens (mkEpaDelta (-1)) (mkEpaDelta (-1))
 
+mkTBind :: String -> HsTyVarBndr () GhcPs
+mkTBind name = UserTyVar (mkRelEpAnn (-1) []) () (mkLIdP (-1) name)
+
 --
 -- data/newtype declaration
 --
@@ -654,7 +656,7 @@ mkFun ::
   -- | decls
   [HsDecl GhcPs]
 mkFun fname typ pats rhs mbinds =
-  [ mkFunSig fname typ,
+  [ SigD noExtField (mkFunSig fname typ),
     ValD noExtField (mkBind1 fname pats rhs mbinds)
   ]
 
@@ -662,9 +664,9 @@ mkFunSig ::
   -- | function name
   String ->
   HsType GhcPs ->
-  HsDecl GhcPs
+  Sig GhcPs
 mkFunSig fname typ =
-  SigD noExtField (TypeSig ann [lid] bndr)
+  TypeSig ann [lid] bndr
   where
     ann =
       mkRelEpAnn (-1) (AnnSig (AddEpAnn AnnDcolon (mkEpaDelta 0)) [])
@@ -741,13 +743,16 @@ classA name typs = foldl' tyapp (tycon name) typs'
   where
     typs' = fmap tyParen typs
 
+-- funSig2Bind :: HsDecl GhcPs -> HsBind GhcPs
+-- funSig2Bind = ClsDecl ()
+
 mkClass ::
   HsContext GhcPs ->
   String ->
   [HsTyVarBndr () GhcPs] ->
-  [HsBind GhcPs] ->
+  [Sig GhcPs] ->
   TyClDecl GhcPs
-mkClass ctxt name tbnds bnds =
+mkClass ctxt name tbnds sigs =
   ClassDecl
     { tcdCExt = (mkRelEpAnn (-1) [], NoAnnSortKey),
       tcdLayout = VirtualBraces 2,
@@ -756,8 +761,8 @@ mkClass ctxt name tbnds bnds =
       tcdTyVars = HsQTvs noExtField $ fmap (mkL (-1)) tbnds,
       tcdFixity = Prefix,
       tcdFDs = [],
-      tcdSigs = [],
-      tcdMeths = listToBag $ fmap (mkL (-1)) bnds,
+      tcdSigs = fmap (mkL (-1)) sigs,
+      tcdMeths = emptyBag,
       tcdATs = [],
       tcdATDefs = [],
       tcdDocs = []
@@ -1125,9 +1130,6 @@ pbind pat e = PatBind () pat (UnGuardedRhs () e)
 pbind_ :: Pat () -> Exp () -> Decl ()
 pbind_ p e = pbind p e Nothing
 
-mkTBind :: String -> TyVarBind ()
-mkTBind = UnkindedVar () . Ident ()
-
 dhead :: String -> DeclHead ()
 dhead n = DHead () (Ident () n)
 
@@ -1201,9 +1203,6 @@ generator = Generator ()
 
 qualifier :: Exp () -> Stmt ()
 qualifier = Qualifier ()
-
-clsDecl :: Decl () -> ClassDecl ()
-clsDecl = ClsDecl ()
 
 unkindedVar :: Name () -> TyVarBind ()
 unkindedVar = UnkindedVar ()

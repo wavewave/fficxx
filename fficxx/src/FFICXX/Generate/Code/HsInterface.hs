@@ -20,7 +20,7 @@ import Control.Monad.Reader (Reader)
 import qualified Data.List as L
 import FFICXX.Generate.Code.Primitive
   ( classConstraints,
-    functionSignature,
+    functionSignature',
   )
 import FFICXX.Generate.Dependency.Graph
   ( getCyclicDepSubmodules,
@@ -42,8 +42,12 @@ import FFICXX.Generate.Type.Module
     DepCycles,
   )
 import FFICXX.Generate.Util.GHCExactPrint
-  ( mkImport,
+  ( cxTuple,
+    mkClass,
+    mkFunSig,
+    mkImport,
     mkImportSrc,
+    mkTBind,
   )
 import qualified FFICXX.Generate.Util.HaskellSrcExts as O
   ( classA,
@@ -75,7 +79,9 @@ import qualified Language.Haskell.Exts.Syntax as O
     ImportDecl,
   )
 import Language.Haskell.Syntax
-  ( ImportDecl,
+  ( HsDecl (TyClD),
+    ImportDecl,
+    noExtField,
   )
 import System.FilePath ((<.>))
 
@@ -106,17 +112,17 @@ genImportInInterface isHsBoot depCycles m =
 -- typeclass declaration
 --
 
-genHsFrontDecl :: Bool -> Class -> Reader AnnotateMap (O.Decl ())
+genHsFrontDecl :: Bool -> Class -> Reader AnnotateMap (HsDecl GhcPs)
 genHsFrontDecl isHsBoot c = do
   -- TODO: revive annotation
   -- for the time being, let's ignore annotation.
   -- amap <- ask
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap
-  let cdecl = O.mkClass (classConstraints c) (typeclassName c) [O.mkTBind "a"] body
+  let cdecl = TyClD noExtField (mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body)
       -- for hs-boot, we only have instance head.
-      cdecl' = O.mkClass (O.cxTuple []) (typeclassName c) [O.mkTBind "a"] []
-      sigdecl f = O.mkFunSig (hsFuncName c f) (functionSignature c f)
-      body = map (O.clsDecl . sigdecl) . virtualFuncs . class_funcs $ c
+      cdecl' = TyClD noExtField (mkClass (cxTuple []) (typeclassName c) [mkTBind "a"] [])
+      sigdecl f = mkFunSig (hsFuncName c f) (functionSignature' c f)
+      body = map sigdecl . virtualFuncs . class_funcs $ c
   if isHsBoot
     then return cdecl'
     else return cdecl

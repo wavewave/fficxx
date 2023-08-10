@@ -415,12 +415,10 @@ buildInterfaceHs amap depCycles m =
       ]
         <> genImportInInterface False depCycles m
         <> genExtraImport m
-    ifaceBody = []
-
-{-      runReader (mapM (genHsFrontDecl False) classes) amap
-        <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
-        <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
--}
+    ifaceBody =
+      runReader (mapM (genHsFrontDecl False) classes) amap
+--        <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
+--        <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
 
 buildInterfaceHsBoot :: DepCycles -> ClassModule -> HsModule GhcPs
 buildInterfaceHsBoot depCycles m =
@@ -449,9 +447,7 @@ buildInterfaceHsBoot depCycles m =
       ]
         <> genImportInInterface True depCycles m
         <> genExtraImport m
-    hsbootBody = []
-
--- runReader (mapM (genHsFrontDecl True) [c]) M.empty
+    hsbootBody = runReader (mapM (genHsFrontDecl True) [c]) M.empty
 
 buildCastHs :: ClassModule -> HsModule GhcPs
 buildCastHs m =
