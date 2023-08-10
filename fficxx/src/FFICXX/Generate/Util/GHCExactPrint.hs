@@ -37,6 +37,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     cxEmpty,
     cxTuple,
     classA,
+    mkClass,
     mkInstance,
     mkTypeFamInst,
     instD,
@@ -71,7 +72,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     pbind,
     pbind_,
     mkTBind,
-    mkClass,
     dhead,
     mkDeclHead,
     mkInstance,
@@ -224,6 +224,7 @@ import Language.Haskell.Syntax
     HsSigType (..),
     HsToken (..),
     HsTupleSort (..),
+    HsTyVarBndr,
     HsType (..),
     HsUniToken (..),
     HsWildCardBndrs (HsWC),
@@ -721,6 +722,29 @@ classA name typs = foldl' tyapp (tycon name) typs'
   where
     typs' = fmap tyParen typs
 
+mkClass ::
+  -- Context () ->
+  String ->
+  [HsTyVarBndr () GhcPs] ->
+  [HsBind GhcPs] ->
+  TyClDecl GhcPs
+mkClass {- ctxt -} name tbnds bnds =
+  ClassDecl
+    { tcdCExt = (mkRelEpAnn (-1) [], NoAnnSortKey),
+      tcdLayout = VirtualBraces 2,
+      tcdLName = mkLIdP (-1) name,
+      tcdTyVars = HsQTvs noExtField $ fmap (mkL (-1)) tbnds,
+      tcdFDs = [],
+      tcdSigs = [],
+      tcdMeths = listToBag $ fmap (mkL (-1)) bnds,
+      tcdATs = [],
+      tcdATDefs = [],
+      tcdDocs = []
+    }
+  where
+
+  --  (Just ctxt) (mkDeclHead n tbinds) [] (Just cdecls)
+
 mkInstance ::
   -- | Context
   HsContext GhcPs ->
@@ -1076,9 +1100,6 @@ pbind_ p e = pbind p e Nothing
 
 mkTBind :: String -> TyVarBind ()
 mkTBind = UnkindedVar () . Ident ()
-
-mkClass :: Context () -> String -> [TyVarBind ()] -> [ClassDecl ()] -> Decl ()
-mkClass ctxt n tbinds cdecls = ClassDecl () (Just ctxt) (mkDeclHead n tbinds) [] (Just cdecls)
 
 dhead :: String -> DeclHead ()
 dhead n = DHead () (Ident () n)

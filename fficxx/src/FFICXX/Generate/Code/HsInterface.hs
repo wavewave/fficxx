@@ -41,7 +41,7 @@ import FFICXX.Generate.Type.Module
   ( ClassModule (..),
     DepCycles,
   )
-import FFICXX.Generate.Util.HaskellSrcExts
+import qualified FFICXX.Generate.Util.HaskellSrcExts as O
   ( classA,
     clsDecl,
     cxTuple,
@@ -64,23 +64,23 @@ import FFICXX.Generate.Util.HaskellSrcExts
     unkindedVar,
     unqual,
   )
-import Language.Haskell.Exts.Build (app, letE, name)
-import Language.Haskell.Exts.Syntax
+import qualified Language.Haskell.Exts.Build as O (app, letE, name)
+import qualified Language.Haskell.Exts.Syntax as O
   ( Decl,
     ImportDecl,
   )
 import System.FilePath ((<.>))
 
-mkImportWithDepCycles :: DepCycles -> String -> String -> ImportDecl ()
+mkImportWithDepCycles :: DepCycles -> String -> String -> O.ImportDecl ()
 mkImportWithDepCycles depCycles self imported =
   let mloc = locateInDepCycles (self, imported) depCycles
    in case mloc of
         Just (idxSelf, idxImported)
           | idxImported > idxSelf ->
-              mkImportSrc imported
-        _ -> mkImport imported
+              O.mkImportSrc imported
+        _ -> O.mkImport imported
 
-genImportInInterface :: Bool -> DepCycles -> ClassModule -> [ImportDecl ()]
+genImportInInterface :: Bool -> DepCycles -> ClassModule -> [O.ImportDecl ()]
 genImportInInterface isHsBoot depCycles m =
   let modSelf = cmModule m <.> "Interface"
       imported = cmImportedSubmodulesForInterface m
@@ -91,24 +91,24 @@ genImportInInterface isHsBoot depCycles m =
         --       Keep improving this as hs-boot allows.
 
           let imported' = fmap subModuleName imported L.\\ (rdepsU <> rdepsD)
-           in fmap mkImport imported'
+           in fmap O.mkImport imported'
         else fmap (mkImportWithDepCycles depCycles modSelf . subModuleName) imported
 
 --
 -- typeclass declaration
 --
 
-genHsFrontDecl :: Bool -> Class -> Reader AnnotateMap (Decl ())
+genHsFrontDecl :: Bool -> Class -> Reader AnnotateMap (O.Decl ())
 genHsFrontDecl isHsBoot c = do
   -- TODO: revive annotation
   -- for the time being, let's ignore annotation.
   -- amap <- ask
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap
-  let cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
+  let cdecl = O.mkClass (classConstraints c) (typeclassName c) [O.mkTBind "a"] body
       -- for hs-boot, we only have instance head.
-      cdecl' = mkClass (cxTuple []) (typeclassName c) [mkTBind "a"] []
-      sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
-      body = map (clsDecl . sigdecl) . virtualFuncs . class_funcs $ c
+      cdecl' = O.mkClass (O.cxTuple []) (typeclassName c) [O.mkTBind "a"] []
+      sigdecl f = O.mkFunSig (hsFuncName c f) (functionSignature c f)
+      body = map (O.clsDecl . sigdecl) . virtualFuncs . class_funcs $ c
   if isHsBoot
     then return cdecl'
     else return cdecl
@@ -117,50 +117,50 @@ genHsFrontDecl isHsBoot c = do
 -- upcast --
 ------------
 
-genHsFrontUpcastClass :: Class -> [Decl ()]
-genHsFrontUpcastClass c = mkFun ("upcast" <> highname) typ [mkPVar "h"] rhs Nothing
+genHsFrontUpcastClass :: Class -> [O.Decl ()]
+genHsFrontUpcastClass c = O.mkFun ("upcast" <> highname) typ [O.mkPVar "h"] rhs Nothing
   where
     (highname, rawname) = hsClassName c
-    hightype = tycon highname
-    rawtype = tycon rawname
+    hightype = O.tycon highname
+    rawtype = O.tycon rawname
     iname = typeclassName c
-    a_bind = unkindedVar (name "a")
-    a_tvar = mkTVar "a"
+    a_bind = O.unkindedVar (O.name "a")
+    a_tvar = O.mkTVar "a"
     typ =
-      tyForall
+      O.tyForall
         (Just [a_bind])
-        (Just (cxTuple [classA (unqual "FPtr") [a_tvar], classA (unqual iname) [a_tvar]]))
-        (tyfun a_tvar hightype)
+        (Just (O.cxTuple [O.classA (O.unqual "FPtr") [a_tvar], O.classA (O.unqual iname) [a_tvar]]))
+        (O.tyfun a_tvar hightype)
     rhs =
-      letE
-        [ pbind (mkPVar "fh") (app (mkVar "get_fptr") (mkVar "h")) Nothing,
-          pbind
-            (mkPVarSig "fh2" (tyapp tyPtr rawtype))
-            (app (mkVar "castPtr") (mkVar "fh"))
+      O.letE
+        [ O.pbind (O.mkPVar "fh") (O.app (O.mkVar "get_fptr") (O.mkVar "h")) Nothing,
+          O.pbind
+            (O.mkPVarSig "fh2" (O.tyapp O.tyPtr rawtype))
+            (O.app (O.mkVar "castPtr") (O.mkVar "fh"))
             Nothing
         ]
-        (mkVar "cast_fptr_to_obj" `app` mkVar "fh2")
+        (O.mkVar "cast_fptr_to_obj" `O.app` O.mkVar "fh2")
 
 --------------
 -- downcast --
 --------------
 
-genHsFrontDowncastClass :: Class -> [Decl ()]
-genHsFrontDowncastClass c = mkFun ("downcast" <> highname) typ [mkPVar "h"] rhs Nothing
+genHsFrontDowncastClass :: Class -> [O.Decl ()]
+genHsFrontDowncastClass c = O.mkFun ("downcast" <> highname) typ [O.mkPVar "h"] rhs Nothing
   where
     (highname, _rawname) = hsClassName c
-    hightype = tycon highname
+    hightype = O.tycon highname
     iname = typeclassName c
-    a_bind = unkindedVar (name "a")
-    a_tvar = mkTVar "a"
+    a_bind = O.unkindedVar (O.name "a")
+    a_tvar = O.mkTVar "a"
     typ =
-      tyForall
+      O.tyForall
         (Just [a_bind])
-        (Just (cxTuple [classA (unqual "FPtr") [a_tvar], classA (unqual iname) [a_tvar]]))
-        (tyfun hightype a_tvar)
+        (Just (O.cxTuple [O.classA (O.unqual "FPtr") [a_tvar], O.classA (O.unqual iname) [a_tvar]]))
+        (O.tyfun hightype a_tvar)
     rhs =
-      letE
-        [ pbind (mkPVar "fh") (app (mkVar "get_fptr") (mkVar "h")) Nothing,
-          pbind (mkPVar "fh2") (app (mkVar "castPtr") (mkVar "fh")) Nothing
+      O.letE
+        [ O.pbind (O.mkPVar "fh") (O.app (O.mkVar "get_fptr") (O.mkVar "h")) Nothing,
+          O.pbind (O.mkPVar "fh2") (O.app (O.mkVar "castPtr") (O.mkVar "fh")) Nothing
         ]
-        (mkVar "cast_fptr_to_obj" `app` mkVar "fh2")
+        (O.mkVar "cast_fptr_to_obj" `O.app` O.mkVar "fh2")
