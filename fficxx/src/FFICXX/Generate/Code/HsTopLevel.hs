@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module FFICXX.Generate.Code.HsFrontEnd where
+module FFICXX.Generate.Code.HsTopLevel where
 
 import Data.Either (lefts, rights)
 import qualified Data.List as L

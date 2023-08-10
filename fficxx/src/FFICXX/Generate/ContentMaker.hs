@@ -39,16 +39,6 @@ import FFICXX.Generate.Code.HsFFI
     genImportInFFI,
     genTopLevelFFI_,
   )
-import FFICXX.Generate.Code.HsFrontEnd
-  ( genExport,
-    genExtraImport,
-    genExtraImport_,
-    genImportForTLOrdinary,
-    genImportForTLTemplate,
-    genImportInModule,
-    genImportInTopLevel,
-    genTopLevelDef,
-  )
 import FFICXX.Generate.Code.HsImplementation
   ( genHsFrontInst,
     genHsFrontInstNew,
@@ -75,6 +65,16 @@ import FFICXX.Generate.Code.HsTemplate
     genTmplImplementation,
     genTmplInstance,
     genTmplInterface,
+  )
+import FFICXX.Generate.Code.HsTopLevel
+  ( genExport,
+    genExtraImport,
+    genExtraImport_,
+    genImportForTLOrdinary,
+    genImportForTLTemplate,
+    genImportInModule,
+    genImportInTopLevel,
+    genTopLevelDef,
   )
 import FFICXX.Generate.Dependency
   ( class_allparents,

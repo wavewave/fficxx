@@ -57,12 +57,12 @@ Library
                FFICXX.Generate.Code.Cpp
                FFICXX.Generate.Code.HsCast
                FFICXX.Generate.Code.HsFFI
-               FFICXX.Generate.Code.HsFrontEnd
                FFICXX.Generate.Code.HsImplementation
                FFICXX.Generate.Code.HsInterface
                FFICXX.Generate.Code.HsProxy
                FFICXX.Generate.Code.HsRawType
                FFICXX.Generate.Code.HsTemplate
+               FFICXX.Generate.Code.HsTopLevel
                FFICXX.Generate.Code.Cabal
                FFICXX.Generate.Code.Primitive
                FFICXX.Generate.ContentMaker
