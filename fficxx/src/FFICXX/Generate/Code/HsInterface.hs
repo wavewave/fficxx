@@ -41,6 +41,10 @@ import FFICXX.Generate.Type.Module
   ( ClassModule (..),
     DepCycles,
   )
+import FFICXX.Generate.Util.GHCExactPrint
+  ( mkImport,
+    mkImportSrc,
+  )
 import qualified FFICXX.Generate.Util.HaskellSrcExts as O
   ( classA,
     clsDecl,
@@ -64,23 +68,27 @@ import qualified FFICXX.Generate.Util.HaskellSrcExts as O
     unkindedVar,
     unqual,
   )
+import GHC.Hs (GhcPs)
 import qualified Language.Haskell.Exts.Build as O (app, letE, name)
 import qualified Language.Haskell.Exts.Syntax as O
   ( Decl,
     ImportDecl,
   )
+import Language.Haskell.Syntax
+  ( ImportDecl,
+  )
 import System.FilePath ((<.>))
 
-mkImportWithDepCycles :: DepCycles -> String -> String -> O.ImportDecl ()
+mkImportWithDepCycles :: DepCycles -> String -> String -> ImportDecl GhcPs
 mkImportWithDepCycles depCycles self imported =
   let mloc = locateInDepCycles (self, imported) depCycles
    in case mloc of
         Just (idxSelf, idxImported)
           | idxImported > idxSelf ->
-              O.mkImportSrc imported
-        _ -> O.mkImport imported
+              mkImportSrc imported
+        _ -> mkImport imported
 
-genImportInInterface :: Bool -> DepCycles -> ClassModule -> [O.ImportDecl ()]
+genImportInInterface :: Bool -> DepCycles -> ClassModule -> [ImportDecl GhcPs]
 genImportInInterface isHsBoot depCycles m =
   let modSelf = cmModule m <.> "Interface"
       imported = cmImportedSubmodulesForInterface m
@@ -91,7 +99,7 @@ genImportInInterface isHsBoot depCycles m =
         --       Keep improving this as hs-boot allows.
 
           let imported' = fmap subModuleName imported L.\\ (rdepsU <> rdepsD)
-           in fmap O.mkImport imported'
+           in fmap mkImport imported'
         else fmap (mkImportWithDepCycles depCycles modSelf . subModuleName) imported
 
 --

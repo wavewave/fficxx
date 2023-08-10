@@ -7,6 +7,7 @@ module FFICXX.Generate.Util.GHCExactPrint
 
     -- * import and FFI
     mkImport,
+    mkImportSrc,
     mkForImpCcall,
 
     -- * names
@@ -394,6 +395,24 @@ mkImport name =
   where
     modName = ModuleName (fromString name)
 
+mkImportSrc ::
+  -- | Module name
+  String ->
+  ImportDecl GhcPs
+mkImportSrc name =
+  ImportDecl
+    { ideclExt = XImportDeclPass noAnn NoSourceText False,
+      ideclName = L (mkRelSrcSpanAnn 0 (AnnListItem [])) modName,
+      ideclPkgQual = NoRawPkgQual,
+      ideclSource = IsBoot,
+      ideclSafe = False,
+      ideclQualified = NotQualified,
+      ideclAs = Nothing,
+      ideclImportList = Nothing
+    }
+  where
+    modName = ModuleName (fromString name)
+
 -- NOTE: Unfortunately, the location annotation of GHC API for foreign import is not fully relative,
 -- i.e. we cannot place correct spaces between "import", "ccall" and "safe", and the generated result
 -- is not a valid Haskell code. So as a workaround we need to put a place holder in comment.
@@ -723,17 +742,19 @@ classA name typs = foldl' tyapp (tycon name) typs'
     typs' = fmap tyParen typs
 
 mkClass ::
-  -- Context () ->
+  HsContext GhcPs ->
   String ->
   [HsTyVarBndr () GhcPs] ->
   [HsBind GhcPs] ->
   TyClDecl GhcPs
-mkClass {- ctxt -} name tbnds bnds =
+mkClass ctxt name tbnds bnds =
   ClassDecl
     { tcdCExt = (mkRelEpAnn (-1) [], NoAnnSortKey),
       tcdLayout = VirtualBraces 2,
+      tcdCtxt = Just (L (mkRelSrcSpanAnn (-1) annCtxt) ctxt),
       tcdLName = mkLIdP (-1) name,
       tcdTyVars = HsQTvs noExtField $ fmap (mkL (-1)) tbnds,
+      tcdFixity = Prefix,
       tcdFDs = [],
       tcdSigs = [],
       tcdMeths = listToBag $ fmap (mkL (-1)) bnds,
@@ -742,8 +763,14 @@ mkClass {- ctxt -} name tbnds bnds =
       tcdDocs = []
     }
   where
+    annCtxt =
+      AnnContext
+        { ac_darrow = Just (NormalSyntax, mkEpaDelta 0),
+          ac_open = [mkEpaDelta (-1)],
+          ac_close = [mkEpaDelta (-1)]
+        }
 
-  --  (Just ctxt) (mkDeclHead n tbinds) [] (Just cdecls)
+--  (Just ctxt) (mkDeclHead n tbinds) [] (Just cdecls)
 
 mkInstance ::
   -- | Context
@@ -1118,9 +1145,6 @@ mkImportExp m lst =
   ImportDecl () (ModuleName () m) False False False Nothing Nothing (Just islist)
   where
     islist = ImportSpecList () False (map mkIVar lst)
-
-mkImportSrc :: String -> ImportDecl ()
-mkImportSrc m = ImportDecl () (ModuleName () m) False True False Nothing Nothing Nothing
 
 dot :: Exp () -> Exp () -> Exp ()
 x `dot` y = x `app` mkVar "." `app` y

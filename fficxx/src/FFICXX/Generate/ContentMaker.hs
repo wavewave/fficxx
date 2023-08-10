@@ -388,71 +388,70 @@ buildInterfaceHs ::
   AnnotateMap ->
   DepCycles ->
   ClassModule ->
-  Module ()
+  HsModule GhcPs
 buildInterfaceHs amap depCycles m =
-  mkModule
+  Ex.mkModule
     (cmModule m <.> "Interface")
-    [ lang
-        [ "EmptyDataDecls",
-          "ExistentialQuantification",
-          "FlexibleContexts",
-          "FlexibleInstances",
-          "ForeignFunctionInterface",
-          "MultiParamTypeClasses",
-          "ScopedTypeVariables",
-          "TypeFamilies",
-          "TypeSynonymInstances"
-        ]
+    [ "EmptyDataDecls",
+      "ExistentialQuantification",
+      "FlexibleContexts",
+      "FlexibleInstances",
+      "ForeignFunctionInterface",
+      "MultiParamTypeClasses",
+      "ScopedTypeVariables",
+      "TypeFamilies",
+      "TypeSynonymInstances"
     ]
     ifaceImports
     ifaceBody
   where
     classes = [cihClass (cmCIH m)]
     ifaceImports =
-      [ mkImport "Data.Word",
-        mkImport "Data.Int",
-        mkImport "Foreign.C",
-        mkImport "Foreign.Ptr",
-        mkImport "FFICXX.Runtime.Cast"
+      [ Ex.mkImport "Data.Word",
+        Ex.mkImport "Data.Int",
+        Ex.mkImport "Foreign.C",
+        Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "FFICXX.Runtime.Cast"
       ]
         <> genImportInInterface False depCycles m
-        <> genExtraImport_ m
-    ifaceBody =
-      runReader (mapM (genHsFrontDecl False) classes) amap
+        <> genExtraImport m
+    ifaceBody = []
+
+{-      runReader (mapM (genHsFrontDecl False) classes) amap
         <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
         <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
+-}
 
-buildInterfaceHsBoot :: DepCycles -> ClassModule -> Module ()
+buildInterfaceHsBoot :: DepCycles -> ClassModule -> HsModule GhcPs
 buildInterfaceHsBoot depCycles m =
-  mkModule
+  Ex.mkModule
     (cmModule m <.> "Interface")
-    [ lang
-        [ "EmptyDataDecls",
-          "ExistentialQuantification",
-          "FlexibleContexts",
-          "FlexibleInstances",
-          "ForeignFunctionInterface",
-          "MultiParamTypeClasses",
-          "ScopedTypeVariables",
-          "TypeFamilies",
-          "TypeSynonymInstances"
-        ]
+    [ "EmptyDataDecls",
+      "ExistentialQuantification",
+      "FlexibleContexts",
+      "FlexibleInstances",
+      "ForeignFunctionInterface",
+      "MultiParamTypeClasses",
+      "ScopedTypeVariables",
+      "TypeFamilies",
+      "TypeSynonymInstances"
     ]
     hsbootImports
     hsbootBody
   where
     c = cihClass (cmCIH m)
     hsbootImports =
-      [ mkImport "Data.Word",
-        mkImport "Data.Int",
-        mkImport "Foreign.C",
-        mkImport "Foreign.Ptr",
-        mkImport "FFICXX.Runtime.Cast"
+      [ Ex.mkImport "Data.Word",
+        Ex.mkImport "Data.Int",
+        Ex.mkImport "Foreign.C",
+        Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "FFICXX.Runtime.Cast"
       ]
         <> genImportInInterface True depCycles m
-        <> genExtraImport_ m
-    hsbootBody =
-      runReader (mapM (genHsFrontDecl True) [c]) M.empty
+        <> genExtraImport m
+    hsbootBody = []
+
+-- runReader (mapM (genHsFrontDecl True) [c]) M.empty
 
 buildCastHs :: ClassModule -> HsModule GhcPs
 buildCastHs m =
