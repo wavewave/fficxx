@@ -3,7 +3,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module FFICXX.Generate.Code.HsTopLevel where
+module FFICXX.Generate.Code.HsTopLevel
+  ( -- * exports
+    genExport,
+
+    -- * imports
+    genImportInModule,
+    genImportInTopLevel,
+
+    -- * top-level decls and defs
+    genTopLevelDef,
+    genImportForTLOrdinary,
+    genImportForTLTemplate,
+  )
+where
 
 import Data.Either (lefts, rights)
 import qualified Data.List as L
@@ -70,32 +83,9 @@ import Language.Haskell.Exts.Syntax
   )
 import System.FilePath ((<.>))
 
---------------------------
-
-------------------------
--- Top Level Function --
-------------------------
-
-genTopLevelDef :: TLOrdinary -> [Decl ()]
-genTopLevelDef f@TopLevelFunction {..} =
-  let fname = hsFrontNameForTopLevel (TLOrdinary f)
-      HsFunSig typs assts =
-        extractArgRetTypes
-          Nothing
-          False
-          (CFunSig toplevelfunc_args toplevelfunc_ret)
-      sig = tyForall Nothing (Just (cxTuple assts)) (foldr1 tyfun typs)
-      xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len - 1) else "xformnull"
-      cfname = "c_" <> toLowers fname
-      rhs = app (mkVar xformerstr) (mkVar cfname)
-   in mkFun fname sig [] rhs Nothing
-genTopLevelDef v@TopLevelVariable {..} =
-  let fname = hsFrontNameForTopLevel (TLOrdinary v)
-      cfname = "c_" <> toLowers fname
-      rtyp = convertCpp2HS Nothing toplevelvar_ret
-      sig = tyapp (tycon "IO") rtyp
-      rhs = app (mkVar "xformnull") (mkVar cfname)
-   in mkFun fname sig [] rhs Nothing
+--
+-- exports
+--
 
 ------------
 -- Export --
@@ -137,28 +127,47 @@ genExportStatic c = map (evar . unqual) fns
     fs = class_funcs c
     fns = map (aliasedFuncName c) (staticFuncs fs)
 
-------------
--- Import --
-------------
+--
+-- imports
+--
 
--- TODO: Remove
-genExtraImport_ :: ClassModule -> [ImportDecl ()]
-genExtraImport_ cm = map mkImport (cmExtraImport cm)
-
--- This is the new version.
-genExtraImport :: ClassModule -> [Ex.ImportDecl Ex.GhcPs]
-genExtraImport cm = fmap Ex.mkImport (cmExtraImport cm)
-
+-- | module summary re-exports
 genImportInModule :: Class -> [ImportDecl ()]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
 
--- OLD
--- TODO: Remove
-genImportInCast_ :: ClassModule -> [ImportDecl ()]
-genImportInCast_ m =
-  fmap (mkImport . subModuleName) $ cmImportedSubmodulesForCast m
+-- | top=level
+genImportInTopLevel ::
+  String ->
+  ([ClassModule], [TemplateClassModule]) ->
+  [ImportDecl ()]
+genImportInTopLevel modname (mods, _tmods) =
+  map (mkImport . cmModule) mods
+    ++ map mkImport [modname <.> "Template", modname <.> "TH", modname <.> "Ordinary"]
 
--- NEW
+--
+-- declarations and definitions
+--
+
+genTopLevelDef :: TLOrdinary -> [Decl ()]
+genTopLevelDef f@TopLevelFunction {..} =
+  let fname = hsFrontNameForTopLevel (TLOrdinary f)
+      HsFunSig typs assts =
+        extractArgRetTypes
+          Nothing
+          False
+          (CFunSig toplevelfunc_args toplevelfunc_ret)
+      sig = tyForall Nothing (Just (cxTuple assts)) (foldr1 tyfun typs)
+      xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len - 1) else "xformnull"
+      cfname = "c_" <> toLowers fname
+      rhs = app (mkVar xformerstr) (mkVar cfname)
+   in mkFun fname sig [] rhs Nothing
+genTopLevelDef v@TopLevelVariable {..} =
+  let fname = hsFrontNameForTopLevel (TLOrdinary v)
+      cfname = "c_" <> toLowers fname
+      rtyp = convertCpp2HS Nothing toplevelvar_ret
+      sig = tyapp (tycon "IO") rtyp
+      rhs = app (mkVar "xformnull") (mkVar cfname)
+   in mkFun fname sig [] rhs Nothing
 
 -- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.
@@ -185,12 +194,3 @@ genImportForTLTemplate f =
       tmods = L.nub $ map getTClassModuleBase $ lefts ecs
    in concatMap (\x -> map (\y -> mkImport (x <.> y)) ["RawType", "Cast", "Interface"]) cmods
         <> concatMap (\x -> map (\y -> mkImport (x <.> y)) ["Template"]) tmods
-
--- | generate import list for top level module
-genImportInTopLevel ::
-  String ->
-  ([ClassModule], [TemplateClassModule]) ->
-  [ImportDecl ()]
-genImportInTopLevel modname (mods, _tmods) =
-  map (mkImport . cmModule) mods
-    ++ map mkImport [modname <.> "Template", modname <.> "TH", modname <.> "Ordinary"]
