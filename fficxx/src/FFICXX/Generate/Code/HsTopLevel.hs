@@ -38,7 +38,6 @@ import FFICXX.Generate.Name
     getTClassModuleBase,
     hsClassName,
     hsFrontNameForTopLevel,
-    subModuleName,
     typeclassName,
   )
 import FFICXX.Generate.Type.Class
@@ -58,7 +57,6 @@ import FFICXX.Generate.Type.Module
   )
 import FFICXX.Generate.Util (toLowers)
 --
-import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
 import FFICXX.Generate.Util.HaskellSrcExts
   ( cxTuple,
     eabs,
@@ -74,7 +72,6 @@ import FFICXX.Generate.Util.HaskellSrcExts
     tyfun,
     unqual,
   )
-import qualified GHC.Hs as Ex
 import Language.Haskell.Exts.Build (app)
 import Language.Haskell.Exts.Syntax
   ( Decl,

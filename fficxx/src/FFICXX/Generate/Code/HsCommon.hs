@@ -10,70 +10,12 @@ module FFICXX.Generate.Code.HsCommon
   )
 where
 
-import Data.Either (lefts, rights)
-import qualified Data.List as L
-import FFICXX.Generate.Code.Primitive
-  ( CFunSig (..),
-    HsFunSig (..),
-    convertCpp2HS,
-    extractArgRetTypes,
-  )
-import FFICXX.Generate.Dependency
-  ( argumentDependency,
-    extractClassDepForTLOrdinary,
-    extractClassDepForTLTemplate,
-    returnDependency,
-  )
-import FFICXX.Generate.Name
-  ( aliasedFuncName,
-    getClassModuleBase,
-    getTClassModuleBase,
-    hsClassName,
-    hsFrontNameForTopLevel,
-    subModuleName,
-    typeclassName,
-  )
-import FFICXX.Generate.Type.Class
-  ( Class (..),
-    TLOrdinary (..),
-    TLTemplate,
-    TopLevel (TLOrdinary),
-    constructorFuncs,
-    isAbstractClass,
-    isVirtualFunc,
-    nonVirtualNotNewFuncs,
-    staticFuncs,
-  )
-import FFICXX.Generate.Type.Module
-  ( ClassModule (..),
-    TemplateClassModule (..),
-  )
-import FFICXX.Generate.Util (toLowers)
---
+import FFICXX.Generate.Name (subModuleName)
+import FFICXX.Generate.Type.Module (ClassModule (..))
 import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
-import FFICXX.Generate.Util.HaskellSrcExts
-  ( cxTuple,
-    eabs,
-    ethingall,
-    evar,
-    mkFun,
-    mkImport,
-    mkVar,
-    nonamespace,
-    tyForall,
-    tyapp,
-    tycon,
-    tyfun,
-    unqual,
-  )
+import FFICXX.Generate.Util.HaskellSrcExts (mkImport)
 import qualified GHC.Hs as Ex
-import Language.Haskell.Exts.Build (app)
-import Language.Haskell.Exts.Syntax
-  ( Decl,
-    ExportSpec,
-    ImportDecl,
-  )
-import System.FilePath ((<.>))
+import Language.Haskell.Exts.Syntax (ImportDecl)
 
 -- TODO: Remove
 genExtraImport_ :: ClassModule -> [ImportDecl ()]
