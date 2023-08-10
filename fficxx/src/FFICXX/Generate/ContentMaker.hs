@@ -36,7 +36,6 @@ import FFICXX.Generate.Code.HsCast
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
     genImportInFFI,
-    genTopLevelFFI,
     genTopLevelFFI_,
   )
 import FFICXX.Generate.Code.HsFrontEnd
@@ -59,9 +58,9 @@ import FFICXX.Generate.Code.HsFrontEnd
     genImportInModule,
     genImportInTopLevel,
     genTopLevelDef,
-    hsClassRawType,
   )
 import FFICXX.Generate.Code.HsProxy (genProxyInstance)
+import FFICXX.Generate.Code.HsRawType (hsClassRawType)
 import FFICXX.Generate.Code.HsTemplate
   ( genImportInTH,
     genImportInTemplate,
@@ -355,27 +354,25 @@ buildFFIHsc m =
         <> genExtraImport m
     hscBody = fmap (ForD noExtField) (genHsFFI (cmCIH m))
 
-buildRawTypeHs :: ClassModule -> Module ()
+buildRawTypeHs :: ClassModule -> HsModule GhcPs
 buildRawTypeHs m =
-  mkModule
+  Ex.mkModule
     (cmModule m <.> "RawType")
-    [ lang
-        [ "ForeignFunctionInterface",
-          "TypeFamilies",
-          "MultiParamTypeClasses",
-          "FlexibleInstances",
-          "TypeSynonymInstances",
-          "EmptyDataDecls",
-          "ExistentialQuantification",
-          "ScopedTypeVariables"
-        ]
+    [ "ForeignFunctionInterface",
+      "TypeFamilies",
+      "MultiParamTypeClasses",
+      "FlexibleInstances",
+      "TypeSynonymInstances",
+      "EmptyDataDecls",
+      "ExistentialQuantification",
+      "ScopedTypeVariables"
     ]
     rawtypeImports
     rawtypeBody
   where
     rawtypeImports =
-      [ mkImport "Foreign.Ptr",
-        mkImport "FFICXX.Runtime.Cast"
+      [ Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "FFICXX.Runtime.Cast"
       ]
     rawtypeBody =
       let c = cihClass (cmCIH m)
