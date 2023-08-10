@@ -32,6 +32,7 @@ import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.HsCast
   ( genHsFrontInstCastable,
     genHsFrontInstCastableSelf,
+    genImportInCast,
   )
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
@@ -44,7 +45,6 @@ import FFICXX.Generate.Code.HsFrontEnd
     genExtraImport_,
     genImportForTLOrdinary,
     genImportForTLTemplate,
-    genImportInCast,
     genImportInModule,
     genImportInTopLevel,
     genTopLevelDef,

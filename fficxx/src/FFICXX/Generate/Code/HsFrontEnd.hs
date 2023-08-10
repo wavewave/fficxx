@@ -159,9 +159,6 @@ genImportInCast_ m =
   fmap (mkImport . subModuleName) $ cmImportedSubmodulesForCast m
 
 -- NEW
-genImportInCast :: ClassModule -> [Ex.ImportDecl Ex.GhcPs]
-genImportInCast m =
-  fmap (Ex.mkImport . subModuleName) $ cmImportedSubmodulesForCast m
 
 -- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.
