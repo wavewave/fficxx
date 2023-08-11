@@ -172,7 +172,7 @@ simpleBuilder cfg sbc = do
   for_ mods $ \m ->
     gen
       (cmModule m <.> "Interface" <.> "hs")
-      (prettyPrint (C.buildInterfaceHs mempty depCycles m))
+      (exactPrint (C.buildInterfaceHs mempty depCycles m))
   --
   putStrLn "Generating Cast.hs"
   for_ mods $ \m ->
@@ -181,10 +181,11 @@ simpleBuilder cfg sbc = do
       (exactPrint (C.buildCastHs m))
   --
   putStrLn "Generating Implementation.hs"
-  for_ mods $ \m ->
+  for_ mods $ \m -> do
+    debugExactPrint (C.buildImplementationHs mempty m)
     gen
       (cmModule m <.> "Implementation" <.> "hs")
-      (prettyPrint (C.buildImplementationHs mempty m))
+      (exactPrint (C.buildImplementationHs mempty m))
   --
   putStrLn "Generating Proxy.hs"
   for_ mods $ \m ->
@@ -214,7 +215,7 @@ simpleBuilder cfg sbc = do
   for_ hsbootlst $ \m -> do
     gen
       (cmModule m <.> "Interface" <.> "hs-boot")
-      (hsBootHackClearEmptyContexts $ prettyPrint (C.buildInterfaceHsBoot depCycles m))
+      (hsBootHackClearEmptyContexts $ exactPrint (C.buildInterfaceHsBoot depCycles m))
   --
   putStrLn "Generating Module summary file"
   for_ mods $ \m ->

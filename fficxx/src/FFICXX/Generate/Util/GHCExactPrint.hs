@@ -7,6 +7,7 @@ module FFICXX.Generate.Util.GHCExactPrint
 
     -- * import and FFI
     mkImport,
+    mkImportSrc,
     mkForImpCcall,
 
     -- * names
@@ -14,6 +15,8 @@ module FFICXX.Generate.Util.GHCExactPrint
 
     -- * types
     mkTVar,
+    tyForall,
+    qualTy,
     tyapp,
     tycon,
     tyfun,
@@ -21,6 +24,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     tyParen,
     tyPtr,
     unit_tycon,
+    mkTBind,
 
     -- * data/newtype declaration
     mkData,
@@ -37,12 +41,14 @@ module FFICXX.Generate.Util.GHCExactPrint
     cxEmpty,
     cxTuple,
     classA,
+    mkClass,
     mkInstance,
     mkTypeFamInst,
     instD,
 
     -- * pattern
     mkPVar,
+    mkPVarSig,
     pApp,
     parP,
 
@@ -51,36 +57,33 @@ module FFICXX.Generate.Util.GHCExactPrint
     con,
     doE,
     inapp,
+    letE,
     listE,
     mkVar,
     op,
     par,
     strE,
+    valBinds,
+    toLocalBinds,
 
     -- * stmt
     mkBodyStmt,
+    pbind,
     {- app',
     conDecl,
     qualConDecl,
     recDecl,
     lit,
     mkTVar,
-    mkPVar,
     mkIVar,
-    mkPVarSig,
-    pbind,
     pbind_,
-    mkTBind,
-    mkClass,
     dhead,
     mkDeclHead,
-    mkInstance,
     mkModuleE,
     mkImportExp,
     mkImportSrc,
     lang,
     dot,
-    tyForall,
     tyParen,
     tyForeignPtr,
     classA,
@@ -101,7 +104,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     insDecl,
     generator,
     qualifier,
-    clsDecl,
     unkindedVar,
     if_,
     urhs,
@@ -113,10 +115,11 @@ module FFICXX.Generate.Util.GHCExactPrint
   )
 where
 
+import Data.Foldable (toList)
 import Data.List (foldl')
-import Data.Maybe (maybeToList)
+import Data.List.NonEmpty (NonEmpty)
 import Data.String (IsString (fromString))
-import GHC.Data.Bag (listToBag)
+import GHC.Data.Bag (emptyBag, listToBag)
 import GHC.Hs
   ( AnnSig (..),
     AnnsModule (..),
@@ -204,28 +207,33 @@ import Language.Haskell.Syntax
     GRHSs (..),
     HsArg (..),
     HsArrow (..),
-    HsBind (..),
+    HsBind,
     HsBindLR (..),
     HsConDetails (PrefixCon),
-    HsContext (..),
+    HsContext,
     HsDataDefn (..),
     HsDecl (..),
-    HsDeriving (..),
+    HsDeriving,
     HsDerivingClause (..),
     HsDoFlavour (..),
     HsExpr (..),
+    HsForAllTelescope (..),
     HsLit (..),
     HsLocalBinds,
     HsLocalBindsLR (..),
     HsMatchContext (FunRhs),
     HsModule (..),
     HsOuterTyVarBndrs (HsOuterImplicit),
+    HsPatSigType (..),
     HsScaled (..),
     HsSigType (..),
     HsToken (..),
     HsTupleSort (..),
+    HsTyVarBndr (UserTyVar),
     HsType (..),
     HsUniToken (..),
+    HsValBinds,
+    HsValBindsLR (..),
     HsWildCardBndrs (HsWC),
     ImportDecl (..),
     ImportDeclQualifiedStyle (..),
@@ -265,12 +273,24 @@ tokLoc :: Int -> TokenLocation
 tokLoc nLines = TokenLoc (mkEpaDelta nLines)
 
 mkRelAnchor :: Int -> Anchor
-mkRelAnchor nLines =
+mkRelAnchor nLines = mkRelAnchor' (mkDeltaPos nLines)
+
+--  let a' = spanAsAnchor defSrcSpan
+--   in a' {anchor_op = MovedAnchor (mkDeltaPos nLines)}
+
+mkRelAnchor' :: DeltaPos -> Anchor
+mkRelAnchor' delta =
   let a' = spanAsAnchor defSrcSpan
-   in a' {anchor_op = MovedAnchor (mkDeltaPos nLines)}
+   in a' {anchor_op = MovedAnchor delta}
 
 mkRelEpAnn :: Int -> ann -> EpAnn ann
-mkRelEpAnn nLines ann = EpAnn (mkRelAnchor nLines) ann emptyComments
+mkRelEpAnn nLines = mkRelEpAnn' (mkDeltaPos nLines)
+
+-- EpAnn (mkRelAnchor nLines) ann emptyComments
+
+mkRelEpAnn' :: DeltaPos -> ann -> EpAnn ann
+mkRelEpAnn' delta ann =
+  EpAnn (mkRelAnchor' delta) ann emptyComments
 
 mkRelSrcSpanAnn :: Int -> ann -> SrcAnn ann
 mkRelSrcSpanAnn nLines ann =
@@ -393,6 +413,24 @@ mkImport name =
   where
     modName = ModuleName (fromString name)
 
+mkImportSrc ::
+  -- | Module name
+  String ->
+  ImportDecl GhcPs
+mkImportSrc name =
+  ImportDecl
+    { ideclExt = XImportDeclPass noAnn NoSourceText False,
+      ideclName = L (mkRelSrcSpanAnn 0 (AnnListItem [])) modName,
+      ideclPkgQual = NoRawPkgQual,
+      ideclSource = IsBoot,
+      ideclSafe = False,
+      ideclQualified = NotQualified,
+      ideclAs = Nothing,
+      ideclImportList = Nothing
+    }
+  where
+    modName = ModuleName (fromString name)
+
 -- NOTE: Unfortunately, the location annotation of GHC API for foreign import is not fully relative,
 -- i.e. we cannot place correct spaces between "import", "ccall" and "safe", and the generated result
 -- is not a valid Haskell code. So as a workaround we need to put a place holder in comment.
@@ -456,6 +494,40 @@ mkLIdP nLines name = L (mkRelSrcSpanAnn nLines (NameAnnTrailing [])) id'
 -- types
 --
 
+tyForall ::
+  NonEmpty (HsTyVarBndr () GhcPs) ->
+  HsType GhcPs ->
+  HsType GhcPs
+tyForall tbnds typ =
+  HsForAllTy
+    { hst_xforall = noExtField,
+      hst_tele = tele,
+      hst_body = mkL (-1) typ
+    }
+  where
+    ann = (AddEpAnn AnnForall (mkEpaDelta (-1)), AddEpAnn AnnDot (mkEpaDelta (-1)))
+    tele = HsForAllVis (mkRelEpAnn (-1) ann) (fmap (mkL 0) $ toList tbnds)
+
+qualTy ::
+  HsContext GhcPs ->
+  HsType GhcPs ->
+  HsType GhcPs
+qualTy ctxt typ =
+  HsQualTy
+    { hst_xqual = noExtField,
+      hst_ctxt = L (mkRelSrcSpanAnn (-1) annCtxt) ctxt,
+      hst_body = mkL 0 typ
+    }
+  where
+    annCtxt
+      | null ctxt = AnnContext Nothing [] []
+      | otherwise =
+          AnnContext
+            { ac_darrow = Just (NormalSyntax, mkEpaDelta 0),
+              ac_open = [mkEpaDelta 0],
+              ac_close = [mkEpaDelta (-1)]
+            }
+
 tycon :: String -> HsType GhcPs
 tycon name =
   HsTyVar
@@ -481,7 +553,7 @@ tyfun x y =
   HsFunTy ann arrow lx ly
   where
     ann = mkRelEpAnn (-1) NoEpAnns
-    arrow = HsUnrestrictedArrow (L (tokLoc (-1)) HsNormalTok)
+    arrow = HsUnrestrictedArrow (L (tokLoc 0) HsNormalTok)
     lx = mkL (-1) x
     ly = mkL 0 y
 
@@ -513,6 +585,9 @@ unit_tycon =
   HsTupleTy (mkRelEpAnn (-1) ann) HsBoxedOrConstraintTuple []
   where
     ann = AnnParen AnnParens (mkEpaDelta (-1)) (mkEpaDelta (-1))
+
+mkTBind :: String -> HsTyVarBndr () GhcPs
+mkTBind name = UserTyVar (mkRelEpAnn (-1) []) () (mkLIdP (-1) name)
 
 --
 -- data/newtype declaration
@@ -634,7 +709,7 @@ mkFun ::
   -- | decls
   [HsDecl GhcPs]
 mkFun fname typ pats rhs mbinds =
-  [ mkFunSig fname typ,
+  [ SigD noExtField (mkFunSig fname typ),
     ValD noExtField (mkBind1 fname pats rhs mbinds)
   ]
 
@@ -642,9 +717,9 @@ mkFunSig ::
   -- | function name
   String ->
   HsType GhcPs ->
-  HsDecl GhcPs
+  Sig GhcPs
 mkFunSig fname typ =
-  SigD noExtField (TypeSig ann [lid] bndr)
+  TypeSig ann [lid] bndr
   where
     ann =
       mkRelEpAnn (-1) (AnnSig (AddEpAnn AnnDcolon (mkEpaDelta 0)) [])
@@ -702,9 +777,9 @@ tupleAnn xs =
       lastX = last xs
       xs'' =
         fmap
-          (L (mkRelSrcSpanAnn (-1) (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
+          (L (mkRelSrcSpanAnn 0 (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
           xs'
-   in (xs'' ++ [mkL (-1) lastX])
+   in (xs'' ++ [mkL 0 lastX])
 
 --
 -- Typeclass
@@ -720,6 +795,41 @@ classA :: String -> [HsType GhcPs] -> HsType GhcPs
 classA name typs = foldl' tyapp (tycon name) typs'
   where
     typs' = fmap tyParen typs
+
+mkClass ::
+  HsContext GhcPs ->
+  String ->
+  [HsTyVarBndr () GhcPs] ->
+  [Sig GhcPs] ->
+  TyClDecl GhcPs
+mkClass ctxt name tbnds sigs =
+  ClassDecl
+    { tcdCExt = (mkRelEpAnn (-1) annos, NoAnnSortKey),
+      tcdLayout = VirtualBraces 2,
+      tcdCtxt = Just (L (mkRelSrcSpanAnn 0 annCtxt) ctxt),
+      tcdLName = mkLIdP 0 name,
+      tcdTyVars = HsQTvs noExtField $ fmap (mkL 0) tbnds,
+      tcdFixity = Prefix,
+      tcdFDs = [],
+      tcdSigs = fmap (mkL' (DifferentLine 1 2)) sigs,
+      tcdMeths = emptyBag,
+      tcdATs = [],
+      tcdATDefs = [],
+      tcdDocs = []
+    }
+  where
+    annos =
+      [ AddEpAnn AnnClass (mkEpaDelta (-1)),
+        AddEpAnn AnnWhere (mkEpaDelta 0)
+      ]
+    annCtxt
+      | null ctxt = AnnContext Nothing [] []
+      | otherwise =
+          AnnContext
+            { ac_darrow = Just (NormalSyntax, mkEpaDelta 0),
+              ac_open = [mkEpaDelta (-1)],
+              ac_close = [mkEpaDelta (-1)]
+            }
 
 mkInstance ::
   -- | Context
@@ -806,6 +916,18 @@ instD = InstD noExtField . ClsInstD noExtField
 mkPVar :: String -> Pat GhcPs
 mkPVar name = VarPat noExtField (mkLIdP (-1) name)
 
+mkPVarSig :: String -> HsType GhcPs -> Pat GhcPs
+mkPVarSig name typ =
+  SigPat
+    (mkRelEpAnn (-1) annos)
+    (mkL (-1) (mkPVar name))
+    psig
+  where
+    annos =
+      [ AddEpAnn AnnDcolon (mkEpaDelta 0)
+      ]
+    psig = HsPS (mkRelEpAnn (-1) NoEpAnns) (mkL 0 typ)
+
 pApp :: String -> [Pat GhcPs] -> Pat GhcPs
 pApp name pats =
   ConPat
@@ -875,6 +997,13 @@ inapp x o y =
     lo = mkL (-1) o
     ly = mkL (-1) y
 
+letE :: HsLocalBinds GhcPs -> HsExpr GhcPs -> HsExpr GhcPs
+letE bnds expr =
+  HsLet (mkRelEpAnn' (DifferentLine 1 2) NoEpAnns) tokLet bnds tokIn (mkL 0 expr)
+  where
+    tokLet = L (tokLoc (-1)) HsTok
+    tokIn = L (tokLoc 1) HsTok
+
 listE :: [HsExpr GhcPs] -> HsExpr GhcPs
 listE itms =
   case itms of
@@ -916,6 +1045,16 @@ strE str = HsLit ann1 (HsString ann2 (fromString str))
     ann1 = mkRelEpAnn (-1) NoEpAnns
     ann2 = SourceText str'
 
+valBinds :: [HsBind GhcPs] -> HsValBinds GhcPs
+valBinds bnds =
+  ValBinds NoAnnSortKey (listToBag lbnds) []
+  where
+    lbnds = paragraphLines' (SameLine 2) bnds
+
+toLocalBinds :: HsValBinds GhcPs -> HsLocalBinds GhcPs
+toLocalBinds =
+  HsValBinds (mkRelEpAnn' (DifferentLine 1 2) noAnnList)
+
 --
 -- Statements
 --
@@ -925,6 +1064,15 @@ mkBodyStmt expr =
   BodyStmt noExtField body noExtField noExtField
   where
     body = mkL (-1) expr
+
+pbind :: Pat GhcPs -> HsExpr GhcPs -> HsLocalBinds GhcPs -> HsBind GhcPs
+pbind pat expr bnds =
+  PatBind (mkRelEpAnn (-1) []) (mkL (-1) pat) grhss
+  where
+    grhss = GRHSs emptyComments [lgrhs] bnds
+    lgrhs = L (mkRelSrcSpanAnn (-1) NoEpAnns) grhs
+    grhs = GRHS (mkRelEpAnn (-1) ann) [] (mkL 0 expr)
+    ann = GrhsAnn Nothing (AddEpAnn AnnEqual (mkEpaDelta 0))
 
 --
 -- utilities
@@ -1065,20 +1213,8 @@ lit = Lit ()
 mkIVar :: String -> ImportSpec ()
 mkIVar = IVar () . Ident ()
 
-mkPVarSig :: String -> Type () -> Pat ()
-mkPVarSig n typ = PatTypeSig () (mkPVar n) typ
-
-pbind :: Pat () -> Exp () -> Maybe (Binds ()) -> Decl ()
-pbind pat e = PatBind () pat (UnGuardedRhs () e)
-
 pbind_ :: Pat () -> Exp () -> Decl ()
 pbind_ p e = pbind p e Nothing
-
-mkTBind :: String -> TyVarBind ()
-mkTBind = UnkindedVar () . Ident ()
-
-mkClass :: Context () -> String -> [TyVarBind ()] -> [ClassDecl ()] -> Decl ()
-mkClass ctxt n tbinds cdecls = ClassDecl () (Just ctxt) (mkDeclHead n tbinds) [] (Just cdecls)
 
 dhead :: String -> DeclHead ()
 dhead n = DHead () (Ident () n)
@@ -1098,18 +1234,8 @@ mkImportExp m lst =
   where
     islist = ImportSpecList () False (map mkIVar lst)
 
-mkImportSrc :: String -> ImportDecl ()
-mkImportSrc m = ImportDecl () (ModuleName () m) False True False Nothing Nothing Nothing
-
 dot :: Exp () -> Exp () -> Exp ()
 x `dot` y = x `app` mkVar "." `app` y
-
-tyForall ::
-  Maybe [TyVarBind ()] ->
-  Maybe (Context ()) ->
-  Type () ->
-  Type ()
-tyForall = TyForall ()
 
 tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
@@ -1156,9 +1282,6 @@ generator = Generator ()
 
 qualifier :: Exp () -> Stmt ()
 qualifier = Qualifier ()
-
-clsDecl :: Decl () -> ClassDecl ()
-clsDecl = ClsDecl ()
 
 unkindedVar :: Name () -> TyVarBind ()
 unkindedVar = UnkindedVar ()

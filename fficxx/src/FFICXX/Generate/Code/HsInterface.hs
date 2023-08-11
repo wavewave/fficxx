@@ -18,9 +18,10 @@ where
 
 import Control.Monad.Reader (Reader)
 import qualified Data.List as L
+import qualified Data.List.NonEmpty as NE
 import FFICXX.Generate.Code.Primitive
   ( classConstraints,
-    functionSignature,
+    functionSignature',
   )
 import FFICXX.Generate.Dependency.Graph
   ( getCyclicDepSubmodules,
@@ -41,10 +42,11 @@ import FFICXX.Generate.Type.Module
   ( ClassModule (..),
     DepCycles,
   )
-import FFICXX.Generate.Util.HaskellSrcExts
-  ( classA,
-    clsDecl,
+import FFICXX.Generate.Util.GHCExactPrint
+  ( app,
+    classA,
     cxTuple,
+    letE,
     mkClass,
     mkFun,
     mkFunSig,
@@ -56,22 +58,25 @@ import FFICXX.Generate.Util.HaskellSrcExts
     mkTVar,
     mkVar,
     pbind,
+    qualTy,
+    toLocalBinds,
     tyForall,
     tyPtr,
     tyapp,
     tycon,
     tyfun,
-    unkindedVar,
-    unqual,
+    valBinds,
   )
-import Language.Haskell.Exts.Build (app, letE, name)
-import Language.Haskell.Exts.Syntax
-  ( Decl,
+import GHC.Hs (GhcPs)
+import Language.Haskell.Syntax
+  ( HsDecl (TyClD),
+    HsLocalBindsLR (EmptyLocalBinds),
     ImportDecl,
+    noExtField,
   )
 import System.FilePath ((<.>))
 
-mkImportWithDepCycles :: DepCycles -> String -> String -> ImportDecl ()
+mkImportWithDepCycles :: DepCycles -> String -> String -> ImportDecl GhcPs
 mkImportWithDepCycles depCycles self imported =
   let mloc = locateInDepCycles (self, imported) depCycles
    in case mloc of
@@ -80,7 +85,7 @@ mkImportWithDepCycles depCycles self imported =
               mkImportSrc imported
         _ -> mkImport imported
 
-genImportInInterface :: Bool -> DepCycles -> ClassModule -> [ImportDecl ()]
+genImportInInterface :: Bool -> DepCycles -> ClassModule -> [ImportDecl GhcPs]
 genImportInInterface isHsBoot depCycles m =
   let modSelf = cmModule m <.> "Interface"
       imported = cmImportedSubmodulesForInterface m
@@ -98,17 +103,17 @@ genImportInInterface isHsBoot depCycles m =
 -- typeclass declaration
 --
 
-genHsFrontDecl :: Bool -> Class -> Reader AnnotateMap (Decl ())
+genHsFrontDecl :: Bool -> Class -> Reader AnnotateMap (HsDecl GhcPs)
 genHsFrontDecl isHsBoot c = do
   -- TODO: revive annotation
   -- for the time being, let's ignore annotation.
   -- amap <- ask
   -- let cann = maybe "" id $ M.lookup (PkgClass,class_name c) amap
-  let cdecl = mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body
+  let cdecl = TyClD noExtField (mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body)
       -- for hs-boot, we only have instance head.
-      cdecl' = mkClass (cxTuple []) (typeclassName c) [mkTBind "a"] []
-      sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
-      body = map (clsDecl . sigdecl) . virtualFuncs . class_funcs $ c
+      cdecl' = TyClD noExtField (mkClass (cxTuple []) (typeclassName c) [mkTBind "a"] [])
+      sigdecl f = mkFunSig (hsFuncName c f) (functionSignature' c f)
+      body = map sigdecl . virtualFuncs . class_funcs $ c
   if isHsBoot
     then return cdecl'
     else return cdecl
@@ -117,50 +122,71 @@ genHsFrontDecl isHsBoot c = do
 -- upcast --
 ------------
 
-genHsFrontUpcastClass :: Class -> [Decl ()]
-genHsFrontUpcastClass c = mkFun ("upcast" <> highname) typ [mkPVar "h"] rhs Nothing
+genHsFrontUpcastClass :: Class -> [HsDecl GhcPs]
+genHsFrontUpcastClass c =
+  mkFun ("upcast" <> highname) typ [mkPVar "h"] rhs Nothing
   where
     (highname, rawname) = hsClassName c
     hightype = tycon highname
     rawtype = tycon rawname
     iname = typeclassName c
-    a_bind = unkindedVar (name "a")
+    a_bind = mkTBind "a"
     a_tvar = mkTVar "a"
     typ =
       tyForall
-        (Just [a_bind])
-        (Just (cxTuple [classA (unqual "FPtr") [a_tvar], classA (unqual iname) [a_tvar]]))
-        (tyfun a_tvar hightype)
+        (NE.singleton a_bind)
+        ( qualTy
+            (cxTuple [classA "FPtr" [a_tvar], classA iname [a_tvar]])
+            (tyfun a_tvar hightype)
+        )
     rhs =
       letE
-        [ pbind (mkPVar "fh") (app (mkVar "get_fptr") (mkVar "h")) Nothing,
-          pbind
-            (mkPVarSig "fh2" (tyapp tyPtr rawtype))
-            (app (mkVar "castPtr") (mkVar "fh"))
-            Nothing
-        ]
+        ( toLocalBinds $
+            valBinds
+              [ pbind
+                  (mkPVar "fh")
+                  (app (mkVar "get_fptr") (mkVar "h"))
+                  (EmptyLocalBinds noExtField),
+                pbind
+                  (mkPVarSig "fh2" (tyapp tyPtr rawtype))
+                  (app (mkVar "castPtr") (mkVar "fh"))
+                  (EmptyLocalBinds noExtField)
+              ]
+        )
         (mkVar "cast_fptr_to_obj" `app` mkVar "fh2")
 
 --------------
 -- downcast --
 --------------
 
-genHsFrontDowncastClass :: Class -> [Decl ()]
-genHsFrontDowncastClass c = mkFun ("downcast" <> highname) typ [mkPVar "h"] rhs Nothing
+genHsFrontDowncastClass :: Class -> [HsDecl GhcPs]
+genHsFrontDowncastClass c =
+  mkFun ("downcast" <> highname) typ [mkPVar "h"] rhs Nothing
   where
     (highname, _rawname) = hsClassName c
     hightype = tycon highname
     iname = typeclassName c
-    a_bind = unkindedVar (name "a")
+    a_bind = mkTBind "a"
     a_tvar = mkTVar "a"
     typ =
       tyForall
-        (Just [a_bind])
-        (Just (cxTuple [classA (unqual "FPtr") [a_tvar], classA (unqual iname) [a_tvar]]))
-        (tyfun hightype a_tvar)
+        (NE.singleton a_bind)
+        ( qualTy
+            (cxTuple [classA "FPtr" [a_tvar], classA iname [a_tvar]])
+            (tyfun hightype a_tvar)
+        )
     rhs =
       letE
-        [ pbind (mkPVar "fh") (app (mkVar "get_fptr") (mkVar "h")) Nothing,
-          pbind (mkPVar "fh2") (app (mkVar "castPtr") (mkVar "fh")) Nothing
-        ]
+        ( toLocalBinds $
+            valBinds
+              [ pbind
+                  (mkPVar "fh")
+                  (app (mkVar "get_fptr") (mkVar "h"))
+                  (EmptyLocalBinds noExtField),
+                pbind
+                  (mkPVar "fh2")
+                  (app (mkVar "castPtr") (mkVar "fh"))
+                  (EmptyLocalBinds noExtField)
+              ]
+        )
         (mkVar "cast_fptr_to_obj" `app` mkVar "fh2")
