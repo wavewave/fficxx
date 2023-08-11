@@ -2,10 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module FFICXX.Generate.Code.HsTemplate
-  ( genTemplateMemberFunctions,
-    genTMFExp,
-    genTMFInstance,
-    genImportInTemplate,
+  ( genImportInTemplate,
     genTmplInterface,
     genImportInTH,
     genTmplImplementation,
@@ -22,7 +19,6 @@ import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.HsCast (castBody_)
 import FFICXX.Generate.Code.Primitive
   ( functionSignatureT,
-    functionSignatureTMF,
     functionSignatureTT,
     tmplAccessorToTFun,
   )
@@ -30,8 +26,6 @@ import FFICXX.Generate.Dependency (calculateDependency)
 import FFICXX.Generate.Name
   ( ffiTmplFuncName,
     hsTemplateClassName,
-    hsTemplateMemberFunctionName,
-    hsTemplateMemberFunctionNameTH,
     hsTmplFuncName,
     hsTmplFuncNameTH,
     subModuleName,
@@ -41,16 +35,13 @@ import FFICXX.Generate.Name
 import FFICXX.Generate.Type.Class
   ( Accessor (Getter, Setter),
     Arg (..),
-    Class (..),
     TemplateClass (..),
     TemplateFunction (..),
-    TemplateMemberFunction (..),
     Types (Void),
     Variable (..),
   )
 import FFICXX.Generate.Type.Module
-  ( ClassImportHeader (..),
-    TemplateClassImportHeader (..),
+  ( TemplateClassImportHeader (..),
     TemplateClassSubmoduleType (..),
   )
 import FFICXX.Generate.Util.HaskellSrcExts
@@ -114,131 +105,21 @@ import Language.Haskell.Exts.Syntax
     ImportDecl,
   )
 
-------------------------------
--- Template member function --
-------------------------------
-
-genTemplateMemberFunctions :: ClassImportHeader -> [Decl ()]
-genTemplateMemberFunctions cih =
-  let c = cihClass cih
-   in concatMap (\f -> genTMFExp c f <> genTMFInstance cih f) (class_tmpl_funcs c)
-
--- TODO: combine this with genTmplInstance
-genTMFExp :: Class -> TemplateMemberFunction -> [Decl ()]
-genTMFExp c f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
-  where
-    nh = hsTemplateMemberFunctionNameTH c f
-    v = mkVar
-    p = mkPVar
-    itps = zip ([1 ..] :: [Int]) (tmf_params f)
-    tvars = map (\(i, _) -> "typ" ++ show i) itps
-    nparams = length itps
-    tparams = if nparams == 1 then tycon "Type" else tyTupleBoxed (replicate nparams (tycon "Type"))
-    sig = foldr1 tyfun [tparams, tycon "String", tyapp (tycon "Q") (tycon "Exp")]
-    tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
-    lit' = strE (hsTemplateMemberFunctionName c f <> "_")
-    lam = lamE [p "n"] (lit' `app` v "<>" `app` v "n")
-    rhs =
-      app (v "mkTFunc") $
-        let typs = if nparams == 1 then map v tvars else [tuple (map v tvars)]
-         in tuple (typs ++ [v "suffix", lam, v "tyf"])
-    sig' = functionSignatureTMF c f
-    tassgns = map (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i)))) itps
-    bstmts =
-      binds
-        [ mkBind1
-            "tyf"
-            [mkPVar "n"]
-            ( letE
-                tassgns
-                (bracketExp (typeBracket sig'))
-            )
-            Nothing
-        ]
-
-genTMFInstance :: ClassImportHeader -> TemplateMemberFunction -> [Decl ()]
-genTMFInstance cih f =
-  mkFun
-    fname
-    sig
-    [p "isCprim", pTuple [p "qtyp", p "param"]]
-    rhs
-    Nothing
-  where
-    c = cihClass cih
-    fname = "genInstanceFor_" <> hsTemplateMemberFunctionName c f
-    p = mkPVar
-    v = mkVar
-    sig =
-      tycon "IsCPrimitive"
-        `tyfun` tyTupleBoxed [tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo"]
-        `tyfun` (tycon "Q" `tyapp` tylist (tycon "Dec"))
-    rhs = doE [suffixstmt, qtypstmt, genstmt, foreignSrcStmt, letStmt lststmt, qualStmt retstmt]
-    suffixstmt = letStmt [pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param")]
-    qtypstmt = generator (p "typ") (v "qtyp")
-    genstmt =
-      generator
-        (p "f1")
-        ( v "mkMember"
-            `app` ( strE (hsTemplateMemberFunctionName c f <> "_")
-                      `app` v "<>"
-                      `app` v "suffix"
-                  )
-            `app` v (hsTemplateMemberFunctionNameTH c f)
-            `app` v "typ"
-            `app` v "suffix"
-        )
-    lststmt = [pbind_ (p "lst") (listE ([v "f1"]))]
-    retstmt = v "pure" `app` v "lst"
-    -- TODO: refactor out the following code.
-    foreignSrcStmt =
-      qualifier $
-        (v "addModFinalizer")
-          `app` ( v "addForeignSource"
-                    `app` con "LangCxx"
-                    `app` ( L.foldr1
-                              (\x y -> inapp x (op "++") y)
-                              [ includeStatic,
-                                includeDynamic,
-                                namespaceStr,
-                                strE (hsTemplateMemberFunctionName c f),
-                                strE "(",
-                                v "suffix",
-                                strE ")\n"
-                              ]
-                          )
-                )
-      where
-        includeStatic =
-          strE $
-            concatMap ((<> "\n") . R.renderCMacro . R.Include) $
-              [HdrName "MacroPatternMatch.h", cihSelfHeader cih]
-                <> cihIncludedHPkgHeadersInCPP cih
-                <> cihIncludedCPkgHeaders cih
-        includeDynamic =
-          letE
-            [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param"),
-              pbind_
-                (pApp (name "f") [p "x"])
-                (v "renderCMacro" `app` (con "Include" `app` v "x"))
-            ]
-            (v "concatMap" `app` v "f" `app` v "headers")
-        namespaceStr =
-          letE
-            [ pbind_ (p "nss") (v "tpinfoCxxNamespaces" `app` v "param"),
-              pbind_
-                (pApp (name "f") [p "x"])
-                (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
-            ]
-            (v "concatMap" `app` v "f" `app` v "nss")
-
---------------------
--- Template Class --
---------------------
+--
+-- imports
+--
 
 genImportInTemplate :: TemplateClass -> [ImportDecl ()]
 genImportInTemplate t0 =
   fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTemplate, t0)
+
+genImportInTH :: TemplateClass -> [ImportDecl ()]
+genImportInTH t0 =
+  fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTH, t0)
+
+--
+-- interface
+--
 
 genTmplInterface :: TemplateClass -> [Decl ()]
 genTmplInterface t =
@@ -271,9 +152,9 @@ genTmplInterface t =
         insDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
       ]
 
-genImportInTH :: TemplateClass -> [ImportDecl ()]
-genImportInTH t0 =
-  fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTH, t0)
+--
+-- implementation
+--
 
 genTmplImplementation :: TemplateClass -> [Decl ()]
 genTmplImplementation t =
