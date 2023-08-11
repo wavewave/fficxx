@@ -62,6 +62,7 @@ Library
                FFICXX.Generate.Code.HsInterface
                FFICXX.Generate.Code.HsProxy
                FFICXX.Generate.Code.HsRawType
+               FFICXX.Generate.Code.HsTH
                FFICXX.Generate.Code.HsTemplate
                FFICXX.Generate.Code.HsTopLevel
                FFICXX.Generate.Code.Cabal

@@ -59,11 +59,13 @@ import FFICXX.Generate.Code.HsInterface
   )
 import FFICXX.Generate.Code.HsProxy (genProxyInstance)
 import FFICXX.Generate.Code.HsRawType (hsClassRawType)
-import FFICXX.Generate.Code.HsTemplate
+import FFICXX.Generate.Code.HsTH
   ( genImportInTH,
-    genImportInTemplate,
     genTmplImplementation,
     genTmplInstance,
+  )
+import FFICXX.Generate.Code.HsTemplate
+  ( genImportInTemplate,
     genTmplInterface,
   )
 import FFICXX.Generate.Code.HsTopLevel
