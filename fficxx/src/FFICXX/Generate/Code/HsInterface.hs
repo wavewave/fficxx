@@ -67,35 +67,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     tyfun,
     valBinds,
   )
-import qualified FFICXX.Generate.Util.HaskellSrcExts as O
-  ( classA,
-    clsDecl,
-    cxTuple,
-    mkClass,
-    mkFun,
-    mkFunSig,
-    mkImport,
-    mkImportSrc,
-    mkPVar,
-    mkPVarSig,
-    mkTBind,
-    mkTVar,
-    mkVar,
-    pbind,
-    tyForall,
-    tyPtr,
-    tyapp,
-    tycon,
-    tyfun,
-    unkindedVar,
-    unqual,
-  )
 import GHC.Hs (GhcPs)
-import qualified Language.Haskell.Exts.Build as O (app, letE, name)
-import qualified Language.Haskell.Exts.Syntax as O
-  ( Decl,
-    ImportDecl,
-  )
 import Language.Haskell.Syntax
   ( HsDecl (TyClD),
     HsLocalBindsLR (EmptyLocalBinds),
@@ -187,22 +159,34 @@ genHsFrontUpcastClass c =
 -- downcast --
 --------------
 
-genHsFrontDowncastClass :: Class -> [O.Decl ()]
-genHsFrontDowncastClass c = O.mkFun ("downcast" <> highname) typ [O.mkPVar "h"] rhs Nothing
+genHsFrontDowncastClass :: Class -> [HsDecl GhcPs]
+genHsFrontDowncastClass c =
+  mkFun ("downcast" <> highname) typ [mkPVar "h"] rhs Nothing
   where
     (highname, _rawname) = hsClassName c
-    hightype = O.tycon highname
+    hightype = tycon highname
     iname = typeclassName c
-    a_bind = O.unkindedVar (O.name "a")
-    a_tvar = O.mkTVar "a"
+    a_bind = mkTBind "a"
+    a_tvar = mkTVar "a"
     typ =
-      O.tyForall
-        (Just [a_bind])
-        (Just (O.cxTuple [O.classA (O.unqual "FPtr") [a_tvar], O.classA (O.unqual iname) [a_tvar]]))
-        (O.tyfun hightype a_tvar)
+      tyForall
+        (NE.singleton a_bind)
+        ( qualTy
+            (cxTuple [classA "FPtr" [a_tvar], classA iname [a_tvar]])
+            (tyfun hightype a_tvar)
+        )
     rhs =
-      O.letE
-        [ O.pbind (O.mkPVar "fh") (O.app (O.mkVar "get_fptr") (O.mkVar "h")) Nothing,
-          O.pbind (O.mkPVar "fh2") (O.app (O.mkVar "castPtr") (O.mkVar "fh")) Nothing
-        ]
-        (O.mkVar "cast_fptr_to_obj" `O.app` O.mkVar "fh2")
+      letE
+        ( toLocalBinds $
+            valBinds
+              [ pbind
+                  (mkPVar "fh")
+                  (app (mkVar "get_fptr") (mkVar "h"))
+                  (EmptyLocalBinds noExtField),
+                pbind
+                  (mkPVar "fh2")
+                  (app (mkVar "castPtr") (mkVar "fh"))
+                  (EmptyLocalBinds noExtField)
+              ]
+        )
+        (mkVar "cast_fptr_to_obj" `app` mkVar "fh2")
