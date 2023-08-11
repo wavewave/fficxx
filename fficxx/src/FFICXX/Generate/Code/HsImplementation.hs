@@ -47,7 +47,7 @@ import FFICXX.Generate.Type.Module
   ( ClassModule (..),
   )
 --
-import FFICXX.Generate.Util.HaskellSrcExts
+import qualified FFICXX.Generate.Util.HaskellSrcExts as O
   ( cxEmpty,
     insDecl,
     mkBind1,
@@ -56,8 +56,8 @@ import FFICXX.Generate.Util.HaskellSrcExts
     mkInstance,
     mkVar,
   )
-import Language.Haskell.Exts.Build (app)
-import Language.Haskell.Exts.Syntax
+import qualified Language.Haskell.Exts.Build as O (app)
+import qualified Language.Haskell.Exts.Syntax as O
   ( Decl,
     ImportDecl,
   )
@@ -66,29 +66,29 @@ import Language.Haskell.Exts.Syntax
 -- import
 --
 
-genImportInImplementation :: ClassModule -> [ImportDecl ()]
+genImportInImplementation :: ClassModule -> [O.ImportDecl ()]
 genImportInImplementation m =
-  fmap (mkImport . subModuleName) $ cmImportedSubmodulesForImplementation m
+  fmap (O.mkImport . subModuleName) $ cmImportedSubmodulesForImplementation m
 
 --
 -- functions
 --
 
-genHsFrontInst :: Class -> Class -> [Decl ()]
+genHsFrontInst :: Class -> Class -> [O.Decl ()]
 genHsFrontInst parent child
   | (not . isAbstractClass) child =
-      let idecl = mkInstance cxEmpty (typeclassName parent) [convertCpp2HS (Just child) SelfType] body
-          defn f = mkBind1 (hsFuncName child f) [] rhs Nothing
+      let idecl = O.mkInstance O.cxEmpty (typeclassName parent) [convertCpp2HS (Just child) SelfType] body
+          defn f = O.mkBind1 (hsFuncName child f) [] rhs Nothing
             where
-              rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName child f))
-          body = map (insDecl . defn) . virtualFuncs . class_funcs $ parent
+              rhs = O.app (O.mkVar (hsFuncXformer f)) (O.mkVar (hscFuncName child f))
+          body = map (O.insDecl . defn) . virtualFuncs . class_funcs $ parent
        in [idecl]
   | otherwise = []
 
 genHsFrontInstNew ::
   -- | only concrete class
   Class ->
-  Reader AnnotateMap [Decl ()]
+  Reader AnnotateMap [O.Decl ()]
 genHsFrontInstNew c = do
   -- amap <- ask
   let fs = filter isNewFunc (class_funcs c)
@@ -96,29 +96,29 @@ genHsFrontInstNew c = do
     let -- for the time being, let's ignore annotation.
         -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
         -- newfuncann = mkComment 0 cann
-        rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-     in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
+        rhs = O.app (O.mkVar (hsFuncXformer f)) (O.mkVar (hscFuncName c f))
+     in O.mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
 
-genHsFrontInstNonVirtual :: Class -> [Decl ()]
+genHsFrontInstNonVirtual :: Class -> [O.Decl ()]
 genHsFrontInstNonVirtual c =
   flip concatMap nonvirtualFuncs $ \f ->
-    let rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-     in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
+    let rhs = O.app (O.mkVar (hsFuncXformer f)) (O.mkVar (hscFuncName c f))
+     in O.mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
   where
     nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
 
-genHsFrontInstStatic :: Class -> [Decl ()]
+genHsFrontInstStatic :: Class -> [O.Decl ()]
 genHsFrontInstStatic c =
   flip concatMap (staticFuncs (class_funcs c)) $ \f ->
-    let rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-     in mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
+    let rhs = O.app (O.mkVar (hsFuncXformer f)) (O.mkVar (hscFuncName c f))
+     in O.mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
 
-genHsFrontInstVariables :: Class -> [Decl ()]
+genHsFrontInstVariables :: Class -> [O.Decl ()]
 genHsFrontInstVariables c =
   flip concatMap (class_vars c) $ \v ->
     let rhs accessor =
-          app
-            (mkVar (case accessor of Getter -> "xform0"; _ -> "xform1"))
-            (mkVar (hscAccessorName c v accessor))
-     in mkFun (accessorName c v Getter) (accessorSignature c v Getter) [] (rhs Getter) Nothing
-          <> mkFun (accessorName c v Setter) (accessorSignature c v Setter) [] (rhs Setter) Nothing
+          O.app
+            (O.mkVar (case accessor of Getter -> "xform0"; _ -> "xform1"))
+            (O.mkVar (hscAccessorName c v accessor))
+     in O.mkFun (accessorName c v Getter) (accessorSignature c v Getter) [] (rhs Getter) Nothing
+          <> O.mkFun (accessorName c v Setter) (accessorSignature c v Setter) [] (rhs Setter) Nothing
