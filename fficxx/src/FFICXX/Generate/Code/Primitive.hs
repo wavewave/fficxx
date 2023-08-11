@@ -68,9 +68,16 @@ data CFunSig = CFunSig
     cRetType :: Types
   }
 
+-- | OLD
 data HsFunSig = HsFunSig
   { hsSigTypes :: [Type ()],
     hsSigConstraints :: [Asst ()]
+  }
+
+-- | NEW
+data HsFunSig' = HsFunSig'
+  { hsSig'Types :: [HsType GhcPs],
+    hsSig'Constraints :: [HsType GhcPs]
   }
 
 ctypToCType :: CTypes -> IsConst -> R.CType Identity
@@ -771,6 +778,7 @@ c2HsType (CEnum t _) = c2HsType t
 c2HsType (CPointer t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
 c2HsType (CRef t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
 
+-- OLD
 convertCpp2HS :: Maybe Class -> Types -> Type ()
 convertCpp2HS _c Void = unit_tycon
 convertCpp2HS (Just c) SelfType = tycon ((fst . hsClassName) c)
@@ -797,6 +805,34 @@ convertCpp2HS _c (TemplateType t) =
     tycon (tclass_name t) : map mkTVar (tclass_params t)
 convertCpp2HS _c (TemplateParam p) = mkTVar p
 convertCpp2HS _c (TemplateParamPointer p) = mkTVar p
+
+-- NEW
+cxx2HsType :: Maybe Class -> Types -> HsType GhcPs
+cxx2HsType _c Void = Ex.unit_tycon
+cxx2HsType (Just c) SelfType = Ex.tycon ((fst . hsClassName) c)
+cxx2HsType Nothing SelfType = error "cxx2HsType : SelfType but no class "
+cxx2HsType _c (CT t _) = c2HsType t
+cxx2HsType _c (CPT (CPTClass c') _) = (Ex.tycon . fst . hsClassName) c'
+cxx2HsType _c (CPT (CPTClassRef c') _) = (Ex.tycon . fst . hsClassName) c'
+cxx2HsType _c (CPT (CPTClassCopy c') _) = (Ex.tycon . fst . hsClassName) c'
+cxx2HsType _c (CPT (CPTClassMove c') _) = (Ex.tycon . fst . hsClassName) c'
+cxx2HsType _c (TemplateApp x) =
+  foldl1 Ex.tyapp $
+    map Ex.tycon $
+      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
+cxx2HsType _c (TemplateAppRef x) =
+  foldl1 Ex.tyapp $
+    map Ex.tycon $
+      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
+cxx2HsType _c (TemplateAppMove x) =
+  foldl1 Ex.tyapp $
+    map Ex.tycon $
+      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
+cxx2HsType _c (TemplateType t) =
+  foldl1 Ex.tyapp $
+    Ex.tycon (tclass_name t) : map Ex.mkTVar (tclass_params t)
+cxx2HsType _c (TemplateParam p) = Ex.mkTVar p
+cxx2HsType _c (TemplateParamPointer p) = Ex.mkTVar p
 
 convertCpp2HS4Tmpl ::
   -- | self
@@ -849,6 +885,7 @@ classConstraints :: Class -> HsContext GhcPs
 classConstraints =
   Ex.cxTuple . map ((\name -> Ex.classA name [Ex.mkTVar "a"]) . typeclassName) . class_parents
 
+-- OLD
 extractArgRetTypes ::
   -- | class (Nothing for top-level function)
   Maybe Class ->
@@ -913,6 +950,76 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
         Void -> return unit_tycon
         _ -> error ("No such c type : " <> show typ)
 
+-- NEW
+extractArgRetTypes' ::
+  -- | class (Nothing for top-level function)
+  Maybe Class ->
+  -- | is virtual function?
+  Bool ->
+  -- | C type signature information for a given function:
+  --   (argument types, return type) of a given function
+  CFunSig ->
+  -- | Haskell type signature information for the function:
+  --   (types, class constraints)
+  HsFunSig'
+extractArgRetTypes' mc isvirtual (CFunSig args ret) =
+  let (typs, s) = flip runState ([], (0 :: Int)) $ do
+        as <- mapM (mktyp . arg_type) args
+        r <- case ret of
+          SelfType -> case mc of
+            Nothing -> error "extractArgRetTypes: SelfType return but no class"
+            Just c ->
+              if isvirtual
+                then return (Ex.mkTVar "a")
+                else return $ Ex.tycon ((fst . hsClassName) c)
+          x -> (return . cxx2HsType Nothing) x
+        return (as ++ [Ex.tyapp (Ex.tycon "IO") r])
+   in HsFunSig'
+        { hsSig'Types = typs,
+          hsSig'Constraints = fst s
+        }
+  where
+    addclass c = do
+      (ctxts, n) <- get
+      let cname = (fst . hsClassName) c
+          iname = typeclassNameFromStr cname
+          tvar = Ex.mkTVar ('c' : show n)
+          ctxt1 = Ex.classA iname [tvar]
+          ctxt2 = Ex.classA "FPtr" [tvar]
+      put (ctxt1 : ctxt2 : ctxts, n + 1)
+      return tvar
+    addstring = do
+      (ctxts, n) <- get
+      let tvar = Ex.mkTVar ('c' : show n)
+          ctxt = Ex.classA "Castable" [tvar, Ex.tycon "CString"]
+      put (ctxt : ctxts, n + 1)
+      return tvar
+    mktyp typ =
+      case typ of
+        SelfType -> return (Ex.mkTVar "a")
+        CT CTString Const -> addstring
+        CT _ _ -> return $ cxx2HsType Nothing typ
+        CPT (CPTClass c') _ -> addclass c'
+        CPT (CPTClassRef c') _ -> addclass c'
+        CPT (CPTClassCopy c') _ -> addclass c'
+        CPT (CPTClassMove c') _ -> addclass c'
+        -- it is not clear whether the following is okay or not.
+        (TemplateApp x) ->
+          pure $
+            cxx2HsType Nothing (TemplateApp x)
+        (TemplateAppRef x) ->
+          pure $
+            cxx2HsType Nothing (TemplateAppRef x)
+        (TemplateAppMove x) ->
+          pure $
+            cxx2HsType Nothing (TemplateAppMove x)
+        (TemplateType t) ->
+          pure $
+            foldl1 Ex.tyapp (Ex.tycon (tclass_name t) : map Ex.mkTVar (tclass_params t))
+        (TemplateParam p) -> pure (Ex.mkTVar p)
+        Void -> pure Ex.unit_tycon
+        _ -> error ("No such c type : " <> show typ)
+
 -- OLD
 functionSignature :: Class -> Function -> Type ()
 functionSignature c f =
@@ -930,21 +1037,19 @@ functionSignature c f =
 
 -- NEW
 functionSignature' :: Class -> Function -> HsType GhcPs
-functionSignature' c f = undefined
-{-
-  let HsFunSig typs assts =
-        extractArgRetTypes
+functionSignature' c f =
+  let HsFunSig' typs assts =
+        extractArgRetTypes'
           (Just c)
           (isVirtualFunc f)
           (CFunSig (genericFuncArgs f) (genericFuncRet f))
-      ctxt = cxTuple assts
+      ctxt = Ex.cxTuple assts
       arg0
-        | isVirtualFunc f = (mkTVar "a" :)
-        | isNonVirtualFunc f = (mkTVar (fst (hsClassName c)) :)
+        | isVirtualFunc f = (Ex.mkTVar "a" :)
+        | isNonVirtualFunc f = (Ex.mkTVar (fst (hsClassName c)) :)
         | otherwise = id
-   in tyForall Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
--}
-  
+   in Ex.qualTy ctxt (foldr1 Ex.tyfun (arg0 typs))
+
 functionSignatureT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureT t TFun {..} =
   let (hname, _) = hsTemplateClassName t

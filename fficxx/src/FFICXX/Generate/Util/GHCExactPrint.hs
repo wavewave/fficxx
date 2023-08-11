@@ -15,6 +15,8 @@ module FFICXX.Generate.Util.GHCExactPrint
 
     -- * types
     mkTVar,
+    tyForall,
+    qualTy,
     tyapp,
     tycon,
     tyfun,
@@ -39,7 +41,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     cxEmpty,
     cxTuple,
     classA,
-    -- funSig2Bind,  
     mkClass,
     mkInstance,
     mkTypeFamInst,
@@ -81,7 +82,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkImportSrc,
     lang,
     dot,
-    tyForall,
     tyParen,
     tyForeignPtr,
     classA,
@@ -113,7 +113,9 @@ module FFICXX.Generate.Util.GHCExactPrint
   )
 where
 
+import Data.Foldable (toList)
 import Data.List (foldl')
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (maybeToList)
 import Data.String (IsString (fromString))
 import GHC.Data.Bag (emptyBag, listToBag)
@@ -214,6 +216,7 @@ import Language.Haskell.Syntax
     HsDerivingClause (..),
     HsDoFlavour (..),
     HsExpr (..),
+    HsForAllTelescope (..),
     HsLit (..),
     HsLocalBinds,
     HsLocalBindsLR (..),
@@ -474,6 +477,38 @@ mkLIdP nLines name = L (mkRelSrcSpanAnn nLines (NameAnnTrailing [])) id'
 --
 -- types
 --
+
+tyForall ::
+  NonEmpty (HsTyVarBndr () GhcPs) ->
+  HsType GhcPs ->
+  HsType GhcPs
+tyForall tbnds typ =
+  HsForAllTy
+    { hst_xforall = noExtField,
+      hst_tele = tele,
+      hst_body = mkL (-1) typ
+    }
+  where
+    ann = (AddEpAnn AnnForall (mkEpaDelta (-1)), AddEpAnn AnnRarrow (mkEpaDelta (-1)))
+    tele = HsForAllVis (mkRelEpAnn (-1) ann) (fmap (mkL (-1)) $ toList tbnds)
+
+qualTy ::
+  HsContext GhcPs ->
+  HsType GhcPs ->
+  HsType GhcPs
+qualTy ctxt typ =
+  HsQualTy
+    { hst_xqual = noExtField,
+      hst_ctxt = L (mkRelSrcSpanAnn (-1) annCtxt) ctxt,
+      hst_body = mkL (-1) typ
+    }
+  where
+    annCtxt =
+      AnnContext
+        { ac_darrow = Nothing,
+          ac_open = [mkEpaDelta 0],
+          ac_close = [mkEpaDelta (-1)]
+        }
 
 tycon :: String -> HsType GhcPs
 tycon name =
@@ -742,9 +777,6 @@ classA :: String -> [HsType GhcPs] -> HsType GhcPs
 classA name typs = foldl' tyapp (tycon name) typs'
   where
     typs' = fmap tyParen typs
-
--- funSig2Bind :: HsDecl GhcPs -> HsBind GhcPs
--- funSig2Bind = ClsDecl ()
 
 mkClass ::
   HsContext GhcPs ->
@@ -1150,13 +1182,6 @@ mkImportExp m lst =
 
 dot :: Exp () -> Exp () -> Exp ()
 x `dot` y = x `app` mkVar "." `app` y
-
-tyForall ::
-  Maybe [TyVarBind ()] ->
-  Maybe (Context ()) ->
-  Type () ->
-  Type ()
-tyForall = TyForall ()
 
 tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
