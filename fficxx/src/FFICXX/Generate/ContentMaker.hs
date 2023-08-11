@@ -512,13 +512,11 @@ buildImplementationHs amap m =
     f y = concatMap (flip genHsFrontInst y) (y : class_allparents y)
     implBody =
       concatMap f classes
-
-{-        <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
+        <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
         <> concatMap genHsFrontInstNonVirtual classes
         <> concatMap genHsFrontInstStatic classes
         <> concatMap genHsFrontInstVariables classes
-        <> genTemplateMemberFunctions (cmCIH m)
--}
+--        <> genTemplateMemberFunctions (cmCIH m)
 
 buildProxyHs :: ClassModule -> HsModule GhcPs
 buildProxyHs m =

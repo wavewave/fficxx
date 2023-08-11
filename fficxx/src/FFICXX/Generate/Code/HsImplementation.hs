@@ -20,7 +20,6 @@ import Control.Monad.Reader (Reader)
 import FFICXX.Generate.Code.Primitive
   ( accessorSignature,
     cxx2HsType,
-    functionSignature,
     functionSignature',
     hsFuncXformer,
   )
@@ -55,23 +54,8 @@ import FFICXX.Generate.Util.GHCExactPrint
     mkInstance,
     mkVar,
   )
-import qualified FFICXX.Generate.Util.HaskellSrcExts as O
-  ( cxEmpty,
-    insDecl,
-    mkBind1,
-    mkFun,
-    mkInstance,
-    mkVar,
-  )
 import GHC.Hs (GhcPs)
-import qualified Language.Haskell.Exts.Build as O (app)
-import qualified Language.Haskell.Exts.Syntax as O
-  ( Decl,
-  )
-import Language.Haskell.Syntax
-  ( HsDecl,
-    ImportDecl,
-  )
+import Language.Haskell.Syntax (HsDecl, ImportDecl)
 
 --
 -- import
