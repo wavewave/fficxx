@@ -21,6 +21,7 @@ import FFICXX.Generate.Code.Primitive
   ( accessorSignature,
     cxx2HsType,
     functionSignature,
+    functionSignature',
     hsFuncXformer,
   )
 import FFICXX.Generate.Name
@@ -43,16 +44,13 @@ import FFICXX.Generate.Type.Class
     staticFuncs,
     virtualFuncs,
   )
-import FFICXX.Generate.Type.Module
-  ( ClassModule (..),
-  )
---
-
+import FFICXX.Generate.Type.Module (ClassModule (..))
 import FFICXX.Generate.Util.GHCExactPrint
   ( app,
     cxEmpty,
     instD,
     mkBind1,
+    mkFun,
     mkImport,
     mkInstance,
     mkVar,
@@ -101,37 +99,37 @@ genHsFrontInst parent child
 genHsFrontInstNew ::
   -- | only concrete class
   Class ->
-  Reader AnnotateMap [O.Decl ()]
+  Reader AnnotateMap [HsDecl GhcPs]
 genHsFrontInstNew c = do
   -- amap <- ask
   let fs = filter isNewFunc (class_funcs c)
-  return . flip concatMap fs $ \f ->
+  pure . flip concatMap fs $ \f ->
     let -- for the time being, let's ignore annotation.
         -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
         -- newfuncann = mkComment 0 cann
-        rhs = O.app (O.mkVar (hsFuncXformer f)) (O.mkVar (hscFuncName c f))
-     in O.mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
+        rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+     in mkFun (aliasedFuncName c f) (functionSignature' c f) [] rhs Nothing
 
-genHsFrontInstNonVirtual :: Class -> [O.Decl ()]
+genHsFrontInstNonVirtual :: Class -> [HsDecl GhcPs]
 genHsFrontInstNonVirtual c =
   flip concatMap nonvirtualFuncs $ \f ->
-    let rhs = O.app (O.mkVar (hsFuncXformer f)) (O.mkVar (hscFuncName c f))
-     in O.mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
+    let rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+     in mkFun (aliasedFuncName c f) (functionSignature' c f) [] rhs Nothing
   where
     nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
 
-genHsFrontInstStatic :: Class -> [O.Decl ()]
+genHsFrontInstStatic :: Class -> [HsDecl GhcPs]
 genHsFrontInstStatic c =
   flip concatMap (staticFuncs (class_funcs c)) $ \f ->
-    let rhs = O.app (O.mkVar (hsFuncXformer f)) (O.mkVar (hscFuncName c f))
-     in O.mkFun (aliasedFuncName c f) (functionSignature c f) [] rhs Nothing
+    let rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
+     in mkFun (aliasedFuncName c f) (functionSignature' c f) [] rhs Nothing
 
-genHsFrontInstVariables :: Class -> [O.Decl ()]
+genHsFrontInstVariables :: Class -> [HsDecl GhcPs]
 genHsFrontInstVariables c =
   flip concatMap (class_vars c) $ \v ->
     let rhs accessor =
-          O.app
-            (O.mkVar (case accessor of Getter -> "xform0"; _ -> "xform1"))
-            (O.mkVar (hscAccessorName c v accessor))
-     in O.mkFun (accessorName c v Getter) (accessorSignature c v Getter) [] (rhs Getter) Nothing
-          <> O.mkFun (accessorName c v Setter) (accessorSignature c v Setter) [] (rhs Setter) Nothing
+          app
+            (mkVar (case accessor of Getter -> "xform0"; _ -> "xform1"))
+            (mkVar (hscAccessorName c v accessor))
+     in mkFun (accessorName c v Getter) (accessorSignature c v Getter) [] (rhs Getter) Nothing
+          <> mkFun (accessorName c v Setter) (accessorSignature c v Setter) [] (rhs Setter) Nothing

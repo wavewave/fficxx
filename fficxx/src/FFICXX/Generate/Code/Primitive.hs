@@ -1121,13 +1121,13 @@ accessorCFunSig :: Types -> Accessor -> CFunSig
 accessorCFunSig typ Getter = CFunSig [] typ
 accessorCFunSig typ Setter = CFunSig [Arg typ "x"] Void
 
-accessorSignature :: Class -> Variable -> Accessor -> Type ()
+accessorSignature :: Class -> Variable -> Accessor -> HsType GhcPs
 accessorSignature c v accessor =
   let csig = accessorCFunSig (arg_type (unVariable v)) accessor
-      HsFunSig typs assts = extractArgRetTypes (Just c) False csig
-      ctxt = cxTuple assts
-      arg0 = (mkTVar (fst (hsClassName c)) :)
-   in tyForall Nothing (Just ctxt) (foldr1 tyfun (arg0 typs))
+      HsFunSig' typs assts = extractArgRetTypes' (Just c) False csig
+      ctxt = Ex.cxTuple assts
+      arg0 = (Ex.mkTVar (fst (hsClassName c)) :)
+   in Ex.qualTy ctxt (foldr1 Ex.tyfun (arg0 typs))
 
 -- | old function. this is for FFI type.
 hsFFIFuncTyp :: Maybe (Selfness, Class) -> CFunSig -> Type ()
