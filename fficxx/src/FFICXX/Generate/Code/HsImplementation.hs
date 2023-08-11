@@ -19,7 +19,7 @@ where
 import Control.Monad.Reader (Reader)
 import FFICXX.Generate.Code.Primitive
   ( accessorSignature,
-    convertCpp2HS,
+    cxx2HsType,
     functionSignature,
     hsFuncXformer,
   )
@@ -49,7 +49,13 @@ import FFICXX.Generate.Type.Module
 --
 
 import FFICXX.Generate.Util.GHCExactPrint
-  ( mkImport,
+  ( app,
+    cxEmpty,
+    instD,
+    mkBind1,
+    mkImport,
+    mkInstance,
+    mkVar,
   )
 import qualified FFICXX.Generate.Util.HaskellSrcExts as O
   ( cxEmpty,
@@ -65,7 +71,8 @@ import qualified Language.Haskell.Exts.Syntax as O
   ( Decl,
   )
 import Language.Haskell.Syntax
-  ( ImportDecl,
+  ( HsDecl,
+    ImportDecl,
   )
 
 --
@@ -80,15 +87,15 @@ genImportInImplementation m =
 -- functions
 --
 
-genHsFrontInst :: Class -> Class -> [O.Decl ()]
+genHsFrontInst :: Class -> Class -> [HsDecl GhcPs]
 genHsFrontInst parent child
   | (not . isAbstractClass) child =
-      let idecl = O.mkInstance O.cxEmpty (typeclassName parent) [convertCpp2HS (Just child) SelfType] body
-          defn f = O.mkBind1 (hsFuncName child f) [] rhs Nothing
+      let idecl = mkInstance cxEmpty (typeclassName parent) [cxx2HsType (Just child) SelfType] [] body
+          defn f = mkBind1 (hsFuncName child f) [] rhs Nothing
             where
-              rhs = O.app (O.mkVar (hsFuncXformer f)) (O.mkVar (hscFuncName child f))
-          body = map (O.insDecl . defn) . virtualFuncs . class_funcs $ parent
-       in [idecl]
+              rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName child f))
+          body = map defn . virtualFuncs . class_funcs $ parent
+       in [instD idecl]
   | otherwise = []
 
 genHsFrontInstNew ::
