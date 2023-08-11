@@ -36,7 +36,6 @@ import FFICXX.Generate.Code.HsCast
   )
 import FFICXX.Generate.Code.HsCommon
   ( genExtraImport,
-    genExtraImport_,
   )
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
@@ -490,7 +489,7 @@ buildImplementationHs amap m =
       "TypeSynonymInstances"
     ]
     implImports
-    [] -- implBody
+    implBody
   where
     classes = [cihClass (cmCIH m)]
     implImports =
@@ -509,11 +508,12 @@ buildImplementationHs amap m =
         <> genImportInImplementation m
         <> genExtraImport m
 
-{-    f :: Class -> [Decl ()]
+    f :: Class -> [HsDecl GhcPs]
     f y = concatMap (flip genHsFrontInst y) (y : class_allparents y)
     implBody =
       concatMap f classes
-        <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
+
+{-        <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
         <> concatMap genHsFrontInstNonVirtual classes
         <> concatMap genHsFrontInstStatic classes
         <> concatMap genHsFrontInstVariables classes
