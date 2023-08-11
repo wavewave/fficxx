@@ -18,6 +18,7 @@ where
 
 import Control.Monad.Reader (Reader)
 import qualified Data.List as L
+import qualified Data.List.NonEmpty as NE
 import FFICXX.Generate.Code.Primitive
   ( classConstraints,
     functionSignature',
@@ -42,12 +43,29 @@ import FFICXX.Generate.Type.Module
     DepCycles,
   )
 import FFICXX.Generate.Util.GHCExactPrint
-  ( cxTuple,
+  ( app,
+    classA,
+    cxTuple,
+    letE,
     mkClass,
+    mkFun,
     mkFunSig,
     mkImport,
     mkImportSrc,
+    mkPVar,
+    mkPVarSig,
     mkTBind,
+    mkTVar,
+    mkVar,
+    pbind,
+    qualTy,
+    toLocalBinds,
+    tyForall,
+    tyPtr,
+    tyapp,
+    tycon,
+    tyfun,
+    valBinds,
   )
 import qualified FFICXX.Generate.Util.HaskellSrcExts as O
   ( classA,
@@ -80,6 +98,7 @@ import qualified Language.Haskell.Exts.Syntax as O
   )
 import Language.Haskell.Syntax
   ( HsDecl (TyClD),
+    HsLocalBindsLR (EmptyLocalBinds),
     ImportDecl,
     noExtField,
   )
@@ -131,29 +150,38 @@ genHsFrontDecl isHsBoot c = do
 -- upcast --
 ------------
 
-genHsFrontUpcastClass :: Class -> [O.Decl ()]
-genHsFrontUpcastClass c = O.mkFun ("upcast" <> highname) typ [O.mkPVar "h"] rhs Nothing
+genHsFrontUpcastClass :: Class -> [HsDecl GhcPs]
+genHsFrontUpcastClass c =
+  mkFun ("upcast" <> highname) typ [mkPVar "h"] rhs Nothing
   where
     (highname, rawname) = hsClassName c
-    hightype = O.tycon highname
-    rawtype = O.tycon rawname
+    hightype = tycon highname
+    rawtype = tycon rawname
     iname = typeclassName c
-    a_bind = O.unkindedVar (O.name "a")
-    a_tvar = O.mkTVar "a"
+    a_bind = mkTBind "a"
+    a_tvar = mkTVar "a"
     typ =
-      O.tyForall
-        (Just [a_bind])
-        (Just (O.cxTuple [O.classA (O.unqual "FPtr") [a_tvar], O.classA (O.unqual iname) [a_tvar]]))
-        (O.tyfun a_tvar hightype)
+      tyForall
+        (NE.singleton a_bind)
+        ( qualTy
+            (cxTuple [classA "FPtr" [a_tvar], classA iname [a_tvar]])
+            (tyfun a_tvar hightype)
+        )
     rhs =
-      O.letE
-        [ O.pbind (O.mkPVar "fh") (O.app (O.mkVar "get_fptr") (O.mkVar "h")) Nothing,
-          O.pbind
-            (O.mkPVarSig "fh2" (O.tyapp O.tyPtr rawtype))
-            (O.app (O.mkVar "castPtr") (O.mkVar "fh"))
-            Nothing
-        ]
-        (O.mkVar "cast_fptr_to_obj" `O.app` O.mkVar "fh2")
+      letE
+        ( toLocalBinds $
+            valBinds
+              [ pbind
+                  (mkPVar "fh")
+                  (app (mkVar "get_fptr") (mkVar "h"))
+                  (EmptyLocalBinds noExtField),
+                pbind
+                  (mkPVarSig "fh2" (tyapp tyPtr rawtype))
+                  (app (mkVar "castPtr") (mkVar "fh"))
+                  (EmptyLocalBinds noExtField)
+              ]
+        )
+        (mkVar "cast_fptr_to_obj" `app` mkVar "fh2")
 
 --------------
 -- downcast --

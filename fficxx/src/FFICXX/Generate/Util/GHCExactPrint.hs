@@ -48,19 +48,24 @@ module FFICXX.Generate.Util.GHCExactPrint
 
     -- * pattern
     mkPVar,
+    mkPVarSig,
     pApp,
     parP,
+    pbind,
 
     -- * expr
     app,
     con,
     doE,
     inapp,
+    letE,
     listE,
     mkVar,
     op,
     par,
     strE,
+    valBinds,
+    toLocalBinds,
 
     -- * stmt
     mkBodyStmt,
@@ -73,7 +78,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkPVar,
     mkIVar,
     mkPVarSig,
-    pbind,
     pbind_,
     dhead,
     mkDeclHead,
@@ -223,6 +227,7 @@ import Language.Haskell.Syntax
     HsMatchContext (FunRhs),
     HsModule (..),
     HsOuterTyVarBndrs (HsOuterImplicit),
+    HsPatSigType (..),
     HsScaled (..),
     HsSigType (..),
     HsToken (..),
@@ -230,6 +235,8 @@ import Language.Haskell.Syntax
     HsTyVarBndr (UserTyVar),
     HsType (..),
     HsUniToken (..),
+    HsValBinds,
+    HsValBindsLR (..),
     HsWildCardBndrs (HsWC),
     ImportDecl (..),
     ImportDeclQualifiedStyle (..),
@@ -894,6 +901,15 @@ instD = InstD noExtField . ClsInstD noExtField
 mkPVar :: String -> Pat GhcPs
 mkPVar name = VarPat noExtField (mkLIdP (-1) name)
 
+mkPVarSig :: String -> HsType GhcPs -> Pat GhcPs
+mkPVarSig name typ =
+  SigPat
+    (mkRelEpAnn (-1) [])
+    (mkL (-1) (mkPVar name))
+    psig
+  where
+    psig = HsPS (mkRelEpAnn (-1) NoEpAnns) (mkL (-1) typ)
+
 pApp :: String -> [Pat GhcPs] -> Pat GhcPs
 pApp name pats =
   ConPat
@@ -911,6 +927,15 @@ parP p =
     (L (tokLoc (-1)) HsTok)
     (mkL (-1) p)
     (L (tokLoc (-1)) HsTok)
+
+pbind :: Pat GhcPs -> HsExpr GhcPs -> HsLocalBinds GhcPs -> HsBind GhcPs
+pbind pat expr bnds =
+  PatBind (mkRelEpAnn (-1) []) (mkL (-1) pat) grhss
+  where
+    grhss = GRHSs emptyComments [lgrhs] bnds
+    lgrhs = L (mkRelSrcSpanAnn (-1) NoEpAnns) grhs
+    grhs = GRHS (mkRelEpAnn (-1) ann) [] (mkL (-1) expr)
+    ann = GrhsAnn Nothing (AddEpAnn AnnEqual (mkEpaDelta (-1)))
 
 --
 -- Expr
@@ -963,6 +988,13 @@ inapp x o y =
     lo = mkL (-1) o
     ly = mkL (-1) y
 
+letE :: HsLocalBinds GhcPs -> HsExpr GhcPs -> HsExpr GhcPs
+letE bnds expr =
+  HsLet (mkRelEpAnn (-1) NoEpAnns) tokLet bnds tokIn (mkL (-1) expr)
+  where
+    tokLet = L (tokLoc (-1)) HsTok
+    tokIn = L (tokLoc (-1)) HsTok
+
 listE :: [HsExpr GhcPs] -> HsExpr GhcPs
 listE itms =
   case itms of
@@ -1003,6 +1035,15 @@ strE str = HsLit ann1 (HsString ann2 (fromString str))
     str' = show str
     ann1 = mkRelEpAnn (-1) NoEpAnns
     ann2 = SourceText str'
+
+valBinds :: [HsBind GhcPs] -> HsValBinds GhcPs
+valBinds bnds =
+  ValBinds NoAnnSortKey (listToBag lbnds) []
+  where
+    lbnds = fmap (mkL (-1)) bnds
+
+toLocalBinds :: HsValBinds GhcPs -> HsLocalBinds GhcPs
+toLocalBinds = HsValBinds (mkRelEpAnn (-1) noAnnList)
 
 --
 -- Statements
@@ -1152,12 +1193,6 @@ lit = Lit ()
 
 mkIVar :: String -> ImportSpec ()
 mkIVar = IVar () . Ident ()
-
-mkPVarSig :: String -> Type () -> Pat ()
-mkPVarSig n typ = PatTypeSig () (mkPVar n) typ
-
-pbind :: Pat () -> Exp () -> Maybe (Binds ()) -> Decl ()
-pbind pat e = PatBind () pat (UnGuardedRhs () e)
 
 pbind_ :: Pat () -> Exp () -> Decl ()
 pbind_ p e = pbind p e Nothing

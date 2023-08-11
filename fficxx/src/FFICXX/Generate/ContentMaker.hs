@@ -417,8 +417,8 @@ buildInterfaceHs amap depCycles m =
         <> genExtraImport m
     ifaceBody =
       runReader (mapM (genHsFrontDecl False) classes) amap
+        <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
 
---        <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
 --        <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
 
 buildInterfaceHsBoot :: DepCycles -> ClassModule -> HsModule GhcPs
