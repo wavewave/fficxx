@@ -516,6 +516,7 @@ buildImplementationHs amap m =
         <> concatMap genHsFrontInstNonVirtual classes
         <> concatMap genHsFrontInstStatic classes
         <> concatMap genHsFrontInstVariables classes
+
 --        <> genTemplateMemberFunctions (cmCIH m)
 
 buildProxyHs :: ClassModule -> HsModule GhcPs
