@@ -23,6 +23,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     tylist,
     tyParen,
     tyPtr,
+    tyTupleBoxed,
     unit_tycon,
     mkTBind,
 
@@ -34,8 +35,10 @@ module FFICXX.Generate.Util.GHCExactPrint
 
     -- * function
     mkFun,
+    mkFun_,
     mkFunSig,
     mkBind1,
+    mkBind1_,
 
     -- * Typeclass
     cxEmpty,
@@ -50,6 +53,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkPVar,
     mkPVarSig,
     pApp,
+    pTuple,
     parP,
 
     -- * expr
@@ -57,18 +61,25 @@ module FFICXX.Generate.Util.GHCExactPrint
     con,
     doE,
     inapp,
+    lamE,
     letE,
     listE,
     mkVar,
     op,
     par,
     strE,
+    tupleE,
     valBinds,
     toLocalBinds,
 
     -- * stmt
     mkBodyStmt,
     pbind,
+    pbind_,
+
+    -- * template haskell expr
+    bracketExp,
+    typeBracket,
     {- app',
     conDecl,
     qualConDecl,
@@ -76,7 +87,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     lit,
     mkTVar,
     mkIVar,
-    pbind_,
     dhead,
     mkDeclHead,
     mkModuleE,
@@ -88,7 +98,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     tyForeignPtr,
     classA,
     tySplice,
-    tyTupleBoxed,
     parenSplice,
     bracketExp,
     typeBracket,
@@ -221,13 +230,15 @@ import Language.Haskell.Syntax
     HsLit (..),
     HsLocalBinds,
     HsLocalBindsLR (..),
-    HsMatchContext (FunRhs),
+    HsMatchContext (FunRhs, LambdaExpr),
     HsModule (..),
     HsOuterTyVarBndrs (HsOuterImplicit),
     HsPatSigType (..),
+    HsQuote (..),
     HsScaled (..),
     HsSigType (..),
     HsToken (..),
+    HsTupArg (Present),
     HsTupleSort (..),
     HsTyVarBndr (UserTyVar),
     HsType (..),
@@ -256,7 +267,8 @@ import Language.Haskell.Syntax
     noTypeArgs,
   )
 import Language.Haskell.Syntax.Basic
-  ( SrcStrictness (NoSrcStrict),
+  ( Boxity (..),
+    SrcStrictness (NoSrcStrict),
   )
 
 mkDeltaPos :: Int -> DeltaPos
@@ -580,6 +592,12 @@ tyParen typ =
 tyPtr :: HsType GhcPs
 tyPtr = tycon "Ptr"
 
+tyTupleBoxed :: [HsType GhcPs] -> HsType GhcPs
+tyTupleBoxed typs =
+  HsTupleTy (mkRelEpAnn (-1) ann) HsBoxedOrConstraintTuple (fmap (mkL (-1)) typs)
+  where
+    ann = AnnParen AnnParens (mkEpaDelta (-1)) (mkEpaDelta (-1))
+
 unit_tycon :: HsType GhcPs
 unit_tycon =
   HsTupleTy (mkRelEpAnn (-1) ann) HsBoxedOrConstraintTuple []
@@ -705,13 +723,26 @@ mkFun ::
   -- | RHS
   HsExpr GhcPs ->
   -- | where
-  Maybe (HsLocalBinds GhcPs) ->
+  HsLocalBinds GhcPs ->
   -- | decls
   [HsDecl GhcPs]
-mkFun fname typ pats rhs mbinds =
+mkFun fname typ pats rhs bnds =
   [ SigD noExtField (mkFunSig fname typ),
-    ValD noExtField (mkBind1 fname pats rhs mbinds)
+    ValD noExtField (mkBind1 fname pats rhs bnds)
   ]
+
+mkFun_ ::
+  -- | function name
+  String ->
+  -- | function type
+  HsType GhcPs ->
+  -- | arg pattern
+  [Pat GhcPs] ->
+  -- | RHS
+  HsExpr GhcPs ->
+  -- | decls
+  [HsDecl GhcPs]
+mkFun_ fname typ pats rhs = mkFun fname typ pats rhs (EmptyLocalBinds noExtField)
 
 mkFunSig ::
   -- | function name
@@ -737,37 +768,23 @@ mkBind1 ::
   String ->
   [Pat GhcPs] ->
   HsExpr GhcPs ->
-  Maybe (HsLocalBinds GhcPs) ->
+  HsLocalBinds GhcPs ->
   HsBind GhcPs
-mkBind1 fname pats rhs mbinds =
+mkBind1 fname pats rhs bnds =
   FunBind noExtField lid payload
   where
     id' = unqual (mkVarOcc fname)
     lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
-
-    lpats = fmap (mkL 0) pats
-    lrhs = mkL 0 rhs
-    glrhs =
-      let ann =
-            mkRelEpAnn
-              (-1)
-              (GrhsAnn Nothing (AddEpAnn AnnEqual (mkEpaDelta 0)))
-       in GRHS ann [] (lrhs)
-    lglrhs = L (mkRelSrcSpanAnn (-1) NoEpAnns) glrhs
-    match =
-      Match
-        { m_ext = mkRelEpAnn (-1) [],
-          m_ctxt = FunRhs lid Prefix NoSrcStrict,
-          m_pats = lpats,
-          m_grhss =
-            GRHSs
-              { grhssExt = emptyComments,
-                grhssGRHSs = [lglrhs],
-                grhssLocalBinds = EmptyLocalBinds noExtField
-              }
-        }
+    match = mkMatch (FunRhs lid Prefix NoSrcStrict) pats rhs bnds
     lmatch = mkL (-1) match
     payload = MG FromSource (L (mkRelSrcSpanAnn (-1) noAnnList) [lmatch])
+
+mkBind1_ ::
+  String ->
+  [Pat GhcPs] ->
+  HsExpr GhcPs ->
+  HsBind GhcPs
+mkBind1_ fname pats rhs = mkBind1 fname pats rhs (EmptyLocalBinds noExtField)
 
 tupleAnn :: [a] -> [GenLocated SrcSpanAnnA a]
 tupleAnn [] = []
@@ -938,6 +955,10 @@ pApp name pats =
   where
     lpats = fmap (mkL 0) pats
 
+pTuple :: [Pat GhcPs] -> Pat GhcPs
+pTuple ps =
+  TuplePat (mkRelEpAnn (-1) []) (fmap (mkL (-1)) ps) Boxed
+
 parP :: Pat GhcPs -> Pat GhcPs
 parP p =
   ParPat
@@ -997,6 +1018,42 @@ inapp x o y =
     lo = mkL (-1) o
     ly = mkL (-1) y
 
+mkMatch ::
+  HsMatchContext GhcPs ->
+  [Pat GhcPs] ->
+  HsExpr GhcPs ->
+  HsLocalBinds GhcPs ->
+  Match GhcPs (LHsExpr GhcPs)
+mkMatch mctxt pats rhs bnds =
+  Match
+    { m_ext = mkRelEpAnn (-1) [],
+      m_ctxt = mctxt,
+      m_pats = lpats,
+      m_grhss =
+        GRHSs
+          { grhssExt = emptyComments,
+            grhssGRHSs = [lglrhs],
+            grhssLocalBinds = EmptyLocalBinds noExtField
+          }
+    }
+  where
+    lpats = fmap (mkL 0) pats
+    lrhs = mkL 0 rhs
+    glrhs =
+      let ann =
+            mkRelEpAnn
+              (-1)
+              (GrhsAnn Nothing (AddEpAnn AnnEqual (mkEpaDelta 0)))
+       in GRHS ann [] (lrhs)
+    lglrhs = L (mkRelSrcSpanAnn (-1) NoEpAnns) glrhs
+
+lamE :: [Pat GhcPs] -> HsExpr GhcPs -> HsExpr GhcPs
+lamE pats expr =
+  HsLam noExtField grp
+  where
+    grp = MG FromSource (L (mkRelSrcSpanAnn (-1) noAnnList) [mkL (-1) match])
+    match = mkMatch LambdaExpr pats expr (EmptyLocalBinds noExtField)
+
 letE :: HsLocalBinds GhcPs -> HsExpr GhcPs -> HsExpr GhcPs
 letE bnds expr =
   HsLet (mkRelEpAnn' (DifferentLine 1 2) NoEpAnns) tokLet bnds tokIn (mkL 0 expr)
@@ -1045,6 +1102,17 @@ strE str = HsLit ann1 (HsString ann2 (fromString str))
     ann1 = mkRelEpAnn (-1) NoEpAnns
     ann2 = SourceText str'
 
+tupleE :: [HsExpr GhcPs] -> HsExpr GhcPs
+tupleE exprs =
+  ExplicitTuple (mkRelEpAnn (-1) annos) args Boxed
+  where
+    annos =
+      [ AddEpAnn AnnOpenP (mkEpaDelta (-1)),
+        AddEpAnn AnnCloseP (mkEpaDelta (-1))
+      ]
+    mkArg e = Present (mkRelEpAnn (-1) []) e
+    args = fmap (mkArg . mkL (-1)) exprs
+
 valBinds :: [HsBind GhcPs] -> HsValBinds GhcPs
 valBinds bnds =
   ValBinds NoAnnSortKey (listToBag lbnds) []
@@ -1073,6 +1141,21 @@ pbind pat expr bnds =
     lgrhs = L (mkRelSrcSpanAnn (-1) NoEpAnns) grhs
     grhs = GRHS (mkRelEpAnn (-1) ann) [] (mkL 0 expr)
     ann = GrhsAnn Nothing (AddEpAnn AnnEqual (mkEpaDelta 0))
+
+pbind_ :: Pat GhcPs -> HsExpr GhcPs -> HsBind GhcPs
+pbind_ p e = pbind p e (EmptyLocalBinds noExtField)
+
+--
+-- template haskell expr
+--
+
+bracketExp :: HsQuote GhcPs -> HsExpr GhcPs
+bracketExp quote =
+  HsUntypedBracket (mkRelEpAnn (-1) []) quote
+
+typeBracket :: HsType GhcPs -> HsQuote GhcPs
+typeBracket typ =
+  TypBr noExtField (mkL (-1) typ)
 
 --
 -- utilities
@@ -1213,9 +1296,6 @@ lit = Lit ()
 mkIVar :: String -> ImportSpec ()
 mkIVar = IVar () . Ident ()
 
-pbind_ :: Pat () -> Exp () -> Decl ()
-pbind_ p e = pbind p e Nothing
-
 dhead :: String -> DeclHead ()
 dhead n = DHead () (Ident () n)
 
@@ -1243,14 +1323,8 @@ tyForeignPtr = tycon "ForeignPtr"
 tySplice :: Splice () -> Type ()
 tySplice = TySplice ()
 
-tyTupleBoxed :: [Type ()] -> Type ()
-tyTupleBoxed = TyTuple () LHE.Boxed
-
 parenSplice :: Exp () -> Splice ()
 parenSplice = ParenSplice ()
-
-bracketExp :: Bracket () -> Exp ()
-bracketExp = BracketExp ()
 
 typeBracket :: Type () -> Bracket ()
 typeBracket = TypeBracket ()

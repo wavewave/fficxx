@@ -10,7 +10,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     inapp,
     listE,
     mkBodyStmt,
-    mkFun,
+    mkFun_,
     mkVar,
     op,
     par,
@@ -26,7 +26,7 @@ import GHC.Hs.Extension
 import Language.Haskell.Syntax.Decls (HsDecl)
 
 genProxyInstance :: [HsDecl GhcPs]
-genProxyInstance = mkFun fname sig [] rhs Nothing
+genProxyInstance = mkFun_ fname sig [] rhs
   where
     fname = "genImplProxy"
     sig = tycon "Q" `tyapp` tylist (tycon "Dec")

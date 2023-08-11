@@ -181,8 +181,7 @@ simpleBuilder cfg sbc = do
       (exactPrint (C.buildCastHs m))
   --
   putStrLn "Generating Implementation.hs"
-  for_ mods $ \m -> do
-    debugExactPrint (C.buildImplementationHs mempty m)
+  for_ mods $ \m ->
     gen
       (cmModule m <.> "Implementation" <.> "hs")
       (exactPrint (C.buildImplementationHs mempty m))

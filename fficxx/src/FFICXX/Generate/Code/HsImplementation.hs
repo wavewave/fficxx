@@ -16,8 +16,6 @@ module FFICXX.Generate.Code.HsImplementation
 
     -- * template member functions
     genTemplateMemberFunctions,
-    genTMFExp,
-    genTMFInstance,
   )
 where
 
@@ -28,6 +26,7 @@ import FFICXX.Generate.Code.Primitive
     cxx2HsType,
     functionSignature',
     functionSignatureTMF,
+    functionSignatureTMF',
     hsFuncXformer,
   )
 import FFICXX.Generate.Name
@@ -59,13 +58,30 @@ import FFICXX.Generate.Type.Module
   )
 import FFICXX.Generate.Util.GHCExactPrint
   ( app,
+    bracketExp,
     cxEmpty,
     instD,
+    lamE,
+    letE,
     mkBind1,
+    mkBind1_,
     mkFun,
+    mkFun_,
     mkImport,
     mkInstance,
+    mkPVar,
     mkVar,
+    pTuple,
+    pbind_,
+    strE,
+    toLocalBinds,
+    tupleE,
+    tyTupleBoxed,
+    tyapp,
+    tycon,
+    tyfun,
+    typeBracket,
+    valBinds,
   )
 import qualified FFICXX.Generate.Util.HaskellSrcExts as O hiding (app, doE, listE, qualStmt, strE)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
@@ -91,7 +107,7 @@ genHsFrontInst :: Class -> Class -> [HsDecl GhcPs]
 genHsFrontInst parent child
   | (not . isAbstractClass) child =
       let idecl = mkInstance cxEmpty (typeclassName parent) [cxx2HsType (Just child) SelfType] [] body
-          defn f = mkBind1 (hsFuncName child f) [] rhs Nothing
+          defn f = mkBind1_ (hsFuncName child f) [] rhs
             where
               rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName child f))
           body = map defn . virtualFuncs . class_funcs $ parent
@@ -110,13 +126,13 @@ genHsFrontInstNew c = do
         -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
         -- newfuncann = mkComment 0 cann
         rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-     in mkFun (aliasedFuncName c f) (functionSignature' c f) [] rhs Nothing
+     in mkFun_ (aliasedFuncName c f) (functionSignature' c f) [] rhs
 
 genHsFrontInstNonVirtual :: Class -> [HsDecl GhcPs]
 genHsFrontInstNonVirtual c =
   flip concatMap nonvirtualFuncs $ \f ->
     let rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-     in mkFun (aliasedFuncName c f) (functionSignature' c f) [] rhs Nothing
+     in mkFun_ (aliasedFuncName c f) (functionSignature' c f) [] rhs
   where
     nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
 
@@ -124,7 +140,7 @@ genHsFrontInstStatic :: Class -> [HsDecl GhcPs]
 genHsFrontInstStatic c =
   flip concatMap (staticFuncs (class_funcs c)) $ \f ->
     let rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-     in mkFun (aliasedFuncName c f) (functionSignature' c f) [] rhs Nothing
+     in mkFun_ (aliasedFuncName c f) (functionSignature' c f) [] rhs
 
 genHsFrontInstVariables :: Class -> [HsDecl GhcPs]
 genHsFrontInstVariables c =
@@ -133,50 +149,59 @@ genHsFrontInstVariables c =
           app
             (mkVar (case accessor of Getter -> "xform0"; _ -> "xform1"))
             (mkVar (hscAccessorName c v accessor))
-     in mkFun (accessorName c v Getter) (accessorSignature c v Getter) [] (rhs Getter) Nothing
-          <> mkFun (accessorName c v Setter) (accessorSignature c v Setter) [] (rhs Setter) Nothing
+     in mkFun_ (accessorName c v Getter) (accessorSignature c v Getter) [] (rhs Getter)
+          <> mkFun_ (accessorName c v Setter) (accessorSignature c v Setter) [] (rhs Setter)
 
 --
 -- Template Member Function
 --
 
-genTemplateMemberFunctions :: ClassImportHeader -> [O.Decl ()]
+genTemplateMemberFunctions :: ClassImportHeader -> [HsDecl GhcPs]
 genTemplateMemberFunctions cih =
   let c = cihClass cih
-   in concatMap (\f -> genTMFExp c f <> genTMFInstance cih f) (class_tmpl_funcs c)
+   in concatMap (\f -> genTMFExp c f {- <> genTMFInstance cih f -}) (class_tmpl_funcs c)
 
 -- TODO: combine this with genTmplInstance
-genTMFExp :: Class -> TemplateMemberFunction -> [O.Decl ()]
-genTMFExp c f = O.mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
+genTMFExp :: Class -> TemplateMemberFunction -> [HsDecl GhcPs]
+genTMFExp c f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs bstmts
   where
     nh = hsTemplateMemberFunctionNameTH c f
-    v = O.mkVar
-    p = O.mkPVar
+    v = mkVar
+    p = mkPVar
     itps = zip ([1 ..] :: [Int]) (tmf_params f)
     tvars = map (\(i, _) -> "typ" ++ show i) itps
     nparams = length itps
-    tparams = if nparams == 1 then O.tycon "Type" else O.tyTupleBoxed (replicate nparams (O.tycon "Type"))
-    sig = foldr1 O.tyfun [tparams, O.tycon "String", O.tyapp (O.tycon "Q") (O.tycon "Exp")]
-    tvars_p = if nparams == 1 then map p tvars else [O.pTuple (map p tvars)]
-    lit' = O.strE (hsTemplateMemberFunctionName c f <> "_")
-    lam = O.lamE [p "n"] (lit' `O.app` v "<>" `O.app` v "n")
+    tparams
+      | nparams == 1 = tycon "Type"
+      | otherwise = tyTupleBoxed (replicate nparams (tycon "Type"))
+    sig = foldr1 tyfun [tparams, tycon "String", tyapp (tycon "Q") (tycon "Exp")]
+    tvars_p
+      | nparams == 1 = fmap p tvars
+      | otherwise = [pTuple (fmap p tvars)]
+    lit' = strE (hsTemplateMemberFunctionName c f <> "_")
+    lam = lamE [p "n"] (lit' `app` v "<>" `app` v "n")
     rhs =
-      O.app (v "mkTFunc") $
-        let typs = if nparams == 1 then map v tvars else [O.tuple (map v tvars)]
-         in O.tuple (typs ++ [v "suffix", lam, v "tyf"])
-    sig' = functionSignatureTMF c f
-    tassgns = map (\(i, tp) -> O.pbind_ (p tp) (v "pure" `O.app` (v ("typ" ++ show i)))) itps
+      app (v "mkTFunc") $
+        let typs
+              | nparams == 1 = fmap v tvars
+              | otherwise = [tupleE (map v tvars)]
+         in tupleE (typs ++ [v "suffix", lam, v "tyf"])
+    sig' = functionSignatureTMF' c f
+    tassgns =
+      fmap
+        (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i))))
+        itps
     bstmts =
-      O.binds
-        [ O.mkBind1
-            "tyf"
-            [O.mkPVar "n"]
-            ( O.letE
-                tassgns
-                (O.bracketExp (O.typeBracket sig'))
-            )
-            Nothing
-        ]
+      toLocalBinds $
+        valBinds
+          [ mkBind1_
+              "tyf"
+              [mkPVar "n"]
+              ( letE
+                  (toLocalBinds (valBinds tassgns))
+                  (bracketExp (typeBracket sig'))
+              )
+          ]
 
 genTMFInstance :: ClassImportHeader -> TemplateMemberFunction -> [O.Decl ()]
 genTMFInstance cih f =

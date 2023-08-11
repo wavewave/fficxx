@@ -49,7 +49,6 @@ import FFICXX.Generate.Util.HaskellSrcExts
     mkFun,
     mkImport,
     mkPVar,
-    mkTBind,
     mkVar,
     op,
     pbind_,

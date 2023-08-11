@@ -1091,6 +1091,7 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
         TFunOp {..} -> e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (argsFromOpExp tfun_opexp)
 
 -- TODO: rename this and combine this with functionSignatureTT
+-- OLD
 functionSignatureTMF :: Class -> TemplateMemberFunction -> Type ()
 functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
   where
@@ -1098,6 +1099,20 @@ functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
     ctyp = convertCpp2HS4Tmpl e Nothing spls (tmf_ret f)
     e = tycon (fst (hsClassName c))
     lst = e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (tmf_args f)
+
+-- TODO: rename this and combine this with functionSignatureTT
+-- NEW
+functionSignatureTMF' :: Class -> TemplateMemberFunction -> HsType GhcPs
+functionSignatureTMF' c f = undefined
+
+{-
+  foldr1 Ex.tyfun (lst <> [tyapp (Ex.tycon "IO") ctyp])
+  where
+    spls = map (Ex.tySplice . Ex.parenSplice . Ex.mkVar) (tmf_params f)
+    ctyp = convertCpp2HS4Tmpl e Nothing spls (tmf_ret f)
+    e = Ex.tycon (fst (hsClassName c))
+    lst = e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (tmf_args f)
+-}
 
 tmplAccessorToTFun :: Variable -> Accessor -> TemplateFunction
 tmplAccessorToTFun v@(Variable (Arg {..})) a =

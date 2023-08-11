@@ -48,8 +48,8 @@ import FFICXX.Generate.Util.GHCExactPrint
     cxTuple,
     letE,
     mkClass,
-    mkFun,
     mkFunSig,
+    mkFun_,
     mkImport,
     mkImportSrc,
     mkPVar,
@@ -57,7 +57,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     mkTBind,
     mkTVar,
     mkVar,
-    pbind,
+    pbind_,
     qualTy,
     toLocalBinds,
     tyForall,
@@ -70,7 +70,6 @@ import FFICXX.Generate.Util.GHCExactPrint
 import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax
   ( HsDecl (TyClD),
-    HsLocalBindsLR (EmptyLocalBinds),
     ImportDecl,
     noExtField,
   )
@@ -124,7 +123,7 @@ genHsFrontDecl isHsBoot c = do
 
 genHsFrontUpcastClass :: Class -> [HsDecl GhcPs]
 genHsFrontUpcastClass c =
-  mkFun ("upcast" <> highname) typ [mkPVar "h"] rhs Nothing
+  mkFun_ ("upcast" <> highname) typ [mkPVar "h"] rhs
   where
     (highname, rawname) = hsClassName c
     hightype = tycon highname
@@ -143,14 +142,12 @@ genHsFrontUpcastClass c =
       letE
         ( toLocalBinds $
             valBinds
-              [ pbind
+              [ pbind_
                   (mkPVar "fh")
-                  (app (mkVar "get_fptr") (mkVar "h"))
-                  (EmptyLocalBinds noExtField),
-                pbind
+                  (app (mkVar "get_fptr") (mkVar "h")),
+                pbind_
                   (mkPVarSig "fh2" (tyapp tyPtr rawtype))
                   (app (mkVar "castPtr") (mkVar "fh"))
-                  (EmptyLocalBinds noExtField)
               ]
         )
         (mkVar "cast_fptr_to_obj" `app` mkVar "fh2")
@@ -161,7 +158,7 @@ genHsFrontUpcastClass c =
 
 genHsFrontDowncastClass :: Class -> [HsDecl GhcPs]
 genHsFrontDowncastClass c =
-  mkFun ("downcast" <> highname) typ [mkPVar "h"] rhs Nothing
+  mkFun_ ("downcast" <> highname) typ [mkPVar "h"] rhs
   where
     (highname, _rawname) = hsClassName c
     hightype = tycon highname
@@ -179,14 +176,12 @@ genHsFrontDowncastClass c =
       letE
         ( toLocalBinds $
             valBinds
-              [ pbind
+              [ pbind_
                   (mkPVar "fh")
-                  (app (mkVar "get_fptr") (mkVar "h"))
-                  (EmptyLocalBinds noExtField),
-                pbind
+                  (app (mkVar "get_fptr") (mkVar "h")),
+                pbind_
                   (mkPVar "fh2")
                   (app (mkVar "castPtr") (mkVar "fh"))
-                  (EmptyLocalBinds noExtField)
               ]
         )
         (mkVar "cast_fptr_to_obj" `app` mkVar "fh2")
