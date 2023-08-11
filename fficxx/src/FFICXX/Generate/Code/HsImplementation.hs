@@ -26,7 +26,6 @@ import FFICXX.Generate.Code.Primitive
     cxx2HsType,
     functionSignature',
     functionSignatureTMF,
-    functionSignatureTMF',
     hsFuncXformer,
   )
 import FFICXX.Generate.Name
@@ -186,7 +185,7 @@ genTMFExp c f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs bstmts
               | nparams == 1 = fmap v tvars
               | otherwise = [tupleE (map v tvars)]
          in tupleE (typs ++ [v "suffix", lam, v "tyf"])
-    sig' = functionSignatureTMF' c f
+    sig' = functionSignatureTMF c f
     tassgns =
       fmap
         (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i))))

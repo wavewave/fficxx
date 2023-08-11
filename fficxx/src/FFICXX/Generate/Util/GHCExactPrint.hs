@@ -79,7 +79,9 @@ module FFICXX.Generate.Util.GHCExactPrint
 
     -- * template haskell expr
     bracketExp,
+    parenSplice,
     typeBracket,
+    tySplice,
     {- app',
     conDecl,
     qualConDecl,
@@ -97,8 +99,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     tyParen,
     tyForeignPtr,
     classA,
-    tySplice,
-    parenSplice,
     bracketExp,
     typeBracket,
     irule,
@@ -243,6 +243,7 @@ import Language.Haskell.Syntax
     HsTyVarBndr (UserTyVar),
     HsType (..),
     HsUniToken (..),
+    HsUntypedSplice (..),
     HsValBinds,
     HsValBindsLR (..),
     HsWildCardBndrs (HsWC),
@@ -1153,9 +1154,15 @@ bracketExp :: HsQuote GhcPs -> HsExpr GhcPs
 bracketExp quote =
   HsUntypedBracket (mkRelEpAnn (-1) []) quote
 
+parenSplice :: HsExpr GhcPs -> HsUntypedSplice GhcPs
+parenSplice expr = HsUntypedSpliceExpr (mkRelEpAnn (-1) []) (mkL (-1) expr)
+
 typeBracket :: HsType GhcPs -> HsQuote GhcPs
 typeBracket typ =
   TypBr noExtField (mkL (-1) typ)
+
+tySplice :: HsUntypedSplice GhcPs -> HsType GhcPs
+tySplice sp = HsSpliceTy noExtField sp
 
 --
 -- utilities
@@ -1319,12 +1326,6 @@ x `dot` y = x `app` mkVar "." `app` y
 
 tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
-
-tySplice :: Splice () -> Type ()
-tySplice = TySplice ()
-
-parenSplice :: Exp () -> Splice ()
-parenSplice = ParenSplice ()
 
 typeBracket :: Type () -> Bracket ()
 typeBracket = TypeBracket ()
