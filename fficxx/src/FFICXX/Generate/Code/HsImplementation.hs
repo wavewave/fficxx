@@ -47,28 +47,34 @@ import FFICXX.Generate.Type.Module
   ( ClassModule (..),
   )
 --
+
+import FFICXX.Generate.Util.GHCExactPrint
+  ( mkImport,
+  )
 import qualified FFICXX.Generate.Util.HaskellSrcExts as O
   ( cxEmpty,
     insDecl,
     mkBind1,
     mkFun,
-    mkImport,
     mkInstance,
     mkVar,
   )
+import GHC.Hs (GhcPs)
 import qualified Language.Haskell.Exts.Build as O (app)
 import qualified Language.Haskell.Exts.Syntax as O
   ( Decl,
-    ImportDecl,
+  )
+import Language.Haskell.Syntax
+  ( ImportDecl,
   )
 
 --
 -- import
 --
 
-genImportInImplementation :: ClassModule -> [O.ImportDecl ()]
+genImportInImplementation :: ClassModule -> [ImportDecl GhcPs]
 genImportInImplementation m =
-  fmap (O.mkImport . subModuleName) $ cmImportedSubmodulesForImplementation m
+  fmap (mkImport . subModuleName) $ cmImportedSubmodulesForImplementation m
 
 --
 -- functions

@@ -169,8 +169,7 @@ simpleBuilder cfg sbc = do
       (postProcess $ exactPrint (C.buildFFIHsc m))
   --
   putStrLn "Generating Interface.hs"
-  for_ mods $ \m -> do
-    debugExactPrint (C.buildInterfaceHs mempty depCycles m)
+  for_ mods $ \m ->
     gen
       (cmModule m <.> "Interface" <.> "hs")
       (exactPrint (C.buildInterfaceHs mempty depCycles m))
@@ -182,10 +181,11 @@ simpleBuilder cfg sbc = do
       (exactPrint (C.buildCastHs m))
   --
   putStrLn "Generating Implementation.hs"
-  for_ mods $ \m ->
+  for_ mods $ \m -> do
+    debugExactPrint (C.buildImplementationHs mempty m)
     gen
       (cmModule m <.> "Implementation" <.> "hs")
-      (prettyPrint (C.buildImplementationHs mempty m))
+      (exactPrint (C.buildImplementationHs mempty m))
   --
   putStrLn "Generating Proxy.hs"
   for_ mods $ \m ->
