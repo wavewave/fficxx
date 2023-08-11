@@ -51,7 +51,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkPVarSig,
     pApp,
     parP,
-    pbind,
 
     -- * expr
     app,
@@ -69,15 +68,14 @@ module FFICXX.Generate.Util.GHCExactPrint
 
     -- * stmt
     mkBodyStmt,
+    pbind,
     {- app',
     conDecl,
     qualConDecl,
     recDecl,
     lit,
     mkTVar,
-    mkPVar,
     mkIVar,
-    mkPVarSig,
     pbind_,
     dhead,
     mkDeclHead,
@@ -120,7 +118,6 @@ where
 import Data.Foldable (toList)
 import Data.List (foldl')
 import Data.List.NonEmpty (NonEmpty)
-import Data.Maybe (maybeToList)
 import Data.String (IsString (fromString))
 import GHC.Data.Bag (emptyBag, listToBag)
 import GHC.Hs
@@ -210,13 +207,13 @@ import Language.Haskell.Syntax
     GRHSs (..),
     HsArg (..),
     HsArrow (..),
-    HsBind (..),
+    HsBind,
     HsBindLR (..),
     HsConDetails (PrefixCon),
-    HsContext (..),
+    HsContext,
     HsDataDefn (..),
     HsDecl (..),
-    HsDeriving (..),
+    HsDeriving,
     HsDerivingClause (..),
     HsDoFlavour (..),
     HsExpr (..),
@@ -276,12 +273,24 @@ tokLoc :: Int -> TokenLocation
 tokLoc nLines = TokenLoc (mkEpaDelta nLines)
 
 mkRelAnchor :: Int -> Anchor
-mkRelAnchor nLines =
+mkRelAnchor nLines = mkRelAnchor' (mkDeltaPos nLines)
+
+--  let a' = spanAsAnchor defSrcSpan
+--   in a' {anchor_op = MovedAnchor (mkDeltaPos nLines)}
+
+mkRelAnchor' :: DeltaPos -> Anchor
+mkRelAnchor' delta =
   let a' = spanAsAnchor defSrcSpan
-   in a' {anchor_op = MovedAnchor (mkDeltaPos nLines)}
+   in a' {anchor_op = MovedAnchor delta}
 
 mkRelEpAnn :: Int -> ann -> EpAnn ann
-mkRelEpAnn nLines ann = EpAnn (mkRelAnchor nLines) ann emptyComments
+mkRelEpAnn nLines = mkRelEpAnn' (mkDeltaPos nLines)
+
+-- EpAnn (mkRelAnchor nLines) ann emptyComments
+
+mkRelEpAnn' :: DeltaPos -> ann -> EpAnn ann
+mkRelEpAnn' delta ann =
+  EpAnn (mkRelAnchor' delta) ann emptyComments
 
 mkRelSrcSpanAnn :: Int -> ann -> SrcAnn ann
 mkRelSrcSpanAnn nLines ann =
@@ -496,8 +505,8 @@ tyForall tbnds typ =
       hst_body = mkL (-1) typ
     }
   where
-    ann = (AddEpAnn AnnForall (mkEpaDelta (-1)), AddEpAnn AnnRarrow (mkEpaDelta (-1)))
-    tele = HsForAllVis (mkRelEpAnn (-1) ann) (fmap (mkL (-1)) $ toList tbnds)
+    ann = (AddEpAnn AnnForall (mkEpaDelta (-1)), AddEpAnn AnnDot (mkEpaDelta (-1)))
+    tele = HsForAllVis (mkRelEpAnn (-1) ann) (fmap (mkL 0) $ toList tbnds)
 
 qualTy ::
   HsContext GhcPs ->
@@ -507,15 +516,17 @@ qualTy ctxt typ =
   HsQualTy
     { hst_xqual = noExtField,
       hst_ctxt = L (mkRelSrcSpanAnn (-1) annCtxt) ctxt,
-      hst_body = mkL (-1) typ
+      hst_body = mkL 0 typ
     }
   where
-    annCtxt =
-      AnnContext
-        { ac_darrow = Nothing,
-          ac_open = [mkEpaDelta 0],
-          ac_close = [mkEpaDelta (-1)]
-        }
+    annCtxt
+      | null ctxt = AnnContext Nothing [] []
+      | otherwise =
+          AnnContext
+            { ac_darrow = Just (NormalSyntax, mkEpaDelta 0),
+              ac_open = [mkEpaDelta 0],
+              ac_close = [mkEpaDelta (-1)]
+            }
 
 tycon :: String -> HsType GhcPs
 tycon name =
@@ -542,7 +553,7 @@ tyfun x y =
   HsFunTy ann arrow lx ly
   where
     ann = mkRelEpAnn (-1) NoEpAnns
-    arrow = HsUnrestrictedArrow (L (tokLoc (-1)) HsNormalTok)
+    arrow = HsUnrestrictedArrow (L (tokLoc 0) HsNormalTok)
     lx = mkL (-1) x
     ly = mkL 0 y
 
@@ -766,9 +777,9 @@ tupleAnn xs =
       lastX = last xs
       xs'' =
         fmap
-          (L (mkRelSrcSpanAnn (-1) (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
+          (L (mkRelSrcSpanAnn 0 (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
           xs'
-   in (xs'' ++ [mkL (-1) lastX])
+   in (xs'' ++ [mkL 0 lastX])
 
 --
 -- Typeclass
@@ -793,28 +804,32 @@ mkClass ::
   TyClDecl GhcPs
 mkClass ctxt name tbnds sigs =
   ClassDecl
-    { tcdCExt = (mkRelEpAnn (-1) [], NoAnnSortKey),
+    { tcdCExt = (mkRelEpAnn (-1) annos, NoAnnSortKey),
       tcdLayout = VirtualBraces 2,
-      tcdCtxt = Just (L (mkRelSrcSpanAnn (-1) annCtxt) ctxt),
-      tcdLName = mkLIdP (-1) name,
-      tcdTyVars = HsQTvs noExtField $ fmap (mkL (-1)) tbnds,
+      tcdCtxt = Just (L (mkRelSrcSpanAnn 0 annCtxt) ctxt),
+      tcdLName = mkLIdP 0 name,
+      tcdTyVars = HsQTvs noExtField $ fmap (mkL 0) tbnds,
       tcdFixity = Prefix,
       tcdFDs = [],
-      tcdSigs = fmap (mkL (-1)) sigs,
+      tcdSigs = fmap (mkL' (DifferentLine 1 2)) sigs,
       tcdMeths = emptyBag,
       tcdATs = [],
       tcdATDefs = [],
       tcdDocs = []
     }
   where
-    annCtxt =
-      AnnContext
-        { ac_darrow = Just (NormalSyntax, mkEpaDelta 0),
-          ac_open = [mkEpaDelta (-1)],
-          ac_close = [mkEpaDelta (-1)]
-        }
-
---  (Just ctxt) (mkDeclHead n tbinds) [] (Just cdecls)
+    annos =
+      [ AddEpAnn AnnClass (mkEpaDelta (-1)),
+        AddEpAnn AnnWhere (mkEpaDelta 0)
+      ]
+    annCtxt
+      | null ctxt = AnnContext Nothing [] []
+      | otherwise =
+          AnnContext
+            { ac_darrow = Just (NormalSyntax, mkEpaDelta 0),
+              ac_open = [mkEpaDelta (-1)],
+              ac_close = [mkEpaDelta (-1)]
+            }
 
 mkInstance ::
   -- | Context
@@ -904,11 +919,14 @@ mkPVar name = VarPat noExtField (mkLIdP (-1) name)
 mkPVarSig :: String -> HsType GhcPs -> Pat GhcPs
 mkPVarSig name typ =
   SigPat
-    (mkRelEpAnn (-1) [])
+    (mkRelEpAnn (-1) annos)
     (mkL (-1) (mkPVar name))
     psig
   where
-    psig = HsPS (mkRelEpAnn (-1) NoEpAnns) (mkL (-1) typ)
+    annos =
+      [ AddEpAnn AnnDcolon (mkEpaDelta 0)
+      ]
+    psig = HsPS (mkRelEpAnn (-1) NoEpAnns) (mkL 0 typ)
 
 pApp :: String -> [Pat GhcPs] -> Pat GhcPs
 pApp name pats =
@@ -927,15 +945,6 @@ parP p =
     (L (tokLoc (-1)) HsTok)
     (mkL (-1) p)
     (L (tokLoc (-1)) HsTok)
-
-pbind :: Pat GhcPs -> HsExpr GhcPs -> HsLocalBinds GhcPs -> HsBind GhcPs
-pbind pat expr bnds =
-  PatBind (mkRelEpAnn (-1) []) (mkL (-1) pat) grhss
-  where
-    grhss = GRHSs emptyComments [lgrhs] bnds
-    lgrhs = L (mkRelSrcSpanAnn (-1) NoEpAnns) grhs
-    grhs = GRHS (mkRelEpAnn (-1) ann) [] (mkL (-1) expr)
-    ann = GrhsAnn Nothing (AddEpAnn AnnEqual (mkEpaDelta (-1)))
 
 --
 -- Expr
@@ -990,10 +999,10 @@ inapp x o y =
 
 letE :: HsLocalBinds GhcPs -> HsExpr GhcPs -> HsExpr GhcPs
 letE bnds expr =
-  HsLet (mkRelEpAnn (-1) NoEpAnns) tokLet bnds tokIn (mkL (-1) expr)
+  HsLet (mkRelEpAnn' (DifferentLine 1 2) NoEpAnns) tokLet bnds tokIn (mkL 0 expr)
   where
     tokLet = L (tokLoc (-1)) HsTok
-    tokIn = L (tokLoc (-1)) HsTok
+    tokIn = L (tokLoc 1) HsTok
 
 listE :: [HsExpr GhcPs] -> HsExpr GhcPs
 listE itms =
@@ -1040,10 +1049,11 @@ valBinds :: [HsBind GhcPs] -> HsValBinds GhcPs
 valBinds bnds =
   ValBinds NoAnnSortKey (listToBag lbnds) []
   where
-    lbnds = fmap (mkL (-1)) bnds
+    lbnds = paragraphLines' (SameLine 2) bnds
 
 toLocalBinds :: HsValBinds GhcPs -> HsLocalBinds GhcPs
-toLocalBinds = HsValBinds (mkRelEpAnn (-1) noAnnList)
+toLocalBinds =
+  HsValBinds (mkRelEpAnn' (DifferentLine 1 2) noAnnList)
 
 --
 -- Statements
@@ -1054,6 +1064,15 @@ mkBodyStmt expr =
   BodyStmt noExtField body noExtField noExtField
   where
     body = mkL (-1) expr
+
+pbind :: Pat GhcPs -> HsExpr GhcPs -> HsLocalBinds GhcPs -> HsBind GhcPs
+pbind pat expr bnds =
+  PatBind (mkRelEpAnn (-1) []) (mkL (-1) pat) grhss
+  where
+    grhss = GRHSs emptyComments [lgrhs] bnds
+    lgrhs = L (mkRelSrcSpanAnn (-1) NoEpAnns) grhs
+    grhs = GRHS (mkRelEpAnn (-1) ann) [] (mkL 0 expr)
+    ann = GrhsAnn Nothing (AddEpAnn AnnEqual (mkEpaDelta 0))
 
 --
 -- utilities
