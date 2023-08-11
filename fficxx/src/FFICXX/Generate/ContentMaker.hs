@@ -61,9 +61,6 @@ import FFICXX.Generate.Code.HsRawType (hsClassRawType)
 import FFICXX.Generate.Code.HsTemplate
   ( genImportInTH,
     genImportInTemplate,
-    genTLTemplateImplementation,
-    genTLTemplateInstance,
-    genTLTemplateInterface,
     genTemplateMemberFunctions,
     genTmplImplementation,
     genTmplInstance,
@@ -75,6 +72,9 @@ import FFICXX.Generate.Code.HsTopLevel
     genImportForTLTemplate,
     genImportInModule,
     genImportInTopLevel,
+    genTLTemplateImplementation,
+    genTLTemplateInstance,
+    genTLTemplateInterface,
     genTopLevelDef,
   )
 import FFICXX.Generate.Dependency
