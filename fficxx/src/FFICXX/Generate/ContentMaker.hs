@@ -49,6 +49,7 @@ import FFICXX.Generate.Code.HsImplementation
     genHsFrontInstStatic,
     genHsFrontInstVariables,
     genImportInImplementation,
+    genTemplateMemberFunctions,
   )
 import FFICXX.Generate.Code.HsInterface
   ( genHsFrontDecl,
@@ -58,15 +59,13 @@ import FFICXX.Generate.Code.HsInterface
   )
 import FFICXX.Generate.Code.HsProxy (genProxyInstance)
 import FFICXX.Generate.Code.HsRawType (hsClassRawType)
-import FFICXX.Generate.Code.HsTemplate
+import FFICXX.Generate.Code.HsTH
   ( genImportInTH,
-    genImportInTemplate,
-    genTLTemplateImplementation,
-    genTLTemplateInstance,
-    genTLTemplateInterface,
-    genTemplateMemberFunctions,
     genTmplImplementation,
     genTmplInstance,
+  )
+import FFICXX.Generate.Code.HsTemplate
+  ( genImportInTemplate,
     genTmplInterface,
   )
 import FFICXX.Generate.Code.HsTopLevel
@@ -75,6 +74,9 @@ import FFICXX.Generate.Code.HsTopLevel
     genImportForTLTemplate,
     genImportInModule,
     genImportInTopLevel,
+    genTLTemplateImplementation,
+    genTLTemplateInstance,
+    genTLTemplateInterface,
     genTopLevelDef,
   )
 import FFICXX.Generate.Dependency
@@ -127,10 +129,7 @@ import FFICXX.Generate.Util.HaskellSrcExts
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import GHC.Hs.Extension (GhcPs)
-import Language.Haskell.Exts.Syntax
-  ( Decl,
-    Module,
-  )
+import Language.Haskell.Exts.Syntax (Module)
 import Language.Haskell.Syntax
   ( HsDecl (ForD),
     HsModule,
