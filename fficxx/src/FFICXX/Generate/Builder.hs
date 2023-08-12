@@ -88,6 +88,7 @@ simpleBuilder cfg sbc = do
         mumap
         cabal
         classes
+        enums
         toplevelfunctions
         templates
         extralibs
@@ -154,6 +155,11 @@ simpleBuilder cfg sbc = do
   putStrLn "Generating Additional Header/Source"
   for_ (cabal_additional_c_incs cabal) (\(AddCInc hdr txt) -> gen hdr txt)
   for_ (cabal_additional_c_srcs cabal) (\(AddCSrc hdr txt) -> gen hdr txt)
+  --
+  putStrLn "Generating Enum.hs"
+  gen
+    (topLevelMod <.> "Enum" <.> "hs")
+    (prettyPrint (C.buildEnumHs mempty (topLevelMod <> ".Enum") enums))
   --
   putStrLn "Generating RawType.hs"
   for_ mods $ \m ->
@@ -250,6 +256,7 @@ simpleBuilder cfg sbc = do
   for_ mods (copyModule workingDir (C.srcDir installDir))
   for_ tcms (copyTemplateModule workingDir (C.srcDir installDir))
   putStrLn "Copying Ordinary"
+  moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "Enum" <.> "hs"
   moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "Ordinary" <.> "hs"
   moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "Template" <.> "hs"
   moduleFileCopy workingDir (C.srcDir installDir) $ topLevelMod <.> "TH" <.> "hs"

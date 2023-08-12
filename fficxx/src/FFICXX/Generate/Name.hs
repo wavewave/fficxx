@@ -11,6 +11,7 @@ import FFICXX.Generate.Type.Class
     Arg (..),
     Class (..),
     ClassAlias (caFFIName, caHaskellName),
+    EnumType (..),
     Function (..),
     TLOrdinary (..),
     TLTemplate (..),
@@ -25,7 +26,7 @@ import FFICXX.Generate.Type.Module
   ( ClassSubmoduleType (..),
     TemplateClassSubmoduleType (..),
   )
-import FFICXX.Generate.Util (firstLower, toLowers)
+import FFICXX.Generate.Util (firstLower, firstUpper, toLowers)
 import System.FilePath ((<.>))
 
 hsFrontNameForTopLevel :: TopLevel -> String
@@ -73,6 +74,12 @@ existConstructorName c = 'E' : (fst . hsClassName) c
 
 ffiClassName :: Class -> String
 ffiClassName c = maybe (class_name c) caFFIName (class_alias c)
+
+enumDataTypeName :: EnumType -> String
+enumDataTypeName = firstUpper . enum_name
+
+enumDataConstructorNames :: EnumType -> [String]
+enumDataConstructorNames = map firstUpper . enum_cases
 
 hscFuncName :: Class -> Function -> String
 hscFuncName c f =

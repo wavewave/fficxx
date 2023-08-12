@@ -30,6 +30,7 @@ import FFICXX.Generate.Type.Class
   ( Arg (..),
     Class (..),
     ClassAlias (..),
+    EnumType (..),
     Form (FormNested, FormSimple),
     Function (..),
     OpExp (..),
@@ -124,6 +125,9 @@ classes =
     ostream,
     string
   ]
+
+enums :: [EnumType]
+enums = [ ]
 
 toplevels :: [TopLevel]
 toplevels = []
@@ -351,6 +355,7 @@ main = do
             sbcModUnitMap = ModuleUnitMap (HM.fromList headers),
             sbcCabal = cabal,
             sbcClasses = classes,
+            sbcEnums = enums,
             sbcTopLevels = toplevels,
             sbcTemplates = templates,
             sbcExtraLibs = ["stdc++"],

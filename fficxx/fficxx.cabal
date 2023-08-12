@@ -56,6 +56,7 @@ Library
                FFICXX.Generate.Code.Cpp
                FFICXX.Generate.Code.HsCast
                FFICXX.Generate.Code.HsCommon
+               FFICXX.Generate.Code.HsEnum
                FFICXX.Generate.Code.HsFFI
                FFICXX.Generate.Code.HsImplementation
                FFICXX.Generate.Code.HsInterface

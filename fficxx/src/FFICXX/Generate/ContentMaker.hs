@@ -37,6 +37,9 @@ import FFICXX.Generate.Code.HsCast
 import FFICXX.Generate.Code.HsCommon
   ( genExtraImport,
   )
+import FFICXX.Generate.Code.HsEnum
+  ( genHsEnumDecl,
+  )
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
     genImportInFFI,
@@ -94,6 +97,7 @@ import FFICXX.Generate.Type.Class
   ( Class (..),
     ClassGlobal (..),
     DaughterMap,
+    EnumType (..),
     ProtectedMethod (..),
     TopLevel (TLOrdinary, TLTemplate),
     filterTLOrdinary,
@@ -401,7 +405,7 @@ buildInterfaceHs amap depCycles m =
         <> genImportInInterface False depCycles m
         <> genExtraImport m
     ifaceBody =
-      runReader (mapM (genHsFrontDecl False) classes) amap
+      runReader (traverse (genHsFrontDecl False) classes) amap
         <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
         <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
 
@@ -576,6 +580,16 @@ buildModuleHs m =
   where
     c = cihClass (cmCIH m)
 
+buildEnumHs ::
+  AnnotateMap ->
+  String ->
+  [EnumType] ->
+  Module ()
+buildEnumHs amap modname enums =
+  mkModuleE modname [] [] [] body
+  where
+    body = runReader (traverse genHsEnumDecl enums) amap
+
 buildTopLevelHs ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
@@ -593,8 +607,7 @@ buildTopLevelHs modname (mods, tmods) =
       map (Ex.emodule . cmModule) mods
         ++ map Ex.emodule [modname <.> "Ordinary", modname <.> "Template", modname <.> "TH"]
     pkgImports = genImportInTopLevel modname (mods, tmods)
-    pkgBody = [] --    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
-    -- ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
+    pkgBody = []
 
 buildTopLevelOrdinaryHs ::
   String ->
