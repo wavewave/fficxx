@@ -94,41 +94,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     parenSplice,
     typeBracket,
     tySplice,
-    {- app',
-    conDecl,
-    qualConDecl,
-    recDecl,
-    lit,
-    mkTVar,
-    mkIVar,
-    dhead,
-    mkDeclHead,
-    mkModuleE,
-    mkImportExp,
-    mkImportSrc,
-    lang,
-    dot,
-    tyParen,
-    tyForeignPtr,
-    classA,
-    bracketExp,
-    typeBracket,
-    irule,
-    ihcon,
-    evar,
-    eabs,
-    ethingwith,
-    ethingall,
-    nonamespace,
-    insType,
-    insDecl,
-    generator,
-    qualifier,
-    unkindedVar,
-    if_,
-    urhs,
-    match,
-    eWildCard, -}
 
     -- * utility
     exactPrint,
@@ -303,9 +268,6 @@ tokLoc nLines = TokenLoc (mkEpaDelta nLines)
 mkRelAnchor :: Int -> Anchor
 mkRelAnchor nLines = mkRelAnchor' (mkDeltaPos nLines)
 
---  let a' = spanAsAnchor defSrcSpan
---   in a' {anchor_op = MovedAnchor (mkDeltaPos nLines)}
-
 mkRelAnchor' :: DeltaPos -> Anchor
 mkRelAnchor' delta =
   let a' = spanAsAnchor defSrcSpan
@@ -313,8 +275,6 @@ mkRelAnchor' delta =
 
 mkRelEpAnn :: Int -> ann -> EpAnn ann
 mkRelEpAnn nLines = mkRelEpAnn' (mkDeltaPos nLines)
-
--- EpAnn (mkRelAnchor nLines) ann emptyComments
 
 mkRelEpAnn' :: DeltaPos -> ann -> EpAnn ann
 mkRelEpAnn' delta ann =
@@ -890,18 +850,6 @@ listSep sep xs =
 tupleAnn :: [a] -> [GenLocated SrcSpanAnnA a]
 tupleAnn = listSep AddCommaAnn
 
-{- tupleAnn [] = []
-tupleAnn (x : []) = [mkL (-1) x]
-tupleAnn xs =
-  let xs' = init xs
-      lastX = last xs
-      xs'' =
-        fmap
-          (L (mkRelSrcSpanAnn 0 (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
-          xs'
-   in (xs'' ++ [mkL 0 lastX])
--}
-
 --
 -- Typeclass
 --
@@ -1354,171 +1302,3 @@ tySplice sp = HsSpliceTy noExtField sp
 -- | exact print
 exactPrint :: (Exact.ExactPrint ast) => ast -> String
 exactPrint = Exact.exactPrint . Exact.makeDeltaAst
-
-{-
-import Language.Haskell.Exts
-  ( Alt (..),
-    Asst (TypeA),
-    Binds,
-    Bracket (TypeBracket),
-    CallConv (CCall),
-    ClassDecl (ClsDecl),
-    ConDecl
-      ( ConDecl,
-        RecDecl
-      ),
-    Context
-      ( CxEmpty,
-        CxTuple
-      ),
-    DataOrNew
-      ( DataType,
-        NewType
-      ),
-    Decl
-      ( ClassDecl,
-        DataDecl,
-        ForImp,
-        FunBind,
-        InstDecl,
-        PatBind,
-        TypeSig
-      ),
-    DeclHead
-      ( DHApp,
-        DHead
-      ),
-    Deriving (..),
-    EWildcard (..),
-    Exp
-      ( App,
-        BracketExp,
-        Con,
-        If,
-        InfixApp,
-        Lit,
-        Var
-      ),
-    ExportSpec
-      ( EAbs,
-        EModuleContents,
-        EThingWith,
-        EVar
-      ),
-    ExportSpecList (..),
-    FieldDecl,
-    ImportDecl (..),
-    ImportSpec (IVar),
-    ImportSpecList (..),
-    InstDecl
-      ( InsDecl,
-        InsType
-      ),
-    InstHead
-      ( IHApp,
-        IHCon
-      ),
-    InstRule (IRule),
-    Literal,
-    Match (..),
-    Module (..),
-    ModuleHead (..),
-    ModuleName (..),
-    ModulePragma (LanguagePragma),
-    Name
-      ( Ident,
-        Symbol
-      ),
-    Namespace (NoNamespace),
-    Pat
-      ( PVar,
-        PatTypeSig
-      ),
-    QName (UnQual),
-    QOp (QVarOp),
-    QualConDecl (..),
-    Rhs (UnGuardedRhs),
-    Safety (PlayInterruptible),
-    Splice (ParenSplice),
-    Stmt
-      ( Generator,
-        Qualifier
-      ),
-    TyVarBind (UnkindedVar),
-    Type
-      ( TyApp,
-        TyCon,
-        TyForall,
-        TyFun,
-        TyList,
-        TyParen,
-        TySplice,
-        TyTuple,
-        TyVar
-      ),
-  ) -}
--- import qualified Language.Haskell.Exts as LHE
--- import Language.Haskell.Exts.Syntax (CName)
-
-{-
-app :: Exp () -> Exp () -> Exp ()
-app = LHE.app
-
-app' :: String -> String -> Exp ()
-app' x y = App () (mkVar x) (mkVar y)
-
-recDecl :: String -> [FieldDecl ()] -> ConDecl ()
-recDecl n rs = RecDecl () (Ident () n) rs
-
-lit :: Literal () -> Exp ()
-lit = Lit ()
-
-mkIVar :: String -> ImportSpec ()
-mkIVar = IVar () . Ident ()
-
-dhead :: String -> DeclHead ()
-dhead n = DHead () (Ident () n)
-
-mkDeclHead :: String -> [TyVarBind ()] -> DeclHead ()
-mkDeclHead n tbinds = foldl' (DHApp ()) (dhead n) tbinds
-
-mkImportExp :: String -> [String] -> ImportDecl ()
-mkImportExp m lst =
-  ImportDecl () (ModuleName () m) False False False Nothing Nothing (Just islist)
-  where
-    islist = ImportSpecList () False (map mkIVar lst)
-
-dot :: Exp () -> Exp () -> Exp ()
-x `dot` y = x `app` mkVar "." `app` y
-
-tyForeignPtr :: Type ()
-tyForeignPtr = tycon "ForeignPtr"
-
-evar :: QName () -> ExportSpec ()
-evar = EVar ()
-
-eabs :: Namespace () -> QName () -> ExportSpec ()
-eabs = EAbs ()
-
-ethingwith ::
-  EWildcard () ->
-  QName () ->
-  [Language.Haskell.Exts.Syntax.CName ()] ->
-  ExportSpec ()
-ethingwith = EThingWith ()
-
-ethingall :: QName () -> ExportSpec ()
-ethingall q = ethingwith (EWildcard () 0) q []
-
-nonamespace :: Namespace ()
-nonamespace = NoNamespace ()
-
-if_ :: Exp () -> Exp () -> Exp () -> Exp ()
-if_ = If ()
-
-urhs :: Exp () -> Rhs ()
-urhs = UnGuardedRhs ()
-
-eWildCard :: Int -> EWildcard ()
-eWildCard = EWildcard ()
--}

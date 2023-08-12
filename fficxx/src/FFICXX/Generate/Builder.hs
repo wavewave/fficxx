@@ -43,7 +43,6 @@ import FFICXX.Generate.Type.Module
   )
 import FFICXX.Generate.Util (moduleDirFile)
 import FFICXX.Generate.Util.GHCExactPrint (exactPrint)
-import FFICXX.Generate.Util.HaskellSrcExts (prettyPrint)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified Language.Haskell.GHC.ExactPrint as Exact
 import System.Directory
@@ -223,22 +222,16 @@ simpleBuilder cfg sbc = do
       (exactPrint (C.buildModuleHs m))
   --
   putStrLn "Generating Top-level Ordinary Module"
-  debugExactPrint $
-    C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih
   gen
     (topLevelMod <.> "Ordinary" <.> "hs")
     (postProcess $ exactPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih))
   --
   putStrLn "Generating Top-level Template Module"
-  debugExactPrint $
-    C.buildTopLevelTemplateHs (topLevelMod <> ".Template") tih
   gen
     (topLevelMod <.> "Template" <.> "hs")
     (exactPrint (C.buildTopLevelTemplateHs (topLevelMod <> ".Template") tih))
   --
   putStrLn "Generating Top-level TH Module"
-  debugExactPrint $
-    C.buildTopLevelTHHs (topLevelMod <> ".TH") tih
   gen
     (topLevelMod <.> "TH" <.> "hs")
     (exactPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") tih))

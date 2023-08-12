@@ -36,28 +36,9 @@ import FFICXX.Generate.Type.Class
     isVirtualFunc,
   )
 import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
-import FFICXX.Generate.Util.HaskellSrcExts
-  ( classA,
-    cxTuple,
-    mkTVar,
-    mkVar,
-    parenSplice,
-    tyForall,
-    tyPtr,
-    tySplice,
-    tyapp,
-    tycon,
-    tyfun,
-    unit_tycon,
-    unqual,
-  )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
 import GHC.Hs (GhcPs)
-import Language.Haskell.Exts.Syntax
-  ( Asst,
-    Type,
-  )
 import Language.Haskell.Syntax
   ( HsContext,
     HsType,
@@ -682,50 +663,6 @@ tmplMemFuncReturnCType _ (TemplateType _) = R.CTStar R.CTVoid
 tmplMemFuncReturnCType _ (TemplateParam t) = R.CTSimple $ R.CName [R.NamePart t, R.NamePart "_p"]
 tmplMemFuncReturnCType _ (TemplateParamPointer t) = R.CTSimple $ R.CName [R.NamePart t, R.NamePart "_p"]
 
-convertC2HS :: CTypes -> Type ()
-convertC2HS CTBool = tycon "CBool"
-convertC2HS CTChar = tycon "CChar"
-convertC2HS CTClock = tycon "CClock"
-convertC2HS CTDouble = tycon "CDouble"
-convertC2HS CTFile = tycon "CFile"
-convertC2HS CTFloat = tycon "CFloat"
-convertC2HS CTFpos = tycon "CFpos"
-convertC2HS CTInt = tycon "CInt"
-convertC2HS CTIntMax = tycon "CIntMax"
-convertC2HS CTIntPtr = tycon "CIntPtr"
-convertC2HS CTJmpBuf = tycon "CJmpBuf"
-convertC2HS CTLLong = tycon "CLLong"
-convertC2HS CTLong = tycon "CLong"
-convertC2HS CTPtrdiff = tycon "CPtrdiff"
-convertC2HS CTSChar = tycon "CSChar"
-convertC2HS CTSUSeconds = tycon "CSUSeconds"
-convertC2HS CTShort = tycon "CShort"
-convertC2HS CTSigAtomic = tycon "CSigAtomic"
-convertC2HS CTSize = tycon "CSize"
-convertC2HS CTTime = tycon "CTime"
-convertC2HS CTUChar = tycon "CUChar"
-convertC2HS CTUInt = tycon "CUInt"
-convertC2HS CTUIntMax = tycon "CUIntMax"
-convertC2HS CTUIntPtr = tycon "CUIntPtr"
-convertC2HS CTULLong = tycon "CULLong"
-convertC2HS CTULong = tycon "CULong"
-convertC2HS CTUSeconds = tycon "CUSeconds"
-convertC2HS CTUShort = tycon "CUShort"
-convertC2HS CTWchar = tycon "CWchar"
-convertC2HS CTInt8 = tycon "Int8"
-convertC2HS CTInt16 = tycon "Int16"
-convertC2HS CTInt32 = tycon "Int32"
-convertC2HS CTInt64 = tycon "Int64"
-convertC2HS CTUInt8 = tycon "Word8"
-convertC2HS CTUInt16 = tycon "Word16"
-convertC2HS CTUInt32 = tycon "Word32"
-convertC2HS CTUInt64 = tycon "Word64"
-convertC2HS CTString = tycon "CString"
-convertC2HS CTVoidStar = tyapp (tycon "Ptr") unit_tycon
-convertC2HS (CEnum t _) = convertC2HS t
-convertC2HS (CPointer t) = tyapp (tycon "Ptr") (convertC2HS t)
-convertC2HS (CRef t) = tyapp (tycon "Ptr") (convertC2HS t)
-
 -- new
 c2HsType :: CTypes -> HsType GhcPs
 c2HsType CTBool = Ex.tycon "CBool"
@@ -771,35 +708,6 @@ c2HsType (CEnum t _) = c2HsType t
 c2HsType (CPointer t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
 c2HsType (CRef t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
 
--- OLD
-convertCpp2HS :: Maybe Class -> Types -> Type ()
-convertCpp2HS _c Void = unit_tycon
-convertCpp2HS (Just c) SelfType = tycon ((fst . hsClassName) c)
-convertCpp2HS Nothing SelfType = error "convertCpp2HS : SelfType but no class "
-convertCpp2HS _c (CT t _) = convertC2HS t
-convertCpp2HS _c (CPT (CPTClass c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (CPT (CPTClassRef c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (TemplateApp x) =
-  foldl1 tyapp $
-    map tycon $
-      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
-convertCpp2HS _c (TemplateAppRef x) =
-  foldl1 tyapp $
-    map tycon $
-      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
-convertCpp2HS _c (TemplateAppMove x) =
-  foldl1 tyapp $
-    map tycon $
-      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
-convertCpp2HS _c (TemplateType t) =
-  foldl1 tyapp $
-    tycon (tclass_name t) : map mkTVar (tclass_params t)
-convertCpp2HS _c (TemplateParam p) = mkTVar p
-convertCpp2HS _c (TemplateParamPointer p) = mkTVar p
-
--- NEW
 cxx2HsType :: Maybe Class -> Types -> HsType GhcPs
 cxx2HsType _c Void = Ex.unit_tycon
 cxx2HsType (Just c) SelfType = Ex.tycon ((fst . hsClassName) c)
@@ -827,40 +735,7 @@ cxx2HsType _c (TemplateType t) =
 cxx2HsType _c (TemplateParam p) = Ex.mkTVar p
 cxx2HsType _c (TemplateParamPointer p) = Ex.mkTVar p
 
--- OLD
-convertCpp2HS4Tmpl ::
-  -- | self
-  Type () ->
-  Maybe Class ->
-  -- | type paramemter splice
-  [Type ()] ->
-  Types ->
-  Type ()
-convertCpp2HS4Tmpl _ c _ Void = convertCpp2HS c Void
-convertCpp2HS4Tmpl _ (Just c) _ SelfType = convertCpp2HS (Just c) SelfType
-convertCpp2HS4Tmpl _ Nothing _ SelfType = convertCpp2HS Nothing SelfType
-convertCpp2HS4Tmpl _ c _ x@(CT _ _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClass _) _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassRef _) _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassCopy _) _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassMove _) _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ _ ss (TemplateApp info) =
-  let pss = zip (tapp_tparams info) ss
-   in foldl1 tyapp $
-        tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _, s) -> s; (p, _) -> tycon (hsClassNameForTArg p)) pss
-convertCpp2HS4Tmpl _ _ ss (TemplateAppRef info) =
-  let pss = zip (tapp_tparams info) ss
-   in foldl1 tyapp $
-        tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _, s) -> s; (p, _) -> tycon (hsClassNameForTArg p)) pss
-convertCpp2HS4Tmpl _ _ ss (TemplateAppMove info) =
-  let pss = zip (tapp_tparams info) ss
-   in foldl1 tyapp $
-        tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _, s) -> s; (p, _) -> tycon (hsClassNameForTArg p)) pss
-convertCpp2HS4Tmpl e _ _ (TemplateType _) = e
-convertCpp2HS4Tmpl _ _ _ (TemplateParam p) = tySplice . parenSplice . mkVar $ p
-convertCpp2HS4Tmpl _ _ _ (TemplateParamPointer p) = tySplice . parenSplice . mkVar $ p
 
--- NEW
 cxx2HsType4Tmpl ::
   -- | self
   HsType GhcPs ->

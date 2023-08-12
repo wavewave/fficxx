@@ -31,7 +31,6 @@ import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.Primitive
   ( CFunSig (..),
     HsFunSig (..),
-    convertCpp2HS4Tmpl,
     cxx2HsType,
     cxx2HsType4Tmpl,
     extractArgRetTypes,

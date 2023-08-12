@@ -115,20 +115,9 @@ import FFICXX.Generate.Type.PackageInterface
   )
 import FFICXX.Generate.Util (firstUpper)
 import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
-import FFICXX.Generate.Util.HaskellSrcExts
-  ( eWildCard,
-    emodule,
-    ethingwith,
-    evar,
-    lang,
-    mkImport,
-    mkModuleE,
-    unqual,
-  )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import GHC.Hs.Extension (GhcPs)
-import Language.Haskell.Exts.Syntax (Module)
 import Language.Haskell.Syntax
   ( HsDecl,
     HsModule,
