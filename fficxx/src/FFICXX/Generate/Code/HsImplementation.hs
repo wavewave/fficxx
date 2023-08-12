@@ -66,7 +66,6 @@ import FFICXX.Generate.Util.GHCExactPrint
     lamE,
     letE,
     listE,
-    mkBind1,
     mkBind1_,
     mkBindStmt,
     mkBodyStmt,
@@ -80,6 +79,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     op,
     pApp,
     pTuple,
+    par,
     pbind_,
     strE,
     toLocalBinds,
@@ -92,12 +92,9 @@ import FFICXX.Generate.Util.GHCExactPrint
     typeBracket,
     valBinds,
   )
-import qualified FFICXX.Generate.Util.HaskellSrcExts as O hiding (app, doE, listE, qualStmt, strE)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import GHC.Hs (GhcPs)
-import qualified Language.Haskell.Exts.Build as O hiding (op)
-import qualified Language.Haskell.Exts.Syntax as O
 import Language.Haskell.Syntax (HsDecl, ImportDecl)
 
 --
@@ -201,13 +198,13 @@ genTMFExp c f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs bstmts
         (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i))))
         itps
     bstmts =
-      toLocalBinds $
+      toLocalBinds True $
         valBinds
           [ mkBind1_
               "tyf"
               [mkPVar "n"]
               ( letE
-                  (toLocalBinds (valBinds tassgns))
+                  (toLocalBinds False (valBinds tassgns))
                   (bracketExp (typeBracket sig'))
               )
           ]
@@ -245,10 +242,11 @@ genTMFInstance cih f =
       mkBindStmt
         (p "f1")
         ( v "mkMember"
-            `app` ( strE (hsTemplateMemberFunctionName c f <> "_")
-                      `app` v "<>"
-                      `app` v "suffix"
-                  )
+            `app` par
+              ( strE (hsTemplateMemberFunctionName c f <> "_")
+                  `app` v "<>"
+                  `app` v "suffix"
+              )
             `app` v (hsTemplateMemberFunctionNameTH c f)
             `app` v "typ"
             `app` v "suffix"
@@ -260,20 +258,22 @@ genTMFInstance cih f =
     foreignSrcStmt =
       mkBodyStmt $
         (v "addModFinalizer")
-          `app` ( v "addForeignSource"
-                    `app` con "LangCxx"
-                    `app` ( L.foldr1
-                              (\x y -> inapp x (op "++") y)
-                              [ includeStatic,
-                                includeDynamic,
-                                namespaceStr,
-                                strE (hsTemplateMemberFunctionName c f),
-                                strE "(",
-                                v "suffix",
-                                strE ")\n"
-                              ]
-                          )
-                )
+          `app` par
+            ( v "addForeignSource"
+                `app` con "LangCxx"
+                `app` par
+                  ( L.foldr1
+                      (\x y -> inapp x (op "++") y)
+                      [ par includeStatic,
+                        par includeDynamic,
+                        par namespaceStr,
+                        strE (hsTemplateMemberFunctionName c f),
+                        strE "(",
+                        v "suffix",
+                        strE ")\n"
+                      ]
+                  )
+            )
       where
         includeStatic =
           strE $
@@ -283,21 +283,21 @@ genTMFInstance cih f =
                 <> cihIncludedCPkgHeaders cih
         includeDynamic =
           letE
-            ( toLocalBinds . valBinds $
+            ( toLocalBinds False . valBinds $
                 [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param"),
                   pbind_
                     (pApp "f" [p "x"])
-                    (v "renderCMacro" `app` (con "Include" `app` v "x"))
+                    (v "renderCMacro" `app` par (con "Include" `app` v "x"))
                 ]
             )
             (v "concatMap" `app` v "f" `app` v "headers")
         namespaceStr =
           letE
-            ( toLocalBinds . valBinds $
+            ( toLocalBinds False . valBinds $
                 [ pbind_ (p "nss") (v "tpinfoCxxNamespaces" `app` v "param"),
                   pbind_
                     (pApp "f" [p "x"])
-                    (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
+                    (v "renderCStmt" `app` par (con "UsingNamespace" `app` v "x"))
                 ]
             )
             (v "concatMap" `app` v "f" `app` v "nss")

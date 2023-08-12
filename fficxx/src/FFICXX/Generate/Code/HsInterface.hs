@@ -140,7 +140,7 @@ genHsFrontUpcastClass c =
         )
     rhs =
       letE
-        ( toLocalBinds $
+        ( toLocalBinds False $
             valBinds
               [ pbind_
                   (mkPVar "fh")
@@ -174,7 +174,7 @@ genHsFrontDowncastClass c =
         )
     rhs =
       letE
-        ( toLocalBinds $
+        ( toLocalBinds False $
             valBinds
               [ pbind_
                   (mkPVar "fh")

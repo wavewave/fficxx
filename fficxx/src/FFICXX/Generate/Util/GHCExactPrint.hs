@@ -597,7 +597,7 @@ tyPtr = tycon "Ptr"
 
 tyTupleBoxed :: [HsType GhcPs] -> HsType GhcPs
 tyTupleBoxed typs =
-  HsTupleTy (mkRelEpAnn (-1) ann) HsBoxedOrConstraintTuple (fmap (mkL (-1)) typs)
+  HsTupleTy (mkRelEpAnn (-1) ann) HsBoxedOrConstraintTuple (tupleAnn typs)
   where
     ann = AnnParen AnnParens (mkEpaDelta (-1)) (mkEpaDelta (-1))
 
@@ -895,12 +895,14 @@ mkInstance ctxt name typs tyfams bnds =
           hst_ctxt = L (mkRelSrcSpanAnn 0 annCtxt) ctxt,
           hst_body = mkL 0 insttyp
         }
-    annCtxt =
-      AnnContext
-        { ac_darrow = Just (NormalSyntax, mkEpaDelta 0),
-          ac_open = [mkEpaDelta (-1)],
-          ac_close = [mkEpaDelta (-1)]
-        }
+    annCtxt
+      | null ctxt = AnnContext Nothing [] []
+      | otherwise =
+          AnnContext
+            { ac_darrow = Just (NormalSyntax, mkEpaDelta 0),
+              ac_open = [mkEpaDelta (-1)],
+              ac_close = [mkEpaDelta (-1)]
+            }
     insttyp = foldl' f (tycon name) typs
       where
         f acc x = tyapp acc (tyParen x)
@@ -960,7 +962,12 @@ pApp name pats =
 
 pTuple :: [Pat GhcPs] -> Pat GhcPs
 pTuple ps =
-  TuplePat (mkRelEpAnn (-1) []) (fmap (mkL (-1)) ps) Boxed
+  TuplePat (mkRelEpAnn (-1) annos) (tupleAnn ps) Boxed
+  where
+    annos =
+      [ AddEpAnn AnnOpenP (mkEpaDelta (-1)),
+        AddEpAnn AnnCloseP (mkEpaDelta (-1))
+      ]
 
 parP :: Pat GhcPs -> Pat GhcPs
 parP p =
@@ -1029,32 +1036,46 @@ mkMatch ::
   Match GhcPs (LHsExpr GhcPs)
 mkMatch mctxt pats rhs bnds =
   Match
-    { m_ext = mkRelEpAnn (-1) [],
+    { m_ext = mkRelEpAnn (-1) annos,
       m_ctxt = mctxt,
       m_pats = lpats,
       m_grhss =
         GRHSs
           { grhssExt = emptyComments,
             grhssGRHSs = [lglrhs],
-            grhssLocalBinds = EmptyLocalBinds noExtField
+            grhssLocalBinds = bnds
           }
     }
   where
+    annos =
+      case mctxt of
+        LambdaExpr -> [AddEpAnn AnnLam (mkEpaDelta (-1))]
+        _ -> []
     lpats = fmap (mkL 0) pats
     lrhs = mkL 0 rhs
     glrhs =
-      let ann =
+      let ann = case mctxt of
+            LambdaExpr -> AnnRarrow
+            _ -> AnnEqual
+          ann' =
             mkRelEpAnn
               (-1)
-              (GrhsAnn Nothing (AddEpAnn AnnEqual (mkEpaDelta 0)))
-       in GRHS ann [] (lrhs)
+              (GrhsAnn Nothing (AddEpAnn ann (mkEpaDelta 0)))
+       in GRHS ann' [] (lrhs)
     lglrhs = L (mkRelSrcSpanAnn (-1) NoEpAnns) glrhs
 
 lamE :: [Pat GhcPs] -> HsExpr GhcPs -> HsExpr GhcPs
 lamE pats expr =
   HsLam noExtField grp
   where
-    grp = MG FromSource (L (mkRelSrcSpanAnn (-1) noAnnList) [mkL (-1) match])
+    grp = MG FromSource (L (mkRelSrcSpanAnn (-1) annos) [mkL (-1) match])
+    annos =
+      AnnList
+        Nothing
+        (Just (AddEpAnn AnnOpenP (mkEpaDelta (-1))))
+        (Just (AddEpAnn AnnCloseP (mkEpaDelta (-1))))
+        [] -- [AddEpAnn AnnLam (mkEpaDelta (-1))]
+        []
     match = mkMatch LambdaExpr pats expr (EmptyLocalBinds noExtField)
 
 letE :: HsLocalBinds GhcPs -> HsExpr GhcPs -> HsExpr GhcPs
@@ -1073,11 +1094,9 @@ listE itms =
       let ann =
             AnnList
               Nothing
-              Nothing
-              Nothing
-              [ AddEpAnn AnnOpenS (EpaDelta (SameLine 0) []),
-                AddEpAnn AnnCloseS (EpaDelta (SameLine 0) [])
-              ]
+              (Just (AddEpAnn AnnOpenS (mkEpaDelta (-1))))
+              (Just (AddEpAnn AnnCloseS (mkEpaDelta (-1))))
+              []
               []
           litms = fmap (mkL (-1)) itms
        in ExplicitList (mkRelEpAnn (-1) ann) litms
@@ -1098,6 +1117,8 @@ par expr =
     tokOpen = L (tokLoc (-1)) HsTok
     tokClose = L (tokLoc (-1)) HsTok
 
+infixl 2 `par`
+
 strE :: String -> HsExpr GhcPs
 strE str = HsLit ann1 (HsString ann2 (fromString str))
   where
@@ -1113,8 +1134,8 @@ tupleE exprs =
       [ AddEpAnn AnnOpenP (mkEpaDelta (-1)),
         AddEpAnn AnnCloseP (mkEpaDelta (-1))
       ]
-    mkArg e = Present (mkRelEpAnn (-1) []) e
-    args = fmap (mkArg . mkL (-1)) exprs
+    mkArg = Present EpAnnNotUsed
+    args = fmap mkArg $ tupleAnn exprs
 
 valBinds :: [HsBind GhcPs] -> HsValBinds GhcPs
 valBinds bnds =
@@ -1122,9 +1143,19 @@ valBinds bnds =
   where
     lbnds = paragraphLines' (SameLine 2) bnds
 
-toLocalBinds :: HsValBinds GhcPs -> HsLocalBinds GhcPs
-toLocalBinds =
-  HsValBinds (mkRelEpAnn' (DifferentLine 1 2) noAnnList)
+toLocalBinds :: Bool -> HsValBinds GhcPs -> HsLocalBinds GhcPs
+toLocalBinds withWhere =
+  HsValBinds (mkRelEpAnn' (DifferentLine 1 2) ann)
+  where
+    ann
+      | withWhere =
+          AnnList
+            Nothing
+            Nothing
+            Nothing
+            [AddEpAnn AnnWhere (mkEpaDelta (-1))]
+            []
+      | otherwise = noAnnList
 
 --
 -- Statements
@@ -1145,7 +1176,7 @@ mkBodyStmt expr =
 
 mkLetStmt :: [HsBind GhcPs] -> StmtLR GhcPs GhcPs (LHsExpr GhcPs)
 mkLetStmt bnds =
-  LetStmt (mkRelEpAnn (-1) annos) (toLocalBinds $ valBinds bnds)
+  LetStmt (mkRelEpAnn (-1) annos) (toLocalBinds False $ valBinds bnds)
   where
     annos = [AddEpAnn AnnLet (mkEpaDelta (-1))]
 
@@ -1167,10 +1198,20 @@ pbind_ p e = pbind p e (EmptyLocalBinds noExtField)
 
 bracketExp :: HsQuote GhcPs -> HsExpr GhcPs
 bracketExp quote =
-  HsUntypedBracket (mkRelEpAnn (-1) []) quote
+  HsUntypedBracket (mkRelEpAnn (-1) annos) quote
+  where
+    annos =
+      [ AddEpAnn AnnOpen (mkEpaDelta (-1)),
+        AddEpAnn AnnCloseQ (mkEpaDelta (-1))
+      ]
 
 parenSplice :: HsExpr GhcPs -> HsUntypedSplice GhcPs
-parenSplice expr = HsUntypedSpliceExpr (mkRelEpAnn (-1) []) (mkL (-1) expr)
+parenSplice expr =
+  HsUntypedSpliceExpr (mkRelEpAnn (-1) annos) (mkL (-1) expr)
+  where
+    annos =
+      [ AddEpAnn AnnDollar (mkEpaDelta (-1))
+      ]
 
 typeBracket :: HsType GhcPs -> HsQuote GhcPs
 typeBracket typ =

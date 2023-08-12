@@ -1,9 +1,8 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -w #-}
 
 module MyModule where
 
-test :: IO ()
-test = do
-  x <- test
-  r
+f :: Double -> Double
+f x = [1, 2]
