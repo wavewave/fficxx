@@ -50,29 +50,6 @@ import FFICXX.Generate.Util.GHCExactPrint
     tyapp,
     tycon,
   )
-import qualified FFICXX.Generate.Util.HaskellSrcExts as O
-  ( clsDecl,
-    con,
-    conDecl,
-    cxEmpty,
-    insDecl,
-    insType,
-    mkBind1,
-    mkClass,
-    mkData,
-    mkFunSig,
-    mkImport,
-    mkInstance,
-    mkNewtype,
-    mkPVar,
-    mkTBind,
-    mkTVar,
-    mkVar,
-    qualConDecl,
-    tyPtr,
-    tyapp,
-    tycon,
-  )
 import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax
   ( HsDecl (TyClD),

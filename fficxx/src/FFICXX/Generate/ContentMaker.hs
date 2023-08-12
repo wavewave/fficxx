@@ -62,7 +62,7 @@ import FFICXX.Generate.Code.HsRawType (hsClassRawType)
 import FFICXX.Generate.Code.HsTH
   ( genImportInTH,
     genTmplImplementation,
-    genTmplInstance,
+    -- genTmplInstance,
   )
 import FFICXX.Generate.Code.HsTemplate
   ( genImportInTemplate,
@@ -122,7 +122,6 @@ import FFICXX.Generate.Util.HaskellSrcExts
     evar,
     lang,
     mkImport,
-    mkModule,
     mkModuleE,
     unqual,
   )
@@ -556,20 +555,20 @@ buildTemplateHs m =
         <> genImportInTemplate t
     body = genTmplInterface t
 
-buildTHHs :: TemplateClassModule -> Module ()
+buildTHHs :: TemplateClassModule -> HsModule GhcPs
 buildTHHs m =
-  mkModule
+  Ex.mkModule
     (tcmModule m <.> "TH")
-    [lang ["TemplateHaskell"]]
-    ( [ mkImport "Data.Char",
-        mkImport "Data.List",
-        mkImport "Data.Monoid",
-        mkImport "Foreign.C.Types",
-        mkImport "Foreign.Ptr",
-        mkImport "Language.Haskell.TH",
-        mkImport "Language.Haskell.TH.Syntax",
-        mkImport "FFICXX.Runtime.CodeGen.Cxx",
-        mkImport "FFICXX.Runtime.TH"
+    ["TemplateHaskell"]
+    ( [ Ex.mkImport "Data.Char",
+        Ex.mkImport "Data.List",
+        Ex.mkImport "Data.Monoid",
+        Ex.mkImport "Foreign.C.Types",
+        Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "Language.Haskell.TH",
+        Ex.mkImport "Language.Haskell.TH.Syntax",
+        Ex.mkImport "FFICXX.Runtime.CodeGen.Cxx",
+        Ex.mkImport "FFICXX.Runtime.TH"
       ]
         <> imports
     )
@@ -577,11 +576,11 @@ buildTHHs m =
   where
     t = tcihTClass $ tcmTCIH m
     imports =
-      [mkImport (tcmModule m <.> "Template")]
+      [Ex.mkImport (tcmModule m <.> "Template")]
         <> genImportInTH t
     body = tmplImpls <> tmplInsts
     tmplImpls = genTmplImplementation t
-    tmplInsts = genTmplInstance (tcmTCIH m)
+    tmplInsts = [] -- genTmplInstance (tcmTCIH m)
 
 buildModuleHs :: ClassModule -> Module ()
 buildModuleHs m = mkModuleE (cmModule m) [] (genExport c) (genImportInModule c) []

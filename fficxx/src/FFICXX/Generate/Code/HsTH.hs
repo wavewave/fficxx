@@ -4,7 +4,7 @@
 module FFICXX.Generate.Code.HsTH
   ( genImportInTH,
     genTmplImplementation,
-    genTmplInstance,
+    -- genTmplInstance,
   )
 where
 
@@ -15,7 +15,7 @@ import FFICXX.Generate.Code.Cpp
     genTmplVarCpp,
   )
 import FFICXX.Generate.Code.Primitive
-  ( functionSignatureTT,
+  ( functionSignatureTT',
     tmplAccessorToTFun,
   )
 import FFICXX.Generate.Dependency (calculateDependency)
@@ -39,54 +39,53 @@ import FFICXX.Generate.Type.Module
   ( TemplateClassImportHeader (..),
     TemplateClassSubmoduleType (..),
   )
-import FFICXX.Generate.Util.HaskellSrcExts
-  ( bracketExp,
+import FFICXX.Generate.Util.GHCExactPrint
+  ( app,
+    bracketExp,
     con,
-    generator,
+    -- binds,
+    -- caseE,
+    doE,
     inapp,
-    match,
+    lamE,
+    letE,
+    listE,
     mkBind1,
+    mkBind1_,
+    mkBindStmt,
+    mkBodyStmt,
     mkFun,
     mkImport,
+    mkLetStmt,
     mkPVar,
     mkVar,
     op,
+    pApp,
+    pTuple,
+    par,
     pbind_,
-    qualifier,
+    strE,
+    toLocalBinds,
+    tupleE,
     tyTupleBoxed,
     tyapp,
     tycon,
     tyfun,
     tylist,
     typeBracket,
+    valBinds,
+    wildcard,
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
-import Language.Haskell.Exts.Build
-  ( app,
-    binds,
-    caseE,
-    doE,
-    lamE,
-    letE,
-    letStmt,
-    listE,
-    name,
-    pApp,
-    pTuple,
-    paren,
-    qualStmt,
-    strE,
-    tuple,
-    wildcard,
-  )
-import Language.Haskell.Exts.Syntax
-  ( Decl,
+import GHC.Hs (GhcPs)
+import Language.Haskell.Syntax
+  ( HsDecl,
     ImportDecl,
   )
 
-genImportInTH :: TemplateClass -> [ImportDecl ()]
+genImportInTH :: TemplateClass -> [ImportDecl GhcPs]
 genImportInTH t0 =
   fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTH, t0)
 
@@ -94,7 +93,7 @@ genImportInTH t0 =
 -- implementation
 --
 
-genTmplImplementation :: TemplateClass -> [Decl ()]
+genTmplImplementation :: TemplateClass -> [HsDecl GhcPs]
 genTmplImplementation t =
   concatMap gen (tclass_funcs t) ++ concatMap genV (tclass_vars t)
   where
@@ -107,7 +106,7 @@ genTmplImplementation t =
     sig = foldr1 tyfun [tparams, tycon "String", tyapp (tycon "Q") (tycon "Exp")]
     tvars_p = if nparams == 1 then map p tvars else [pTuple (map p tvars)]
     prefix = tclass_name t
-    gen f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
+    gen f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs bstmts
       where
         nh = hsTmplFuncNameTH t f
         nc = ffiTmplFuncName f
@@ -115,26 +114,30 @@ genTmplImplementation t =
         lam = lamE [p "n"] (lit' `app` v "<>" `app` v "n")
         rhs =
           app (v "mkTFunc") $
-            let typs = if nparams == 1 then map v tvars else [tuple (map v tvars)]
-             in tuple (typs ++ [v "suffix", lam, v "tyf"])
-        sig' = functionSignatureTT t f
-        tassgns = map (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i)))) itps
+            let typs = if nparams == 1 then map v tvars else [tupleE (map v tvars)]
+             in tupleE (typs ++ [v "suffix", lam, v "tyf"])
+        sig' = functionSignatureTT' t f
+        tassgns =
+          fmap
+            (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i))))
+            itps
         bstmts =
-          binds
-            [ mkBind1
-                "tyf"
-                [wildcard]
-                ( letE
-                    tassgns
-                    (bracketExp (typeBracket sig'))
-                )
-                Nothing
-            ]
+          toLocalBinds True $
+            valBinds
+              [ mkBind1_
+                  "tyf"
+                  [wildcard]
+                  ( letE
+                      (toLocalBinds False (valBinds tassgns))
+                      (bracketExp (typeBracket sig'))
+                  )
+              ]
     genV vf =
       let f_g = tmplAccessorToTFun vf Getter
           f_s = tmplAccessorToTFun vf Setter
        in gen f_g ++ gen f_s
 
+{-
 genTmplInstance ::
   TemplateClassImportHeader ->
   [Decl ()]
@@ -319,3 +322,4 @@ genTmplInstance tcih =
                 (v "con" `app` strE (typeclassNameT t) : map v tvars)
               `app` (v "lst")
           ]
+-}

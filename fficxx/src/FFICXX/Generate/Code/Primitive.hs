@@ -1129,6 +1129,7 @@ functionSignatureT' t TFunOp {..} =
    in foldr1 Ex.tyfun (lst <> [Ex.tyapp (Ex.tycon "IO") (Ex.tyParen ctyp)])
 
 -- TODO: rename this and combine this with functionSignatureTMF
+-- OLD
 functionSignatureTT :: TemplateClass -> TemplateFunction -> Type ()
 functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
   where
@@ -1146,6 +1147,25 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
         TFunNew {..} -> map (convertCpp2HS4Tmpl e Nothing spls . arg_type) tfun_new_args
         TFunDelete -> [e]
         TFunOp {..} -> e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (argsFromOpExp tfun_opexp)
+
+-- NEW
+functionSignatureTT' :: TemplateClass -> TemplateFunction -> HsType GhcPs
+functionSignatureTT' t f = foldr1 Ex.tyfun (lst <> [Ex.tyapp (Ex.tycon "IO") ctyp])
+  where
+    (hname, _) = hsTemplateClassName t
+    ctyp = case f of
+      TFun {..} -> cxx2HsType4Tmpl e Nothing spls tfun_ret
+      TFunNew {} -> cxx2HsType4Tmpl e Nothing spls (TemplateType t)
+      TFunDelete -> Ex.unit_tycon
+      TFunOp {..} -> cxx2HsType4Tmpl e Nothing spls tfun_ret
+    e = foldl1 Ex.tyapp (Ex.tycon hname : spls)
+    spls = map (Ex.tySplice . Ex.parenSplice . Ex.mkVar) $ tclass_params t
+    lst =
+      case f of
+        TFun {..} -> e : map (cxx2HsType4Tmpl e Nothing spls . arg_type) tfun_args
+        TFunNew {..} -> map (cxx2HsType4Tmpl e Nothing spls . arg_type) tfun_new_args
+        TFunDelete -> [e]
+        TFunOp {..} -> e : map (cxx2HsType4Tmpl e Nothing spls . arg_type) (argsFromOpExp tfun_opexp)
 
 -- TODO: rename this and combine this with functionSignatureTT
 -- NEW

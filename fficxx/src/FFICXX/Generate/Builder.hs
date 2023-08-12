@@ -203,7 +203,7 @@ simpleBuilder cfg sbc = do
   for_ tcms $ \m ->
     gen
       (tcmModule m <.> "TH" <.> "hs")
-      (prettyPrint (C.buildTHHs m))
+      (exactPrint (C.buildTHHs m))
   --
   -- TODO: Template.hs-boot need to be generated as well
   putStrLn "Generating hs-boot file"

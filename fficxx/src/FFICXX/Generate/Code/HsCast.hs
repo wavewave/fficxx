@@ -4,7 +4,6 @@ module FFICXX.Generate.Code.HsCast
 
     -- * code
     castBody,
-    castBody_,
     genHsFrontInstCastable,
     genHsFrontInstCastableSelf,
   )
@@ -34,15 +33,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     tyapp,
     tycon,
   )
-import qualified FFICXX.Generate.Util.HaskellSrcExts as O
-  ( app,
-    insDecl,
-    mkBind1,
-    mkPVar,
-    mkVar,
-  )
 import GHC.Hs (GhcPs)
-import qualified Language.Haskell.Exts.Syntax as O (InstDecl)
 import Language.Haskell.Syntax
   ( HsBind,
     HsDecl,

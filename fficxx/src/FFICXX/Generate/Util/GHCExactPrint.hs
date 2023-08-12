@@ -55,6 +55,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     pApp,
     pTuple,
     parP,
+    wildcard,
 
     -- * expr
     app,
@@ -976,6 +977,9 @@ parP p =
     (L (tokLoc (-1)) HsTok)
     (mkL (-1) p)
     (L (tokLoc (-1)) HsTok)
+
+wildcard :: Pat GhcPs
+wildcard = WildPat noExtField
 
 --
 -- Expr
