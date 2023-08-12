@@ -40,7 +40,7 @@ import FFICXX.Generate.Code.HsCommon
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
     genImportInFFI,
-    genTopLevelFFI_,
+    genTopLevelFFI,
   )
 import FFICXX.Generate.Code.HsImplementation
   ( genHsFrontInst,
@@ -76,8 +76,8 @@ import FFICXX.Generate.Code.HsTopLevel
     genImportInTopLevel,
     -- genTLTemplateImplementation,
     -- genTLTemplateInstance,
-    -- genTLTemplateInterface,
-    -- genTopLevelDef,
+    genTLTemplateInterface,
+    genTopLevelDef,
   )
 import FFICXX.Generate.Dependency
   ( class_allparents,
@@ -130,9 +130,8 @@ import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import GHC.Hs.Extension (GhcPs)
 import Language.Haskell.Exts.Syntax (Module)
 import Language.Haskell.Syntax
-  ( HsDecl (ForD),
+  ( HsDecl,
     HsModule,
-    noExtField,
   )
 import System.FilePath ((<.>), (</>))
 
@@ -355,7 +354,7 @@ buildFFIHsc m =
       ]
         <> genImportInFFI m
         <> genExtraImport m
-    hscBody = fmap (ForD noExtField) (genHsFFI (cmCIH m))
+    hscBody = fmap Ex.forD (genHsFFI (cmCIH m))
 
 buildRawTypeHs :: ClassModule -> HsModule GhcPs
 buildRawTypeHs m =
@@ -628,11 +627,9 @@ buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
       fmap Ex.mkImport ["Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast"]
         ++ fmap (\m -> Ex.mkImport (tcmModule m <.> "Template")) tmods
         ++ concatMap genImportForTLOrdinary (filterTLOrdinary tfns)
-    pkgBody = []
-
-{-      map (genTopLevelFFI_ tih) (filterTLOrdinary tfns)
+    pkgBody =
+      map (Ex.forD . genTopLevelFFI tih) (filterTLOrdinary tfns)
         ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
--}
 
 buildTopLevelTemplateHs ::
   String ->
@@ -664,7 +661,7 @@ buildTopLevelTemplateHs modname tih =
         Ex.mkImport "FFICXX.Runtime.Cast"
       ]
         ++ concatMap genImportForTLTemplate tfns
-    pkgBody = [] --  concatMap genTLTemplateInterface tfns
+    pkgBody = concatMap genTLTemplateInterface tfns
 
 buildTopLevelTHHs ::
   String ->

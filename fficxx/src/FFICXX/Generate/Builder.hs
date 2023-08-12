@@ -227,7 +227,7 @@ simpleBuilder cfg sbc = do
     C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih
   gen
     (topLevelMod <.> "Ordinary" <.> "hs")
-    (exactPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih))
+    (postProcess $ exactPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih))
   --
   putStrLn "Generating Top-level Template Module"
   debugExactPrint $

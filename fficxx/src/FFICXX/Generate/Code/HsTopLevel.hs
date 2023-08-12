@@ -12,14 +12,13 @@ module FFICXX.Generate.Code.HsTopLevel
     genImportInTopLevel,
 
     -- * top-level decls and defs
-
     genTopLevelDef,
     genImportForTLOrdinary,
     genImportForTLTemplate,
-    {-
-             -- * toplevel template
-             genTLTemplateInterface,
-             genTLTemplateImplementation,
+
+    -- * toplevel template
+    genTLTemplateInterface,
+    {-         genTLTemplateImplementation,
              genTLTemplateInstance, -}
   )
 where
@@ -32,9 +31,9 @@ import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.Primitive
   ( CFunSig (..),
     HsFunSig (..),
-    cxx2HsType,
     -- convertCpp2HS,
     convertCpp2HS4Tmpl,
+    cxx2HsType,
     extractArgRetTypes,
   )
 import FFICXX.Generate.Dependency
@@ -91,8 +90,8 @@ import FFICXX.Generate.Util.GHCExactPrint
     mkBodyStmt,
     mkClass,
     mkFun,
-    mkFun_,
     mkFunSig,
+    mkFun_,
     mkImport,
     mkLetStmt,
     mkPVar,
@@ -107,6 +106,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     strE,
     tupleE,
     tyForall,
+    tyParen,
     tySplice,
     tyTupleBoxed,
     tyapp,
@@ -122,9 +122,10 @@ import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
 import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax
-  ( HsDecl,
+  ( HsDecl (TyClD),
     IE,
     ImportDecl,
+    noExtField,
   )
 import System.FilePath ((<.>))
 
@@ -210,7 +211,7 @@ genTopLevelDef v@TopLevelVariable {..} =
   let fname = hsFrontNameForTopLevel (TLOrdinary v)
       cfname = "c_" <> toLowers fname
       rtyp = cxx2HsType Nothing toplevelvar_ret
-      sig = tyapp (tycon "IO") rtyp
+      sig = tyapp (tycon "IO") (tyParen rtyp)
       rhs = app (mkVar "xformnull") (mkVar cfname)
    in mkFun_ fname sig [] rhs
 
@@ -240,22 +241,23 @@ genImportForTLTemplate f =
    in concatMap (\x -> map (\y -> mkImport (x <.> y)) ["RawType", "Cast", "Interface"]) cmods
         <> concatMap (\x -> map (\y -> mkImport (x <.> y)) ["Template"]) tmods
 
-{-
 --
 -- top-level template
 --
 
-genTLTemplateInterface :: TLTemplate -> [Decl ()]
+genTLTemplateInterface :: TLTemplate -> [HsDecl GhcPs]
 genTLTemplateInterface t =
-  [ mkClass cxEmpty (firstUpper (topleveltfunc_name t)) (map mkTBind tps) methods
+  [ TyClD noExtField $
+      mkClass cxEmpty (firstUpper (topleveltfunc_name t)) (map mkTBind tps) methods
   ]
   where
     tps = topleveltfunc_params t
-    ctyp = convertCpp2HS Nothing (topleveltfunc_ret t)
-    lst = map (convertCpp2HS Nothing . arg_type) (topleveltfunc_args t)
-    sigdecl = mkFunSig (topleveltfunc_name t) $ foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
-    methods = [clsDecl sigdecl]
+    ctyp = cxx2HsType Nothing (topleveltfunc_ret t)
+    lst = map (cxx2HsType Nothing . arg_type) (topleveltfunc_args t)
+    sigdecl = mkFunSig (topleveltfunc_name t) $ foldr1 tyfun (lst <> [tyapp (tycon "IO") (tyParen ctyp)])
+    methods = [sigdecl]
 
+{-
 genTLTemplateImplementation :: TLTemplate -> [Decl ()]
 genTLTemplateImplementation t =
   mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)

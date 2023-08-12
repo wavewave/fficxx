@@ -16,6 +16,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkImport,
     mkImportSrc,
     mkForImpCcall,
+    forD,
 
     -- * names
     unqual,
@@ -571,6 +572,9 @@ mkForImpCcall quote fname typ =
         ( CFunction
             (StaticTarget (SourceText quote) (fromString quote) Nothing True)
         )
+
+forD :: ForeignDecl GhcPs -> HsDecl GhcPs
+forD = ForD noExtField
 
 --
 -- names
