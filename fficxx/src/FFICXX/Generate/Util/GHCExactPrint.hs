@@ -55,9 +55,11 @@ module FFICXX.Generate.Util.GHCExactPrint
     pApp,
     pTuple,
     parP,
+    wildcard,
 
     -- * expr
     app,
+    caseE,
     con,
     doE,
     inapp,
@@ -134,6 +136,7 @@ import GHC.Data.Bag (emptyBag, listToBag)
 import GHC.Hs
   ( AnnSig (..),
     AnnsModule (..),
+    EpAnnHsCase (..),
     GhcPs,
     GrhsAnn (..),
     XImportDeclPass (..),
@@ -232,7 +235,7 @@ import Language.Haskell.Syntax
     HsLit (..),
     HsLocalBinds,
     HsLocalBindsLR (..),
-    HsMatchContext (FunRhs, LambdaExpr),
+    HsMatchContext (CaseAlt, FunRhs, LambdaExpr),
     HsModule (..),
     HsOuterTyVarBndrs (HsOuterImplicit),
     HsPatSigType (..),
@@ -617,17 +620,17 @@ mkTBind name = UserTyVar (mkRelEpAnn (-1) []) () (mkLIdP (-1) name)
 mkData ::
   -- | data type name
   String ->
-  -- [TyVarBind ()] ->
+  [HsTyVarBndr () GhcPs] ->
   [ConDecl GhcPs] ->
   HsDeriving GhcPs ->
   TyClDecl GhcPs
-mkData name {- tbinds -} cdecls deriv =
+mkData name tbinds cdecls deriv =
   DataDecl (mkRelEpAnn (-1) annos) (mkLIdP 0 name) qty Prefix dfn
   where
     annos =
       [ AddEpAnn AnnData (mkEpaDelta (-1))
       ]
-    qty = HsQTvs noExtField []
+    qty = HsQTvs noExtField $ fmap (mkL 0) tbinds
     dfn =
       HsDataDefn
         { dd_ext = noExtField,
@@ -641,18 +644,18 @@ mkData name {- tbinds -} cdecls deriv =
 mkNewtype ::
   -- | newtype name
   String ->
-  -- [TyVarBind ()] ->
+  [HsTyVarBndr () GhcPs] ->
   ConDecl GhcPs ->
   HsDeriving GhcPs ->
   TyClDecl GhcPs
-mkNewtype name {- tbinds -} cdecl deriv =
+mkNewtype name tbinds cdecl deriv =
   DataDecl (mkRelEpAnn (-1) annos) (mkLIdP 0 name) qty Prefix dfn
   where
     annos =
       [ AddEpAnn AnnNewtype (mkEpaDelta (-1)),
         AddEpAnn AnnEqual (mkEpaDelta 0)
       ]
-    qty = HsQTvs noExtField []
+    qty = HsQTvs noExtField $ fmap (mkL 0) tbinds
     dfn =
       HsDataDefn
         { dd_ext = noExtField,
@@ -789,8 +792,22 @@ mkBind1_ ::
   HsBind GhcPs
 mkBind1_ fname pats rhs = mkBind1 fname pats rhs (EmptyLocalBinds noExtField)
 
+listSep :: (EpaLocation -> TrailingAnn) -> [a] -> [GenLocated SrcSpanAnnA a]
+listSep _ [] = []
+listSep _ (x : []) = [mkL (-1) x]
+listSep sep xs =
+  let xs' = init xs
+      lastX = last xs
+      xs'' =
+        fmap
+          (L (mkRelSrcSpanAnn 0 (AnnListItem [sep (mkEpaDelta (-1))])))
+          xs'
+   in (xs'' ++ [mkL 0 lastX])
+
 tupleAnn :: [a] -> [GenLocated SrcSpanAnnA a]
-tupleAnn [] = []
+tupleAnn = listSep AddCommaAnn
+
+{- tupleAnn [] = []
 tupleAnn (x : []) = [mkL (-1) x]
 tupleAnn xs =
   let xs' = init xs
@@ -800,6 +817,7 @@ tupleAnn xs =
           (L (mkRelSrcSpanAnn 0 (AnnListItem [AddCommaAnn (mkEpaDelta (-1))])))
           xs'
    in (xs'' ++ [mkL 0 lastX])
+-}
 
 --
 -- Typeclass
@@ -977,6 +995,9 @@ parP p =
     (mkL (-1) p)
     (L (tokLoc (-1)) HsTok)
 
+wildcard :: Pat GhcPs
+wildcard = WildPat noExtField
+
 --
 -- Expr
 --
@@ -987,6 +1008,28 @@ app x y =
   where
     lx = mkL (-1) x
     ly = mkL 0 y
+
+caseE :: HsExpr GhcPs -> [(Pat GhcPs, HsExpr GhcPs)] -> HsExpr GhcPs
+caseE expr matches =
+  HsCase (mkRelEpAnn (-1) ann) (mkL 0 expr) grp
+  where
+    ann =
+      EpAnnHsCase
+        { hsCaseAnnCase = mkEpaDelta (-1),
+          hsCaseAnnOf = mkEpaDelta 0,
+          hsCaseAnnsRest = []
+        }
+    grp = MG FromSource (L (mkRelSrcSpanAnn (-1) ann') matches')
+    ann' =
+      AnnList
+        Nothing
+        (Just (AddEpAnn AnnOpenC (mkEpaDelta (-1))))
+        (Just (AddEpAnn AnnCloseC (mkEpaDelta (-1))))
+        []
+        []
+    matches' =
+      listSep AddSemiAnn $
+        fmap (\(p, e) -> mkMatch CaseAlt [p] e (EmptyLocalBinds noExtField)) matches
 
 -- NOTE: in ghc API, no difference between constructor and variable
 con :: String -> HsExpr GhcPs
@@ -1056,6 +1099,7 @@ mkMatch mctxt pats rhs bnds =
     glrhs =
       let ann = case mctxt of
             LambdaExpr -> AnnRarrow
+            CaseAlt -> AnnRarrow
             _ -> AnnEqual
           ann' =
             mkRelEpAnn
@@ -1074,7 +1118,7 @@ lamE pats expr =
         Nothing
         (Just (AddEpAnn AnnOpenP (mkEpaDelta (-1))))
         (Just (AddEpAnn AnnCloseP (mkEpaDelta (-1))))
-        [] -- [AddEpAnn AnnLam (mkEpaDelta (-1))]
+        []
         []
     match = mkMatch LambdaExpr pats expr (EmptyLocalBinds noExtField)
 
@@ -1098,7 +1142,7 @@ listE itms =
               (Just (AddEpAnn AnnCloseS (mkEpaDelta (-1))))
               []
               []
-          litms = fmap (mkL (-1)) itms
+          litms = tupleAnn itms
        in ExplicitList (mkRelEpAnn (-1) ann) litms
   where
 
@@ -1340,16 +1384,6 @@ app = LHE.app
 app' :: String -> String -> Exp ()
 app' x y = App () (mkVar x) (mkVar y)
 
-unqual :: String -> QName ()
-unqual = UnQual () . Ident ()
-
-qualConDecl ::
-  Maybe [TyVarBind ()] ->
-  Maybe (Context ()) ->
-  ConDecl () ->
-  QualConDecl ()
-qualConDecl = QualConDecl ()
-
 recDecl :: String -> [FieldDecl ()] -> ConDecl ()
 recDecl n rs = RecDecl () (Ident () n) rs
 
@@ -1383,9 +1417,6 @@ x `dot` y = x `app` mkVar "." `app` y
 tyForeignPtr :: Type ()
 tyForeignPtr = tycon "ForeignPtr"
 
-typeBracket :: Type () -> Bracket ()
-typeBracket = TypeBracket ()
-
 evar :: QName () -> ExportSpec ()
 evar = EVar ()
 
@@ -1408,24 +1439,11 @@ emodule nm = EModuleContents () (ModuleName () nm)
 nonamespace :: Namespace ()
 nonamespace = NoNamespace ()
 
-generator :: Pat () -> Exp () -> Stmt ()
-generator = Generator ()
-
-qualifier :: Exp () -> Stmt ()
-qualifier = Qualifier ()
-
-unkindedVar :: Name () -> TyVarBind ()
-unkindedVar = UnkindedVar ()
-
 if_ :: Exp () -> Exp () -> Exp () -> Exp ()
 if_ = If ()
 
 urhs :: Exp () -> Rhs ()
 urhs = UnGuardedRhs ()
-
--- | case pattern match p -> e
-match :: Pat () -> Exp () -> Alt ()
-match p e = Alt () p (urhs e) Nothing
 
 eWildCard :: Int -> EWildcard ()
 eWildCard = EWildcard ()

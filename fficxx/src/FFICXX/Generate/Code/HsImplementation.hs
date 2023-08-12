@@ -24,7 +24,7 @@ import qualified Data.List as L (foldr1)
 import FFICXX.Generate.Code.Primitive
   ( accessorSignature,
     cxx2HsType,
-    functionSignature',
+    functionSignature,
     functionSignatureTMF,
     hsFuncXformer,
   )
@@ -132,13 +132,13 @@ genHsFrontInstNew c = do
         -- cann = maybe "" id $ M.lookup (PkgMethod, constructorName c) amap
         -- newfuncann = mkComment 0 cann
         rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-     in mkFun_ (aliasedFuncName c f) (functionSignature' c f) [] rhs
+     in mkFun_ (aliasedFuncName c f) (functionSignature c f) [] rhs
 
 genHsFrontInstNonVirtual :: Class -> [HsDecl GhcPs]
 genHsFrontInstNonVirtual c =
   flip concatMap nonvirtualFuncs $ \f ->
     let rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-     in mkFun_ (aliasedFuncName c f) (functionSignature' c f) [] rhs
+     in mkFun_ (aliasedFuncName c f) (functionSignature c f) [] rhs
   where
     nonvirtualFuncs = nonVirtualNotNewFuncs (class_funcs c)
 
@@ -146,7 +146,7 @@ genHsFrontInstStatic :: Class -> [HsDecl GhcPs]
 genHsFrontInstStatic c =
   flip concatMap (staticFuncs (class_funcs c)) $ \f ->
     let rhs = app (mkVar (hsFuncXformer f)) (mkVar (hscFuncName c f))
-     in mkFun_ (aliasedFuncName c f) (functionSignature' c f) [] rhs
+     in mkFun_ (aliasedFuncName c f) (functionSignature c f) [] rhs
 
 genHsFrontInstVariables :: Class -> [HsDecl GhcPs]
 genHsFrontInstVariables c =

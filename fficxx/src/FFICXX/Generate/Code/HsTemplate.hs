@@ -7,7 +7,7 @@ module FFICXX.Generate.Code.HsTemplate
   )
 where
 
-import FFICXX.Generate.Code.HsCast (castBody_)
+import FFICXX.Generate.Code.HsCast (castBody)
 import FFICXX.Generate.Code.Primitive
   ( functionSignatureT,
     tmplAccessorToTFun,
@@ -26,14 +26,12 @@ import FFICXX.Generate.Type.Class
 import FFICXX.Generate.Type.Module
   ( TemplateClassSubmoduleType (..),
   )
-import FFICXX.Generate.Util.HaskellSrcExts
-  ( clsDecl,
-    con,
+import FFICXX.Generate.Util.GHCExactPrint
+  ( con,
     conDecl,
     cxEmpty,
-    insDecl,
-    insType,
-    mkBind1,
+    instD,
+    mkBind1_,
     mkClass,
     mkData,
     mkFunSig,
@@ -43,36 +41,41 @@ import FFICXX.Generate.Util.HaskellSrcExts
     mkPVar,
     mkTBind,
     mkTVar,
+    mkTypeFamInst,
     mkVar,
-    qualConDecl,
+    pApp,
+    parP,
+    tyParen,
     tyPtr,
     tyapp,
     tycon,
   )
-import Language.Haskell.Exts.Build
-  ( name,
-    pApp,
-  )
-import Language.Haskell.Exts.Syntax
-  ( Decl,
+import GHC.Hs (GhcPs)
+import Language.Haskell.Syntax
+  ( HsDecl (TyClD),
     ImportDecl,
+    noExtField,
   )
 
-genImportInTemplate :: TemplateClass -> [ImportDecl ()]
+genImportInTemplate :: TemplateClass -> [ImportDecl GhcPs]
 genImportInTemplate t0 =
   fmap (mkImport . subModuleName) $ calculateDependency $ Left (TCSTTemplate, t0)
 
-genTmplInterface :: TemplateClass -> [Decl ()]
+genTmplInterface :: TemplateClass -> [HsDecl GhcPs]
 genTmplInterface t =
-  [ mkData rname (map mkTBind tps) [] Nothing,
-    mkNewtype
-      hname
-      (map mkTBind tps)
-      [qualConDecl Nothing Nothing (conDecl hname [tyapp tyPtr rawtype])]
-      Nothing,
-    mkClass cxEmpty (typeclassNameT t) (map mkTBind tps) methods,
-    mkInstance cxEmpty "FPtr" [hightype] fptrbody,
-    mkInstance cxEmpty "Castable" [hightype, tyapp tyPtr rawtype] castBody_
+  [ TyClD noExtField (mkData rname (fmap mkTBind tps) [] []),
+    TyClD noExtField $
+      mkNewtype
+        hname
+        (fmap mkTBind tps)
+        (conDecl hname [tyParen (tyapp tyPtr (tyParen rawtype))])
+        [],
+    TyClD noExtField $
+      mkClass cxEmpty (typeclassNameT t) (fmap mkTBind tps) methods,
+    instD $
+      mkInstance cxEmpty "FPtr" [hightype] fptrfam fptrbody,
+    instD $
+      mkInstance cxEmpty "Castable" [hightype, tyapp tyPtr (tyParen rawtype)] [] castBody
   ]
   where
     (hname, rname) = hsTemplateClassName t
@@ -86,9 +89,15 @@ genTmplInterface t =
       let f_g = tmplAccessorToTFun vf Getter
           f_s = tmplAccessorToTFun vf Setter
        in [sigdecl f_g, sigdecl f_s]
-    methods = map (clsDecl . sigdecl) fs ++ (map clsDecl . concatMap sigdeclV) vfs
+    methods = fmap sigdecl fs ++ concatMap sigdeclV vfs
+    fptrfam = [mkTypeFamInst "Raw" [tyParen hightype] rawtype]
     fptrbody =
-      [ insType (tyapp (tycon "Raw") hightype) rawtype,
-        insDecl (mkBind1 "get_fptr" [pApp (name hname) [mkPVar "ptr"]] (mkVar "ptr") Nothing),
-        insDecl (mkBind1 "cast_fptr_to_obj" [] (con hname) Nothing)
+      [ mkBind1_
+          "get_fptr"
+          [parP (pApp hname [mkPVar "ptr"])]
+          (mkVar "ptr"),
+        mkBind1_
+          "cast_fptr_to_obj"
+          []
+          (con hname)
       ]

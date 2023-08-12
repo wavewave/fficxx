@@ -122,7 +122,6 @@ import FFICXX.Generate.Util.HaskellSrcExts
     evar,
     lang,
     mkImport,
-    mkModule,
     mkModuleE,
     unqual,
   )
@@ -535,43 +534,41 @@ buildProxyHs m =
   where
     body = genProxyInstance
 
-buildTemplateHs :: TemplateClassModule -> Module ()
+buildTemplateHs :: TemplateClassModule -> HsModule GhcPs
 buildTemplateHs m =
-  mkModule
+  Ex.mkModule
     (tcmModule m <.> "Template")
-    [ lang
-        [ "EmptyDataDecls",
-          "FlexibleInstances",
-          "MultiParamTypeClasses",
-          "TypeFamilies"
-        ]
+    [ "EmptyDataDecls",
+      "FlexibleInstances",
+      "MultiParamTypeClasses",
+      "TypeFamilies"
     ]
     imports
     body
   where
     t = tcihTClass $ tcmTCIH m
     imports =
-      [ mkImport "Foreign.C.Types",
-        mkImport "Foreign.Ptr",
-        mkImport "FFICXX.Runtime.Cast"
+      [ Ex.mkImport "Foreign.C.Types",
+        Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "FFICXX.Runtime.Cast"
       ]
         <> genImportInTemplate t
     body = genTmplInterface t
 
-buildTHHs :: TemplateClassModule -> Module ()
+buildTHHs :: TemplateClassModule -> HsModule GhcPs
 buildTHHs m =
-  mkModule
+  Ex.mkModule
     (tcmModule m <.> "TH")
-    [lang ["TemplateHaskell"]]
-    ( [ mkImport "Data.Char",
-        mkImport "Data.List",
-        mkImport "Data.Monoid",
-        mkImport "Foreign.C.Types",
-        mkImport "Foreign.Ptr",
-        mkImport "Language.Haskell.TH",
-        mkImport "Language.Haskell.TH.Syntax",
-        mkImport "FFICXX.Runtime.CodeGen.Cxx",
-        mkImport "FFICXX.Runtime.TH"
+    ["TemplateHaskell"]
+    ( [ Ex.mkImport "Data.Char",
+        Ex.mkImport "Data.List",
+        Ex.mkImport "Data.Monoid",
+        Ex.mkImport "Foreign.C.Types",
+        Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "Language.Haskell.TH",
+        Ex.mkImport "Language.Haskell.TH.Syntax",
+        Ex.mkImport "FFICXX.Runtime.CodeGen.Cxx",
+        Ex.mkImport "FFICXX.Runtime.TH"
       ]
         <> imports
     )
@@ -579,7 +576,7 @@ buildTHHs m =
   where
     t = tcihTClass $ tcmTCIH m
     imports =
-      [mkImport (tcmModule m <.> "Template")]
+      [Ex.mkImport (tcmModule m <.> "Template")]
         <> genImportInTH t
     body = tmplImpls <> tmplInsts
     tmplImpls = genTmplImplementation t

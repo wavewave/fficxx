@@ -4,7 +4,6 @@ module FFICXX.Generate.Code.HsCast
 
     -- * code
     castBody,
-    castBody_,
     genHsFrontInstCastable,
     genHsFrontInstCastableSelf,
   )
@@ -34,15 +33,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     tyapp,
     tycon,
   )
-import qualified FFICXX.Generate.Util.HaskellSrcExts as O
-  ( app,
-    insDecl,
-    mkBind1,
-    mkPVar,
-    mkVar,
-  )
 import GHC.Hs (GhcPs)
-import qualified Language.Haskell.Exts.Syntax as O (InstDecl)
 import Language.Haskell.Syntax
   ( HsBind,
     HsDecl,
@@ -60,11 +51,6 @@ genImportInCast m =
 --
 -- code
 --
-castBody_ :: [O.InstDecl ()]
-castBody_ =
-  [ O.insDecl (O.mkBind1 "cast" [O.mkPVar "x", O.mkPVar "f"] (O.app (O.mkVar "f") (O.app (O.mkVar "castPtr") (O.app (O.mkVar "get_fptr") (O.mkVar "x")))) Nothing),
-    O.insDecl (O.mkBind1 "uncast" [O.mkPVar "x", O.mkPVar "f"] (O.app (O.mkVar "f") (O.app (O.mkVar "cast_fptr_to_obj") (O.app (O.mkVar "castPtr") (O.mkVar "x")))) Nothing)
-  ]
 
 castBody :: [HsBind GhcPs]
 castBody =

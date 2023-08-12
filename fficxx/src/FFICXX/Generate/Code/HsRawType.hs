@@ -32,11 +32,12 @@ import Language.Haskell.Syntax
 
 hsClassRawType :: Class -> [HsDecl GhcPs]
 hsClassRawType c =
-  [ TyClD noExtField (mkData rawname [] []),
+  [ TyClD noExtField (mkData rawname [] [] []),
     TyClD
       noExtField
       ( mkNewtype
           highname
+          []
           (conDecl highname [tyapp tyPtr rawtype])
           deriv
       ),
