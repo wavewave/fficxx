@@ -217,12 +217,12 @@ simpleBuilder cfg sbc = do
       (hsBootHackClearEmptyContexts $ exactPrint (C.buildInterfaceHsBoot depCycles m))
   --
   putStrLn "Generating Module summary file"
-  for_ mods $ \m -> do
-    debugExactPrint (C.buildModuleHs m)
+  for_ mods $ \m ->
     gen
       (cmModule m <.> "hs")
       (exactPrint (C.buildModuleHs m))
   --
+  {-
   putStrLn "Generating Top-level Ordinary Module"
   gen (topLevelMod <.> "Ordinary" <.> "hs") (prettyPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih))
   --
@@ -234,12 +234,13 @@ simpleBuilder cfg sbc = do
   putStrLn "Generating Top-level TH Module"
   gen
     (topLevelMod <.> "TH" <.> "hs")
-    (prettyPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") tih))
+    (prettyPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") tih)) -}
   --
   putStrLn "Generating Top-level Module"
+  debugExactPrint (C.buildTopLevelHs topLevelMod (mods, tcms))
   gen
     (topLevelMod <.> "hs")
-    (prettyPrint (C.buildTopLevelHs topLevelMod (mods, tcms)))
+    (exactPrint (C.buildTopLevelHs topLevelMod (mods, tcms)))
   --
   putStrLn "Copying generated files to target directory"
   touch (workingDir </> "LICENSE")

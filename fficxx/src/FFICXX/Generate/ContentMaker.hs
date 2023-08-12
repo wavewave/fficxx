@@ -73,7 +73,7 @@ import FFICXX.Generate.Code.HsTopLevel
     -- genImportForTLOrdinary,
     -- genImportForTLTemplate,
     genImportInModule,
-    -- genImportInTopLevel,
+    genImportInTopLevel,
     -- genTLTemplateImplementation,
     -- genTLTemplateInstance,
     -- genTLTemplateInterface,
@@ -591,27 +591,22 @@ buildModuleHs m =
 buildTopLevelHs ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
-  Module ()
-buildTopLevelHs modname (mods, tmods) = undefined
-
-{-
-  mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
+  HsModule GhcPs
+buildTopLevelHs modname (mods, tmods) =
+  Ex.mkModuleE modname pkgExtensions (Just pkgExports) pkgImports pkgBody
   where
     pkgExtensions =
-      [ lang
-          [ "FlexibleContexts",
-            "FlexibleInstances",
-            "ForeignFunctionInterface",
-            "InterruptibleFFI"
-          ]
+      [ "FlexibleContexts",
+        "FlexibleInstances",
+        "ForeignFunctionInterface",
+        "InterruptibleFFI"
       ]
     pkgExports =
-      map (emodule . cmModule) mods
-        ++ map emodule [modname <.> "Ordinary", modname <.> "Template", modname <.> "TH"]
+      map (Ex.emodule . cmModule) mods
+        ++ map Ex.emodule [modname <.> "Ordinary", modname <.> "Template", modname <.> "TH"]
     pkgImports = genImportInTopLevel modname (mods, tmods)
     pkgBody = [] --    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
     -- ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
--}
 
 buildTopLevelOrdinaryHs ::
   String ->

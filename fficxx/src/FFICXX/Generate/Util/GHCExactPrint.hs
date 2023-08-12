@@ -10,6 +10,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     eabs,
     ethingall,
     evar,
+    emodule,
     mkImport,
     mkImportSrc,
     mkForImpCcall,
@@ -115,7 +116,6 @@ module FFICXX.Generate.Util.GHCExactPrint
     eabs,
     ethingwith,
     ethingall,
-    emodule,
     nonamespace,
     insType,
     insDecl,
@@ -457,6 +457,16 @@ ethingall name =
 evar :: String -> IE GhcPs
 evar name =
   IEVar noExtField (mkL (-1) (IEName noExtField (mkLIdP (-1) name)))
+
+emodule :: String -> IE GhcPs
+emodule name =
+  IEModuleContents
+    (mkRelEpAnn (-1) annos)
+    (mkL 0 modName)
+  where
+    modName = ModuleName (fromString name)
+    annos =
+      [AddEpAnn AnnModule (mkEpaDelta (-1))]
 
 --
 -- Imports
@@ -1475,9 +1485,6 @@ ethingwith = EThingWith ()
 
 ethingall :: QName () -> ExportSpec ()
 ethingall q = ethingwith (EWildcard () 0) q []
-
-emodule :: String -> ExportSpec ()
-emodule nm = EModuleContents () (ModuleName () nm)
 
 nonamespace :: Namespace ()
 nonamespace = NoNamespace ()

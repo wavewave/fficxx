@@ -9,17 +9,16 @@ module FFICXX.Generate.Code.HsTopLevel
 
     -- * imports
     genImportInModule,
-    {-    genImportInTopLevel,
+    genImportInTopLevel,
+    {-       -- * top-level decls and defs
+         genTopLevelDef,
+         genImportForTLOrdinary,
+         genImportForTLTemplate,
 
-        -- * top-level decls and defs
-        genTopLevelDef,
-        genImportForTLOrdinary,
-        genImportForTLTemplate,
-
-        -- * toplevel template
-        genTLTemplateInterface,
-        genTLTemplateImplementation,
-        genTLTemplateInstance, -}
+         -- * toplevel template
+         genTLTemplateInterface,
+         genTLTemplateImplementation,
+         genTLTemplateInstance, -}
   )
 where
 
@@ -69,9 +68,7 @@ import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Util (firstUpper, toLowers)
 --
 import FFICXX.Generate.Util.GHCExactPrint
-  ( -- nonamespace,
-
-    app,
+  ( app,
     bracketExp,
     caseE,
     con,
@@ -79,6 +76,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     cxTuple,
     doE,
     eabs,
+    emodule,
     ethingall,
     evar,
     inapp,
@@ -177,12 +175,11 @@ genExportStatic c = fmap evar fns
 genImportInModule :: Class -> [ImportDecl GhcPs]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
 
-{-
 -- | top=level
 genImportInTopLevel ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
-  [ImportDecl ()]
+  [ImportDecl GhcPs]
 genImportInTopLevel modname (mods, _tmods) =
   map (mkImport . cmModule) mods
     ++ map mkImport [modname <.> "Template", modname <.> "TH", modname <.> "Ordinary"]
@@ -190,7 +187,7 @@ genImportInTopLevel modname (mods, _tmods) =
 --
 -- declarations and definitions
 --
-
+{-
 genTopLevelDef :: TLOrdinary -> [Decl ()]
 genTopLevelDef f@TopLevelFunction {..} =
   let fname = hsFrontNameForTopLevel (TLOrdinary f)
