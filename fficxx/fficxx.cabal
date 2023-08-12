@@ -41,7 +41,6 @@ Library
                , template-haskell
                , text
                , unordered-containers
-               , haskell-src-exts
   if impl (ghc >= 9.6)
     Build-Depends:
       ghc >= 9.6,
@@ -75,7 +74,6 @@ Library
                FFICXX.Generate.Util
                FFICXX.Generate.Util.DepGraph
                FFICXX.Generate.Util.GHCExactPrint
-               FFICXX.Generate.Util.HaskellSrcExts
                FFICXX.Generate.Type.Annotate
                FFICXX.Generate.Type.Cabal
                FFICXX.Generate.Type.Config

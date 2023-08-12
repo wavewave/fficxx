@@ -36,28 +36,9 @@ import FFICXX.Generate.Type.Class
     isVirtualFunc,
   )
 import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
-import FFICXX.Generate.Util.HaskellSrcExts
-  ( classA,
-    cxTuple,
-    mkTVar,
-    mkVar,
-    parenSplice,
-    tyForall,
-    tyPtr,
-    tySplice,
-    tyapp,
-    tycon,
-    tyfun,
-    unit_tycon,
-    unqual,
-  )
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
 import GHC.Hs (GhcPs)
-import Language.Haskell.Exts.Syntax
-  ( Asst,
-    Type,
-  )
 import Language.Haskell.Syntax
   ( HsContext,
     HsType,
@@ -68,16 +49,9 @@ data CFunSig = CFunSig
     cRetType :: Types
   }
 
--- | OLD
 data HsFunSig = HsFunSig
-  { hsSigTypes :: [Type ()],
-    hsSigConstraints :: [Asst ()]
-  }
-
--- | NEW
-data HsFunSig' = HsFunSig'
-  { hsSig'Types :: [HsType GhcPs],
-    hsSig'Constraints :: [HsType GhcPs]
+  { hsSigTypes :: [HsType GhcPs],
+    hsSigConstraints :: [HsType GhcPs]
   }
 
 ctypToCType :: CTypes -> IsConst -> R.CType Identity
@@ -689,50 +663,6 @@ tmplMemFuncReturnCType _ (TemplateType _) = R.CTStar R.CTVoid
 tmplMemFuncReturnCType _ (TemplateParam t) = R.CTSimple $ R.CName [R.NamePart t, R.NamePart "_p"]
 tmplMemFuncReturnCType _ (TemplateParamPointer t) = R.CTSimple $ R.CName [R.NamePart t, R.NamePart "_p"]
 
-convertC2HS :: CTypes -> Type ()
-convertC2HS CTBool = tycon "CBool"
-convertC2HS CTChar = tycon "CChar"
-convertC2HS CTClock = tycon "CClock"
-convertC2HS CTDouble = tycon "CDouble"
-convertC2HS CTFile = tycon "CFile"
-convertC2HS CTFloat = tycon "CFloat"
-convertC2HS CTFpos = tycon "CFpos"
-convertC2HS CTInt = tycon "CInt"
-convertC2HS CTIntMax = tycon "CIntMax"
-convertC2HS CTIntPtr = tycon "CIntPtr"
-convertC2HS CTJmpBuf = tycon "CJmpBuf"
-convertC2HS CTLLong = tycon "CLLong"
-convertC2HS CTLong = tycon "CLong"
-convertC2HS CTPtrdiff = tycon "CPtrdiff"
-convertC2HS CTSChar = tycon "CSChar"
-convertC2HS CTSUSeconds = tycon "CSUSeconds"
-convertC2HS CTShort = tycon "CShort"
-convertC2HS CTSigAtomic = tycon "CSigAtomic"
-convertC2HS CTSize = tycon "CSize"
-convertC2HS CTTime = tycon "CTime"
-convertC2HS CTUChar = tycon "CUChar"
-convertC2HS CTUInt = tycon "CUInt"
-convertC2HS CTUIntMax = tycon "CUIntMax"
-convertC2HS CTUIntPtr = tycon "CUIntPtr"
-convertC2HS CTULLong = tycon "CULLong"
-convertC2HS CTULong = tycon "CULong"
-convertC2HS CTUSeconds = tycon "CUSeconds"
-convertC2HS CTUShort = tycon "CUShort"
-convertC2HS CTWchar = tycon "CWchar"
-convertC2HS CTInt8 = tycon "Int8"
-convertC2HS CTInt16 = tycon "Int16"
-convertC2HS CTInt32 = tycon "Int32"
-convertC2HS CTInt64 = tycon "Int64"
-convertC2HS CTUInt8 = tycon "Word8"
-convertC2HS CTUInt16 = tycon "Word16"
-convertC2HS CTUInt32 = tycon "Word32"
-convertC2HS CTUInt64 = tycon "Word64"
-convertC2HS CTString = tycon "CString"
-convertC2HS CTVoidStar = tyapp (tycon "Ptr") unit_tycon
-convertC2HS (CEnum t _) = convertC2HS t
-convertC2HS (CPointer t) = tyapp (tycon "Ptr") (convertC2HS t)
-convertC2HS (CRef t) = tyapp (tycon "Ptr") (convertC2HS t)
-
 -- new
 c2HsType :: CTypes -> HsType GhcPs
 c2HsType CTBool = Ex.tycon "CBool"
@@ -778,35 +708,6 @@ c2HsType (CEnum t _) = c2HsType t
 c2HsType (CPointer t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
 c2HsType (CRef t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
 
--- OLD
-convertCpp2HS :: Maybe Class -> Types -> Type ()
-convertCpp2HS _c Void = unit_tycon
-convertCpp2HS (Just c) SelfType = tycon ((fst . hsClassName) c)
-convertCpp2HS Nothing SelfType = error "convertCpp2HS : SelfType but no class "
-convertCpp2HS _c (CT t _) = convertC2HS t
-convertCpp2HS _c (CPT (CPTClass c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (CPT (CPTClassRef c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (CPT (CPTClassCopy c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (CPT (CPTClassMove c') _) = (tycon . fst . hsClassName) c'
-convertCpp2HS _c (TemplateApp x) =
-  foldl1 tyapp $
-    map tycon $
-      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
-convertCpp2HS _c (TemplateAppRef x) =
-  foldl1 tyapp $
-    map tycon $
-      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
-convertCpp2HS _c (TemplateAppMove x) =
-  foldl1 tyapp $
-    map tycon $
-      tclass_name (tapp_tclass x) : map hsClassNameForTArg (tapp_tparams x)
-convertCpp2HS _c (TemplateType t) =
-  foldl1 tyapp $
-    tycon (tclass_name t) : map mkTVar (tclass_params t)
-convertCpp2HS _c (TemplateParam p) = mkTVar p
-convertCpp2HS _c (TemplateParamPointer p) = mkTVar p
-
--- NEW
 cxx2HsType :: Maybe Class -> Types -> HsType GhcPs
 cxx2HsType _c Void = Ex.unit_tycon
 cxx2HsType (Just c) SelfType = Ex.tycon ((fst . hsClassName) c)
@@ -834,40 +735,6 @@ cxx2HsType _c (TemplateType t) =
 cxx2HsType _c (TemplateParam p) = Ex.mkTVar p
 cxx2HsType _c (TemplateParamPointer p) = Ex.mkTVar p
 
--- OLD
-convertCpp2HS4Tmpl ::
-  -- | self
-  Type () ->
-  Maybe Class ->
-  -- | type paramemter splice
-  [Type ()] ->
-  Types ->
-  Type ()
-convertCpp2HS4Tmpl _ c _ Void = convertCpp2HS c Void
-convertCpp2HS4Tmpl _ (Just c) _ SelfType = convertCpp2HS (Just c) SelfType
-convertCpp2HS4Tmpl _ Nothing _ SelfType = convertCpp2HS Nothing SelfType
-convertCpp2HS4Tmpl _ c _ x@(CT _ _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClass _) _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassRef _) _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassCopy _) _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ c _ x@(CPT (CPTClassMove _) _) = convertCpp2HS c x
-convertCpp2HS4Tmpl _ _ ss (TemplateApp info) =
-  let pss = zip (tapp_tparams info) ss
-   in foldl1 tyapp $
-        tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _, s) -> s; (p, _) -> tycon (hsClassNameForTArg p)) pss
-convertCpp2HS4Tmpl _ _ ss (TemplateAppRef info) =
-  let pss = zip (tapp_tparams info) ss
-   in foldl1 tyapp $
-        tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _, s) -> s; (p, _) -> tycon (hsClassNameForTArg p)) pss
-convertCpp2HS4Tmpl _ _ ss (TemplateAppMove info) =
-  let pss = zip (tapp_tparams info) ss
-   in foldl1 tyapp $
-        tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _, s) -> s; (p, _) -> tycon (hsClassNameForTArg p)) pss
-convertCpp2HS4Tmpl e _ _ (TemplateType _) = e
-convertCpp2HS4Tmpl _ _ _ (TemplateParam p) = tySplice . parenSplice . mkVar $ p
-convertCpp2HS4Tmpl _ _ _ (TemplateParamPointer p) = tySplice . parenSplice . mkVar $ p
-
--- NEW
 cxx2HsType4Tmpl ::
   -- | self
   HsType GhcPs ->
@@ -919,73 +786,7 @@ classConstraints :: Class -> HsContext GhcPs
 classConstraints =
   Ex.cxTuple . map ((\name -> Ex.classA name [Ex.mkTVar "a"]) . typeclassName) . class_parents
 
--- OLD
 extractArgRetTypes ::
-  -- | class (Nothing for top-level function)
-  Maybe Class ->
-  -- | is virtual function?
-  Bool ->
-  -- | C type signature information for a given function      -- (Args,Types)           -- ^ (argument types, return type) of a given function
-  CFunSig ->
-  -- | Haskell type signature information for the function    --   ([Type ()],[Asst ()])  -- ^ (types, class constraints)
-  HsFunSig
-extractArgRetTypes mc isvirtual (CFunSig args ret) =
-  let (typs, s) = flip runState ([], (0 :: Int)) $ do
-        as <- mapM (mktyp . arg_type) args
-        r <- case ret of
-          SelfType -> case mc of
-            Nothing -> error "extractArgRetTypes: SelfType return but no class"
-            Just c -> if isvirtual then return (mkTVar "a") else return $ tycon ((fst . hsClassName) c)
-          x -> (return . convertCpp2HS Nothing) x
-        return (as ++ [tyapp (tycon "IO") r])
-   in HsFunSig
-        { hsSigTypes = typs,
-          hsSigConstraints = fst s
-        }
-  where
-    addclass c = do
-      (ctxts, n) <- get
-      let cname = (fst . hsClassName) c
-          iname = typeclassNameFromStr cname
-          tvar = mkTVar ('c' : show n)
-          ctxt1 = classA (unqual iname) [tvar]
-          ctxt2 = classA (unqual "FPtr") [tvar]
-      put (ctxt1 : ctxt2 : ctxts, n + 1)
-      return tvar
-    addstring = do
-      (ctxts, n) <- get
-      let tvar = mkTVar ('c' : show n)
-          ctxt = classA (unqual "Castable") [tvar, tycon "CString"]
-      put (ctxt : ctxts, n + 1)
-      return tvar
-    mktyp typ =
-      case typ of
-        SelfType -> return (mkTVar "a")
-        CT CTString Const -> addstring
-        CT _ _ -> return $ convertCpp2HS Nothing typ
-        CPT (CPTClass c') _ -> addclass c'
-        CPT (CPTClassRef c') _ -> addclass c'
-        CPT (CPTClassCopy c') _ -> addclass c'
-        CPT (CPTClassMove c') _ -> addclass c'
-        -- it is not clear whether the following is okay or not.
-        (TemplateApp x) ->
-          pure $
-            convertCpp2HS Nothing (TemplateApp x)
-        (TemplateAppRef x) ->
-          pure $
-            convertCpp2HS Nothing (TemplateAppRef x)
-        (TemplateAppMove x) ->
-          pure $
-            convertCpp2HS Nothing (TemplateAppMove x)
-        (TemplateType t) ->
-          pure $
-            foldl1 tyapp (tycon (tclass_name t) : map mkTVar (tclass_params t))
-        (TemplateParam p) -> return (mkTVar p)
-        Void -> return unit_tycon
-        _ -> error ("No such c type : " <> show typ)
-
--- NEW
-extractArgRetTypes' ::
   -- | class (Nothing for top-level function)
   Maybe Class ->
   -- | is virtual function?
@@ -995,8 +796,8 @@ extractArgRetTypes' ::
   CFunSig ->
   -- | Haskell type signature information for the function:
   --   (types, class constraints)
-  HsFunSig'
-extractArgRetTypes' mc isvirtual (CFunSig args ret) =
+  HsFunSig
+extractArgRetTypes mc isvirtual (CFunSig args ret) =
   let (typs, s) = flip runState ([], (0 :: Int)) $ do
         as <- mapM (mktyp . arg_type) args
         r <- case ret of
@@ -1008,9 +809,9 @@ extractArgRetTypes' mc isvirtual (CFunSig args ret) =
                 else return $ Ex.tycon ((fst . hsClassName) c)
           x -> (return . cxx2HsType Nothing) x
         return (as ++ [Ex.tyapp (Ex.tycon "IO") r])
-   in HsFunSig'
-        { hsSig'Types = typs,
-          hsSig'Constraints = fst s
+   in HsFunSig
+        { hsSigTypes = typs,
+          hsSigConstraints = fst s
         }
   where
     addclass c = do
@@ -1056,8 +857,8 @@ extractArgRetTypes' mc isvirtual (CFunSig args ret) =
 
 functionSignature :: Class -> Function -> HsType GhcPs
 functionSignature c f =
-  let HsFunSig' typs assts =
-        extractArgRetTypes'
+  let HsFunSig typs assts =
+        extractArgRetTypes
           (Just c)
           (isVirtualFunc f)
           (CFunSig (genericFuncArgs f) (genericFuncRet f))
@@ -1144,111 +945,10 @@ accessorCFunSig typ Setter = CFunSig [Arg typ "x"] Void
 accessorSignature :: Class -> Variable -> Accessor -> HsType GhcPs
 accessorSignature c v accessor =
   let csig = accessorCFunSig (arg_type (unVariable v)) accessor
-      HsFunSig' typs assts = extractArgRetTypes' (Just c) False csig
+      HsFunSig typs assts = extractArgRetTypes (Just c) False csig
       ctxt = Ex.cxTuple assts
       arg0 = (Ex.mkTVar (fst (hsClassName c)) :)
    in Ex.qualTy ctxt (foldr1 Ex.tyfun (arg0 typs))
-
--- | old function. this is for FFI type.
-hsFFIFuncTyp :: Maybe (Selfness, Class) -> CFunSig -> Type ()
-hsFFIFuncTyp msc (CFunSig args ret) =
-  foldr1 tyfun $ case msc of
-    Nothing -> argtyps <> [tyapp (tycon "IO") rettyp]
-    Just (Self, _) -> selftyp : argtyps <> [tyapp (tycon "IO") rettyp]
-    Just (NoSelf, _) -> argtyps <> [tyapp (tycon "IO") rettyp]
-  where
-    argtyps :: [Type ()]
-    argtyps = map (hsargtype . arg_type) args
-    rettyp :: Type ()
-    rettyp = hsrettype ret
-    selftyp = case msc of
-      Just (_, c) -> tyapp tyPtr (tycon (snd (hsClassName c)))
-      Nothing -> error "hsFFIFuncTyp: no self for top level function"
-    hsargtype :: Types -> Type ()
-    hsargtype (CT ctype _) = convertC2HS ctype
-    hsargtype (CPT (CPTClass d) _) = tyapp tyPtr (tycon rawname)
-      where
-        rawname = snd (hsClassName d)
-    hsargtype (CPT (CPTClassRef d) _) = tyapp tyPtr (tycon rawname)
-      where
-        rawname = snd (hsClassName d)
-    hsargtype (CPT (CPTClassMove d) _) = tyapp tyPtr (tycon rawname)
-      where
-        rawname = snd (hsClassName d)
-    hsargtype (CPT (CPTClassCopy d) _) = tyapp tyPtr (tycon rawname)
-      where
-        rawname = snd (hsClassName d)
-    hsargtype (TemplateApp x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
-      where
-        rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsargtype (TemplateAppRef x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
-      where
-        rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsargtype (TemplateAppMove x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
-      where
-        rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsargtype (TemplateType t) = tyapp tyPtr $ foldl1 tyapp (tycon rawname : map mkTVar (tclass_params t))
-      where
-        rawname = snd (hsTemplateClassName t)
-    hsargtype (TemplateParam p) = mkTVar p
-    hsargtype SelfType = selftyp
-    hsargtype _ = error "hsFuncTyp: undefined hsargtype"
-    ---------------------------------------------------------
-    hsrettype Void = unit_tycon
-    hsrettype SelfType = selftyp
-    hsrettype (CT ctype _) = convertC2HS ctype
-    hsrettype (CPT (CPTClass d) _) = tyapp tyPtr (tycon rawname)
-      where
-        rawname = snd (hsClassName d)
-    hsrettype (CPT (CPTClassRef d) _) = tyapp tyPtr (tycon rawname)
-      where
-        rawname = snd (hsClassName d)
-    hsrettype (CPT (CPTClassCopy d) _) = tyapp tyPtr (tycon rawname)
-      where
-        rawname = snd (hsClassName d)
-    hsrettype (CPT (CPTClassMove d) _) = tyapp tyPtr (tycon rawname)
-      where
-        rawname = snd (hsClassName d)
-    hsrettype (TemplateApp x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
-      where
-        rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsrettype (TemplateAppRef x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
-      where
-        rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsrettype (TemplateAppMove x) =
-      tyapp tyPtr $
-        foldl1 tyapp $
-          map tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
-      where
-        rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsrettype (TemplateType t) =
-      tyapp tyPtr $
-        foldl1 tyapp (tycon rawname : map mkTVar (tclass_params t))
-      where
-        rawname = snd (hsTemplateClassName t)
-    hsrettype (TemplateParam p) = mkTVar p
-    hsrettype (TemplateParamPointer p) = mkTVar p
 
 -- | new function
 hsFFIFunType :: Maybe (Selfness, Class) -> CFunSig -> HsType GhcPs

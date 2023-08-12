@@ -43,7 +43,6 @@ import FFICXX.Generate.Type.Module
   )
 import FFICXX.Generate.Util (moduleDirFile)
 import FFICXX.Generate.Util.GHCExactPrint (exactPrint)
-import FFICXX.Generate.Util.HaskellSrcExts (prettyPrint)
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified Language.Haskell.GHC.ExactPrint as Exact
 import System.Directory
@@ -220,25 +219,27 @@ simpleBuilder cfg sbc = do
   for_ mods $ \m ->
     gen
       (cmModule m <.> "hs")
-      (prettyPrint (C.buildModuleHs m))
+      (exactPrint (C.buildModuleHs m))
   --
   putStrLn "Generating Top-level Ordinary Module"
-  gen (topLevelMod <.> "Ordinary" <.> "hs") (prettyPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih))
+  gen
+    (topLevelMod <.> "Ordinary" <.> "hs")
+    (postProcess $ exactPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih))
   --
   putStrLn "Generating Top-level Template Module"
   gen
     (topLevelMod <.> "Template" <.> "hs")
-    (prettyPrint (C.buildTopLevelTemplateHs (topLevelMod <> ".Template") tih))
+    (exactPrint (C.buildTopLevelTemplateHs (topLevelMod <> ".Template") tih))
   --
   putStrLn "Generating Top-level TH Module"
   gen
     (topLevelMod <.> "TH" <.> "hs")
-    (prettyPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") tih))
+    (exactPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") tih))
   --
   putStrLn "Generating Top-level Module"
   gen
     (topLevelMod <.> "hs")
-    (prettyPrint (C.buildTopLevelHs topLevelMod (mods, tcms)))
+    (exactPrint (C.buildTopLevelHs topLevelMod (mods, tcms)))
   --
   putStrLn "Copying generated files to target directory"
   touch (workingDir </> "LICENSE")

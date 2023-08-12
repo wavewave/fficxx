@@ -31,8 +31,8 @@ import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.Primitive
   ( CFunSig (..),
     HsFunSig (..),
-    convertCpp2HS,
-    convertCpp2HS4Tmpl,
+    cxx2HsType,
+    cxx2HsType4Tmpl,
     extractArgRetTypes,
   )
 import FFICXX.Generate.Dependency
@@ -49,14 +49,6 @@ import FFICXX.Generate.Name
     hsFrontNameForTopLevel,
     typeclassName,
   )
-{- import FFICXX.Generate.Type.Class
-  ( Class (..),
-    TemplateClass (..),
-    TemplateFunction (..),
-    TemplateMemberFunction (..),
-    Types (Void),
-    Variable (..),
-  ) -}
 import FFICXX.Generate.Type.Class
   ( Arg (..),
     Class (..),
@@ -76,34 +68,46 @@ import FFICXX.Generate.Type.Module
   )
 import FFICXX.Generate.Util (firstUpper, toLowers)
 --
-import FFICXX.Generate.Util.HaskellSrcExts
-  ( bracketExp,
-    clsDecl,
+import FFICXX.Generate.Util.GHCExactPrint
+  ( app,
+    bracketExp,
+    caseE,
     con,
     cxEmpty,
     cxTuple,
+    doE,
     eabs,
+    emodule,
     ethingall,
     evar,
-    generator,
     inapp,
+    lamE,
+    letE,
     listE,
-    match,
     mkBind1,
+    mkBind1_,
+    mkBindStmt,
+    mkBodyStmt,
     mkClass,
     mkFun,
     mkFunSig,
+    mkFun_,
     mkImport,
+    mkLetStmt,
     mkPVar,
     mkTBind,
     mkVar,
-    nonamespace,
     op,
+    pTuple,
+    par,
     parenSplice,
     pbind_,
-    qualifier,
+    qualTy,
     strE,
+    toLocalBinds,
+    tupleE,
     tyForall,
+    tyParen,
     tySplice,
     tyTupleBoxed,
     tyapp,
@@ -112,28 +116,18 @@ import FFICXX.Generate.Util.HaskellSrcExts
     tylist,
     typeBracket,
     unqual,
+    valBinds,
+    wildcard,
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
-import Language.Haskell.Exts.Build
-  ( app,
-    binds,
-    caseE,
-    doE,
-    lamE,
-    letE,
-    letStmt,
-    pTuple,
-    paren,
-    qualStmt,
-    tuple,
-    wildcard,
-  )
-import Language.Haskell.Exts.Syntax
-  ( Decl,
-    ExportSpec,
+import GHC.Hs (GhcPs)
+import Language.Haskell.Syntax
+  ( HsDecl (TyClD),
+    IE,
     ImportDecl,
+    noExtField,
   )
 import System.FilePath ((<.>))
 
@@ -145,26 +139,26 @@ import System.FilePath ((<.>))
 -- Export --
 ------------
 
-genExport :: Class -> [ExportSpec ()]
+genExport :: Class -> [IE GhcPs]
 genExport c =
   let espec n =
         if null . (filter isVirtualFunc) $ (class_funcs c)
-          then eabs nonamespace (unqual n)
-          else ethingall (unqual n)
+          then eabs n
+          else ethingall n
    in if isAbstractClass c
         then [espec (typeclassName c)]
         else
-          [ ethingall (unqual ((fst . hsClassName) c)),
+          [ ethingall ((fst . hsClassName) c),
             espec (typeclassName c),
-            evar (unqual ("upcast" <> (fst . hsClassName) c)),
-            evar (unqual ("downcast" <> (fst . hsClassName) c))
+            evar ("upcast" <> (fst . hsClassName) c),
+            evar ("downcast" <> (fst . hsClassName) c)
           ]
             <> genExportConstructorAndNonvirtual c
             <> genExportStatic c
 
 -- | constructor and non-virtual function
-genExportConstructorAndNonvirtual :: Class -> [ExportSpec ()]
-genExportConstructorAndNonvirtual c = map (evar . unqual) fns
+genExportConstructorAndNonvirtual :: Class -> [IE GhcPs]
+genExportConstructorAndNonvirtual c = fmap evar fns
   where
     fs = class_funcs c
     fns =
@@ -175,8 +169,8 @@ genExportConstructorAndNonvirtual c = map (evar . unqual) fns
         )
 
 -- | staic function export list
-genExportStatic :: Class -> [ExportSpec ()]
-genExportStatic c = map (evar . unqual) fns
+genExportStatic :: Class -> [IE GhcPs]
+genExportStatic c = fmap evar fns
   where
     fs = class_funcs c
     fns = map (aliasedFuncName c) (staticFuncs fs)
@@ -186,14 +180,14 @@ genExportStatic c = map (evar . unqual) fns
 --
 
 -- | module summary re-exports
-genImportInModule :: Class -> [ImportDecl ()]
+genImportInModule :: Class -> [ImportDecl GhcPs]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
 
 -- | top=level
 genImportInTopLevel ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
-  [ImportDecl ()]
+  [ImportDecl GhcPs]
 genImportInTopLevel modname (mods, _tmods) =
   map (mkImport . cmModule) mods
     ++ map mkImport [modname <.> "Template", modname <.> "TH", modname <.> "Ordinary"]
@@ -202,7 +196,7 @@ genImportInTopLevel modname (mods, _tmods) =
 -- declarations and definitions
 --
 
-genTopLevelDef :: TLOrdinary -> [Decl ()]
+genTopLevelDef :: TLOrdinary -> [HsDecl GhcPs]
 genTopLevelDef f@TopLevelFunction {..} =
   let fname = hsFrontNameForTopLevel (TLOrdinary f)
       HsFunSig typs assts =
@@ -210,24 +204,24 @@ genTopLevelDef f@TopLevelFunction {..} =
           Nothing
           False
           (CFunSig toplevelfunc_args toplevelfunc_ret)
-      sig = tyForall Nothing (Just (cxTuple assts)) (foldr1 tyfun typs)
+      sig = qualTy (cxTuple assts) (foldr1 tyfun typs)
       xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len - 1) else "xformnull"
       cfname = "c_" <> toLowers fname
       rhs = app (mkVar xformerstr) (mkVar cfname)
-   in mkFun fname sig [] rhs Nothing
+   in mkFun_ fname sig [] rhs
 genTopLevelDef v@TopLevelVariable {..} =
   let fname = hsFrontNameForTopLevel (TLOrdinary v)
       cfname = "c_" <> toLowers fname
-      rtyp = convertCpp2HS Nothing toplevelvar_ret
-      sig = tyapp (tycon "IO") rtyp
+      rtyp = cxx2HsType Nothing toplevelvar_ret
+      sig = tyapp (tycon "IO") (tyParen rtyp)
       rhs = app (mkVar "xformnull") (mkVar cfname)
-   in mkFun fname sig [] rhs Nothing
+   in mkFun_ fname sig [] rhs
 
 -- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
 -- TODO2: should be refactored out.
-genImportForTLOrdinary :: TLOrdinary -> [ImportDecl ()]
+genImportForTLOrdinary :: TLOrdinary -> [ImportDecl GhcPs]
 genImportForTLOrdinary f =
   let dep4func = extractClassDepForTLOrdinary f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
@@ -240,7 +234,7 @@ genImportForTLOrdinary f =
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
 -- TODO2: should be refactored out.
-genImportForTLTemplate :: TLTemplate -> [ImportDecl ()]
+genImportForTLTemplate :: TLTemplate -> [ImportDecl GhcPs]
 genImportForTLTemplate f =
   let dep4func = extractClassDepForTLTemplate f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
@@ -253,20 +247,21 @@ genImportForTLTemplate f =
 -- top-level template
 --
 
-genTLTemplateInterface :: TLTemplate -> [Decl ()]
+genTLTemplateInterface :: TLTemplate -> [HsDecl GhcPs]
 genTLTemplateInterface t =
-  [ mkClass cxEmpty (firstUpper (topleveltfunc_name t)) (map mkTBind tps) methods
+  [ TyClD noExtField $
+      mkClass cxEmpty (firstUpper (topleveltfunc_name t)) (map mkTBind tps) methods
   ]
   where
     tps = topleveltfunc_params t
-    ctyp = convertCpp2HS Nothing (topleveltfunc_ret t)
-    lst = map (convertCpp2HS Nothing . arg_type) (topleveltfunc_args t)
-    sigdecl = mkFunSig (topleveltfunc_name t) $ foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
-    methods = [clsDecl sigdecl]
+    ctyp = cxx2HsType Nothing (topleveltfunc_ret t)
+    lst = map (cxx2HsType Nothing . arg_type) (topleveltfunc_args t)
+    sigdecl = mkFunSig (topleveltfunc_name t) $ foldr1 tyfun (lst <> [tyapp (tycon "IO") (tyParen ctyp)])
+    methods = [sigdecl]
 
-genTLTemplateImplementation :: TLTemplate -> [Decl ()]
+genTLTemplateImplementation :: TLTemplate -> [HsDecl GhcPs]
 genTLTemplateImplementation t =
-  mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
+  mkFun nh sig (tvars_p ++ [p "suffix"]) rhs bstmts
   where
     v = mkVar
     p = mkPVar
@@ -283,38 +278,40 @@ genTLTemplateImplementation t =
     lam = lamE [p "n"] (lit' `app` v "<>" `app` v "n")
     rhs =
       app (v "mkTFunc") $
-        let typs = if nparams == 1 then map v tvars else [tuple (map v tvars)]
-         in tuple (typs ++ [v "suffix", lam, v "tyf"])
+        let typs = if nparams == 1 then map v tvars else [tupleE (map v tvars)]
+         in tupleE (typs ++ [v "suffix", lam, v "tyf"])
     sig' =
       let e = error "genTLTemplateImplementation"
           spls = map (tySplice . parenSplice . mkVar) $ topleveltfunc_params t
-          ctyp = convertCpp2HS4Tmpl e Nothing spls (topleveltfunc_ret t)
-          lst = map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (topleveltfunc_args t)
-       in foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
-    tassgns = map (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i)))) itps
+          ctyp = cxx2HsType4Tmpl e Nothing spls (topleveltfunc_ret t)
+          lst = map (cxx2HsType4Tmpl e Nothing spls . arg_type) (topleveltfunc_args t)
+       in foldr1 tyfun (lst <> [tyapp (tycon "IO") (tyParen ctyp)])
+    tassgns =
+      fmap
+        (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i))))
+        itps
     bstmts =
-      binds
-        [ mkBind1
-            "tyf"
-            [wildcard]
-            ( letE
-                tassgns
-                (bracketExp (typeBracket sig'))
-            )
-            Nothing
-        ]
+      toLocalBinds True $
+        valBinds
+          [ mkBind1_
+              "tyf"
+              [wildcard]
+              ( letE
+                  (toLocalBinds False (valBinds tassgns))
+                  (bracketExp (typeBracket sig'))
+              )
+          ]
 
 genTLTemplateInstance ::
   TopLevelImportHeader ->
   TLTemplate ->
-  [Decl ()]
+  [HsDecl GhcPs]
 genTLTemplateInstance tih t =
-  mkFun
+  mkFun_
     fname
     sig
     (p "isCprim" : zipWith (\x y -> pTuple [p x, p y]) qtvars pvars)
     rhs
-    Nothing
   where
     p = mkPVar
     v = mkVar
@@ -325,7 +322,7 @@ genTLTemplateInstance tih t =
     qtvars = map (\(i, _) -> "qtyp" ++ show i) itps
     pvars = map (\(i, _) -> "param" ++ show i) itps
     nparams = length itps
-    typs_v = if nparams == 1 then v (tvars !! 0) else tuple (map v tvars)
+    typs_v = if nparams == 1 then v (tvars !! 0) else tupleE (map v tvars)
     params_l = listE (map v pvars)
     sig =
       foldr1 tyfun $
@@ -342,8 +339,8 @@ genTLTemplateInstance tih t =
     rhs =
       doE
         ( [paramsstmt, suffixstmt]
-            <> [ generator (p "callmod_") (v "fmap" `app` v "loc_module" `app` (v "location")),
-                 letStmt
+            <> [ mkBindStmt (p "callmod_") (v "fmap" `app` v "loc_module" `app` (v "location")),
+                 mkLetStmt
                    [ pbind_
                        (p "callmod")
                        (v "dot2_" `app` v "callmod_")
@@ -352,19 +349,19 @@ genTLTemplateInstance tih t =
             <> map genqtypstmt (zip tvars qtvars)
             <> [genstmt "f" (1 :: Int)]
             <> [ foreignSrcStmt,
-                 letStmt lststmt,
-                 qualStmt retstmt
+                 mkLetStmt lststmt,
+                 mkBodyStmt retstmt
                ]
         )
     --------------------------
     paramsstmt =
-      letStmt
+      mkLetStmt
         [ pbind_
             (p "params")
             (v "map" `app` (v "tpinfoSuffix") `app` params_l)
         ]
     suffixstmt =
-      letStmt
+      mkLetStmt
         [ pbind_
             (p "suffix")
             ( v "concatMap"
@@ -372,9 +369,9 @@ genTLTemplateInstance tih t =
                 `app` params_l
             )
         ]
-    genqtypstmt (tvar, qtvar) = generator (p tvar) (v qtvar)
+    genqtypstmt (tvar, qtvar) = mkBindStmt (p tvar) (v qtvar)
     genstmt prefix n =
-      generator
+      mkBindStmt
         (p (prefix <> show n))
         ( v "mkFunc"
             `app` strE (topleveltfunc_name t)
@@ -385,30 +382,32 @@ genTLTemplateInstance tih t =
     lststmt = [pbind_ (p "lst") (listE [v "f1"])]
     -- TODO: refactor out the following code.
     foreignSrcStmt =
-      qualifier $
+      mkBodyStmt $
         (v "addModFinalizer")
-          `app` ( v "addForeignSource"
-                    `app` con "LangCxx"
-                    `app` ( L.foldr1
-                              (\x y -> inapp x (op "++") y)
-                              [ includeStatic,
-                                {-                        , includeDynamic
-                                                        , namespaceStr -}
-                                strE (tcname <> "_instance"),
-                                paren $
-                                  caseE
-                                    (v "isCprim")
-                                    [ match (p "CPrim") (strE "_s"),
-                                      match (p "NonCPrim") (strE "")
-                                    ],
-                                strE "(",
-                                v "intercalate"
-                                  `app` strE ", "
-                                  `app` paren (inapp (v "callmod") (op ":") (v "params")),
-                                strE ")\n"
-                              ]
-                          )
-                )
+          `app` par
+            ( v "addForeignSource"
+                `app` con "LangCxx"
+                `app` par
+                  ( L.foldr1
+                      (\x y -> inapp x (op "++") y)
+                      [ includeStatic,
+                        {-                        , includeDynamic
+                                                , namespaceStr -}
+                        strE (tcname <> "_instance"),
+                        par $
+                          caseE
+                            (v "isCprim")
+                            [ (p "CPrim", strE "_s"),
+                              (p "NonCPrim", strE "")
+                            ],
+                        strE "(",
+                        v "intercalate"
+                          `app` strE ", "
+                          `app` par (inapp (v "callmod") (op ":") (v "params")),
+                        strE ")\n"
+                      ]
+                  )
+            )
       where
         -- temporary
         includeStatic =
@@ -450,8 +449,10 @@ genTLTemplateInstance tih t =
           [ v "mkInstance"
               `app` listE []
               -- `app` (v "con" `app` strE tcname)
-              `app` foldl1
-                (\f x -> con "AppT" `app` f `app` x)
-                (v "con" `app` strE tcname : map v tvars)
+              `app` par
+                ( foldl1
+                    (\f x -> con "AppT" `app` f `app` x)
+                    (par (v "con" `app` strE tcname) : map v tvars)
+                )
               `app` (v "lst")
           ]

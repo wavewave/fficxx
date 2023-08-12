@@ -40,7 +40,7 @@ import FFICXX.Generate.Code.HsCommon
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
     genImportInFFI,
-    genTopLevelFFI_,
+    genTopLevelFFI,
   )
 import FFICXX.Generate.Code.HsImplementation
   ( genHsFrontInst,
@@ -115,24 +115,12 @@ import FFICXX.Generate.Type.PackageInterface
   )
 import FFICXX.Generate.Util (firstUpper)
 import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
-import FFICXX.Generate.Util.HaskellSrcExts
-  ( eWildCard,
-    emodule,
-    ethingwith,
-    evar,
-    lang,
-    mkImport,
-    mkModuleE,
-    unqual,
-  )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import GHC.Hs.Extension (GhcPs)
-import Language.Haskell.Exts.Syntax (Module)
 import Language.Haskell.Syntax
-  ( HsDecl (ForD),
+  ( HsDecl,
     HsModule,
-    noExtField,
   )
 import System.FilePath ((<.>), (</>))
 
@@ -355,7 +343,7 @@ buildFFIHsc m =
       ]
         <> genImportInFFI m
         <> genExtraImport m
-    hscBody = fmap (ForD noExtField) (genHsFFI (cmCIH m))
+    hscBody = fmap Ex.forD (genHsFFI (cmCIH m))
 
 buildRawTypeHs :: ClassModule -> HsModule GhcPs
 buildRawTypeHs m =
@@ -582,29 +570,28 @@ buildTHHs m =
     tmplImpls = genTmplImplementation t
     tmplInsts = genTmplInstance (tcmTCIH m)
 
-buildModuleHs :: ClassModule -> Module ()
-buildModuleHs m = mkModuleE (cmModule m) [] (genExport c) (genImportInModule c) []
+buildModuleHs :: ClassModule -> HsModule GhcPs
+buildModuleHs m =
+  Ex.mkModuleE (cmModule m) [] (Just (genExport c)) (genImportInModule c) []
   where
     c = cihClass (cmCIH m)
 
 buildTopLevelHs ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
-  Module ()
+  HsModule GhcPs
 buildTopLevelHs modname (mods, tmods) =
-  mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
+  Ex.mkModuleE modname pkgExtensions (Just pkgExports) pkgImports pkgBody
   where
     pkgExtensions =
-      [ lang
-          [ "FlexibleContexts",
-            "FlexibleInstances",
-            "ForeignFunctionInterface",
-            "InterruptibleFFI"
-          ]
+      [ "FlexibleContexts",
+        "FlexibleInstances",
+        "ForeignFunctionInterface",
+        "InterruptibleFFI"
       ]
     pkgExports =
-      map (emodule . cmModule) mods
-        ++ map emodule [modname <.> "Ordinary", modname <.> "Template", modname <.> "TH"]
+      map (Ex.emodule . cmModule) mods
+        ++ map Ex.emodule [modname <.> "Ordinary", modname <.> "Template", modname <.> "TH"]
     pkgImports = genImportInTopLevel modname (mods, tmods)
     pkgBody = [] --    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
     -- ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
@@ -613,59 +600,54 @@ buildTopLevelOrdinaryHs ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
   TopLevelImportHeader ->
-  Module ()
+  HsModule GhcPs
 buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
-  mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
+  Ex.mkModuleE modname pkgExtensions (Just pkgExports) pkgImports pkgBody
   where
     tfns = tihFuncs tih
     pkgExtensions =
-      [ lang
-          [ "FlexibleContexts",
-            "FlexibleInstances",
-            "ForeignFunctionInterface",
-            "InterruptibleFFI"
-          ]
+      [ "FlexibleContexts",
+        "FlexibleInstances",
+        "ForeignFunctionInterface",
+        "InterruptibleFFI"
       ]
-    pkgExports = map (evar . unqual . hsFrontNameForTopLevel . TLOrdinary) (filterTLOrdinary tfns)
+    pkgExports = fmap (Ex.evar . hsFrontNameForTopLevel . TLOrdinary) (filterTLOrdinary tfns)
     pkgImports =
-      map mkImport ["Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast"]
-        ++ map (\m -> mkImport (tcmModule m <.> "Template")) tmods
+      fmap Ex.mkImport ["Foreign.C", "Foreign.Ptr", "FFICXX.Runtime.Cast"]
+        ++ fmap (\m -> Ex.mkImport (tcmModule m <.> "Template")) tmods
         ++ concatMap genImportForTLOrdinary (filterTLOrdinary tfns)
     pkgBody =
-      map (genTopLevelFFI_ tih) (filterTLOrdinary tfns)
+      map (Ex.forD . genTopLevelFFI tih) (filterTLOrdinary tfns)
         ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
 
 buildTopLevelTemplateHs ::
   String ->
   TopLevelImportHeader ->
-  Module ()
+  HsModule GhcPs
 buildTopLevelTemplateHs modname tih =
-  mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
+  Ex.mkModuleE modname pkgExtensions (Just pkgExports) pkgImports pkgBody
   where
     tfns = filterTLTemplate (tihFuncs tih)
     pkgExtensions =
-      [ lang
-          [ "EmptyDataDecls",
-            "FlexibleInstances",
-            "ForeignFunctionInterface",
-            "InterruptibleFFI",
-            "MultiParamTypeClasses",
-            "TypeFamilies"
-          ]
+      [ "EmptyDataDecls",
+        "FlexibleInstances",
+        "ForeignFunctionInterface",
+        "InterruptibleFFI",
+        "MultiParamTypeClasses",
+        "TypeFamilies"
       ]
     pkgExports =
       map
-        ( (\n -> ethingwith (eWildCard 1) n [])
-            . unqual
+        ( (\n -> Ex.ethingall n)
             . firstUpper
             . hsFrontNameForTopLevel
             . TLTemplate
         )
         tfns
     pkgImports =
-      [ mkImport "Foreign.C.Types",
-        mkImport "Foreign.Ptr",
-        mkImport "FFICXX.Runtime.Cast"
+      [ Ex.mkImport "Foreign.C.Types",
+        Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "FFICXX.Runtime.Cast"
       ]
         ++ concatMap genImportForTLTemplate tfns
     pkgBody = concatMap genTLTemplateInterface tfns
@@ -673,24 +655,21 @@ buildTopLevelTemplateHs modname tih =
 buildTopLevelTHHs ::
   String ->
   TopLevelImportHeader ->
-  Module ()
+  HsModule GhcPs
 buildTopLevelTHHs modname tih =
-  mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
+  Ex.mkModuleE modname pkgExtensions (Just pkgExports) pkgImports pkgBody
   where
     tfns = filterTLTemplate (tihFuncs tih)
     pkgExtensions =
-      [ lang
-          [ "FlexibleContexts",
-            "FlexibleInstances",
-            "ForeignFunctionInterface",
-            "InterruptibleFFI",
-            "TemplateHaskell"
-          ]
+      [ "FlexibleContexts",
+        "FlexibleInstances",
+        "ForeignFunctionInterface",
+        "InterruptibleFFI",
+        "TemplateHaskell"
       ]
     pkgExports =
       map
-        ( evar
-            . unqual
+        ( Ex.evar
             . (\x -> "gen" <> x <> "InstanceFor")
             . firstUpper
             . hsFrontNameForTopLevel
@@ -698,15 +677,15 @@ buildTopLevelTHHs modname tih =
         )
         tfns
     pkgImports =
-      [ mkImport "Data.Char",
-        mkImport "Data.List",
-        mkImport "Data.Monoid",
-        mkImport "Foreign.C.Types",
-        mkImport "Foreign.Ptr",
-        mkImport "Language.Haskell.TH",
-        mkImport "Language.Haskell.TH.Syntax",
-        mkImport "FFICXX.Runtime.CodeGen.Cxx",
-        mkImport "FFICXX.Runtime.TH"
+      [ Ex.mkImport "Data.Char",
+        Ex.mkImport "Data.List",
+        Ex.mkImport "Data.Monoid",
+        Ex.mkImport "Foreign.C.Types",
+        Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "Language.Haskell.TH",
+        Ex.mkImport "Language.Haskell.TH.Syntax",
+        Ex.mkImport "FFICXX.Runtime.CodeGen.Cxx",
+        Ex.mkImport "FFICXX.Runtime.TH"
       ]
         ++ concatMap genImportForTLTemplate tfns
     pkgBody =
