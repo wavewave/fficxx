@@ -9,17 +9,17 @@ module FFICXX.Generate.Code.HsTopLevel
 
     -- * imports
     genImportInModule,
-    genImportInTopLevel,
+    {-    genImportInTopLevel,
 
-    -- * top-level decls and defs
-    genTopLevelDef,
-    genImportForTLOrdinary,
-    genImportForTLTemplate,
+        -- * top-level decls and defs
+        genTopLevelDef,
+        genImportForTLOrdinary,
+        genImportForTLTemplate,
 
-    -- * toplevel template
-    genTLTemplateInterface,
-    genTLTemplateImplementation,
-    genTLTemplateInstance,
+        -- * toplevel template
+        genTLTemplateInterface,
+        genTLTemplateImplementation,
+        genTLTemplateInstance, -}
   )
 where
 
@@ -49,14 +49,6 @@ import FFICXX.Generate.Name
     hsFrontNameForTopLevel,
     typeclassName,
   )
-{- import FFICXX.Generate.Type.Class
-  ( Class (..),
-    TemplateClass (..),
-    TemplateFunction (..),
-    TemplateMemberFunction (..),
-    Types (Void),
-    Variable (..),
-  ) -}
 import FFICXX.Generate.Type.Class
   ( Arg (..),
     Class (..),
@@ -76,33 +68,41 @@ import FFICXX.Generate.Type.Module
   )
 import FFICXX.Generate.Util (firstUpper, toLowers)
 --
-import FFICXX.Generate.Util.HaskellSrcExts
-  ( bracketExp,
-    clsDecl,
+import FFICXX.Generate.Util.GHCExactPrint
+  ( -- nonamespace,
+
+    app,
+    bracketExp,
+    caseE,
     con,
     cxEmpty,
     cxTuple,
+    doE,
     eabs,
     ethingall,
     evar,
-    generator,
     inapp,
+    lamE,
+    letE,
     listE,
-    match,
     mkBind1,
+    mkBindStmt,
+    mkBodyStmt,
     mkClass,
     mkFun,
     mkFunSig,
     mkImport,
+    mkLetStmt,
     mkPVar,
     mkTBind,
     mkVar,
-    nonamespace,
     op,
+    pTuple,
+    par,
     parenSplice,
     pbind_,
-    qualifier,
     strE,
+    tupleE,
     tyForall,
     tySplice,
     tyTupleBoxed,
@@ -112,27 +112,15 @@ import FFICXX.Generate.Util.HaskellSrcExts
     tylist,
     typeBracket,
     unqual,
+    wildcard,
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
-import Language.Haskell.Exts.Build
-  ( app,
-    binds,
-    caseE,
-    doE,
-    lamE,
-    letE,
-    letStmt,
-    pTuple,
-    paren,
-    qualStmt,
-    tuple,
-    wildcard,
-  )
-import Language.Haskell.Exts.Syntax
-  ( Decl,
-    ExportSpec,
+import GHC.Hs (GhcPs)
+import Language.Haskell.Syntax
+  ( HsDecl,
+    IE,
     ImportDecl,
   )
 import System.FilePath ((<.>))
@@ -145,26 +133,26 @@ import System.FilePath ((<.>))
 -- Export --
 ------------
 
-genExport :: Class -> [ExportSpec ()]
+genExport :: Class -> [IE GhcPs]
 genExport c =
   let espec n =
         if null . (filter isVirtualFunc) $ (class_funcs c)
-          then eabs nonamespace (unqual n)
-          else ethingall (unqual n)
+          then eabs n
+          else ethingall n
    in if isAbstractClass c
         then [espec (typeclassName c)]
         else
-          [ ethingall (unqual ((fst . hsClassName) c)),
+          [ ethingall ((fst . hsClassName) c),
             espec (typeclassName c),
-            evar (unqual ("upcast" <> (fst . hsClassName) c)),
-            evar (unqual ("downcast" <> (fst . hsClassName) c))
+            evar ("upcast" <> (fst . hsClassName) c),
+            evar ("downcast" <> (fst . hsClassName) c)
           ]
             <> genExportConstructorAndNonvirtual c
             <> genExportStatic c
 
 -- | constructor and non-virtual function
-genExportConstructorAndNonvirtual :: Class -> [ExportSpec ()]
-genExportConstructorAndNonvirtual c = map (evar . unqual) fns
+genExportConstructorAndNonvirtual :: Class -> [IE GhcPs]
+genExportConstructorAndNonvirtual c = fmap evar fns
   where
     fs = class_funcs c
     fns =
@@ -175,8 +163,8 @@ genExportConstructorAndNonvirtual c = map (evar . unqual) fns
         )
 
 -- | staic function export list
-genExportStatic :: Class -> [ExportSpec ()]
-genExportStatic c = map (evar . unqual) fns
+genExportStatic :: Class -> [IE GhcPs]
+genExportStatic c = fmap evar fns
   where
     fs = class_funcs c
     fns = map (aliasedFuncName c) (staticFuncs fs)
@@ -186,9 +174,10 @@ genExportStatic c = map (evar . unqual) fns
 --
 
 -- | module summary re-exports
-genImportInModule :: Class -> [ImportDecl ()]
+genImportInModule :: Class -> [ImportDecl GhcPs]
 genImportInModule x = map (\y -> mkImport (getClassModuleBase x <.> y)) ["RawType", "Interface", "Implementation"]
 
+{-
 -- | top=level
 genImportInTopLevel ::
   String ->
@@ -455,3 +444,4 @@ genTLTemplateInstance tih t =
                 (v "con" `app` strE tcname : map v tvars)
               `app` (v "lst")
           ]
+-}

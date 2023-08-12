@@ -70,14 +70,14 @@ import FFICXX.Generate.Code.HsTemplate
   )
 import FFICXX.Generate.Code.HsTopLevel
   ( genExport,
-    genImportForTLOrdinary,
-    genImportForTLTemplate,
+    -- genImportForTLOrdinary,
+    -- genImportForTLTemplate,
     genImportInModule,
-    genImportInTopLevel,
-    genTLTemplateImplementation,
-    genTLTemplateInstance,
-    genTLTemplateInterface,
-    genTopLevelDef,
+    -- genImportInTopLevel,
+    -- genTLTemplateImplementation,
+    -- genTLTemplateInstance,
+    -- genTLTemplateInterface,
+    -- genTopLevelDef,
   )
 import FFICXX.Generate.Dependency
   ( class_allparents,
@@ -582,8 +582,9 @@ buildTHHs m =
     tmplImpls = genTmplImplementation t
     tmplInsts = genTmplInstance (tcmTCIH m)
 
-buildModuleHs :: ClassModule -> Module ()
-buildModuleHs m = mkModuleE (cmModule m) [] (genExport c) (genImportInModule c) []
+buildModuleHs :: ClassModule -> HsModule GhcPs
+buildModuleHs m =
+  Ex.mkModuleE (cmModule m) [] (Just (genExport c)) (genImportInModule c) []
   where
     c = cihClass (cmCIH m)
 
@@ -591,7 +592,9 @@ buildTopLevelHs ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
   Module ()
-buildTopLevelHs modname (mods, tmods) =
+buildTopLevelHs modname (mods, tmods) = undefined
+
+{-
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     pkgExtensions =
@@ -608,13 +611,16 @@ buildTopLevelHs modname (mods, tmods) =
     pkgImports = genImportInTopLevel modname (mods, tmods)
     pkgBody = [] --    map (genTopLevelFFI tih) (filterTLOrdinary tfns)
     -- ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
+-}
 
 buildTopLevelOrdinaryHs ::
   String ->
   ([ClassModule], [TemplateClassModule]) ->
   TopLevelImportHeader ->
   Module ()
-buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
+buildTopLevelOrdinaryHs modname (_mods, tmods) tih = undefined
+
+{-
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = tihFuncs tih
@@ -634,12 +640,15 @@ buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
     pkgBody =
       map (genTopLevelFFI_ tih) (filterTLOrdinary tfns)
         ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
+-}
 
 buildTopLevelTemplateHs ::
   String ->
   TopLevelImportHeader ->
   Module ()
-buildTopLevelTemplateHs modname tih =
+buildTopLevelTemplateHs modname tih = undefined
+
+{-
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = filterTLTemplate (tihFuncs tih)
@@ -669,12 +678,15 @@ buildTopLevelTemplateHs modname tih =
       ]
         ++ concatMap genImportForTLTemplate tfns
     pkgBody = concatMap genTLTemplateInterface tfns
+-}
 
 buildTopLevelTHHs ::
   String ->
   TopLevelImportHeader ->
   Module ()
-buildTopLevelTHHs modname tih =
+buildTopLevelTHHs modname tih = undefined
+
+{-
   mkModuleE modname pkgExtensions pkgExports pkgImports pkgBody
   where
     tfns = filterTLTemplate (tihFuncs tih)
@@ -712,6 +724,7 @@ buildTopLevelTHHs modname tih =
     pkgBody =
       concatMap genTLTemplateImplementation tfns
         <> concatMap (genTLTemplateInstance tih) tfns
+-}
 
 buildPackageInterface ::
   PackageInterface ->

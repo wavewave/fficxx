@@ -4,8 +4,12 @@
 module FFICXX.Generate.Util.GHCExactPrint
   ( -- * module
     mkModule,
+    mkModuleE,
 
-    -- * import and FFI
+    -- * import/export and FFI
+    eabs,
+    ethingall,
+    evar,
     mkImport,
     mkImportSrc,
     mkForImpCcall,
@@ -252,6 +256,8 @@ import Language.Haskell.Syntax
     HsValBinds,
     HsValBindsLR (..),
     HsWildCardBndrs (HsWC),
+    IE (..),
+    IEWrappedName (..),
     ImportDecl (..),
     ImportDeclQualifiedStyle (..),
     InstDecl (..),
@@ -375,7 +381,20 @@ mkModule ::
   [ImportDecl GhcPs] ->
   [HsDecl GhcPs] ->
   HsModule GhcPs
-mkModule name pragmas idecls decls =
+mkModule name pragmas idecls decls = mkModuleE name pragmas Nothing idecls decls
+
+mkModuleE ::
+  -- | Module name
+  String ->
+  -- | Pragmas
+  [String] ->
+  -- | module exports
+  Maybe [IE GhcPs] ->
+  -- | imports
+  [ImportDecl GhcPs] ->
+  [HsDecl GhcPs] ->
+  HsModule GhcPs
+mkModuleE name pragmas mies idecls decls =
   HsModule
     { hsmodExt =
         XModulePs
@@ -385,7 +404,8 @@ mkModule name pragmas idecls decls =
             hsmodHaddockModHeader = Nothing
           },
       hsmodName = Just (L (mkRelSrcSpanAnn 0 noAnnListItem) modName),
-      hsmodExports = Nothing,
+      hsmodExports =
+        fmap (L (mkRelSrcSpanAnn (-1) annExport) . tupleAnn) mies,
       hsmodImports = paragraphLines idecls,
       hsmodDecls = paragraphLines decls
     }
@@ -408,6 +428,35 @@ mkModule name pragmas idecls decls =
           AddEpAnn AnnWhere (mkEpaDelta 0)
         ]
         (AnnList Nothing Nothing Nothing [] [])
+    annExport =
+      AnnList
+        Nothing
+        (Just (AddEpAnn AnnOpenP (mkEpaDelta 0)))
+        (Just (AddEpAnn AnnCloseP (mkEpaDelta (-1))))
+        []
+        []
+
+eabs :: String -> IE GhcPs
+eabs name =
+  IEThingAbs
+    (mkRelEpAnn (-1) [])
+    (mkL (-1) (IEName noExtField (mkLIdP (-1) name)))
+
+ethingall :: String -> IE GhcPs
+ethingall name =
+  IEThingAll
+    (mkRelEpAnn (-1) ann)
+    (mkL (-1) (IEName noExtField (mkLIdP (-1) name)))
+  where
+    ann =
+      [ AddEpAnn AnnOpenP (mkEpaDelta (-1)),
+        AddEpAnn AnnCloseP (mkEpaDelta (-1)),
+        AddEpAnn AnnDotdot (mkEpaDelta (-1))
+      ]
+
+evar :: String -> IE GhcPs
+evar name =
+  IEVar noExtField (mkL (-1) (IEName noExtField (mkLIdP (-1) name)))
 
 --
 -- Imports
@@ -1398,12 +1447,6 @@ dhead n = DHead () (Ident () n)
 
 mkDeclHead :: String -> [TyVarBind ()] -> DeclHead ()
 mkDeclHead n tbinds = foldl' (DHApp ()) (dhead n) tbinds
-
-mkModuleE :: String -> [ModulePragma ()] -> [ExportSpec ()] -> [ImportDecl ()] -> [Decl ()] -> Module ()
-mkModuleE n pragmas exps idecls decls = Module () (Just mhead) pragmas idecls decls
-  where
-    mhead = ModuleHead () (ModuleName () n) Nothing (Just eslist)
-    eslist = ExportSpecList () exps
 
 mkImportExp :: String -> [String] -> ImportDecl ()
 mkImportExp m lst =

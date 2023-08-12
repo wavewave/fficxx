@@ -217,10 +217,11 @@ simpleBuilder cfg sbc = do
       (hsBootHackClearEmptyContexts $ exactPrint (C.buildInterfaceHsBoot depCycles m))
   --
   putStrLn "Generating Module summary file"
-  for_ mods $ \m ->
+  for_ mods $ \m -> do
+    debugExactPrint (C.buildModuleHs m)
     gen
       (cmModule m <.> "hs")
-      (prettyPrint (C.buildModuleHs m))
+      (exactPrint (C.buildModuleHs m))
   --
   putStrLn "Generating Top-level Ordinary Module"
   gen (topLevelMod <.> "Ordinary" <.> "hs") (prettyPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih))
