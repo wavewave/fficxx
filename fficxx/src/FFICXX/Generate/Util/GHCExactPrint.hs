@@ -670,9 +670,11 @@ mkData ::
 mkData name tbinds cdecls deriv =
   DataDecl (mkRelEpAnn (-1) annos) (mkLIdP 0 name) qty Prefix dfn
   where
-    annos =
-      [ AddEpAnn AnnData (mkEpaDelta (-1))
-      ]
+    annData = AddEpAnn AnnData (mkEpaDelta (-1))
+    annEqual = AddEpAnn AnnEqual (mkEpaDelta 0)
+    annos
+      | null cdecls = [annData]
+      | otherwise = [annData, annEqual]
     qty = HsQTvs noExtField $ fmap (mkL 0) tbinds
     dfn =
       HsDataDefn
@@ -680,7 +682,9 @@ mkData name tbinds cdecls deriv =
           dd_ctxt = Nothing,
           dd_cType = Nothing,
           dd_kindSig = Nothing,
-          dd_cons = DataTypeCons False (fmap (mkL (-1)) cdecls),
+          dd_cons =
+            let loc = EpaDelta (DifferentLine 1 2) []
+             in DataTypeCons False (listSep' loc AddVbarAnn cdecls),
           dd_derivs = deriv
         }
 
@@ -835,17 +839,24 @@ mkBind1_ ::
   HsBind GhcPs
 mkBind1_ fname pats rhs = mkBind1 fname pats rhs (EmptyLocalBinds noExtField)
 
-listSep :: (EpaLocation -> TrailingAnn) -> [a] -> [GenLocated SrcSpanAnnA a]
-listSep _ [] = []
-listSep _ (x : []) = [mkL (-1) x]
-listSep sep xs =
+listSep' ::
+  EpaLocation ->
+  (EpaLocation -> TrailingAnn) ->
+  [a] ->
+  [GenLocated SrcSpanAnnA a]
+listSep' _ _ [] = []
+listSep' _ _ (x : []) = [mkL (-1) x]
+listSep' loc sep xs =
   let xs' = init xs
       lastX = last xs
       xs'' =
         fmap
-          (L (mkRelSrcSpanAnn 0 (AnnListItem [sep (mkEpaDelta (-1))])))
+          (L (mkRelSrcSpanAnn 0 (AnnListItem [sep loc])))
           xs'
    in (xs'' ++ [mkL 0 lastX])
+
+listSep :: (EpaLocation -> TrailingAnn) -> [a] -> [GenLocated SrcSpanAnnA a]
+listSep = listSep' (mkEpaDelta (-1))
 
 tupleAnn :: [a] -> [GenLocated SrcSpanAnnA a]
 tupleAnn = listSep AddCommaAnn

@@ -1,5 +1,6 @@
 module FFICXX.Generate.Code.HsEnum
   ( genHsEnumDecl,
+  -- genHsEnumFFI,
   )
 where
 
@@ -20,11 +21,22 @@ import Language.Haskell.Syntax
     noExtField,
   )
 
-genHsEnumDecl :: EnumType -> Reader AnnotateMap (HsDecl GhcPs)
-genHsEnumDecl enum = pure expr
+genHsEnumDecl :: EnumType -> HsDecl GhcPs
+genHsEnumDecl enum =
+  TyClD noExtField $ mkData typ [] cnstrExps []
   where
     typ = enumDataTypeName enum
     cnstrs = enumDataConstructorNames enum
     cnstrExps =
       fmap (\n -> conDecl n []) cnstrs
-    expr = TyClD noExtField $ mkData typ [] cnstrExps []
+
+{-
+genHsEnumFFI :: EnumType -> HsDecl GhcPs
+genHsEnumFFI enum = decl
+  where
+    typ = enumDataTypeName enum
+    cnstrs = enumDataConstructorNames enum
+    cnstrExps =
+      fmap (\n -> conDecl n []) cnstrs
+    decl = TyClD noExtField $ mkData typ [] cnstrExps []
+-}

@@ -57,7 +57,8 @@ data CTypes
 
 data EnumType = EnumType
   { enum_name :: String,
-    enum_cases :: [String]
+    enum_cases :: [String],
+    enum_header :: String
   }
   deriving (Show)
 

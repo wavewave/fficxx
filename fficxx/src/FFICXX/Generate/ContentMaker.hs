@@ -39,6 +39,7 @@ import FFICXX.Generate.Code.HsCommon
   )
 import FFICXX.Generate.Code.HsEnum
   ( genHsEnumDecl,
+  -- genHsEnumFFI,
   )
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
@@ -588,7 +589,10 @@ buildEnumHsc ::
 buildEnumHsc amap modname enums =
   Ex.mkModuleE modname [] Nothing [] body
   where
-    body = runReader (traverse genHsEnumDecl enums) amap
+    body =
+      concatMap
+        (\enum -> [genHsEnumDecl enum]) -- , genHsEnumFFI enum])
+        enums
 
 buildTopLevelHs ::
   String ->

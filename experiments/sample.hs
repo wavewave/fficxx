@@ -4,5 +4,6 @@
 
 module MyModule where
 
-f :: Double -> Double
-f x = [1, 2]
+data A = X
+       | Y
+       | Z
