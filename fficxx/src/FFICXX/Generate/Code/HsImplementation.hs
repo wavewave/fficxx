@@ -58,18 +58,27 @@ import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Util.GHCExactPrint
   ( app,
     bracketExp,
+    con,
     cxEmpty,
+    doE,
+    inapp,
     instD,
     lamE,
     letE,
+    listE,
     mkBind1,
     mkBind1_,
+    mkBindStmt,
+    mkBodyStmt,
     mkFun,
     mkFun_,
     mkImport,
     mkInstance,
+    mkLetStmt,
     mkPVar,
     mkVar,
+    op,
+    pApp,
     pTuple,
     pbind_,
     strE,
@@ -79,6 +88,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     tyapp,
     tycon,
     tyfun,
+    tylist,
     typeBracket,
     valBinds,
   )
@@ -158,7 +168,7 @@ genHsFrontInstVariables c =
 genTemplateMemberFunctions :: ClassImportHeader -> [HsDecl GhcPs]
 genTemplateMemberFunctions cih =
   let c = cihClass cih
-   in concatMap (\f -> genTMFExp c f {- <> genTMFInstance cih f -}) (class_tmpl_funcs c)
+   in concatMap (\f -> genTMFExp c f <> genTMFInstance cih f) (class_tmpl_funcs c)
 
 -- TODO: combine this with genTmplInstance
 genTMFExp :: Class -> TemplateMemberFunction -> [HsDecl GhcPs]
@@ -202,78 +212,92 @@ genTMFExp c f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs bstmts
               )
           ]
 
-genTMFInstance :: ClassImportHeader -> TemplateMemberFunction -> [O.Decl ()]
+genTMFInstance :: ClassImportHeader -> TemplateMemberFunction -> [HsDecl GhcPs]
 genTMFInstance cih f =
-  O.mkFun
+  mkFun_
     fname
     sig
-    [p "isCprim", O.pTuple [p "qtyp", p "param"]]
+    [p "isCprim", pTuple [p "qtyp", p "param"]]
     rhs
-    Nothing
   where
     c = cihClass cih
     fname = "genInstanceFor_" <> hsTemplateMemberFunctionName c f
-    p = O.mkPVar
-    v = O.mkVar
+    p = mkPVar
+    v = mkVar
     sig =
-      O.tycon "IsCPrimitive"
-        `O.tyfun` O.tyTupleBoxed [O.tycon "Q" `O.tyapp` O.tycon "Type", O.tycon "TemplateParamInfo"]
-        `O.tyfun` (O.tycon "Q" `O.tyapp` O.tylist (O.tycon "Dec"))
-    rhs = O.doE [suffixstmt, qtypstmt, genstmt, foreignSrcStmt, O.letStmt lststmt, O.qualStmt retstmt]
-    suffixstmt = O.letStmt [O.pbind_ (p "suffix") (v "tpinfoSuffix" `O.app` v "param")]
-    qtypstmt = O.generator (p "typ") (v "qtyp")
+      tycon "IsCPrimitive"
+        `tyfun` tyTupleBoxed [tycon "Q" `tyapp` tycon "Type", tycon "TemplateParamInfo"]
+        `tyfun` (tycon "Q" `tyapp` tylist (tycon "Dec"))
+    rhs =
+      doE
+        [ suffixstmt,
+          qtypstmt,
+          genstmt,
+          foreignSrcStmt,
+          mkLetStmt lststmt,
+          mkBodyStmt retstmt
+        ]
+    suffixstmt =
+      mkLetStmt [pbind_ (p "suffix") (v "tpinfoSuffix" `app` v "param")]
+    qtypstmt =
+      mkBindStmt (p "typ") (v "qtyp")
     genstmt =
-      O.generator
+      mkBindStmt
         (p "f1")
         ( v "mkMember"
-            `O.app` ( O.strE (hsTemplateMemberFunctionName c f <> "_")
-                        `O.app` v "<>"
-                        `O.app` v "suffix"
-                    )
-            `O.app` v (hsTemplateMemberFunctionNameTH c f)
-            `O.app` v "typ"
-            `O.app` v "suffix"
+            `app` ( strE (hsTemplateMemberFunctionName c f <> "_")
+                      `app` v "<>"
+                      `app` v "suffix"
+                  )
+            `app` v (hsTemplateMemberFunctionNameTH c f)
+            `app` v "typ"
+            `app` v "suffix"
         )
-    lststmt = [O.pbind_ (p "lst") (O.listE ([v "f1"]))]
-    retstmt = v "pure" `O.app` v "lst"
+
+    lststmt = [pbind_ (p "lst") (listE ([v "f1"]))]
+    retstmt = v "pure" `app` v "lst"
     -- TODO: refactor out the following code.
     foreignSrcStmt =
-      O.qualifier $
+      mkBodyStmt $
         (v "addModFinalizer")
-          `O.app` ( v "addForeignSource"
-                      `O.app` O.con "LangCxx"
-                      `O.app` ( L.foldr1
-                                  (\x y -> O.inapp x (O.op "++") y)
-                                  [ includeStatic,
-                                    includeDynamic,
-                                    namespaceStr,
-                                    O.strE (hsTemplateMemberFunctionName c f),
-                                    O.strE "(",
-                                    v "suffix",
-                                    O.strE ")\n"
-                                  ]
-                              )
-                  )
+          `app` ( v "addForeignSource"
+                    `app` con "LangCxx"
+                    `app` ( L.foldr1
+                              (\x y -> inapp x (op "++") y)
+                              [ includeStatic,
+                                includeDynamic,
+                                namespaceStr,
+                                strE (hsTemplateMemberFunctionName c f),
+                                strE "(",
+                                v "suffix",
+                                strE ")\n"
+                              ]
+                          )
+                )
       where
         includeStatic =
-          O.strE $
+          strE $
             concatMap ((<> "\n") . R.renderCMacro . R.Include) $
               [HdrName "MacroPatternMatch.h", cihSelfHeader cih]
                 <> cihIncludedHPkgHeadersInCPP cih
                 <> cihIncludedCPkgHeaders cih
         includeDynamic =
-          O.letE
-            [ O.pbind_ (p "headers") (v "tpinfoCxxHeaders" `O.app` v "param"),
-              O.pbind_
-                (O.pApp (O.name "f") [p "x"])
-                (v "renderCMacro" `O.app` (O.con "Include" `O.app` v "x"))
-            ]
-            (v "concatMap" `O.app` v "f" `O.app` v "headers")
+          letE
+            ( toLocalBinds . valBinds $
+                [ pbind_ (p "headers") (v "tpinfoCxxHeaders" `app` v "param"),
+                  pbind_
+                    (pApp "f" [p "x"])
+                    (v "renderCMacro" `app` (con "Include" `app` v "x"))
+                ]
+            )
+            (v "concatMap" `app` v "f" `app` v "headers")
         namespaceStr =
-          O.letE
-            [ O.pbind_ (p "nss") (v "tpinfoCxxNamespaces" `O.app` v "param"),
-              O.pbind_
-                (O.pApp (O.name "f") [p "x"])
-                (v "renderCStmt" `O.app` (O.con "UsingNamespace" `O.app` v "x"))
-            ]
-            (v "concatMap" `O.app` v "f" `O.app` v "nss")
+          letE
+            ( toLocalBinds . valBinds $
+                [ pbind_ (p "nss") (v "tpinfoCxxNamespaces" `app` v "param"),
+                  pbind_
+                    (pApp "f" [p "x"])
+                    (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
+                ]
+            )
+            (v "concatMap" `app` v "f" `app` v "nss")

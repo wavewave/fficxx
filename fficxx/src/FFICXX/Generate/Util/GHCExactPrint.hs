@@ -73,7 +73,9 @@ module FFICXX.Generate.Util.GHCExactPrint
     toLocalBinds,
 
     -- * stmt
+    mkBindStmt,
     mkBodyStmt,
+    mkLetStmt,
     pbind,
     pbind_,
 
@@ -1128,11 +1130,24 @@ toLocalBinds =
 -- Statements
 --
 
+mkBindStmt :: Pat GhcPs -> HsExpr GhcPs -> StmtLR GhcPs GhcPs (LHsExpr GhcPs)
+mkBindStmt pat expr =
+  BindStmt (mkRelEpAnn (-1) annos) (mkL (-1) pat) (mkL 0 expr)
+  where
+    annos =
+      [AddEpAnn AnnLarrow (mkEpaDelta 0)]
+
 mkBodyStmt :: HsExpr GhcPs -> StmtLR GhcPs GhcPs (LHsExpr GhcPs)
 mkBodyStmt expr =
   BodyStmt noExtField body noExtField noExtField
   where
     body = mkL (-1) expr
+
+mkLetStmt :: [HsBind GhcPs] -> StmtLR GhcPs GhcPs (LHsExpr GhcPs)
+mkLetStmt bnds =
+  LetStmt (mkRelEpAnn (-1) annos) (toLocalBinds $ valBinds bnds)
+  where
+    annos = [AddEpAnn AnnLet (mkEpaDelta (-1))]
 
 pbind :: Pat GhcPs -> HsExpr GhcPs -> HsLocalBinds GhcPs -> HsBind GhcPs
 pbind pat expr bnds =
