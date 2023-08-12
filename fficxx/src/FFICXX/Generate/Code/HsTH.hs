@@ -15,7 +15,7 @@ import FFICXX.Generate.Code.Cpp
     genTmplVarCpp,
   )
 import FFICXX.Generate.Code.Primitive
-  ( functionSignatureTT',
+  ( functionSignatureTT,
     tmplAccessorToTFun,
   )
 import FFICXX.Generate.Dependency (calculateDependency)
@@ -115,7 +115,7 @@ genTmplImplementation t =
           app (v "mkTFunc") $
             let typs = if nparams == 1 then map v tvars else [tupleE (map v tvars)]
              in tupleE (typs ++ [v "suffix", lam, v "tyf"])
-        sig' = functionSignatureTT' t f
+        sig' = functionSignatureTT t f
         tassgns =
           fmap
             (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i))))

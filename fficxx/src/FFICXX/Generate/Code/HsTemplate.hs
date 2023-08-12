@@ -9,7 +9,7 @@ where
 
 import FFICXX.Generate.Code.HsCast (castBody)
 import FFICXX.Generate.Code.Primitive
-  ( functionSignatureT',
+  ( functionSignatureT,
     tmplAccessorToTFun,
   )
 import FFICXX.Generate.Dependency (calculateDependency)
@@ -84,7 +84,7 @@ genTmplInterface t =
     vfs = tclass_vars t
     rawtype = foldl1 tyapp (tycon rname : map mkTVar tps)
     hightype = foldl1 tyapp (tycon hname : map mkTVar tps)
-    sigdecl f = mkFunSig (hsTmplFuncName t f) (functionSignatureT' t f)
+    sigdecl f = mkFunSig (hsTmplFuncName t f) (functionSignatureT t f)
     sigdeclV vf =
       let f_g = tmplAccessorToTFun vf Getter
           f_s = tmplAccessorToTFun vf Setter

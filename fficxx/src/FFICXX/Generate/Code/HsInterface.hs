@@ -21,7 +21,7 @@ import qualified Data.List as L
 import qualified Data.List.NonEmpty as NE
 import FFICXX.Generate.Code.Primitive
   ( classConstraints,
-    functionSignature',
+    functionSignature,
   )
 import FFICXX.Generate.Dependency.Graph
   ( getCyclicDepSubmodules,
@@ -111,7 +111,7 @@ genHsFrontDecl isHsBoot c = do
   let cdecl = TyClD noExtField (mkClass (classConstraints c) (typeclassName c) [mkTBind "a"] body)
       -- for hs-boot, we only have instance head.
       cdecl' = TyClD noExtField (mkClass (cxTuple []) (typeclassName c) [mkTBind "a"] [])
-      sigdecl f = mkFunSig (hsFuncName c f) (functionSignature' c f)
+      sigdecl f = mkFunSig (hsFuncName c f) (functionSignature c f)
       body = map sigdecl . virtualFuncs . class_funcs $ c
   if isHsBoot
     then return cdecl'
