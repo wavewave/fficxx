@@ -466,7 +466,10 @@ ethingwith wild name subs =
     wild
     (fmap mkWrappedName subs)
   where
-    ann = []
+    ann =
+      [ AddEpAnn AnnOpenP (mkEpaDelta (-1)),
+        AddEpAnn AnnCloseP (mkEpaDelta (-1))
+      ]
     mkWrappedName = mkL (-1) . IEName noExtField . mkLIdP (-1)
 
 evar :: String -> IE GhcPs

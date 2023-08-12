@@ -74,8 +74,8 @@ import FFICXX.Generate.Code.HsTopLevel
     genImportForTLTemplate,
     genImportInModule,
     genImportInTopLevel,
-    -- genTLTemplateImplementation,
-    -- genTLTemplateInstance,
+    genTLTemplateImplementation,
+    genTLTemplateInstance,
     genTLTemplateInterface,
     genTopLevelDef,
   )
@@ -649,7 +649,7 @@ buildTopLevelTemplateHs modname tih =
       ]
     pkgExports =
       map
-        ( (\n -> Ex.ethingwith (Ex.eWildCard 1) n [])
+        ( (\n -> Ex.ethingall n)
             . firstUpper
             . hsFrontNameForTopLevel
             . TLTemplate
@@ -699,11 +699,9 @@ buildTopLevelTHHs modname tih =
         Ex.mkImport "FFICXX.Runtime.TH"
       ]
         ++ concatMap genImportForTLTemplate tfns
-    pkgBody = []
-
-{-      concatMap genTLTemplateImplementation tfns
+    pkgBody =
+      concatMap genTLTemplateImplementation tfns
         <> concatMap (genTLTemplateInstance tih) tfns
--}
 
 buildPackageInterface ::
   PackageInterface ->

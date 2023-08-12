@@ -19,7 +19,7 @@ module FFICXX.Generate.Code.HsTopLevel
     -- * toplevel template
     genTLTemplateInterface,
     genTLTemplateImplementation,
-    {-  genTLTemplateInstance, -}
+    genTLTemplateInstance,
   )
 where
 
@@ -286,7 +286,7 @@ genTLTemplateImplementation t =
           spls = map (tySplice . parenSplice . mkVar) $ topleveltfunc_params t
           ctyp = cxx2HsType4Tmpl e Nothing spls (topleveltfunc_ret t)
           lst = map (cxx2HsType4Tmpl e Nothing spls . arg_type) (topleveltfunc_args t)
-       in foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
+       in foldr1 tyfun (lst <> [tyapp (tycon "IO") (tyParen ctyp)])
     tassgns =
       fmap
         (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i))))
@@ -303,18 +303,16 @@ genTLTemplateImplementation t =
               )
           ]
 
-{-
 genTLTemplateInstance ::
   TopLevelImportHeader ->
   TLTemplate ->
-  [Decl ()]
+  [HsDecl GhcPs]
 genTLTemplateInstance tih t =
-  mkFun
+  mkFun_
     fname
     sig
     (p "isCprim" : zipWith (\x y -> pTuple [p x, p y]) qtvars pvars)
     rhs
-    Nothing
   where
     p = mkPVar
     v = mkVar
@@ -325,7 +323,7 @@ genTLTemplateInstance tih t =
     qtvars = map (\(i, _) -> "qtyp" ++ show i) itps
     pvars = map (\(i, _) -> "param" ++ show i) itps
     nparams = length itps
-    typs_v = if nparams == 1 then v (tvars !! 0) else tuple (map v tvars)
+    typs_v = if nparams == 1 then v (tvars !! 0) else tupleE (map v tvars)
     params_l = listE (map v pvars)
     sig =
       foldr1 tyfun $
@@ -342,8 +340,8 @@ genTLTemplateInstance tih t =
     rhs =
       doE
         ( [paramsstmt, suffixstmt]
-            <> [ generator (p "callmod_") (v "fmap" `app` v "loc_module" `app` (v "location")),
-                 letStmt
+            <> [ mkBindStmt (p "callmod_") (v "fmap" `app` v "loc_module" `app` (v "location")),
+                 mkLetStmt
                    [ pbind_
                        (p "callmod")
                        (v "dot2_" `app` v "callmod_")
@@ -352,19 +350,19 @@ genTLTemplateInstance tih t =
             <> map genqtypstmt (zip tvars qtvars)
             <> [genstmt "f" (1 :: Int)]
             <> [ foreignSrcStmt,
-                 letStmt lststmt,
-                 qualStmt retstmt
+                 mkLetStmt lststmt,
+                 mkBodyStmt retstmt
                ]
         )
     --------------------------
     paramsstmt =
-      letStmt
+      mkLetStmt
         [ pbind_
             (p "params")
             (v "map" `app` (v "tpinfoSuffix") `app` params_l)
         ]
     suffixstmt =
-      letStmt
+      mkLetStmt
         [ pbind_
             (p "suffix")
             ( v "concatMap"
@@ -372,9 +370,9 @@ genTLTemplateInstance tih t =
                 `app` params_l
             )
         ]
-    genqtypstmt (tvar, qtvar) = generator (p tvar) (v qtvar)
+    genqtypstmt (tvar, qtvar) = mkBindStmt (p tvar) (v qtvar)
     genstmt prefix n =
-      generator
+      mkBindStmt
         (p (prefix <> show n))
         ( v "mkFunc"
             `app` strE (topleveltfunc_name t)
@@ -385,30 +383,32 @@ genTLTemplateInstance tih t =
     lststmt = [pbind_ (p "lst") (listE [v "f1"])]
     -- TODO: refactor out the following code.
     foreignSrcStmt =
-      qualifier $
+      mkBodyStmt $
         (v "addModFinalizer")
-          `app` ( v "addForeignSource"
-                    `app` con "LangCxx"
-                    `app` ( L.foldr1
-                              (\x y -> inapp x (op "++") y)
-                              [ includeStatic,
-                                {-                        , includeDynamic
-                                                        , namespaceStr -}
-                                strE (tcname <> "_instance"),
-                                paren $
-                                  caseE
-                                    (v "isCprim")
-                                    [ match (p "CPrim") (strE "_s"),
-                                      match (p "NonCPrim") (strE "")
-                                    ],
-                                strE "(",
-                                v "intercalate"
-                                  `app` strE ", "
-                                  `app` paren (inapp (v "callmod") (op ":") (v "params")),
-                                strE ")\n"
-                              ]
-                          )
-                )
+          `app` par
+            ( v "addForeignSource"
+                `app` con "LangCxx"
+                `app` par
+                  ( L.foldr1
+                      (\x y -> inapp x (op "++") y)
+                      [ includeStatic,
+                        {-                        , includeDynamic
+                                                , namespaceStr -}
+                        strE (tcname <> "_instance"),
+                        par $
+                          caseE
+                            (v "isCprim")
+                            [ (p "CPrim", strE "_s"),
+                              (p "NonCPrim", strE "")
+                            ],
+                        strE "(",
+                        v "intercalate"
+                          `app` strE ", "
+                          `app` par (inapp (v "callmod") (op ":") (v "params")),
+                        strE ")\n"
+                      ]
+                  )
+            )
       where
         -- temporary
         includeStatic =
@@ -450,9 +450,10 @@ genTLTemplateInstance tih t =
           [ v "mkInstance"
               `app` listE []
               -- `app` (v "con" `app` strE tcname)
-              `app` foldl1
-                (\f x -> con "AppT" `app` f `app` x)
-                (v "con" `app` strE tcname : map v tvars)
+              `app` par
+                ( foldl1
+                    (\f x -> con "AppT" `app` f `app` x)
+                    (par (v "con" `app` strE tcname) : map v tvars)
+                )
               `app` (v "lst")
           ]
--}
