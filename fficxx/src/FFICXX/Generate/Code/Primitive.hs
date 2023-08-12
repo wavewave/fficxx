@@ -834,6 +834,7 @@ cxx2HsType _c (TemplateType t) =
 cxx2HsType _c (TemplateParam p) = Ex.mkTVar p
 cxx2HsType _c (TemplateParamPointer p) = Ex.mkTVar p
 
+-- OLD
 convertCpp2HS4Tmpl ::
   -- | self
   Type () ->
@@ -865,6 +866,39 @@ convertCpp2HS4Tmpl _ _ ss (TemplateAppMove info) =
 convertCpp2HS4Tmpl e _ _ (TemplateType _) = e
 convertCpp2HS4Tmpl _ _ _ (TemplateParam p) = tySplice . parenSplice . mkVar $ p
 convertCpp2HS4Tmpl _ _ _ (TemplateParamPointer p) = tySplice . parenSplice . mkVar $ p
+
+-- NEW
+cxx2HsType4Tmpl ::
+  -- | self
+  HsType GhcPs ->
+  Maybe Class ->
+  -- | type paramemter splice
+  [HsType GhcPs] ->
+  Types ->
+  HsType GhcPs
+cxx2HsType4Tmpl _ c _ Void = cxx2HsType c Void
+cxx2HsType4Tmpl _ (Just c) _ SelfType = cxx2HsType (Just c) SelfType
+cxx2HsType4Tmpl _ Nothing _ SelfType = cxx2HsType Nothing SelfType
+cxx2HsType4Tmpl _ c _ x@(CT _ _) = cxx2HsType c x
+cxx2HsType4Tmpl _ c _ x@(CPT (CPTClass _) _) = cxx2HsType c x
+cxx2HsType4Tmpl _ c _ x@(CPT (CPTClassRef _) _) = cxx2HsType c x
+cxx2HsType4Tmpl _ c _ x@(CPT (CPTClassCopy _) _) = cxx2HsType c x
+cxx2HsType4Tmpl _ c _ x@(CPT (CPTClassMove _) _) = cxx2HsType c x
+cxx2HsType4Tmpl _ _ ss (TemplateApp info) =
+  let pss = zip (tapp_tparams info) ss
+   in foldl1 Ex.tyapp $
+        Ex.tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _, s) -> s; (p, _) -> Ex.tycon (hsClassNameForTArg p)) pss
+cxx2HsType4Tmpl _ _ ss (TemplateAppRef info) =
+  let pss = zip (tapp_tparams info) ss
+   in foldl1 Ex.tyapp $
+        Ex.tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _, s) -> s; (p, _) -> Ex.tycon (hsClassNameForTArg p)) pss
+cxx2HsType4Tmpl _ _ ss (TemplateAppMove info) =
+  let pss = zip (tapp_tparams info) ss
+   in foldl1 Ex.tyapp $
+        Ex.tycon (tclass_name (tapp_tclass info)) : map (\case (TArg_TypeParam _, s) -> s; (p, _) -> Ex.tycon (hsClassNameForTArg p)) pss
+cxx2HsType4Tmpl e _ _ (TemplateType _) = e
+cxx2HsType4Tmpl _ _ _ (TemplateParam p) = Ex.tySplice . Ex.parenSplice . Ex.mkVar $ p
+cxx2HsType4Tmpl _ _ _ (TemplateParamPointer p) = Ex.tySplice . Ex.parenSplice . Ex.mkVar $ p
 
 hsFuncXformer :: Function -> String
 hsFuncXformer func@(Constructor _ _) =
@@ -1091,13 +1125,15 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
         TFunOp {..} -> e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (argsFromOpExp tfun_opexp)
 
 -- TODO: rename this and combine this with functionSignatureTT
-functionSignatureTMF :: Class -> TemplateMemberFunction -> Type ()
-functionSignatureTMF c f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
+-- NEW
+functionSignatureTMF :: Class -> TemplateMemberFunction -> HsType GhcPs
+functionSignatureTMF c f =
+  foldr1 Ex.tyfun (lst <> [Ex.tyapp (Ex.tycon "IO") ctyp])
   where
-    spls = map (tySplice . parenSplice . mkVar) (tmf_params f)
-    ctyp = convertCpp2HS4Tmpl e Nothing spls (tmf_ret f)
-    e = tycon (fst (hsClassName c))
-    lst = e : map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (tmf_args f)
+    spls = map (Ex.tySplice . Ex.parenSplice . Ex.mkVar) (tmf_params f)
+    ctyp = cxx2HsType4Tmpl e Nothing spls (tmf_ret f)
+    e = Ex.tycon (fst (hsClassName c))
+    lst = e : map (cxx2HsType4Tmpl e Nothing spls . arg_type) (tmf_args f)
 
 tmplAccessorToTFun :: Variable -> Accessor -> TemplateFunction
 tmplAccessorToTFun v@(Variable (Arg {..})) a =

@@ -5,5 +5,7 @@ packages:
 optional-packages:
   ./stdcxx/
   ../fficxx-test/
+  ../fficxx-multipkg-test/
+  ./tmf-test/
   ./tmpl-dep-test/
   ./tmpl-toplevel-test/

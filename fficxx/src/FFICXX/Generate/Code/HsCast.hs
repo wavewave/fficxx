@@ -23,7 +23,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     cxEmpty,
     cxTuple,
     instD,
-    mkBind1,
+    mkBind1_,
     mkImport,
     mkInstance,
     mkPVar,
@@ -68,7 +68,7 @@ castBody_ =
 
 castBody :: [HsBind GhcPs]
 castBody =
-  [ mkBind1
+  [ mkBind1_
       "cast"
       [mkPVar "x", mkPVar "f"]
       ( app
@@ -84,9 +84,8 @@ castBody =
                   )
               )
           )
-      )
-      Nothing,
-    mkBind1
+      ),
+    mkBind1_
       "uncast"
       [mkPVar "x", mkPVar "f"]
       ( app
@@ -103,7 +102,6 @@ castBody =
               )
           )
       )
-      Nothing
   ]
 
 genHsFrontInstCastable :: Class -> Maybe (HsDecl GhcPs)

@@ -63,6 +63,10 @@
               (p: [ p.sphinx p.sphinx_rtd_theme p.myst-parser ]);
           in (hpkgsFor compiler).shellFor {
             packages = ps: [ ps.fficxx ps.fficxx-runtime ];
+            extraDependencies = ps: {
+              libraryHaskellDepends = [ ps.hspec-discover ];
+            };
+
             buildInputs = [ pkgs.cabal-install pkgs.ormolu pkgs.nixfmt pyenv ];
             withHoogle = false;
             shellHook = ''
