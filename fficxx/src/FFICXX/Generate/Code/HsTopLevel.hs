@@ -18,8 +18,8 @@ module FFICXX.Generate.Code.HsTopLevel
 
     -- * toplevel template
     genTLTemplateInterface,
-    {-         genTLTemplateImplementation,
-             genTLTemplateInstance, -}
+    genTLTemplateImplementation,
+    {-  genTLTemplateInstance, -}
   )
 where
 
@@ -31,9 +31,9 @@ import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.Primitive
   ( CFunSig (..),
     HsFunSig (..),
-    -- convertCpp2HS,
     convertCpp2HS4Tmpl,
     cxx2HsType,
+    cxx2HsType4Tmpl,
     extractArgRetTypes,
   )
 import FFICXX.Generate.Dependency
@@ -86,6 +86,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     letE,
     listE,
     mkBind1,
+    mkBind1_,
     mkBindStmt,
     mkBodyStmt,
     mkClass,
@@ -104,6 +105,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     pbind_,
     qualTy,
     strE,
+    toLocalBinds,
     tupleE,
     tyForall,
     tyParen,
@@ -115,6 +117,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     tylist,
     typeBracket,
     unqual,
+    valBinds,
     wildcard,
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
@@ -257,10 +260,9 @@ genTLTemplateInterface t =
     sigdecl = mkFunSig (topleveltfunc_name t) $ foldr1 tyfun (lst <> [tyapp (tycon "IO") (tyParen ctyp)])
     methods = [sigdecl]
 
-{-
-genTLTemplateImplementation :: TLTemplate -> [Decl ()]
+genTLTemplateImplementation :: TLTemplate -> [HsDecl GhcPs]
 genTLTemplateImplementation t =
-  mkFun nh sig (tvars_p ++ [p "suffix"]) rhs (Just bstmts)
+  mkFun nh sig (tvars_p ++ [p "suffix"]) rhs bstmts
   where
     v = mkVar
     p = mkPVar
@@ -277,27 +279,31 @@ genTLTemplateImplementation t =
     lam = lamE [p "n"] (lit' `app` v "<>" `app` v "n")
     rhs =
       app (v "mkTFunc") $
-        let typs = if nparams == 1 then map v tvars else [tuple (map v tvars)]
-         in tuple (typs ++ [v "suffix", lam, v "tyf"])
+        let typs = if nparams == 1 then map v tvars else [tupleE (map v tvars)]
+         in tupleE (typs ++ [v "suffix", lam, v "tyf"])
     sig' =
       let e = error "genTLTemplateImplementation"
           spls = map (tySplice . parenSplice . mkVar) $ topleveltfunc_params t
-          ctyp = convertCpp2HS4Tmpl e Nothing spls (topleveltfunc_ret t)
-          lst = map (convertCpp2HS4Tmpl e Nothing spls . arg_type) (topleveltfunc_args t)
+          ctyp = cxx2HsType4Tmpl e Nothing spls (topleveltfunc_ret t)
+          lst = map (cxx2HsType4Tmpl e Nothing spls . arg_type) (topleveltfunc_args t)
        in foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
-    tassgns = map (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i)))) itps
+    tassgns =
+      fmap
+        (\(i, tp) -> pbind_ (p tp) (v "pure" `app` (v ("typ" ++ show i))))
+        itps
     bstmts =
-      binds
-        [ mkBind1
-            "tyf"
-            [wildcard]
-            ( letE
-                tassgns
-                (bracketExp (typeBracket sig'))
-            )
-            Nothing
-        ]
+      toLocalBinds True $
+        valBinds
+          [ mkBind1_
+              "tyf"
+              [wildcard]
+              ( letE
+                  (toLocalBinds False (valBinds tassgns))
+                  (bracketExp (typeBracket sig'))
+              )
+          ]
 
+{-
 genTLTemplateInstance ::
   TopLevelImportHeader ->
   TLTemplate ->
