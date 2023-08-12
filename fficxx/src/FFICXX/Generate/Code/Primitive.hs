@@ -96,7 +96,6 @@ ctypToCType ctyp isconst =
         CTUInt64 -> R.CTSimple $ R.sname "uint64_t"
         CTString -> R.CTStar $ R.CTSimple $ R.sname "char"
         CTVoidStar -> R.CTStar R.CTVoid
-        CEnum _ type_str -> R.CTVerbatim type_str
         CPointer s -> R.CTStar (ctypToCType s NoConst)
         CRef s -> R.CTStar (ctypToCType s NoConst)
    in case isconst of
@@ -671,7 +670,6 @@ tmplMemFuncReturnCType _ (TemplateType _) = R.CTStar R.CTVoid
 tmplMemFuncReturnCType _ (TemplateParam t) = R.CTSimple $ R.CName [R.NamePart t, R.NamePart "_p"]
 tmplMemFuncReturnCType _ (TemplateParamPointer t) = R.CTSimple $ R.CName [R.NamePart t, R.NamePart "_p"]
 
--- new
 c2HsType :: CTypes -> HsType GhcPs
 c2HsType CTBool = Ex.tycon "CBool"
 c2HsType CTChar = Ex.tycon "CChar"
@@ -712,7 +710,6 @@ c2HsType CTUInt32 = Ex.tycon "Word32"
 c2HsType CTUInt64 = Ex.tycon "Word64"
 c2HsType CTString = Ex.tycon "CString"
 c2HsType CTVoidStar = Ex.tyapp (Ex.tycon "Ptr") Ex.unit_tycon
-c2HsType (CEnum t _) = c2HsType t
 c2HsType (CPointer t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
 c2HsType (CRef t) = Ex.tyapp (Ex.tycon "Ptr") (c2HsType t)
 
@@ -879,7 +876,6 @@ functionSignature c f =
         | otherwise = id
    in Ex.qualTy ctxt (foldr1 Ex.tyfun (arg0 typs))
 
--- NEW
 functionSignatureT :: TemplateClass -> TemplateFunction -> HsType GhcPs
 functionSignatureT t TFun {..} =
   let (hname, _) = hsTemplateClassName t

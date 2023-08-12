@@ -51,7 +51,6 @@ data CTypes
   | CTUInt64
   | CTVoidStar
   | CTString
-  | CEnum CTypes String
   | CPointer CTypes
   | CRef CTypes
   deriving (Show)
