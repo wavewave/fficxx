@@ -324,7 +324,7 @@ genTmplInstance tcih =
               `app` listE []
               `app` par
                 ( foldl1
-                    (\f x -> con "AppT" `app` f `app` x)
+                    (\f x -> par (con "AppT" `app` f `app` x))
                     (par (v "con" `app` strE (typeclassNameT t)) : map v tvars)
                 )
               `app` (v "lst")
