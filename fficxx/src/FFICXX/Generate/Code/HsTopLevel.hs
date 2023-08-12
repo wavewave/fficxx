@@ -10,15 +10,17 @@ module FFICXX.Generate.Code.HsTopLevel
     -- * imports
     genImportInModule,
     genImportInTopLevel,
-    {-       -- * top-level decls and defs
-         genTopLevelDef,
-         genImportForTLOrdinary,
-         genImportForTLTemplate,
 
-         -- * toplevel template
-         genTLTemplateInterface,
-         genTLTemplateImplementation,
-         genTLTemplateInstance, -}
+    -- * top-level decls and defs
+
+    --     genTopLevelDef,
+    genImportForTLOrdinary,
+    genImportForTLTemplate,
+    {-
+             -- * toplevel template
+             genTLTemplateInterface,
+             genTLTemplateImplementation,
+             genTLTemplateInstance, -}
   )
 where
 
@@ -208,12 +210,13 @@ genTopLevelDef v@TopLevelVariable {..} =
       sig = tyapp (tycon "IO") rtyp
       rhs = app (mkVar "xformnull") (mkVar cfname)
    in mkFun fname sig [] rhs Nothing
+-}
 
 -- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
 -- TODO2: should be refactored out.
-genImportForTLOrdinary :: TLOrdinary -> [ImportDecl ()]
+genImportForTLOrdinary :: TLOrdinary -> [ImportDecl GhcPs]
 genImportForTLOrdinary f =
   let dep4func = extractClassDepForTLOrdinary f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
@@ -226,7 +229,7 @@ genImportForTLOrdinary f =
 --   currently this may generate duplicate import list.
 -- TODO: eliminate duplicated imports.
 -- TODO2: should be refactored out.
-genImportForTLTemplate :: TLTemplate -> [ImportDecl ()]
+genImportForTLTemplate :: TLTemplate -> [ImportDecl GhcPs]
 genImportForTLTemplate f =
   let dep4func = extractClassDepForTLTemplate f
       ecs = returnDependency dep4func ++ argumentDependency dep4func
@@ -235,6 +238,7 @@ genImportForTLTemplate f =
    in concatMap (\x -> map (\y -> mkImport (x <.> y)) ["RawType", "Cast", "Interface"]) cmods
         <> concatMap (\x -> map (\y -> mkImport (x <.> y)) ["Template"]) tmods
 
+{-
 --
 -- top-level template
 --

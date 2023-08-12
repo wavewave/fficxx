@@ -9,8 +9,10 @@ module FFICXX.Generate.Util.GHCExactPrint
     -- * import/export and FFI
     eabs,
     ethingall,
+    ethingwith,
     evar,
     emodule,
+    eWildCard,
     mkImport,
     mkImportSrc,
     mkForImpCcall,
@@ -257,6 +259,7 @@ import Language.Haskell.Syntax
     HsValBindsLR (..),
     HsWildCardBndrs (HsWC),
     IE (..),
+    IEWildcard (..),
     IEWrappedName (..),
     ImportDecl (..),
     ImportDeclQualifiedStyle (..),
@@ -454,6 +457,17 @@ ethingall name =
         AddEpAnn AnnDotdot (mkEpaDelta (-1))
       ]
 
+ethingwith :: IEWildcard -> String -> [String] -> IE GhcPs
+ethingwith wild name subs =
+  IEThingWith
+    (mkRelEpAnn (-1) ann)
+    (mkWrappedName name)
+    wild
+    (fmap mkWrappedName subs)
+  where
+    ann = []
+    mkWrappedName = mkL (-1) . IEName noExtField . mkLIdP (-1)
+
 evar :: String -> IE GhcPs
 evar name =
   IEVar noExtField (mkL (-1) (IEName noExtField (mkLIdP (-1) name)))
@@ -467,6 +481,9 @@ emodule name =
     modName = ModuleName (fromString name)
     annos =
       [AddEpAnn AnnModule (mkEpaDelta (-1))]
+
+eWildCard :: Int -> IEWildcard
+eWildCard = IEWildcard
 
 --
 -- Imports

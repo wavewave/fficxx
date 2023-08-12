@@ -222,22 +222,28 @@ simpleBuilder cfg sbc = do
       (cmModule m <.> "hs")
       (exactPrint (C.buildModuleHs m))
   --
-  {-
   putStrLn "Generating Top-level Ordinary Module"
-  gen (topLevelMod <.> "Ordinary" <.> "hs") (prettyPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih))
+  debugExactPrint $
+    C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih
+  gen
+    (topLevelMod <.> "Ordinary" <.> "hs")
+    (exactPrint (C.buildTopLevelOrdinaryHs (topLevelMod <> ".Ordinary") (mods, tcms) tih))
   --
   putStrLn "Generating Top-level Template Module"
+  debugExactPrint $
+    C.buildTopLevelTemplateHs (topLevelMod <> ".Template") tih
   gen
     (topLevelMod <.> "Template" <.> "hs")
-    (prettyPrint (C.buildTopLevelTemplateHs (topLevelMod <> ".Template") tih))
+    (exactPrint (C.buildTopLevelTemplateHs (topLevelMod <> ".Template") tih))
   --
   putStrLn "Generating Top-level TH Module"
+  debugExactPrint $
+    C.buildTopLevelTHHs (topLevelMod <> ".TH") tih
   gen
     (topLevelMod <.> "TH" <.> "hs")
-    (prettyPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") tih)) -}
+    (exactPrint (C.buildTopLevelTHHs (topLevelMod <> ".TH") tih))
   --
   putStrLn "Generating Top-level Module"
-  debugExactPrint (C.buildTopLevelHs topLevelMod (mods, tcms))
   gen
     (topLevelMod <.> "hs")
     (exactPrint (C.buildTopLevelHs topLevelMod (mods, tcms)))
