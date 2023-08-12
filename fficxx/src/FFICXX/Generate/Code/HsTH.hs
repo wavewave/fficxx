@@ -4,7 +4,7 @@
 module FFICXX.Generate.Code.HsTH
   ( genImportInTH,
     genTmplImplementation,
-    -- genTmplInstance,
+    genTmplInstance,
   )
 where
 
@@ -42,19 +42,18 @@ import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Util.GHCExactPrint
   ( app,
     bracketExp,
+    caseE,
     con,
-    -- binds,
-    -- caseE,
     doE,
     inapp,
     lamE,
     letE,
     listE,
-    mkBind1,
     mkBind1_,
     mkBindStmt,
     mkBodyStmt,
     mkFun,
+    mkFun_,
     mkImport,
     mkLetStmt,
     mkPVar,
@@ -137,17 +136,15 @@ genTmplImplementation t =
           f_s = tmplAccessorToTFun vf Setter
        in gen f_g ++ gen f_s
 
-{-
 genTmplInstance ::
   TemplateClassImportHeader ->
-  [Decl ()]
+  [HsDecl GhcPs]
 genTmplInstance tcih =
-  mkFun
+  mkFun_
     fname
     sig
     (p "isCprim" : zipWith (\x y -> pTuple [p x, p y]) qtvars pvars)
     rhs
-    Nothing
   where
     t = tcihTClass tcih
     fs = tclass_funcs t
@@ -161,7 +158,7 @@ genTmplInstance tcih =
     qtvars = map (\(i, _) -> "qtyp" ++ show i) itps
     pvars = map (\(i, _) -> "param" ++ show i) itps
     nparams = length itps
-    typs_v = if nparams == 1 then v (tvars !! 0) else tuple (map v tvars)
+    typs_v = if nparams == 1 then v (tvars !! 0) else tupleE (map v tvars)
     params_l = listE (map v pvars)
     sig =
       foldr1 tyfun $
@@ -178,27 +175,27 @@ genTmplInstance tcih =
     rhs =
       doE
         ( [paramsstmt, suffixstmt]
-            <> [ generator (p "callmod_") (v "fmap" `app` v "loc_module" `app` (v "location")),
-                 letStmt
+            <> [ mkBindStmt (p "callmod_") (v "fmap" `app` v "loc_module" `app` (v "location")),
+                 mkLetStmt
                    [ pbind_
                        (p "callmod")
                        (v "dot2_" `app` v "callmod_")
                    ]
                ]
-            <> map genqtypstmt (zip tvars qtvars)
-            <> map genstmt nfs
+            <> fmap genqtypstmt (zip tvars qtvars)
+            <> fmap genstmt nfs
             <> concatMap genvarstmt nvfs
-            <> [foreignSrcStmt, letStmt lststmt, qualStmt retstmt]
+            <> [foreignSrcStmt, mkLetStmt lststmt, mkBodyStmt retstmt]
         )
     --------------------------
     paramsstmt =
-      letStmt
+      mkLetStmt
         [ pbind_
             (p "params")
             (v "map" `app` (v "tpinfoSuffix") `app` params_l)
         ]
     suffixstmt =
-      letStmt
+      mkLetStmt
         [ pbind_
             (p "suffix")
             ( v "concatMap"
@@ -206,9 +203,9 @@ genTmplInstance tcih =
                 `app` params_l
             )
         ]
-    genqtypstmt (tvar, qtvar) = generator (p tvar) (v qtvar)
+    genqtypstmt (tvar, qtvar) = mkBindStmt (p tvar) (v qtvar)
     gen prefix nm f n =
-      generator
+      mkBindStmt
         (p (prefix <> show n))
         ( v nm
             `app` strE (hsTmplFuncName t f)
@@ -251,30 +248,32 @@ genTmplInstance tcih =
           ]
     -- TODO: refactor out the following code.
     foreignSrcStmt =
-      qualifier $
+      mkBodyStmt $
         (v "addModFinalizer")
-          `app` ( v "addForeignSource"
-                    `app` con "LangCxx"
-                    `app` ( L.foldr1
-                              (\x y -> inapp x (op "++") y)
-                              [ includeStatic,
-                                includeDynamic,
-                                namespaceStr,
-                                strE (tname <> "_instance"),
-                                paren $
-                                  caseE
-                                    (v "isCprim")
-                                    [ match (p "CPrim") (strE "_s"),
-                                      match (p "NonCPrim") (strE "")
-                                    ],
-                                strE "(",
-                                v "intercalate"
-                                  `app` strE ", "
-                                  `app` paren (inapp (v "callmod") (op ":") (v "params")),
-                                strE ")\n"
-                              ]
-                          )
-                )
+          `app` par
+            ( v "addForeignSource"
+                `app` con "LangCxx"
+                `app` par
+                  ( L.foldr1
+                      (\x y -> inapp x (op "++") y)
+                      [ includeStatic,
+                        par includeDynamic,
+                        par namespaceStr,
+                        strE (tname <> "_instance"),
+                        par $
+                          caseE
+                            (v "isCprim")
+                            [ (p "CPrim", strE "_s"),
+                              (p "NonCPrim", strE "")
+                            ],
+                        strE "(",
+                        v "intercalate"
+                          `app` strE ", "
+                          `app` par (inapp (v "callmod") (op ":") (v "params")),
+                        strE ")\n"
+                      ]
+                  )
+            )
       where
         -- temporary
         body =
@@ -298,28 +297,35 @@ genTmplInstance tcih =
         cxxNamespaces = v "concatMap" `app` (v "tpinfoCxxNamespaces") `app` params_l
         includeDynamic =
           letE
-            [ pbind_ (p "headers") cxxHeaders,
-              pbind_
-                (pApp (name "f") [p "x"])
-                (v "renderCMacro" `app` (con "Include" `app` v "x"))
-            ]
+            ( toLocalBinds False $
+                valBinds $
+                  [ pbind_ (p "headers") cxxHeaders,
+                    pbind_
+                      (pApp "f" [p "x"])
+                      (v "renderCMacro" `app` par (con "Include" `app` v "x"))
+                  ]
+            )
             (v "concatMap" `app` v "f" `app` v "headers")
         namespaceStr =
           letE
-            [ pbind_ (p "nss") cxxNamespaces,
-              pbind_
-                (pApp (name "f") [p "x"])
-                (v "renderCStmt" `app` (con "UsingNamespace" `app` v "x"))
-            ]
+            ( toLocalBinds False $
+                valBinds $
+                  [ pbind_ (p "nss") cxxNamespaces,
+                    pbind_
+                      (pApp "f" [p "x"])
+                      (v "renderCStmt" `app` (par (con "UsingNamespace" `app` v "x")))
+                  ]
+            )
             (v "concatMap" `app` v "f" `app` v "nss")
     retstmt =
       v "pure"
         `app` listE
           [ v "mkInstance"
               `app` listE []
-              `app` foldl1
-                (\f x -> con "AppT" `app` f `app` x)
-                (v "con" `app` strE (typeclassNameT t) : map v tvars)
+              `app` par
+                ( foldl1
+                    (\f x -> con "AppT" `app` f `app` x)
+                    (par (v "con" `app` strE (typeclassNameT t)) : map v tvars)
+                )
               `app` (v "lst")
           ]
--}

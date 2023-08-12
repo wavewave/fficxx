@@ -1150,7 +1150,7 @@ functionSignatureTT t f = foldr1 tyfun (lst <> [tyapp (tycon "IO") ctyp])
 
 -- NEW
 functionSignatureTT' :: TemplateClass -> TemplateFunction -> HsType GhcPs
-functionSignatureTT' t f = foldr1 Ex.tyfun (lst <> [Ex.tyapp (Ex.tycon "IO") ctyp])
+functionSignatureTT' t f = foldr1 Ex.tyfun (lst <> [Ex.tyapp (Ex.tycon "IO") (Ex.tyParen ctyp)])
   where
     (hname, _) = hsTemplateClassName t
     ctyp = case f of

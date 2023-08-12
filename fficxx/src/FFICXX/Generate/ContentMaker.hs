@@ -62,7 +62,7 @@ import FFICXX.Generate.Code.HsRawType (hsClassRawType)
 import FFICXX.Generate.Code.HsTH
   ( genImportInTH,
     genTmplImplementation,
-    -- genTmplInstance,
+    genTmplInstance,
   )
 import FFICXX.Generate.Code.HsTemplate
   ( genImportInTemplate,
@@ -580,7 +580,7 @@ buildTHHs m =
         <> genImportInTH t
     body = tmplImpls <> tmplInsts
     tmplImpls = genTmplImplementation t
-    tmplInsts = [] -- genTmplInstance (tcmTCIH m)
+    tmplInsts = genTmplInstance (tcmTCIH m)
 
 buildModuleHs :: ClassModule -> Module ()
 buildModuleHs m = mkModuleE (cmModule m) [] (genExport c) (genImportInModule c) []
