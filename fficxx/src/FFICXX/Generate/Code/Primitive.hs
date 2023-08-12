@@ -735,7 +735,6 @@ cxx2HsType _c (TemplateType t) =
 cxx2HsType _c (TemplateParam p) = Ex.mkTVar p
 cxx2HsType _c (TemplateParamPointer p) = Ex.mkTVar p
 
-
 cxx2HsType4Tmpl ::
   -- | self
   HsType GhcPs ->
