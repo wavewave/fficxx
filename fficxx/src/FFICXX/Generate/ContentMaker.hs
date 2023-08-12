@@ -584,9 +584,9 @@ buildEnumHsc ::
   AnnotateMap ->
   String ->
   [EnumType] ->
-  Module ()
+  HsModule GhcPs
 buildEnumHsc amap modname enums =
-  mkModuleE modname [] [] [] body
+  Ex.mkModuleE modname [] Nothing [] body
   where
     body = runReader (traverse genHsEnumDecl enums) amap
 

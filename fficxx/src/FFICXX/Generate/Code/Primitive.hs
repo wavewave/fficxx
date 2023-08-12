@@ -753,7 +753,7 @@ cxx2HsType4Tmpl _ c _ Void = cxx2HsType c Void
 cxx2HsType4Tmpl _ (Just c) _ SelfType = cxx2HsType (Just c) SelfType
 cxx2HsType4Tmpl _ Nothing _ SelfType = cxx2HsType Nothing SelfType
 cxx2HsType4Tmpl _ c _ x@(CT _ _) = cxx2HsType c x
-cxx2HsType4Tmpl _ c _ x@(CPT (CPTEnum _) _) = convertCpp2HS c x
+cxx2HsType4Tmpl _ c _ x@(CPT (CPTEnum _) _) = cxx2HsType c x
 cxx2HsType4Tmpl _ c _ x@(CPT (CPTClass _) _) = cxx2HsType c x
 cxx2HsType4Tmpl _ c _ x@(CPT (CPTClassRef _) _) = cxx2HsType c x
 cxx2HsType4Tmpl _ c _ x@(CPT (CPTClassCopy _) _) = cxx2HsType c x
@@ -1023,7 +1023,7 @@ hsFFIFunType msc (CFunSig args ret) =
     hsrettype Void = Ex.unit_tycon
     hsrettype SelfType = selftyp
     hsrettype (CT ctype _) = c2HsType ctype
-    hsrettype (CPT (CPTEnum _) _) = c2HsType CTInt                             
+    hsrettype (CPT (CPTEnum _) _) = c2HsType CTInt
     hsrettype (CPT (CPTClass d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)

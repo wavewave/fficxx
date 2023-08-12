@@ -10,18 +10,21 @@ import FFICXX.Generate.Name
   )
 import FFICXX.Generate.Type.Annotate (AnnotateMap)
 import FFICXX.Generate.Type.Class (EnumType)
-import FFICXX.Generate.Util.HaskellSrcExts
+import FFICXX.Generate.Util.GHCExactPrint
   ( conDecl,
     mkData,
-    qualConDecl,
   )
-import Language.Haskell.Exts.Syntax (Decl (..))
+import GHC.Hs (GhcPs)
+import Language.Haskell.Syntax
+  ( HsDecl (TyClD),
+    noExtField,
+  )
 
-genHsEnumDecl :: EnumType -> Reader AnnotateMap (Decl ())
+genHsEnumDecl :: EnumType -> Reader AnnotateMap (HsDecl GhcPs)
 genHsEnumDecl enum = pure expr
   where
     typ = enumDataTypeName enum
     cnstrs = enumDataConstructorNames enum
     cnstrExps =
-      fmap (\n -> qualConDecl Nothing Nothing (conDecl n [])) cnstrs
-    expr = mkData typ [] cnstrExps Nothing
+      fmap (\n -> conDecl n []) cnstrs
+    expr = TyClD noExtField $ mkData typ [] cnstrExps []

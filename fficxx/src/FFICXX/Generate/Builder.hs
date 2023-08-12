@@ -159,7 +159,7 @@ simpleBuilder cfg sbc = do
   putStrLn "Generating Enum.hsc"
   gen
     (topLevelMod <.> "Enum" <.> "hsc")
-    (prettyPrint (C.buildEnumHsc mempty (topLevelMod <> ".Enum") enums))
+    (exactPrint (C.buildEnumHsc mempty (topLevelMod <> ".Enum") enums))
   --
   putStrLn "Generating RawType.hs"
   for_ mods $ \m ->
