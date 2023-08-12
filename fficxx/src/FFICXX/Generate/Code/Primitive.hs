@@ -339,6 +339,8 @@ returnCType :: Types -> R.CType Identity
 returnCType (CT ctyp isconst) = ctypToCType ctyp isconst
 returnCType Void = R.CTVoid
 returnCType SelfType = R.CTSimple (R.CName [R.NamePart "Type", R.NamePart "_p"])
+-- TODO: for now, weakly typed enum.
+returnCType (CPT (CPTEnum _) _) = ctypToCType CTInt Const
 returnCType (CPT (CPTClass c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
 returnCType (CPT (CPTClassRef c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
 returnCType (CPT (CPTClassCopy c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
@@ -419,6 +421,8 @@ cxx2C t e =
     CT (CRef _) _ -> R.CAddr e
     -- "&(" <> e <> ")"
     CT _ _ -> e
+    -- e
+    CPT (CPTEnum _) _ -> e
     -- e
     CPT (CPTClass c) _ ->
       R.CTApp
@@ -604,6 +608,7 @@ tmplReturnCType ::
 tmplReturnCType _ (CT ctyp isconst) = ctypToCType ctyp isconst
 tmplReturnCType _ Void = R.CTVoid
 tmplReturnCType _ SelfType = R.CTStar R.CTVoid
+tmplReturnCType _ (CPT (CPTEnum _) _) = ctypToCType CTInt Const
 tmplReturnCType _ (CPT (CPTClass c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
 tmplReturnCType _ (CPT (CPTClassRef c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
 tmplReturnCType _ (CPT (CPTClassCopy c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
@@ -628,6 +633,8 @@ tmplMemFuncArgToCTypVar _ (Arg (CT ctyp isconst) varname) =
   (ctypToCType ctyp isconst, R.sname varname)
 tmplMemFuncArgToCTypVar c (Arg SelfType varname) =
   (R.CTSimple (R.sname (ffiClassName c <> "_p")), R.sname varname)
+tmplMemFuncArgToCTypVar _ (Arg (CPT (CPTEnum _) _) varname) =
+  (ctypToCType CTInt Const, R.sname varname)
 tmplMemFuncArgToCTypVar _ (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
     Const -> (R.CTSimple (R.sname ("const_" <> ffiClassName c <> "_p")), R.sname varname)
@@ -652,6 +659,7 @@ tmplMemFuncReturnCType :: Class -> Types -> R.CType Identity
 tmplMemFuncReturnCType _ (CT ctyp isconst) = ctypToCType ctyp isconst
 tmplMemFuncReturnCType _ Void = R.CTVoid
 tmplMemFuncReturnCType c SelfType = R.CTSimple (R.sname (ffiClassName c <> "_p"))
+tmplMemFuncReturnCType _ (CPT (CPTEnum _) _) = ctypToCType CTInt Const
 tmplMemFuncReturnCType _ (CPT (CPTClass c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
 tmplMemFuncReturnCType _ (CPT (CPTClassRef c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
 tmplMemFuncReturnCType _ (CPT (CPTClassCopy c) _) = R.CTSimple (R.sname (ffiClassName c <> "_p"))
@@ -713,6 +721,7 @@ cxx2HsType _c Void = Ex.unit_tycon
 cxx2HsType (Just c) SelfType = Ex.tycon ((fst . hsClassName) c)
 cxx2HsType Nothing SelfType = error "cxx2HsType : SelfType but no class "
 cxx2HsType _c (CT t _) = c2HsType t
+cxx2HsType _c (CPT (CPTEnum _) _) = c2HsType CTInt
 cxx2HsType _c (CPT (CPTClass c') _) = (Ex.tycon . fst . hsClassName) c'
 cxx2HsType _c (CPT (CPTClassRef c') _) = (Ex.tycon . fst . hsClassName) c'
 cxx2HsType _c (CPT (CPTClassCopy c') _) = (Ex.tycon . fst . hsClassName) c'
@@ -747,6 +756,7 @@ cxx2HsType4Tmpl _ c _ Void = cxx2HsType c Void
 cxx2HsType4Tmpl _ (Just c) _ SelfType = cxx2HsType (Just c) SelfType
 cxx2HsType4Tmpl _ Nothing _ SelfType = cxx2HsType Nothing SelfType
 cxx2HsType4Tmpl _ c _ x@(CT _ _) = cxx2HsType c x
+cxx2HsType4Tmpl _ c _ x@(CPT (CPTEnum _) _) = convertCpp2HS c x
 cxx2HsType4Tmpl _ c _ x@(CPT (CPTClass _) _) = cxx2HsType c x
 cxx2HsType4Tmpl _ c _ x@(CPT (CPTClassRef _) _) = cxx2HsType c x
 cxx2HsType4Tmpl _ c _ x@(CPT (CPTClassCopy _) _) = cxx2HsType c x
@@ -1017,6 +1027,7 @@ hsFFIFunType msc (CFunSig args ret) =
     hsrettype Void = Ex.unit_tycon
     hsrettype SelfType = selftyp
     hsrettype (CT ctype _) = c2HsType ctype
+    hsrettype (CPT (CPTEnum _) _) = c2HsType CTInt                             
     hsrettype (CPT (CPTClass d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)

@@ -30,11 +30,13 @@ import System.FilePath ((<.>))
 
 hsFrontNameForTopLevel :: TopLevel -> String
 hsFrontNameForTopLevel tfn =
-  let (x : xs) = case tfn of
+  let ys = case tfn of
         TLOrdinary TopLevelFunction {..} -> fromMaybe toplevelfunc_name toplevelfunc_alias
         TLOrdinary TopLevelVariable {..} -> fromMaybe toplevelvar_name toplevelvar_alias
         TLTemplate TopLevelTemplateFunction {..} -> topleveltfunc_name
-   in toLower x : xs
+   in case ys of
+        x : xs -> toLower x : xs
+        [] -> []
 
 typeclassName :: Class -> String
 typeclassName c = 'I' : fst (hsClassName c)
@@ -81,8 +83,9 @@ hscFuncName c f =
 
 hsFuncName :: Class -> Function -> String
 hsFuncName c f =
-  let (x : xs) = aliasedFuncName c f
-   in (toLower x) : xs
+  case aliasedFuncName c f of
+    x : xs -> toLower x : xs
+    [] -> []
 
 aliasedFuncName :: Class -> Function -> String
 aliasedFuncName c f =

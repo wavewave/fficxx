@@ -56,9 +56,16 @@ data CTypes
   | CRef CTypes
   deriving (Show)
 
+data EnumType = EnumType
+  { enum_name :: String,
+    enum_cases :: [String]
+  }
+  deriving (Show)
+
 -- | C++ types
 data CPPTypes
-  = CPTClass Class
+  = CPTEnum EnumType
+  | CPTClass Class
   | CPTClassRef Class
   | CPTClassCopy Class
   | CPTClassMove Class

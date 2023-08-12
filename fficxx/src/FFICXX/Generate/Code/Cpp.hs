@@ -384,6 +384,8 @@ returnCpp b ret caller =
       [R.CReturn $ R.CAddr caller]
     CT _ _ ->
       [R.CReturn caller]
+    CPT (CPTEnum _) _ ->
+      [R.CReturn caller]
     CPT (CPTClass c') isconst ->
       [ R.CReturn $
           R.CTApp
