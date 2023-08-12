@@ -13,7 +13,7 @@ module FFICXX.Generate.Code.HsTopLevel
 
     -- * top-level decls and defs
 
-    --     genTopLevelDef,
+    genTopLevelDef,
     genImportForTLOrdinary,
     genImportForTLTemplate,
     {-
@@ -32,7 +32,8 @@ import FFICXX.Generate.Code.Cpp
 import FFICXX.Generate.Code.Primitive
   ( CFunSig (..),
     HsFunSig (..),
-    convertCpp2HS,
+    cxx2HsType,
+    -- convertCpp2HS,
     convertCpp2HS4Tmpl,
     extractArgRetTypes,
   )
@@ -90,6 +91,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     mkBodyStmt,
     mkClass,
     mkFun,
+    mkFun_,
     mkFunSig,
     mkImport,
     mkLetStmt,
@@ -101,6 +103,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     par,
     parenSplice,
     pbind_,
+    qualTy,
     strE,
     tupleE,
     tyForall,
@@ -189,8 +192,8 @@ genImportInTopLevel modname (mods, _tmods) =
 --
 -- declarations and definitions
 --
-{-
-genTopLevelDef :: TLOrdinary -> [Decl ()]
+
+genTopLevelDef :: TLOrdinary -> [HsDecl GhcPs]
 genTopLevelDef f@TopLevelFunction {..} =
   let fname = hsFrontNameForTopLevel (TLOrdinary f)
       HsFunSig typs assts =
@@ -198,19 +201,18 @@ genTopLevelDef f@TopLevelFunction {..} =
           Nothing
           False
           (CFunSig toplevelfunc_args toplevelfunc_ret)
-      sig = tyForall Nothing (Just (cxTuple assts)) (foldr1 tyfun typs)
+      sig = qualTy (cxTuple assts) (foldr1 tyfun typs)
       xformerstr = let len = length toplevelfunc_args in if len > 0 then "xform" <> show (len - 1) else "xformnull"
       cfname = "c_" <> toLowers fname
       rhs = app (mkVar xformerstr) (mkVar cfname)
-   in mkFun fname sig [] rhs Nothing
+   in mkFun_ fname sig [] rhs
 genTopLevelDef v@TopLevelVariable {..} =
   let fname = hsFrontNameForTopLevel (TLOrdinary v)
       cfname = "c_" <> toLowers fname
-      rtyp = convertCpp2HS Nothing toplevelvar_ret
+      rtyp = cxx2HsType Nothing toplevelvar_ret
       sig = tyapp (tycon "IO") rtyp
       rhs = app (mkVar "xformnull") (mkVar cfname)
-   in mkFun fname sig [] rhs Nothing
--}
+   in mkFun_ fname sig [] rhs
 
 -- | generate import list for a given top-level ordinary function
 --   currently this may generate duplicate import list.

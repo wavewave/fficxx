@@ -68,16 +68,9 @@ data CFunSig = CFunSig
     cRetType :: Types
   }
 
--- | OLD
 data HsFunSig = HsFunSig
-  { hsSigTypes :: [Type ()],
-    hsSigConstraints :: [Asst ()]
-  }
-
--- | NEW
-data HsFunSig' = HsFunSig'
-  { hsSig'Types :: [HsType GhcPs],
-    hsSig'Constraints :: [HsType GhcPs]
+  { hsSigTypes :: [HsType GhcPs],
+    hsSigConstraints :: [HsType GhcPs]
   }
 
 ctypToCType :: CTypes -> IsConst -> R.CType Identity
@@ -919,73 +912,7 @@ classConstraints :: Class -> HsContext GhcPs
 classConstraints =
   Ex.cxTuple . map ((\name -> Ex.classA name [Ex.mkTVar "a"]) . typeclassName) . class_parents
 
--- OLD
 extractArgRetTypes ::
-  -- | class (Nothing for top-level function)
-  Maybe Class ->
-  -- | is virtual function?
-  Bool ->
-  -- | C type signature information for a given function      -- (Args,Types)           -- ^ (argument types, return type) of a given function
-  CFunSig ->
-  -- | Haskell type signature information for the function    --   ([Type ()],[Asst ()])  -- ^ (types, class constraints)
-  HsFunSig
-extractArgRetTypes mc isvirtual (CFunSig args ret) =
-  let (typs, s) = flip runState ([], (0 :: Int)) $ do
-        as <- mapM (mktyp . arg_type) args
-        r <- case ret of
-          SelfType -> case mc of
-            Nothing -> error "extractArgRetTypes: SelfType return but no class"
-            Just c -> if isvirtual then return (mkTVar "a") else return $ tycon ((fst . hsClassName) c)
-          x -> (return . convertCpp2HS Nothing) x
-        return (as ++ [tyapp (tycon "IO") r])
-   in HsFunSig
-        { hsSigTypes = typs,
-          hsSigConstraints = fst s
-        }
-  where
-    addclass c = do
-      (ctxts, n) <- get
-      let cname = (fst . hsClassName) c
-          iname = typeclassNameFromStr cname
-          tvar = mkTVar ('c' : show n)
-          ctxt1 = classA (unqual iname) [tvar]
-          ctxt2 = classA (unqual "FPtr") [tvar]
-      put (ctxt1 : ctxt2 : ctxts, n + 1)
-      return tvar
-    addstring = do
-      (ctxts, n) <- get
-      let tvar = mkTVar ('c' : show n)
-          ctxt = classA (unqual "Castable") [tvar, tycon "CString"]
-      put (ctxt : ctxts, n + 1)
-      return tvar
-    mktyp typ =
-      case typ of
-        SelfType -> return (mkTVar "a")
-        CT CTString Const -> addstring
-        CT _ _ -> return $ convertCpp2HS Nothing typ
-        CPT (CPTClass c') _ -> addclass c'
-        CPT (CPTClassRef c') _ -> addclass c'
-        CPT (CPTClassCopy c') _ -> addclass c'
-        CPT (CPTClassMove c') _ -> addclass c'
-        -- it is not clear whether the following is okay or not.
-        (TemplateApp x) ->
-          pure $
-            convertCpp2HS Nothing (TemplateApp x)
-        (TemplateAppRef x) ->
-          pure $
-            convertCpp2HS Nothing (TemplateAppRef x)
-        (TemplateAppMove x) ->
-          pure $
-            convertCpp2HS Nothing (TemplateAppMove x)
-        (TemplateType t) ->
-          pure $
-            foldl1 tyapp (tycon (tclass_name t) : map mkTVar (tclass_params t))
-        (TemplateParam p) -> return (mkTVar p)
-        Void -> return unit_tycon
-        _ -> error ("No such c type : " <> show typ)
-
--- NEW
-extractArgRetTypes' ::
   -- | class (Nothing for top-level function)
   Maybe Class ->
   -- | is virtual function?
@@ -995,8 +922,8 @@ extractArgRetTypes' ::
   CFunSig ->
   -- | Haskell type signature information for the function:
   --   (types, class constraints)
-  HsFunSig'
-extractArgRetTypes' mc isvirtual (CFunSig args ret) =
+  HsFunSig
+extractArgRetTypes mc isvirtual (CFunSig args ret) =
   let (typs, s) = flip runState ([], (0 :: Int)) $ do
         as <- mapM (mktyp . arg_type) args
         r <- case ret of
@@ -1008,9 +935,9 @@ extractArgRetTypes' mc isvirtual (CFunSig args ret) =
                 else return $ Ex.tycon ((fst . hsClassName) c)
           x -> (return . cxx2HsType Nothing) x
         return (as ++ [Ex.tyapp (Ex.tycon "IO") r])
-   in HsFunSig'
-        { hsSig'Types = typs,
-          hsSig'Constraints = fst s
+   in HsFunSig
+        { hsSigTypes = typs,
+          hsSigConstraints = fst s
         }
   where
     addclass c = do
@@ -1056,8 +983,8 @@ extractArgRetTypes' mc isvirtual (CFunSig args ret) =
 
 functionSignature :: Class -> Function -> HsType GhcPs
 functionSignature c f =
-  let HsFunSig' typs assts =
-        extractArgRetTypes'
+  let HsFunSig typs assts =
+        extractArgRetTypes
           (Just c)
           (isVirtualFunc f)
           (CFunSig (genericFuncArgs f) (genericFuncRet f))
@@ -1144,7 +1071,7 @@ accessorCFunSig typ Setter = CFunSig [Arg typ "x"] Void
 accessorSignature :: Class -> Variable -> Accessor -> HsType GhcPs
 accessorSignature c v accessor =
   let csig = accessorCFunSig (arg_type (unVariable v)) accessor
-      HsFunSig' typs assts = extractArgRetTypes' (Just c) False csig
+      HsFunSig typs assts = extractArgRetTypes (Just c) False csig
       ctxt = Ex.cxTuple assts
       arg0 = (Ex.mkTVar (fst (hsClassName c)) :)
    in Ex.qualTy ctxt (foldr1 Ex.tyfun (arg0 typs))
