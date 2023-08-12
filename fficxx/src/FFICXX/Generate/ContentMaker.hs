@@ -535,25 +535,23 @@ buildProxyHs m =
   where
     body = genProxyInstance
 
-buildTemplateHs :: TemplateClassModule -> Module ()
+buildTemplateHs :: TemplateClassModule -> HsModule GhcPs
 buildTemplateHs m =
-  mkModule
+  Ex.mkModule
     (tcmModule m <.> "Template")
-    [ lang
-        [ "EmptyDataDecls",
-          "FlexibleInstances",
-          "MultiParamTypeClasses",
-          "TypeFamilies"
-        ]
+    [ "EmptyDataDecls",
+      "FlexibleInstances",
+      "MultiParamTypeClasses",
+      "TypeFamilies"
     ]
     imports
     body
   where
     t = tcihTClass $ tcmTCIH m
     imports =
-      [ mkImport "Foreign.C.Types",
-        mkImport "Foreign.Ptr",
-        mkImport "FFICXX.Runtime.Cast"
+      [ Ex.mkImport "Foreign.C.Types",
+        Ex.mkImport "Foreign.Ptr",
+        Ex.mkImport "FFICXX.Runtime.Cast"
       ]
         <> genImportInTemplate t
     body = genTmplInterface t

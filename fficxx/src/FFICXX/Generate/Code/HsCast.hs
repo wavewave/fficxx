@@ -60,11 +60,6 @@ genImportInCast m =
 --
 -- code
 --
-castBody_ :: [O.InstDecl ()]
-castBody_ =
-  [ O.insDecl (O.mkBind1 "cast" [O.mkPVar "x", O.mkPVar "f"] (O.app (O.mkVar "f") (O.app (O.mkVar "castPtr") (O.app (O.mkVar "get_fptr") (O.mkVar "x")))) Nothing),
-    O.insDecl (O.mkBind1 "uncast" [O.mkPVar "x", O.mkPVar "f"] (O.app (O.mkVar "f") (O.app (O.mkVar "cast_fptr_to_obj") (O.app (O.mkVar "castPtr") (O.mkVar "x")))) Nothing)
-  ]
 
 castBody :: [HsBind GhcPs]
 castBody =

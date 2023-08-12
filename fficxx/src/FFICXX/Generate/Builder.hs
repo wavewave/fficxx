@@ -197,7 +197,7 @@ simpleBuilder cfg sbc = do
   for_ tcms $ \m ->
     gen
       (tcmModule m <.> "Template" <.> "hs")
-      (prettyPrint (C.buildTemplateHs m))
+      (exactPrint (C.buildTemplateHs m))
   --
   putStrLn "Generating TH.hs"
   for_ tcms $ \m ->

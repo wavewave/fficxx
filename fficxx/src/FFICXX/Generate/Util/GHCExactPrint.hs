@@ -617,17 +617,17 @@ mkTBind name = UserTyVar (mkRelEpAnn (-1) []) () (mkLIdP (-1) name)
 mkData ::
   -- | data type name
   String ->
-  -- [TyVarBind ()] ->
+  [HsTyVarBndr () GhcPs] ->
   [ConDecl GhcPs] ->
   HsDeriving GhcPs ->
   TyClDecl GhcPs
-mkData name {- tbinds -} cdecls deriv =
+mkData name tbinds cdecls deriv =
   DataDecl (mkRelEpAnn (-1) annos) (mkLIdP 0 name) qty Prefix dfn
   where
     annos =
       [ AddEpAnn AnnData (mkEpaDelta (-1))
       ]
-    qty = HsQTvs noExtField []
+    qty = HsQTvs noExtField $ fmap (mkL 0) tbinds
     dfn =
       HsDataDefn
         { dd_ext = noExtField,
@@ -641,18 +641,18 @@ mkData name {- tbinds -} cdecls deriv =
 mkNewtype ::
   -- | newtype name
   String ->
-  -- [TyVarBind ()] ->
+  [HsTyVarBndr () GhcPs] ->
   ConDecl GhcPs ->
   HsDeriving GhcPs ->
   TyClDecl GhcPs
-mkNewtype name {- tbinds -} cdecl deriv =
+mkNewtype name tbinds cdecl deriv =
   DataDecl (mkRelEpAnn (-1) annos) (mkLIdP 0 name) qty Prefix dfn
   where
     annos =
       [ AddEpAnn AnnNewtype (mkEpaDelta (-1)),
         AddEpAnn AnnEqual (mkEpaDelta 0)
       ]
-    qty = HsQTvs noExtField []
+    qty = HsQTvs noExtField $ fmap (mkL 0) tbinds
     dfn =
       HsDataDefn
         { dd_ext = noExtField,
