@@ -7,7 +7,7 @@ import Control.Lens (at, (&), (.~))
 import Control.Monad.Trans.Reader (runReader)
 import Data.Either (rights)
 import Data.Functor.Identity (Identity)
-import Data.List (intercalate, nub)
+import Data.List (intercalate, nub, singleton)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import FFICXX.Generate.Code.Cpp
@@ -39,7 +39,8 @@ import FFICXX.Generate.Code.HsCommon
   )
 import FFICXX.Generate.Code.HsEnum
   ( genHsEnumDecl,
-  -- genHsEnumFFI,
+    -- genHsEnumFFI,
+    genHsEnumInclude,
   )
 import FFICXX.Generate.Code.HsFFI
   ( genHsFFI,
@@ -348,7 +349,7 @@ buildFFIHsc m =
       ]
         <> genImportInFFI m
         <> genExtraImport m
-    hscBody = fmap Ex.forD (genHsFFI (cmCIH m))
+    hscBody = singleton $ Ex.DeclGroup $ fmap Ex.forD (genHsFFI (cmCIH m))
 
 buildRawTypeHs :: ClassModule -> HsModule GhcPs
 buildRawTypeHs m =
@@ -371,8 +372,9 @@ buildRawTypeHs m =
         Ex.mkImport "FFICXX.Runtime.Cast"
       ]
     rawtypeBody =
-      let c = cihClass (cmCIH m)
-       in if isAbstractClass c then [] else hsClassRawType c
+      singleton . Ex.DeclGroup $
+        let c = cihClass (cmCIH m)
+         in if isAbstractClass c then [] else hsClassRawType c
 
 buildInterfaceHs ::
   AnnotateMap ->
@@ -406,9 +408,10 @@ buildInterfaceHs amap depCycles m =
         <> genImportInInterface False depCycles m
         <> genExtraImport m
     ifaceBody =
-      runReader (traverse (genHsFrontDecl False) classes) amap
-        <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
-        <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
+      singleton . Ex.DeclGroup $
+        runReader (traverse (genHsFrontDecl False) classes) amap
+          <> (concatMap genHsFrontUpcastClass . filter (not . isAbstractClass)) classes
+          <> (concatMap genHsFrontDowncastClass . filter (not . isAbstractClass)) classes
 
 buildInterfaceHsBoot :: DepCycles -> ClassModule -> HsModule GhcPs
 buildInterfaceHsBoot depCycles m =
@@ -437,7 +440,8 @@ buildInterfaceHsBoot depCycles m =
       ]
         <> genImportInInterface True depCycles m
         <> genExtraImport m
-    hsbootBody = runReader (mapM (genHsFrontDecl True) [c]) M.empty
+    hsbootBody =
+      singleton . Ex.DeclGroup $ runReader (mapM (genHsFrontDecl True) [c]) M.empty
 
 buildCastHs :: ClassModule -> HsModule GhcPs
 buildCastHs m =
@@ -461,8 +465,9 @@ buildCastHs m =
       ]
         <> genImportInCast m
     body =
-      mapMaybe genHsFrontInstCastable classes
-        <> mapMaybe genHsFrontInstCastableSelf classes
+      singleton . Ex.DeclGroup $
+        mapMaybe genHsFrontInstCastable classes
+          <> mapMaybe genHsFrontInstCastableSelf classes
 
 buildImplementationHs :: AnnotateMap -> ClassModule -> HsModule GhcPs
 buildImplementationHs amap m =
@@ -502,12 +507,13 @@ buildImplementationHs amap m =
     f :: Class -> [HsDecl GhcPs]
     f y = concatMap (flip genHsFrontInst y) (y : class_allparents y)
     implBody =
-      concatMap f classes
-        <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
-        <> concatMap genHsFrontInstNonVirtual classes
-        <> concatMap genHsFrontInstStatic classes
-        <> concatMap genHsFrontInstVariables classes
-        <> genTemplateMemberFunctions (cmCIH m)
+      singleton . Ex.DeclGroup $
+        concatMap f classes
+          <> runReader (concat <$> mapM genHsFrontInstNew classes) amap
+          <> concatMap genHsFrontInstNonVirtual classes
+          <> concatMap genHsFrontInstStatic classes
+          <> concatMap genHsFrontInstVariables classes
+          <> genTemplateMemberFunctions (cmCIH m)
 
 buildProxyHs :: ClassModule -> HsModule GhcPs
 buildProxyHs m =
@@ -525,7 +531,7 @@ buildProxyHs m =
     ]
     body
   where
-    body = genProxyInstance
+    body = singleton . Ex.DeclGroup $ genProxyInstance
 
 buildTemplateHs :: TemplateClassModule -> HsModule GhcPs
 buildTemplateHs m =
@@ -546,7 +552,7 @@ buildTemplateHs m =
         Ex.mkImport "FFICXX.Runtime.Cast"
       ]
         <> genImportInTemplate t
-    body = genTmplInterface t
+    body = singleton . Ex.DeclGroup $ genTmplInterface t
 
 buildTHHs :: TemplateClassModule -> HsModule GhcPs
 buildTHHs m =
@@ -571,13 +577,20 @@ buildTHHs m =
     imports =
       [Ex.mkImport (tcmModule m <.> "Template")]
         <> genImportInTH t
-    body = tmplImpls <> tmplInsts
     tmplImpls = genTmplImplementation t
     tmplInsts = genTmplInstance (tcmTCIH m)
+    body =
+      singleton . Ex.DeclGroup $
+        tmplImpls <> tmplInsts
 
 buildModuleHs :: ClassModule -> HsModule GhcPs
 buildModuleHs m =
-  Ex.mkModuleE (cmModule m) [] (Just (genExport c)) (genImportInModule c) []
+  Ex.mkModuleE
+    (cmModule m)
+    []
+    (Just (genExport c))
+    (genImportInModule c)
+    (singleton . Ex.DeclGroup $ [])
   where
     c = cihClass (cmCIH m)
 
@@ -590,9 +603,14 @@ buildEnumHsc amap modname enums =
   Ex.mkModuleE modname [] Nothing [] body
   where
     body =
-      concatMap
-        (\enum -> [genHsEnumDecl enum]) -- , genHsEnumFFI enum])
-        enums
+      singleton . Ex.DeclGroup $
+        concatMap
+          ( \enum ->
+              [ genHsEnumInclude enum,
+                genHsEnumDecl enum
+              ]
+          ) -- , genHsEnumFFI enum])
+          enums
 
 buildTopLevelHs ::
   String ->
@@ -611,7 +629,7 @@ buildTopLevelHs modname (mods, tmods) =
       map (Ex.emodule . cmModule) mods
         ++ map Ex.emodule [modname <.> "Ordinary", modname <.> "Template", modname <.> "TH"]
     pkgImports = genImportInTopLevel modname (mods, tmods)
-    pkgBody = []
+    pkgBody = singleton . Ex.DeclGroup $ []
 
 buildTopLevelOrdinaryHs ::
   String ->
@@ -634,8 +652,9 @@ buildTopLevelOrdinaryHs modname (_mods, tmods) tih =
         ++ fmap (\m -> Ex.mkImport (tcmModule m <.> "Template")) tmods
         ++ concatMap genImportForTLOrdinary (filterTLOrdinary tfns)
     pkgBody =
-      map (Ex.forD . genTopLevelFFI tih) (filterTLOrdinary tfns)
-        ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
+      singleton . Ex.DeclGroup $
+        map (Ex.forD . genTopLevelFFI tih) (filterTLOrdinary tfns)
+          ++ concatMap genTopLevelDef (filterTLOrdinary tfns)
 
 buildTopLevelTemplateHs ::
   String ->
@@ -667,7 +686,7 @@ buildTopLevelTemplateHs modname tih =
         Ex.mkImport "FFICXX.Runtime.Cast"
       ]
         ++ concatMap genImportForTLTemplate tfns
-    pkgBody = concatMap genTLTemplateInterface tfns
+    pkgBody = singleton . Ex.DeclGroup $ concatMap genTLTemplateInterface tfns
 
 buildTopLevelTHHs ::
   String ->
@@ -706,8 +725,9 @@ buildTopLevelTHHs modname tih =
       ]
         ++ concatMap genImportForTLTemplate tfns
     pkgBody =
-      concatMap genTLTemplateImplementation tfns
-        <> concatMap (genTLTemplateInstance tih) tfns
+      singleton . Ex.DeclGroup $
+        concatMap genTLTemplateImplementation tfns
+          <> concatMap (genTLTemplateInstance tih) tfns
 
 buildPackageInterface ::
   PackageInterface ->

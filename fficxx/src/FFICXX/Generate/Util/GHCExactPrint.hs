@@ -2,7 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module FFICXX.Generate.Util.GHCExactPrint
-  ( -- * module
+  ( -- * DeclGroup
+    DeclGroup (..),
+
+    -- * utilities
+    exactPrint,
+
+    -- * module
     mkModule,
     mkModuleE,
 
@@ -95,14 +101,15 @@ module FFICXX.Generate.Util.GHCExactPrint
     typeBracket,
     tySplice,
 
-    -- * utility
-    exactPrint,
+    -- * doc
+    comment,
   )
 where
 
 import Data.Foldable (toList)
 import Data.List (foldl')
 import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NE
 import Data.String (IsString (fromString))
 import GHC.Data.Bag (emptyBag, listToBag)
 import GHC.Hs
@@ -111,6 +118,10 @@ import GHC.Hs
     EpAnnHsCase (..),
     GhcPs,
     GrhsAnn (..),
+    HsDocString (MultiLineDocString),
+    HsDocStringChunk (..),
+    HsDocStringDecorator (HsDocStringNext),
+    WithHsDocIdentifiers (..),
     XImportDeclPass (..),
     XModulePs (..),
   )
@@ -185,6 +196,7 @@ import Language.Haskell.Syntax
     ConDecl (..),
     DataDefnCons (..),
     DerivClauseTys (..),
+    DocDecl (..),
     ExprLStmt,
     FamEqn (..),
     ForeignDecl (..),
@@ -251,6 +263,22 @@ import Language.Haskell.Syntax.Basic
   ( Boxity (..),
     SrcStrictness (NoSrcStrict),
   )
+
+--
+-- DeclGroup
+--
+
+data DeclGroup = DeclGroup {unDeclGroup :: [HsDecl GhcPs]}
+
+--    | Comment String
+
+--
+-- utilities
+--
+
+-- | exact print
+exactPrint :: (Exact.ExactPrint ast) => ast -> String
+exactPrint = Exact.exactPrint . Exact.makeDeltaAst
 
 mkDeltaPos :: Int -> DeltaPos
 mkDeltaPos nLines
@@ -343,7 +371,7 @@ mkModule ::
   -- | Pragmas
   [String] ->
   [ImportDecl GhcPs] ->
-  [HsDecl GhcPs] ->
+  [DeclGroup] -> -- [HsDecl GhcPs] ->
   HsModule GhcPs
 mkModule name pragmas idecls decls = mkModuleE name pragmas Nothing idecls decls
 
@@ -356,9 +384,9 @@ mkModuleE ::
   Maybe [IE GhcPs] ->
   -- | imports
   [ImportDecl GhcPs] ->
-  [HsDecl GhcPs] ->
+  [DeclGroup] -> -- [HsDecl GhcPs] ->
   HsModule GhcPs
-mkModuleE name pragmas mies idecls decls =
+mkModuleE name pragmas mies idecls declss =
   HsModule
     { hsmodExt =
         XModulePs
@@ -374,6 +402,7 @@ mkModuleE name pragmas mies idecls decls =
       hsmodDecls = paragraphLines decls
     }
   where
+    decls = concatMap unDeclGroup declss
     modName = ModuleName (fromString name)
     pragmaComments =
       let ls =
@@ -1307,9 +1336,16 @@ tySplice :: HsUntypedSplice GhcPs -> HsType GhcPs
 tySplice sp = HsSpliceTy noExtField sp
 
 --
--- utilities
+-- doc
 --
 
--- | exact print
-exactPrint :: (Exact.ExactPrint ast) => ast -> String
-exactPrint = Exact.exactPrint . Exact.makeDeltaAst
+-- DocCommentNext content is dummy. only annotation is useful.
+comment :: String -> DocDecl GhcPs
+comment str = dummyDecl -- DocDecl ann
+  where
+    str =
+      MultiLineDocString
+        HsDocStringNext
+        (NE.singleton (L defSrcSpan (HsDocStringChunk "")))
+    dummyDecl =
+      DocCommentNext (L defSrcSpan (WithHsDocIdentifiers str []))

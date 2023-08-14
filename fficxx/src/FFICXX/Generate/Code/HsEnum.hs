@@ -1,6 +1,7 @@
 module FFICXX.Generate.Code.HsEnum
-  ( genHsEnumDecl,
-  -- genHsEnumFFI,
+  ( genHsEnumInclude,
+    genHsEnumDecl,
+    -- genHsEnumFFI,
   )
 where
 
@@ -12,14 +13,20 @@ import FFICXX.Generate.Name
 import FFICXX.Generate.Type.Annotate (AnnotateMap)
 import FFICXX.Generate.Type.Class (EnumType)
 import FFICXX.Generate.Util.GHCExactPrint
-  ( conDecl,
+  ( comment,
+    conDecl,
     mkData,
   )
 import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax
-  ( HsDecl (TyClD),
+  ( HsDecl (DocD, TyClD),
     noExtField,
   )
+
+genHsEnumInclude :: EnumType -> HsDecl GhcPs
+genHsEnumInclude _ = DocD noExtField (comment "#include \"hello\"")
+
+--  DocD noExtField (docCommentNext "hello there")
 
 genHsEnumDecl :: EnumType -> HsDecl GhcPs
 genHsEnumDecl enum =

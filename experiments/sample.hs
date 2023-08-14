@@ -7,3 +7,6 @@ module MyModule where
 data A = X
        | Y
        | Z
+
+{- annotation -}
+
