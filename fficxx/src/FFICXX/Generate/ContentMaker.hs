@@ -606,7 +606,7 @@ buildEnumHsc amap modname enums =
       concatMap
         ( \enum ->
             [ genHsEnumInclude enum,
-              Ex.DeclGroup [genHsEnumDecl enum]
+              Ex.DeclGroup (genHsEnumDecl enum)
               -- , genHsEnumFFI enum])
             ]
         )

@@ -4,9 +4,6 @@
 
 module MyModule where
 
-data A = X
-       | Y
-       | Z
-
-{- annotation -}
-
+instance Test F where
+  f True = 1
+  f False = 0

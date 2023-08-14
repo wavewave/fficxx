@@ -51,6 +51,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkFun,
     mkFun_,
     mkFunSig,
+    mkBind,
     mkBind1,
     mkBind1_,
 
@@ -315,6 +316,10 @@ mkRelSrcSpanAnn :: Int -> ann -> SrcAnn ann
 mkRelSrcSpanAnn nLines ann =
   SrcSpanAnn (mkRelEpAnn nLines ann) defSrcSpan
 
+mkRelSrcSpanAnn' :: DeltaPos -> ann -> SrcAnn ann
+mkRelSrcSpanAnn' delta ann =
+  SrcSpanAnn (mkRelEpAnn' delta ann) defSrcSpan
+
 defSrcSpan :: SrcSpan
 defSrcSpan = spn
   where
@@ -385,8 +390,11 @@ mkModule ::
   String ->
   -- | Pragmas
   [String] ->
+  -- | imports
   [ImportDecl GhcPs] ->
-  [DeclGroup] -> -- [HsDecl GhcPs] ->
+  -- | body of the module (separated in groups)
+  [DeclGroup] ->
+  -- | resultant HsModule
   HsModule GhcPs
 mkModule name pragmas idecls decls = mkModuleE name pragmas Nothing idecls decls
 
@@ -399,7 +407,9 @@ mkModuleE ::
   Maybe [IE GhcPs] ->
   -- | imports
   [ImportDecl GhcPs] ->
-  [DeclGroup] -> -- [HsDecl GhcPs] ->
+  -- | body of the module (separated in groups)
+  [DeclGroup] ->
+  -- | resultant HsModule
   HsModule GhcPs
 mkModuleE name pragmas mies idecls declss =
   HsModule
@@ -860,6 +870,25 @@ mkFunSig fname typ =
         noExtField
         (HsOuterImplicit noExtField)
         (mkL (-1) typ)
+
+mkBind ::
+  DeltaPos ->
+  String ->
+  [([Pat GhcPs], HsExpr GhcPs, HsLocalBinds GhcPs)] ->
+  HsBind GhcPs
+mkBind delta fname matches =
+  FunBind noExtField lid payload
+  where
+    id' = unqual (mkVarOcc fname)
+    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+    matches' =
+      fmap
+        ( \(pats, rhs, bnds) ->
+            mkMatch (FunRhs lid Prefix NoSrcStrict) pats rhs bnds
+        )
+        matches
+    lmatches' = fmap (L (mkRelSrcSpanAnn' delta noAnnListItem)) matches' -- paragraphLines' (SameLine 0) matches'
+    payload = MG FromSource (L (mkRelSrcSpanAnn (-1) noAnnList) lmatches')
 
 mkBind1 ::
   String ->

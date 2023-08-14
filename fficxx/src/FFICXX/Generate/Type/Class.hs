@@ -55,9 +55,11 @@ data CTypes
   | CRef CTypes
   deriving (Show)
 
+-- TODO: Enum needs to be handled in the same way as Class with ModuleUnit
 data EnumType = EnumType
   { enum_name :: String,
     enum_cases :: [String],
+    -- TODO: this must go to ModuleUnitImports
     enum_header :: String
   }
   deriving (Show)
