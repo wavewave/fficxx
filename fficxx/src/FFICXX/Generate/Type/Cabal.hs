@@ -13,9 +13,21 @@ import Data.Aeson.Types (fieldLabelModifier)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-data AddCInc = AddCInc FilePath String
+-- | additionally embedded include files
+data AddCInc
+  = AddCInc
+      FilePath
+      -- ^ target file path
+      String
+      -- ^ content
 
-data AddCSrc = AddCSrc FilePath String
+-- | additionally embedded C/C++ source files
+data AddCSrc
+  = AddCSrc
+      FilePath
+      -- ^ target file path
+      String
+      -- ^ content
 
 -- TODO: change String to Text
 newtype CabalName = CabalName {unCabalName :: String}

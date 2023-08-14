@@ -4,5 +4,10 @@
 
 module MyModule where
 
-f :: Double -> Double
-f x = [1, 2]
+instance Test F where
+  f True = 1
+  f False = 0
+
+test = test1 {- abc -}
+
+test2 = test3

@@ -51,14 +51,23 @@ data CTypes
   | CTUInt64
   | CTVoidStar
   | CTString
-  | CEnum CTypes String
   | CPointer CTypes
   | CRef CTypes
   deriving (Show)
 
+-- TODO: Enum needs to be handled in the same way as Class with ModuleUnit
+data EnumType = EnumType
+  { enum_name :: String,
+    enum_cases :: [String],
+    -- TODO: this must go to ModuleUnitImports
+    enum_header :: String
+  }
+  deriving (Show)
+
 -- | C++ types
 data CPPTypes
-  = CPTClass Class
+  = CPTEnum EnumType
+  | CPTClass Class
   | CPTClassRef Class
   | CPTClassCopy Class
   | CPTClassMove Class

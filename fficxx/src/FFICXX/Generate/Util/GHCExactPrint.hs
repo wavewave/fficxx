@@ -2,7 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module FFICXX.Generate.Util.GHCExactPrint
-  ( -- * module
+  ( -- * DeclGroup
+    DeclGroup (..),
+
+    -- * utilities
+    exactPrint,
+
+    -- * module
     mkModule,
     mkModuleE,
 
@@ -45,6 +51,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     mkFun,
     mkFun_,
     mkFunSig,
+    mkBind,
     mkBind1,
     mkBind1_,
 
@@ -75,6 +82,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     letE,
     listE,
     mkVar,
+    mkVarWithComment,
     op,
     par,
     strE,
@@ -95,14 +103,16 @@ module FFICXX.Generate.Util.GHCExactPrint
     typeBracket,
     tySplice,
 
-    -- * utility
-    exactPrint,
+    -- * doc
+    dummyComment,
+    comment,
   )
 where
 
 import Data.Foldable (toList)
 import Data.List (foldl')
 import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NE
 import Data.String (IsString (fromString))
 import GHC.Data.Bag (emptyBag, listToBag)
 import GHC.Hs
@@ -111,6 +121,10 @@ import GHC.Hs
     EpAnnHsCase (..),
     GhcPs,
     GrhsAnn (..),
+    HsDocString (MultiLineDocString),
+    HsDocStringChunk (..),
+    HsDocStringDecorator (HsDocStringNext),
+    WithHsDocIdentifiers (..),
     XImportDeclPass (..),
     XModulePs (..),
   )
@@ -126,6 +140,7 @@ import GHC.Parser.Annotation
     AnnSortKey (..),
     DeltaPos (..),
     EpAnn (..),
+    EpAnnComments (EpaComments, EpaCommentsBalanced),
     EpaComment (..),
     EpaCommentTok (..),
     EpaLocation (..),
@@ -185,6 +200,7 @@ import Language.Haskell.Syntax
     ConDecl (..),
     DataDefnCons (..),
     DerivClauseTys (..),
+    DocDecl (..),
     ExprLStmt,
     FamEqn (..),
     ForeignDecl (..),
@@ -231,6 +247,7 @@ import Language.Haskell.Syntax
     ImportDeclQualifiedStyle (..),
     InstDecl (..),
     IsBootInterface (..),
+    LHsDecl,
     LHsExpr,
     LHsQTyVars (..),
     LIdP,
@@ -251,6 +268,22 @@ import Language.Haskell.Syntax.Basic
   ( Boxity (..),
     SrcStrictness (NoSrcStrict),
   )
+
+--
+-- DeclGroup
+--
+
+data DeclGroup
+  = DeclGroup [HsDecl GhcPs]
+  | Comment String
+
+--
+-- utilities
+--
+
+-- | exact print
+exactPrint :: (Exact.ExactPrint ast) => ast -> String
+exactPrint = Exact.exactPrint . Exact.makeDeltaAst
 
 mkDeltaPos :: Int -> DeltaPos
 mkDeltaPos nLines
@@ -283,6 +316,10 @@ mkRelEpAnn' delta ann =
 mkRelSrcSpanAnn :: Int -> ann -> SrcAnn ann
 mkRelSrcSpanAnn nLines ann =
   SrcSpanAnn (mkRelEpAnn nLines ann) defSrcSpan
+
+mkRelSrcSpanAnn' :: DeltaPos -> ann -> SrcAnn ann
+mkRelSrcSpanAnn' delta ann =
+  SrcSpanAnn (mkRelEpAnn' delta ann) defSrcSpan
 
 defSrcSpan :: SrcSpan
 defSrcSpan = spn
@@ -333,6 +370,18 @@ mkL' delta = L anno'
     a' = a {anchor_op = MovedAnchor delta}
     anno' = SrcSpanAnn (EpAnn a' (AnnListItem []) emptyComments) defSrcSpan
 
+formatDeclGroup :: DeclGroup -> [LHsDecl GhcPs]
+formatDeclGroup (DeclGroup decls) = paragraphLines decls
+formatDeclGroup (Comment str) =
+  [L (SrcSpanAnn epann defSrcSpan) (DocD noExtField dummyComment)]
+  where
+    epann = EpAnn (mkRelAnchor (-1)) noAnnListItem lcmts
+    lcmts = EpaComments [L (mkRelAnchor 2) cmt]
+    cmt =
+      EpaComment
+        (EpaLineComment str)
+        defRealSrcSpan
+
 --
 -- Modules
 --
@@ -342,8 +391,11 @@ mkModule ::
   String ->
   -- | Pragmas
   [String] ->
+  -- | imports
   [ImportDecl GhcPs] ->
-  [HsDecl GhcPs] ->
+  -- | body of the module (separated in groups)
+  [DeclGroup] ->
+  -- | resultant HsModule
   HsModule GhcPs
 mkModule name pragmas idecls decls = mkModuleE name pragmas Nothing idecls decls
 
@@ -356,9 +408,11 @@ mkModuleE ::
   Maybe [IE GhcPs] ->
   -- | imports
   [ImportDecl GhcPs] ->
-  [HsDecl GhcPs] ->
+  -- | body of the module (separated in groups)
+  [DeclGroup] ->
+  -- | resultant HsModule
   HsModule GhcPs
-mkModuleE name pragmas mies idecls decls =
+mkModuleE name pragmas mies idecls declss =
   HsModule
     { hsmodExt =
         XModulePs
@@ -371,9 +425,10 @@ mkModuleE name pragmas mies idecls decls =
       hsmodExports =
         fmap (L (mkRelSrcSpanAnn (-1) annExport) . tupleAnn) mies,
       hsmodImports = paragraphLines idecls,
-      hsmodDecls = paragraphLines decls
+      hsmodDecls = ldecls
     }
   where
+    ldecls = concatMap formatDeclGroup declss
     modName = ModuleName (fromString name)
     pragmaComments =
       let ls =
@@ -670,9 +725,11 @@ mkData ::
 mkData name tbinds cdecls deriv =
   DataDecl (mkRelEpAnn (-1) annos) (mkLIdP 0 name) qty Prefix dfn
   where
-    annos =
-      [ AddEpAnn AnnData (mkEpaDelta (-1))
-      ]
+    annData = AddEpAnn AnnData (mkEpaDelta (-1))
+    annEqual = AddEpAnn AnnEqual (mkEpaDelta 0)
+    annos
+      | null cdecls = [annData]
+      | otherwise = [annData, annEqual]
     qty = HsQTvs noExtField $ fmap (mkL 0) tbinds
     dfn =
       HsDataDefn
@@ -680,7 +737,9 @@ mkData name tbinds cdecls deriv =
           dd_ctxt = Nothing,
           dd_cType = Nothing,
           dd_kindSig = Nothing,
-          dd_cons = DataTypeCons False (fmap (mkL (-1)) cdecls),
+          dd_cons =
+            let loc = EpaDelta (DifferentLine 1 2) []
+             in DataTypeCons False (listSep' loc AddVbarAnn cdecls),
           dd_derivs = deriv
         }
 
@@ -813,6 +872,25 @@ mkFunSig fname typ =
         (HsOuterImplicit noExtField)
         (mkL (-1) typ)
 
+mkBind ::
+  DeltaPos ->
+  String ->
+  [([Pat GhcPs], HsExpr GhcPs, HsLocalBinds GhcPs)] ->
+  HsBind GhcPs
+mkBind delta fname matches =
+  FunBind noExtField lid payload
+  where
+    id' = unqual (mkVarOcc fname)
+    lid = L (mkRelSrcSpanAnn (-1) (NameAnnTrailing [])) id'
+    matches' =
+      fmap
+        ( \(pats, rhs, bnds) ->
+            mkMatch (FunRhs lid Prefix NoSrcStrict) pats rhs bnds
+        )
+        matches
+    lmatches' = fmap (L (mkRelSrcSpanAnn' delta noAnnListItem)) matches' -- paragraphLines' (SameLine 0) matches'
+    payload = MG FromSource (L (mkRelSrcSpanAnn (-1) noAnnList) lmatches')
+
 mkBind1 ::
   String ->
   [Pat GhcPs] ->
@@ -835,17 +913,24 @@ mkBind1_ ::
   HsBind GhcPs
 mkBind1_ fname pats rhs = mkBind1 fname pats rhs (EmptyLocalBinds noExtField)
 
-listSep :: (EpaLocation -> TrailingAnn) -> [a] -> [GenLocated SrcSpanAnnA a]
-listSep _ [] = []
-listSep _ (x : []) = [mkL (-1) x]
-listSep sep xs =
+listSep' ::
+  EpaLocation ->
+  (EpaLocation -> TrailingAnn) ->
+  [a] ->
+  [GenLocated SrcSpanAnnA a]
+listSep' _ _ [] = []
+listSep' _ _ (x : []) = [mkL (-1) x]
+listSep' loc sep xs =
   let xs' = init xs
       lastX = last xs
       xs'' =
         fmap
-          (L (mkRelSrcSpanAnn 0 (AnnListItem [sep (mkEpaDelta (-1))])))
+          (L (mkRelSrcSpanAnn 0 (AnnListItem [sep loc])))
           xs'
    in (xs'' ++ [mkL 0 lastX])
+
+listSep :: (EpaLocation -> TrailingAnn) -> [a] -> [GenLocated SrcSpanAnnA a]
+listSep = listSep' (mkEpaDelta (-1))
 
 tupleAnn :: [a] -> [GenLocated SrcSpanAnnA a]
 tupleAnn = listSep AddCommaAnn
@@ -1181,6 +1266,19 @@ mkVar :: String -> HsExpr GhcPs
 mkVar name =
   HsVar noExtField (mkLIdP (-1) name)
 
+mkVarWithComment :: String -> String -> HsExpr GhcPs
+mkVarWithComment name str =
+  HsVar noExtField (L ann id')
+  where
+    id' = unqual (mkVarOcc name)
+    cmt =
+      EpaComment
+        (EpaLineComment str)
+        defRealSrcSpan
+    lcmts = EpaComments [L (mkRelAnchor 0) cmt]
+    ann =
+      SrcSpanAnn (EpAnn (mkRelAnchor (-1)) (NameAnnTrailing []) lcmts) defSrcSpan
+
 op :: String -> HsExpr GhcPs
 op = mkVar
 
@@ -1296,9 +1394,18 @@ tySplice :: HsUntypedSplice GhcPs -> HsType GhcPs
 tySplice sp = HsSpliceTy noExtField sp
 
 --
--- utilities
+-- doc
 --
 
--- | exact print
-exactPrint :: (Exact.ExactPrint ast) => ast -> String
-exactPrint = Exact.exactPrint . Exact.makeDeltaAst
+-- DocCommentNext content with dummy contents
+dummyComment :: DocDecl GhcPs
+dummyComment =
+  DocCommentNext (L defSrcSpan (WithHsDocIdentifiers str []))
+  where
+    str =
+      MultiLineDocString
+        HsDocStringNext
+        (NE.singleton (L defSrcSpan (HsDocStringChunk "")))
+
+comment :: String -> DeclGroup
+comment = Comment

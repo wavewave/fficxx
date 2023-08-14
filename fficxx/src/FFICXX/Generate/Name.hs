@@ -11,6 +11,7 @@ import FFICXX.Generate.Type.Class
     Arg (..),
     Class (..),
     ClassAlias (caFFIName, caHaskellName),
+    EnumType (..),
     Function (..),
     TLOrdinary (..),
     TLTemplate (..),
@@ -25,16 +26,18 @@ import FFICXX.Generate.Type.Module
   ( ClassSubmoduleType (..),
     TemplateClassSubmoduleType (..),
   )
-import FFICXX.Generate.Util (firstLower, toLowers)
+import FFICXX.Generate.Util (firstLower, firstUpper, toLowers)
 import System.FilePath ((<.>))
 
 hsFrontNameForTopLevel :: TopLevel -> String
 hsFrontNameForTopLevel tfn =
-  let (x : xs) = case tfn of
+  let ys = case tfn of
         TLOrdinary TopLevelFunction {..} -> fromMaybe toplevelfunc_name toplevelfunc_alias
         TLOrdinary TopLevelVariable {..} -> fromMaybe toplevelvar_name toplevelvar_alias
         TLTemplate TopLevelTemplateFunction {..} -> topleveltfunc_name
-   in toLower x : xs
+   in case ys of
+        x : xs -> toLower x : xs
+        [] -> []
 
 typeclassName :: Class -> String
 typeclassName c = 'I' : fst (hsClassName c)
@@ -72,6 +75,12 @@ existConstructorName c = 'E' : (fst . hsClassName) c
 ffiClassName :: Class -> String
 ffiClassName c = maybe (class_name c) caFFIName (class_alias c)
 
+enumDataTypeName :: EnumType -> String
+enumDataTypeName = firstUpper . enum_name
+
+enumDataConstructorNames :: EnumType -> [String]
+enumDataConstructorNames = map firstUpper . enum_cases
+
 hscFuncName :: Class -> Function -> String
 hscFuncName c f =
   "c_"
@@ -81,8 +90,9 @@ hscFuncName c f =
 
 hsFuncName :: Class -> Function -> String
 hsFuncName c f =
-  let (x : xs) = aliasedFuncName c f
-   in (toLower x) : xs
+  case aliasedFuncName c f of
+    x : xs -> toLower x : xs
+    [] -> []
 
 aliasedFuncName :: Class -> Function -> String
 aliasedFuncName c f =
