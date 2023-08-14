@@ -82,6 +82,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     letE,
     listE,
     mkVar,
+    mkVarWithComment,
     op,
     par,
     strE,
@@ -139,7 +140,7 @@ import GHC.Parser.Annotation
     AnnSortKey (..),
     DeltaPos (..),
     EpAnn (..),
-    EpAnnComments (EpaComments),
+    EpAnnComments (EpaComments, EpaCommentsBalanced),
     EpaComment (..),
     EpaCommentTok (..),
     EpaLocation (..),
@@ -1264,6 +1265,19 @@ listE itms =
 mkVar :: String -> HsExpr GhcPs
 mkVar name =
   HsVar noExtField (mkLIdP (-1) name)
+
+mkVarWithComment :: String -> String -> HsExpr GhcPs
+mkVarWithComment name str =
+  HsVar noExtField (L ann id')
+  where
+    id' = unqual (mkVarOcc name)
+    cmt =
+      EpaComment
+        (EpaLineComment str)
+        defRealSrcSpan
+    lcmts = EpaComments [L (mkRelAnchor 0) cmt]
+    ann =
+      SrcSpanAnn (EpAnn (mkRelAnchor (-1)) (NameAnnTrailing []) lcmts) defSrcSpan
 
 op :: String -> HsExpr GhcPs
 op = mkVar
