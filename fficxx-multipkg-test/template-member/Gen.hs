@@ -291,6 +291,7 @@ main = do
             sbcModUnitMap = ModuleUnitMap (HM.fromList headers),
             sbcCabal = cabal,
             sbcClasses = classes cabal,
+            sbcEnums = [],
             sbcTopLevels = toplevels,
             sbcTemplates = templates,
             sbcExtraLibs = extraLib,

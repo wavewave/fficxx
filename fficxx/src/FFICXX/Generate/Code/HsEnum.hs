@@ -13,7 +13,8 @@ import FFICXX.Generate.Name
 import FFICXX.Generate.Type.Annotate (AnnotateMap)
 import FFICXX.Generate.Type.Class (EnumType)
 import FFICXX.Generate.Util.GHCExactPrint
-  ( comment,
+  ( DeclGroup,
+    comment,
     conDecl,
     mkData,
   )
@@ -23,10 +24,8 @@ import Language.Haskell.Syntax
     noExtField,
   )
 
-genHsEnumInclude :: EnumType -> HsDecl GhcPs
-genHsEnumInclude _ = DocD noExtField (comment "#include \"hello\"")
-
---  DocD noExtField (docCommentNext "hello there")
+genHsEnumInclude :: EnumType -> DeclGroup
+genHsEnumInclude _ = comment "#include \"hello\""
 
 genHsEnumDecl :: EnumType -> HsDecl GhcPs
 genHsEnumDecl enum =

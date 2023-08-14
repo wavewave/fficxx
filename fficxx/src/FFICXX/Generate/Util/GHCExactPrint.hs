@@ -102,6 +102,7 @@ module FFICXX.Generate.Util.GHCExactPrint
     tySplice,
 
     -- * doc
+    dummyComment,
     comment,
   )
 where
@@ -137,6 +138,7 @@ import GHC.Parser.Annotation
     AnnSortKey (..),
     DeltaPos (..),
     EpAnn (..),
+    EpAnnComments (EpaComments),
     EpaComment (..),
     EpaCommentTok (..),
     EpaLocation (..),
@@ -243,6 +245,7 @@ import Language.Haskell.Syntax
     ImportDeclQualifiedStyle (..),
     InstDecl (..),
     IsBootInterface (..),
+    LHsDecl,
     LHsExpr,
     LHsQTyVars (..),
     LIdP,
@@ -268,9 +271,9 @@ import Language.Haskell.Syntax.Basic
 -- DeclGroup
 --
 
-data DeclGroup = DeclGroup {unDeclGroup :: [HsDecl GhcPs]}
-
---    | Comment String
+data DeclGroup
+  = DeclGroup [HsDecl GhcPs]
+  | Comment String
 
 --
 -- utilities
@@ -361,6 +364,18 @@ mkL' delta = L anno'
     a' = a {anchor_op = MovedAnchor delta}
     anno' = SrcSpanAnn (EpAnn a' (AnnListItem []) emptyComments) defSrcSpan
 
+formatDeclGroup :: DeclGroup -> [LHsDecl GhcPs]
+formatDeclGroup (DeclGroup decls) = paragraphLines decls
+formatDeclGroup (Comment str) =
+  [L (SrcSpanAnn epann defSrcSpan) (DocD noExtField dummyComment)]
+  where
+    epann = EpAnn (mkRelAnchor (-1)) noAnnListItem lcmts
+    lcmts = EpaComments [L (mkRelAnchor 2) cmt]
+    cmt =
+      EpaComment
+        (EpaLineComment str)
+        defRealSrcSpan
+
 --
 -- Modules
 --
@@ -399,10 +414,10 @@ mkModuleE name pragmas mies idecls declss =
       hsmodExports =
         fmap (L (mkRelSrcSpanAnn (-1) annExport) . tupleAnn) mies,
       hsmodImports = paragraphLines idecls,
-      hsmodDecls = paragraphLines decls
+      hsmodDecls = ldecls
     }
   where
-    decls = concatMap unDeclGroup declss
+    ldecls = concatMap formatDeclGroup declss
     modName = ModuleName (fromString name)
     pragmaComments =
       let ls =
@@ -1339,13 +1354,15 @@ tySplice sp = HsSpliceTy noExtField sp
 -- doc
 --
 
--- DocCommentNext content is dummy. only annotation is useful.
-comment :: String -> DocDecl GhcPs
-comment str = dummyDecl -- DocDecl ann
+-- DocCommentNext content with dummy contents
+dummyComment :: DocDecl GhcPs
+dummyComment =
+  DocCommentNext (L defSrcSpan (WithHsDocIdentifiers str []))
   where
     str =
       MultiLineDocString
         HsDocStringNext
         (NE.singleton (L defSrcSpan (HsDocStringChunk "")))
-    dummyDecl =
-      DocCommentNext (L defSrcSpan (WithHsDocIdentifiers str []))
+
+comment :: String -> DeclGroup
+comment = Comment

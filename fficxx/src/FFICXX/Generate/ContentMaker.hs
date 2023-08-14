@@ -603,14 +603,14 @@ buildEnumHsc amap modname enums =
   Ex.mkModuleE modname [] Nothing [] body
   where
     body =
-      singleton . Ex.DeclGroup $
-        concatMap
-          ( \enum ->
-              [ genHsEnumInclude enum,
-                genHsEnumDecl enum
-              ]
-          ) -- , genHsEnumFFI enum])
-          enums
+      concatMap
+        ( \enum ->
+            [ genHsEnumInclude enum,
+              Ex.DeclGroup [genHsEnumDecl enum]
+              -- , genHsEnumFFI enum])
+            ]
+        )
+        enums
 
 buildTopLevelHs ::
   String ->
