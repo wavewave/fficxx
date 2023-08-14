@@ -127,7 +127,7 @@ classes =
   ]
 
 enums :: [EnumType]
-enums = [ ]
+enums = []
 
 toplevels :: [TopLevel]
 toplevels = []
