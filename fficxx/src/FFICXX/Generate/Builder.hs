@@ -157,7 +157,6 @@ simpleBuilder cfg sbc = do
   for_ (cabal_additional_c_srcs cabal) (\(AddCSrc hdr txt) -> gen hdr txt)
   --
   putStrLn "Generating Enum.hsc"
-  debugExactPrint (C.buildEnumHsc mempty (topLevelMod <> ".Enum") enums)
   gen
     (topLevelMod <.> "Enum" <.> "hsc")
     (exactPrint (C.buildEnumHsc mempty (topLevelMod <> ".Enum") enums))
