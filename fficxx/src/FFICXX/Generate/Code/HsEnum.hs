@@ -1,7 +1,6 @@
 module FFICXX.Generate.Code.HsEnum
   ( genHsEnumInclude,
     genHsEnumDecl,
-    -- genHsEnumFFI,
   )
 where
 
@@ -76,14 +75,3 @@ genHsEnumDecl enum =
         mkBind (DifferentLine 1 2) "fromEnum" (fmap mkFromEnum cnstrs)
       ]
     enumInstDecl = mkInstance cxEmpty "Enum" [tycon typ] [] bnds
-
-{-
-genHsEnumFFI :: EnumType -> HsDecl GhcPs
-genHsEnumFFI enum = decl
-  where
-    typ = enumDataTypeName enum
-    cnstrs = enumDataConstructorNames enum
-    cnstrExps =
-      fmap (\n -> conDecl n []) cnstrs
-    decl = TyClD noExtField $ mkData typ [] cnstrExps []
--}
