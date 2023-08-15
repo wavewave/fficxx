@@ -321,6 +321,10 @@ instance Castable (Ptr CLong) (Ptr CLong) where
   cast x f = f x
   uncast x f = f x
 
+instance Castable (Ptr CFloat) (Ptr CFloat) where
+  cast x f = f x
+  uncast x f = f x
+
 instance Castable (Ptr CDouble) (Ptr CDouble) where
   cast x f = f x
   uncast x f = f x
