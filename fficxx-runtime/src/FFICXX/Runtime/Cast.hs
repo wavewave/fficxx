@@ -297,6 +297,10 @@ instance Castable Word64 Word64 where
   cast x f = f x
   uncast x f = f x
 
+instance Castable (Ptr CBool) (Ptr CBool) where
+  cast x f = f x
+  uncast x f = f x
+
 instance Castable (Ptr CInt) (Ptr CInt) where
   cast x f = f x
   uncast x f = f x
@@ -314,6 +318,10 @@ instance Castable (Ptr CULong) (Ptr CULong) where
   uncast x f = f x
 
 instance Castable (Ptr CLong) (Ptr CLong) where
+  cast x f = f x
+  uncast x f = f x
+
+instance Castable (Ptr CFloat) (Ptr CFloat) where
   cast x f = f x
   uncast x f = f x
 
