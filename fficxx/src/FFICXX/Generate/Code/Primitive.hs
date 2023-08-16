@@ -510,7 +510,7 @@ tmplArgToCTypVar _ (Arg (TemplateAppMove _) v) = (R.CTStar R.CTVoid, R.sname v)
 tmplArgToCTypVar _ (Arg (TemplateType _) v) = (R.CTStar R.CTVoid, R.sname v)
 tmplArgToCTypVar CPrim (Arg (TemplateParam t) v) = (R.CTSimple (R.sname t), R.sname v)
 tmplArgToCTypVar NonCPrim (Arg (TemplateParam t) v) = (R.CTSimple (R.CName [R.NamePart t, R.NamePart "_p"]), R.sname v)
-tmplArgToCTypVar CPrim (Arg (TemplateParamPointer t) v) = (R.CTSimple (R.sname t), R.sname v)
+tmplArgToCTypVar CPrim (Arg (TemplateParamPointer t) v) = (R.CTStar (R.CTSimple (R.sname t)), R.sname v)
 tmplArgToCTypVar NonCPrim (Arg (TemplateParamPointer t) v) = (R.CTSimple (R.CName [R.NamePart t, R.NamePart "_p"]), R.sname v)
 tmplArgToCTypVar _ _ = error "tmplArgToCTypVar: undefined"
 
