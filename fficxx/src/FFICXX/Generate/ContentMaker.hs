@@ -547,7 +547,7 @@ buildTemplateHs m =
   where
     t = tcihTClass $ tcmTCIH m
     imports =
-      [ Ex.mkImport "Foreign.C.Types",
+      [ Ex.mkImport "Foreign.C",
         Ex.mkImport "Foreign.Ptr",
         Ex.mkImport "FFICXX.Runtime.Cast"
       ]
@@ -562,7 +562,7 @@ buildTHHs m =
     ( [ Ex.mkImport "Data.Char",
         Ex.mkImport "Data.List",
         Ex.mkImport "Data.Monoid",
-        Ex.mkImport "Foreign.C.Types",
+        Ex.mkImport "Foreign.C",
         Ex.mkImport "Foreign.Ptr",
         Ex.mkImport "Language.Haskell.TH",
         Ex.mkImport "Language.Haskell.TH.Syntax",
@@ -681,7 +681,7 @@ buildTopLevelTemplateHs modname tih =
         )
         tfns
     pkgImports =
-      [ Ex.mkImport "Foreign.C.Types",
+      [ Ex.mkImport "Foreign.C",
         Ex.mkImport "Foreign.Ptr",
         Ex.mkImport "FFICXX.Runtime.Cast"
       ]
@@ -716,7 +716,7 @@ buildTopLevelTHHs modname tih =
       [ Ex.mkImport "Data.Char",
         Ex.mkImport "Data.List",
         Ex.mkImport "Data.Monoid",
-        Ex.mkImport "Foreign.C.Types",
+        Ex.mkImport "Foreign.C",
         Ex.mkImport "Foreign.Ptr",
         Ex.mkImport "Language.Haskell.TH",
         Ex.mkImport "Language.Haskell.TH.Syntax",
