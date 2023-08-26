@@ -20,6 +20,7 @@ import FFICXX.Generate.Type.Class
     CPPTypes (..),
     CTypes (..),
     Class (..),
+    EnumType (enum_name),
     Form (..),
     Function (..),
     IsConst (Const, NoConst),
@@ -293,6 +294,8 @@ argToCTypVar (Arg (CT ctyp isconst) varname) =
   (ctypToCType ctyp isconst, R.sname varname)
 argToCTypVar (Arg SelfType varname) =
   (R.CTSimple (R.CName [R.NamePart "Type", R.NamePart "_p"]), R.sname varname)
+argToCTypVar (Arg (CPT (CPTEnum _e) _isconst) varname) =
+  (ctypToCType CTInt NoConst, R.sname varname)
 argToCTypVar (Arg (CPT (CPTClass c) isconst) varname) =
   case isconst of
     Const -> (R.CTSimple (R.sname ("const_" <> cname <> "_p")), R.sname varname)
@@ -356,6 +359,8 @@ c2Cxx :: Types -> R.CExp Identity -> R.CExp Identity
 c2Cxx t e =
   case t of
     CT (CRef _) _ -> R.CStar e
+    CPT (CPTEnum en) _ ->
+      R.CCast (R.CTVerbatim (enum_name en)) e
     CPT (CPTClass c) _ ->
       R.CTApp
         (R.sname "from_nonconst_to_nonconst")
@@ -840,7 +845,8 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
       case typ of
         SelfType -> return (Ex.mkTVar "a")
         CT CTString Const -> addstring
-        CT _ _ -> return $ cxx2HsType Nothing typ
+        CT _ _ -> pure $ cxx2HsType Nothing typ
+        CPT (CPTEnum _e) _ -> pure $ cxx2HsType Nothing (CT CTInt NoConst)
         CPT (CPTClass c') _ -> addclass c'
         CPT (CPTClassRef c') _ -> addclass c'
         CPT (CPTClassCopy c') _ -> addclass c'
@@ -978,6 +984,7 @@ hsFFIFunType msc (CFunSig args ret) =
     --
     hsargtype :: Types -> HsType GhcPs
     hsargtype (CT ctype _) = c2HsType ctype
+    hsargtype (CPT (CPTEnum _) _) = c2HsType CTInt
     hsargtype (CPT (CPTClass d) _) = Ex.tyapp Ex.tyPtr (Ex.tycon rawname)
       where
         rawname = snd (hsClassName d)
