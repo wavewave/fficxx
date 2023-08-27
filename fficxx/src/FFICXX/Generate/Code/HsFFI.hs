@@ -27,7 +27,6 @@ import FFICXX.Generate.Type.Class
     Arg (..),
     Class (..),
     Function (..),
-    Safety (Unsafe),
     Selfness (NoSelf, Self),
     TLOrdinary (..),
     Variable (unVariable),
@@ -48,9 +47,8 @@ import FFICXX.Generate.Util.GHCExactPrint
     mkImport,
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
-import GHC.Hs
-  ( GhcPs,
-  )
+import FFICXX.Runtime.Types (Safety (Unsafe))
+import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax
   ( ForeignDecl,
     ImportDecl,

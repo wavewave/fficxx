@@ -60,6 +60,7 @@ mkTFunc (typs, suffix, nf, tyf) =
     let fn = nf suffix
     let fn' = "c_" <> fn
     n <- newName fn'
+    -- TODO: handle this according to safety
     d <- forImpD CCall safe fn n (tyf typs)
     addTopDecls [d]
     [|$(varE n)|]

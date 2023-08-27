@@ -8,6 +8,7 @@ module FFICXX.Generate.Type.Class where
 import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
+import FFICXX.Runtime.Types (Safety (..))
 import FFICXX.Generate.Type.Cabal (Cabal)
 
 -- | C types
@@ -119,9 +120,6 @@ data Arg = Arg
   { arg_type :: Types,
     arg_name :: String
   }
-  deriving (Show)
-
-data Safety = Unsafe | Safe | Interruptible
   deriving (Show)
 
 -- | Regular member functions in a ordinary class

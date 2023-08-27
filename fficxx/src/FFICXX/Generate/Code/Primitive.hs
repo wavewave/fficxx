@@ -24,7 +24,6 @@ import FFICXX.Generate.Type.Class
     Form (..),
     Function (..),
     IsConst (Const, NoConst),
-    Safety (..),
     Selfness (NoSelf, Self),
     TemplateAppInfo (..),
     TemplateArgType (TArg_TypeParam),
@@ -40,6 +39,7 @@ import FFICXX.Generate.Type.Class
 import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
+import FFICXX.Runtime.Types (Safety (..))
 import GHC.Hs (GhcPs)
 import qualified GHC.Types.ForeignCall as GHC (Safety (..))
 import Language.Haskell.Syntax
