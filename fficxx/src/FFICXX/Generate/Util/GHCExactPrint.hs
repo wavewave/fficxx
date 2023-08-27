@@ -561,7 +561,7 @@ mkForImpCcall quote fname typ =
                   (mkRelAnchor 0)
                   ( EpaComment
                       ( EpaBlockComment
-                          ( "{- REPLACE_THIS_LINE |foreign import ccall interruptible \""
+                          ( "{- REPLACE_THIS_LINE |foreign import ccall unsafe \""
                               <> quote
                               <> "\"| -}"
                           )
