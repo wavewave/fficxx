@@ -78,6 +78,7 @@ import FFICXX.Generate.Util.GHCExactPrint
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
+import FFICXX.Runtime.Types (Safety (..))
 import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax
   ( HsDecl,
@@ -221,14 +222,16 @@ genTmplInstance tcih =
       let Variable (Arg {..}) = vf
           f_g =
             TFun
-              { tfun_ret = arg_type,
+              { tfun_safety = Unsafe,
+                tfun_ret = arg_type,
                 tfun_name = tmplAccessorName vf Getter,
                 tfun_oname = tmplAccessorName vf Getter,
                 tfun_args = []
               }
           f_s =
             TFun
-              { tfun_ret = Void,
+              { tfun_safety = Unsafe,
+                tfun_ret = Void,
                 tfun_name = tmplAccessorName vf Setter,
                 tfun_oname = tmplAccessorName vf Setter,
                 tfun_args = [Arg arg_type "value"]

@@ -8,8 +8,8 @@ module FFICXX.Generate.Type.Class where
 import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
-import FFICXX.Runtime.Types (Safety (..))
 import FFICXX.Generate.Type.Cabal (Cabal)
+import FFICXX.Runtime.Types (Safety (..))
 
 -- | C types
 data CTypes
@@ -302,7 +302,8 @@ data OpExp
 
 data TemplateFunction
   = TFun
-      { tfun_ret :: Types,
+      { tfun_safety :: Safety,
+        tfun_ret :: Types,
         tfun_name :: String,
         tfun_oname :: String,
         tfun_args :: [Arg]
@@ -313,7 +314,8 @@ data TemplateFunction
       }
   | TFunDelete
   | TFunOp
-      { tfun_ret :: Types,
+      { tfun_safety :: Safety,
+        tfun_ret :: Types,
         -- | haskell alias for the operator
         tfun_name :: String,
         tfun_opexp :: OpExp
