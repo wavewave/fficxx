@@ -595,11 +595,10 @@ buildModuleHs m =
     c = cihClass (cmCIH m)
 
 buildEnumHsc ::
-  AnnotateMap ->
   String ->
   [EnumType] ->
   HsModule GhcPs
-buildEnumHsc amap modname enums =
+buildEnumHsc modname enums =
   Ex.mkModuleE modname [] Nothing [] body
   where
     body =

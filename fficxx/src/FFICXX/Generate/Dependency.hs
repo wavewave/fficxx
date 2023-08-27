@@ -155,11 +155,11 @@ data Dep4Func = Dep4Func
 extractClassDep :: Function -> Dep4Func
 extractClassDep (Constructor args _) =
   Dep4Func [] (concatMap classFromArg args)
-extractClassDep (Virtual ret _ args _) =
+extractClassDep (Virtual _ ret _ args _) =
   Dep4Func (extractClassFromType ret) (concatMap classFromArg args)
-extractClassDep (NonVirtual ret _ args _) =
+extractClassDep (NonVirtual _ ret _ args _) =
   Dep4Func (extractClassFromType ret) (concatMap classFromArg args)
-extractClassDep (Static ret _ args _) =
+extractClassDep (Static _ ret _ args _) =
   Dep4Func (extractClassFromType ret) (concatMap classFromArg args)
 extractClassDep (Destructor _) =
   Dep4Func [] []
