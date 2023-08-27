@@ -24,6 +24,7 @@ import FFICXX.Generate.Type.Class
     Form (..),
     Function (..),
     IsConst (Const, NoConst),
+    Safety (..),
     Selfness (NoSelf, Self),
     TemplateAppInfo (..),
     TemplateArgType (TArg_TypeParam),
@@ -40,10 +41,16 @@ import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
 import GHC.Hs (GhcPs)
+import qualified GHC.Types.ForeignCall as GHC (Safety (..))
 import Language.Haskell.Syntax
   ( HsContext,
     HsType,
   )
+
+toGHCSafety :: Safety -> GHC.Safety
+toGHCSafety Unsafe = GHC.PlayRisky
+toGHCSafety Safe = GHC.PlaySafe
+toGHCSafety Interruptible = GHC.PlayInterruptible
 
 data CFunSig = CFunSig
   { cArgTypes :: [Arg],
