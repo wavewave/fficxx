@@ -10,6 +10,7 @@ import FFICXX.Generate.Code.Primitive
     genericFuncArgs,
     genericFuncRet,
     hsFFIFunType,
+    toGHCSafety,
   )
 import FFICXX.Generate.Dependency
   ( class_allparents,
@@ -29,6 +30,7 @@ import FFICXX.Generate.Type.Class
     Selfness (NoSelf, Self),
     TLOrdinary (..),
     Variable (unVariable),
+    getFunSafety,
     isAbstractClass,
     isNewFunc,
     isStaticFunc,
@@ -45,9 +47,8 @@ import FFICXX.Generate.Util.GHCExactPrint
     mkImport,
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
-import GHC.Hs
-  ( GhcPs,
-  )
+import FFICXX.Runtime.Types (FFISafety (FFIUnsafe))
+import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax
   ( ForeignDecl,
     ImportDecl,
@@ -80,6 +81,7 @@ hsFFIClassFunc headerfilename c f =
     then Nothing
     else
       let hfile = unHdrName headerfilename
+          safety = getFunSafety f
           -- TODO: Make this a separate function
           cname = ffiClassName c <> "_" <> aliasedFuncName c f
           csig = CFunSig (genericFuncArgs f) (genericFuncRet f)
@@ -87,7 +89,7 @@ hsFFIClassFunc headerfilename c f =
             if (isNewFunc f || isStaticFunc f)
               then hsFFIFunType (Just (NoSelf, c)) csig
               else hsFFIFunType (Just (Self, c)) csig
-       in Just (mkForImpCcall (hfile <> " " <> cname) (hscFuncName c f) typ)
+       in Just (mkForImpCcall (toGHCSafety safety) (hfile <> " " <> cname) (hscFuncName c f) typ)
 
 hsFFIAccessor :: Class -> Variable -> Accessor -> ForeignDecl GhcPs
 hsFFIAccessor c v a =
@@ -97,7 +99,7 @@ hsFFIAccessor c v a =
         hsFFIFunType
           (Just (Self, c))
           (accessorCFunSig (arg_type (unVariable v)) a)
-   in mkForImpCcall cname (hscAccessorName c v a) typ
+   in mkForImpCcall (toGHCSafety FFIUnsafe) cname (hscAccessorName c v a) typ
 
 -- import for FFI
 genImportInFFI :: ClassModule -> [ImportDecl GhcPs]
@@ -108,12 +110,23 @@ genImportInFFI = fmap (mkImport . subModuleName) . cmImportedSubmodulesForFFI
 ----------------------------
 
 genTopLevelFFI :: TopLevelImportHeader -> TLOrdinary -> ForeignDecl GhcPs
-genTopLevelFFI header tfn = mkForImpCcall (hfilename <> " TopLevel_" <> fname) cfname typ
+genTopLevelFFI header tfn =
+  mkForImpCcall (toGHCSafety safety) (hfilename <> " TopLevel_" <> fname) cfname typ
   where
-    (fname, args, ret) =
+    (safety, fname, args, ret) =
       case tfn of
-        TopLevelFunction {..} -> (fromMaybe toplevelfunc_name toplevelfunc_alias, toplevelfunc_args, toplevelfunc_ret)
-        TopLevelVariable {..} -> (fromMaybe toplevelvar_name toplevelvar_alias, [], toplevelvar_ret)
+        TopLevelFunction {..} ->
+          ( toplevelfunc_safety,
+            fromMaybe toplevelfunc_name toplevelfunc_alias,
+            toplevelfunc_args,
+            toplevelfunc_ret
+          )
+        TopLevelVariable {..} ->
+          ( FFIUnsafe,
+            fromMaybe toplevelvar_name toplevelvar_alias,
+            [],
+            toplevelvar_ret
+          )
     hfilename = tihHeaderFileName header <.> "h"
     -- TODO: This must be exposed as a top-level function
     cfname = "c_" <> toLowers fname

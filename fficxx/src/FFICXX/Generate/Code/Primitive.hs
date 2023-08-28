@@ -39,11 +39,18 @@ import FFICXX.Generate.Type.Class
 import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
+import FFICXX.Runtime.Types (FFISafety (..))
 import GHC.Hs (GhcPs)
+import qualified GHC.Types.ForeignCall as GHC (Safety (..))
 import Language.Haskell.Syntax
   ( HsContext,
     HsType,
   )
+
+toGHCSafety :: FFISafety -> GHC.Safety
+toGHCSafety FFIUnsafe = GHC.PlayRisky
+toGHCSafety FFISafe = GHC.PlaySafe
+toGHCSafety FFIInterruptible = GHC.PlayInterruptible
 
 data CFunSig = CFunSig
   { cArgTypes :: [Arg],
@@ -780,12 +787,12 @@ cxx2HsType4Tmpl _ _ _ (TemplateParam p) = Ex.tySplice . Ex.parenSplice . Ex.mkVa
 cxx2HsType4Tmpl _ _ _ (TemplateParamPointer p) = Ex.tySplice . Ex.parenSplice . Ex.mkVar $ p
 
 hsFuncXformer :: Function -> String
-hsFuncXformer func@(Constructor _ _) =
+hsFuncXformer func@(Constructor {}) =
   let len = length (genericFuncArgs func)
    in if len > 0
         then "xform" <> show (len - 1)
         else "xformnull"
-hsFuncXformer func@(Static _ _ _ _) =
+hsFuncXformer func@(Static {}) =
   let len = length (genericFuncArgs func)
    in if len > 0
         then "xform" <> show (len - 1)
@@ -937,14 +944,16 @@ tmplAccessorToTFun v@(Variable (Arg {..})) a =
   case a of
     Getter ->
       TFun
-        { tfun_ret = arg_type,
+        { tfun_safety = FFIUnsafe,
+          tfun_ret = arg_type,
           tfun_name = tmplAccessorName v Getter,
           tfun_oname = tmplAccessorName v Getter,
           tfun_args = []
         }
     Setter ->
       TFun
-        { tfun_ret = Void,
+        { tfun_safety = FFIUnsafe,
+          tfun_ret = Void,
           tfun_name = tmplAccessorName v Setter,
           tfun_oname = tmplAccessorName v Setter,
           tfun_args = [Arg arg_type "value"]
@@ -1075,11 +1084,9 @@ hsFFIFunType msc (CFunSig args ret) =
 genericFuncRet :: Function -> Types
 genericFuncRet f =
   case f of
-    Constructor _ _ -> self_
-    Virtual t _ _ _ -> t
-    NonVirtual t _ _ _ -> t
-    Static t _ _ _ -> t
-    Destructor _ -> void_
+    Constructor {} -> self_
+    Destructor {} -> void_
+    _ -> func_ret f
 
 genericFuncArgs :: Function -> [Arg]
 genericFuncArgs (Destructor _) = []

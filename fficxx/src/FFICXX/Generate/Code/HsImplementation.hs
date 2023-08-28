@@ -94,6 +94,7 @@ import FFICXX.Generate.Util.GHCExactPrint
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
+import FFICXX.Runtime.Types (FFISafety (..))
 import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax (HsDecl, ImportDecl)
 
@@ -186,12 +187,18 @@ genTMFExp c f = mkFun nh sig (tvars_p ++ [p "suffix"]) rhs bstmts
       | otherwise = [pTuple (fmap p tvars)]
     lit' = strE (hsTemplateMemberFunctionName c f <> "_")
     lam = lamE [p "n"] (lit' `app` v "<>" `app` v "n")
+    safety =
+      case tmf_safety f of
+        FFIUnsafe -> "FFIUnsafe"
+        FFISafe -> "FFISafe"
+        FFIInterruptible -> "FFIInterruptible"
     rhs =
       app (v "mkTFunc") $
-        let typs
-              | nparams == 1 = fmap v tvars
-              | otherwise = [tupleE (map v tvars)]
-         in tupleE (typs ++ [v "suffix", lam, v "tyf"])
+        app (v safety) $
+          let typs
+                | nparams == 1 = fmap v tvars
+                | otherwise = [tupleE (map v tvars)]
+           in tupleE (typs ++ [v "suffix", lam, v "tyf"])
     sig' = functionSignatureTMF c f
     tassgns =
       fmap

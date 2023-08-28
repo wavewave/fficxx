@@ -98,9 +98,9 @@ aliasedFuncName :: Class -> Function -> String
 aliasedFuncName c f =
   case f of
     Constructor _ a -> fromMaybe (constructorName c) a
-    Virtual _ str _ a -> fromMaybe str a
-    NonVirtual _ str _ a -> fromMaybe (nonvirtualName c str) a
-    Static _ str _ a -> fromMaybe (nonvirtualName c str) a
+    Virtual _ _ str _ a -> fromMaybe str a
+    NonVirtual _ _ str _ a -> fromMaybe (nonvirtualName c str) a
+    Static _ _ str _ a -> fromMaybe (nonvirtualName c str) a
     Destructor a -> fromMaybe destructorName a
 
 hsTmplFuncName :: TemplateClass -> TemplateFunction -> String
@@ -156,11 +156,11 @@ cppStaticName c f = class_name c <> "::" <> func_name f
 
 cppFuncName :: Class -> Function -> String
 cppFuncName c f = case f of
-  Constructor _ _ -> "new"
-  Virtual _ _ _ _ -> func_name f
-  NonVirtual _ _ _ _ -> func_name f
-  Static _ _ _ _ -> cppStaticName c f
-  Destructor _ -> destructorName
+  Constructor {} -> "new"
+  Virtual {} -> func_name f
+  NonVirtual {} -> func_name f
+  Static {} -> cppStaticName c f
+  Destructor {} -> destructorName
 
 constructorName :: Class -> String
 constructorName c = "new" <> (fst . hsClassName) c

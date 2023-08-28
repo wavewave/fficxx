@@ -140,7 +140,7 @@ import GHC.Parser.Annotation
     AnnSortKey (..),
     DeltaPos (..),
     EpAnn (..),
-    EpAnnComments (EpaComments, EpaCommentsBalanced),
+    EpAnnComments (EpaComments),
     EpaComment (..),
     EpaCommentTok (..),
     EpaLocation (..),
@@ -155,7 +155,6 @@ import GHC.Parser.Annotation
     TrailingAnn (..),
     emptyComments,
     noAnn,
-    noSrcSpanA,
     spanAsAnchor,
   )
 import GHC.Types.Basic
@@ -171,7 +170,6 @@ import GHC.Types.ForeignCall
   )
 import GHC.Types.Name.Occurrence
   ( OccName,
-    mkOccName,
     mkTyVarOcc,
     mkVarOcc,
   )
@@ -189,19 +187,16 @@ import GHC.Types.SrcLoc
     RealSrcSpan,
     SrcSpan (..),
     mkSrcLoc,
-    mkSrcSpan,
     srcLocSpan,
   )
 import qualified Language.Haskell.GHC.ExactPrint as Exact
 import Language.Haskell.Syntax
-  ( Anno,
-    CImportSpec (CFunction),
+  ( CImportSpec (CFunction),
     ClsInstDecl (..),
     ConDecl (..),
     DataDefnCons (..),
     DerivClauseTys (..),
     DocDecl (..),
-    ExprLStmt,
     FamEqn (..),
     ForeignDecl (..),
     ForeignImport (CImport),
@@ -547,11 +542,22 @@ mkImportSrc name =
 -- NOTE: Unfortunately, the location annotation of GHC API for foreign import is not fully relative,
 -- i.e. we cannot place correct spaces between "import", "ccall" and "safe", and the generated result
 -- is not a valid Haskell code. So as a workaround we need to put a place holder in comment.
-mkForImpCcall :: String -> String -> HsType GhcPs -> ForeignDecl GhcPs
-mkForImpCcall quote fname typ =
+mkForImpCcall ::
+  Safety ->
+  String ->
+  String ->
+  HsType GhcPs ->
+  ForeignDecl GhcPs
+mkForImpCcall safety quote fname typ =
   ForeignImport (mkRelEpAnn (-1) annos) lid lsigty forImp
   where
     quote' = show quote
+    for_imp_header =
+      "foreign import ccall "
+        <> case safety of
+          PlayRisky -> "unsafe"
+          PlaySafe -> "safe"
+          PlayInterruptible -> "interruptible"
     annos =
       [ AddEpAnn
           AnnForeign
@@ -561,7 +567,9 @@ mkForImpCcall quote fname typ =
                   (mkRelAnchor 0)
                   ( EpaComment
                       ( EpaBlockComment
-                          ( "{- REPLACE_THIS_LINE |foreign import ccall interruptible \""
+                          ( "{- REPLACE_THIS_LINE |"
+                              <> for_imp_header
+                              <> " \""
                               <> quote
                               <> "\"| -}"
                           )
@@ -585,7 +593,7 @@ mkForImpCcall quote fname typ =
       CImport
         (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} (SourceText quote'))
         (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} StdCallConv)
-        (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} PlayInterruptible)
+        (L defSrcSpan {- anchor_op = MovedAnchor (SameLine 1) -} safety)
         Nothing
         ( CFunction
             (StaticTarget (SourceText quote) (fromString quote) Nothing True)

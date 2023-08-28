@@ -58,6 +58,7 @@ import FFICXX.Generate.Type.Config
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..), Namespace (..))
+import FFICXX.Runtime.Types (FFISafety (..))
 import System.Directory (getCurrentDirectory)
 import System.Environment (getArgs)
 import System.FilePath ((</>))
@@ -109,9 +110,9 @@ string =
     mempty
     (Just (ClassAlias {caHaskellName = "CppString", caFFIName = "string"}))
     [ Constructor [cstring "p"] Nothing,
-      NonVirtual cstring_ "c_str" [] Nothing,
-      NonVirtual (cppclassref_ string) "append" [cppclassref string "str"] Nothing,
-      NonVirtual (cppclassref_ string) "erase" [] Nothing
+      NonVirtual FFIUnsafe cstring_ "c_str" [] Nothing,
+      NonVirtual FFIUnsafe (cppclassref_ string) "append" [cppclassref string "str"] Nothing,
+      NonVirtual FFIUnsafe (cppclassref_ string) "erase" [] Nothing
     ]
     []
     []
@@ -125,10 +126,10 @@ t_vector =
     (FormSimple "std::vector")
     ["tp1"]
     [ TFunNew [] Nothing,
-      TFun void_ "push_back" "push_back" [Arg (TemplateParam "tp1") "x"],
-      TFun void_ "pop_back" "pop_back" [],
-      TFun (TemplateParam "tp1") "at" "at" [int "n"],
-      TFun int_ "size" "size" [],
+      TFun FFIUnsafe void_ "push_back" "push_back" [Arg (TemplateParam "tp1") "x"],
+      TFun FFIUnsafe void_ "pop_back" "pop_back" [],
+      TFun FFIUnsafe (TemplateParam "tp1") "at" "at" [int "n"],
+      TFun FFIUnsafe int_ "size" "size" [],
       TFunDelete
     ]
     []
@@ -142,9 +143,9 @@ t_unique_ptr =
     ["tp1"]
     [ TFunNew [] (Just "newUniquePtr0"),
       TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing,
-      TFun (TemplateParamPointer "tp1") "get" "get" [],
-      TFun (TemplateParamPointer "tp1") "release" "release" [],
-      TFun void_ "reset" "reset" [],
+      TFun FFIUnsafe (TemplateParamPointer "tp1") "get" "get" [],
+      TFun FFIUnsafe (TemplateParamPointer "tp1") "release" "release" [],
+      TFun FFIUnsafe void_ "reset" "reset" [],
       TFunDelete
     ]
     []
@@ -190,14 +191,16 @@ classA cabal =
       class_vars = [],
       class_tmpl_funcs =
         [ TemplateMemberFunction
-            { tmf_params = ["tp1"],
+            { tmf_safety = FFIUnsafe,
+              tmf_params = ["tp1"],
               tmf_ret = void_,
               tmf_name = "method",
               tmf_args = [Arg (TemplateParamPointer "tp1") "x"],
               tmf_alias = Nothing
             },
           TemplateMemberFunction
-            { tmf_params = ["tp1"],
+            { tmf_safety = FFIUnsafe,
+              tmf_params = ["tp1"],
               tmf_ret = void_,
               tmf_name = "method2",
               tmf_args =
@@ -227,7 +230,7 @@ classT1 cabal =
       class_alias = Nothing,
       class_funcs =
         [ Constructor [] Nothing,
-          NonVirtual void_ "print" [] Nothing
+          NonVirtual FFIUnsafe void_ "print" [] Nothing
         ],
       class_vars = [],
       class_tmpl_funcs = [],
@@ -244,7 +247,7 @@ classT2 cabal =
       class_alias = Nothing,
       class_funcs =
         [ Constructor [] Nothing,
-          NonVirtual void_ "print" [] Nothing
+          NonVirtual FFIUnsafe void_ "print" [] Nothing
         ],
       class_vars = [],
       class_tmpl_funcs = [],

@@ -34,6 +34,7 @@ import FFICXX.Generate.Type.Class
     TemplateFunction (..),
     Types (Void),
     Variable (..),
+    getTFunSafety,
   )
 import FFICXX.Generate.Type.Module
   ( TemplateClassImportHeader (..),
@@ -78,6 +79,7 @@ import FFICXX.Generate.Util.GHCExactPrint
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
+import FFICXX.Runtime.Types (FFISafety (..))
 import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax
   ( HsDecl,
@@ -111,10 +113,16 @@ genTmplImplementation t =
         nc = ffiTmplFuncName f
         lit' = strE (prefix <> "_" <> nc)
         lam = lamE [p "n"] (lit' `app` v "<>" `app` v "n")
+        safety =
+          case getTFunSafety f of
+            FFIUnsafe -> "FFIUnsafe"
+            FFISafe -> "FFISafe"
+            FFIInterruptible -> "FFIInterruptible"
         rhs =
           app (v "mkTFunc") $
-            let typs = if nparams == 1 then map v tvars else [tupleE (map v tvars)]
-             in tupleE (typs ++ [v "suffix", lam, v "tyf"])
+            app (v safety) $
+              let typs = if nparams == 1 then map v tvars else [tupleE (map v tvars)]
+               in tupleE (typs ++ [v "suffix", lam, v "tyf"])
         sig' = functionSignatureTT t f
         tassgns =
           fmap
@@ -221,14 +229,16 @@ genTmplInstance tcih =
       let Variable (Arg {..}) = vf
           f_g =
             TFun
-              { tfun_ret = arg_type,
+              { tfun_safety = FFIUnsafe,
+                tfun_ret = arg_type,
                 tfun_name = tmplAccessorName vf Getter,
                 tfun_oname = tmplAccessorName vf Getter,
                 tfun_args = []
               }
           f_s =
             TFun
-              { tfun_ret = Void,
+              { tfun_safety = FFIUnsafe,
+                tfun_ret = Void,
                 tfun_name = tmplAccessorName vf Setter,
                 tfun_oname = tmplAccessorName vf Setter,
                 tfun_args = [Arg arg_type "value"]

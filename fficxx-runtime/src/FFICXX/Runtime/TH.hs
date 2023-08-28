@@ -2,9 +2,9 @@
 
 module FFICXX.Runtime.TH where
 
---
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName, Namespace)
-import Language.Haskell.TH (forImpD, safe, varE)
+import FFICXX.Runtime.Types (FFISafety (..))
+import Language.Haskell.TH (forImpD, interruptible, safe, unsafe, varE)
 import Language.Haskell.TH.Syntax
   ( Body (NormalB),
     Callconv (CCall),
@@ -54,13 +54,18 @@ con = ConT . mkNameS
 mkInstance :: Cxt -> Type -> [Dec] -> Dec
 mkInstance = InstanceD Nothing
 
-mkTFunc :: (types, String, String -> String, types -> Q Type) -> Q Exp
-mkTFunc (typs, suffix, nf, tyf) =
+mkTFunc :: FFISafety -> (types, String, String -> String, types -> Q Type) -> Q Exp
+mkTFunc safety (typs, suffix, nf, tyf) =
   do
     let fn = nf suffix
     let fn' = "c_" <> fn
     n <- newName fn'
-    d <- forImpD CCall safe fn n (tyf typs)
+    let safety_modifier =
+          case safety of
+            FFIUnsafe -> unsafe
+            FFISafe -> safe
+            FFIInterruptible -> interruptible
+    d <- forImpD CCall safety_modifier fn n (tyf typs)
     addTopDecls [d]
     [|$(varE n)|]
 
