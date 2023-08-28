@@ -827,7 +827,7 @@ extractArgRetTypes mc isvirtual (CFunSig args ret) =
                 then return (Ex.mkTVar "a")
                 else return $ Ex.tycon ((fst . hsClassName) c)
           x -> (return . cxx2HsType Nothing) x
-        return (as ++ [Ex.tyapp (Ex.tycon "IO") r])
+        return (as ++ [Ex.tyapp (Ex.tycon "IO") (Ex.tyParen r)])
    in HsFunSig
         { hsSigTypes = typs,
           hsSigConstraints = fst s
@@ -1008,28 +1008,18 @@ hsFFIFunType msc (CFunSig args ret) =
         rawname = snd (hsClassName d)
     hsargtype (TemplateApp x) =
       Ex.tyapp Ex.tyPtr $
-        foldl1 Ex.tyapp $
-          map Ex.tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
+        Ex.tyParen $
+          foldl1 Ex.tyapp $
+            map Ex.tycon $
+              rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsargtype (TemplateAppRef x) =
-      Ex.tyapp Ex.tyPtr $
-        foldl1 Ex.tyapp $
-          map Ex.tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
-      where
-        rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsargtype (TemplateAppMove x) =
-      Ex.tyapp Ex.tyPtr $
-        foldl1 Ex.tyapp $
-          map Ex.tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
-      where
-        rawname = snd (hsTemplateClassName (tapp_tclass x))
+    hsargtype (TemplateAppRef x) = hsargtype (TemplateApp x)
+    hsargtype (TemplateAppMove x) = hsargtype (TemplateApp x)
     hsargtype (TemplateType t) =
       Ex.tyapp Ex.tyPtr $
-        foldl1 Ex.tyapp (Ex.tycon rawname : map Ex.mkTVar (tclass_params t))
+        Ex.tyParen $
+          foldl1 Ex.tyapp (Ex.tycon rawname : map Ex.mkTVar (tclass_params t))
       where
         rawname = snd (hsTemplateClassName t)
     hsargtype (TemplateParam p) = Ex.mkTVar p
@@ -1054,28 +1044,18 @@ hsFFIFunType msc (CFunSig args ret) =
         rawname = snd (hsClassName d)
     hsrettype (TemplateApp x) =
       Ex.tyapp Ex.tyPtr $
-        foldl1 Ex.tyapp $
-          map Ex.tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
+        Ex.tyParen $
+          foldl1 Ex.tyapp $
+            map Ex.tycon $
+              rawname : map hsClassNameForTArg (tapp_tparams x)
       where
         rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsrettype (TemplateAppRef x) =
-      Ex.tyapp Ex.tyPtr $
-        foldl1 Ex.tyapp $
-          map Ex.tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
-      where
-        rawname = snd (hsTemplateClassName (tapp_tclass x))
-    hsrettype (TemplateAppMove x) =
-      Ex.tyapp Ex.tyPtr $
-        foldl1 Ex.tyapp $
-          map Ex.tycon $
-            rawname : map hsClassNameForTArg (tapp_tparams x)
-      where
-        rawname = snd (hsTemplateClassName (tapp_tclass x))
+    hsrettype (TemplateAppRef x) = hsrettype (TemplateApp x)
+    hsrettype (TemplateAppMove x) = hsrettype (TemplateApp x)
     hsrettype (TemplateType t) =
       Ex.tyapp Ex.tyPtr $
-        foldl1 Ex.tyapp (Ex.tycon rawname : map Ex.mkTVar (tclass_params t))
+        Ex.tyParen $
+          foldl1 Ex.tyapp (Ex.tycon rawname : map Ex.mkTVar (tclass_params t))
       where
         rawname = snd (hsTemplateClassName t)
     hsrettype (TemplateParam p) = Ex.mkTVar p
