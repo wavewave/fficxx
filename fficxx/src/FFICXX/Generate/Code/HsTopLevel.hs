@@ -118,6 +118,7 @@ import FFICXX.Generate.Util.GHCExactPrint
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
+import FFICXX.Runtime.Types (FFISafety (..))
 import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax
   ( HsDecl (TyClD),
@@ -272,10 +273,16 @@ genTLTemplateImplementation t =
     nc = topleveltfunc_name t
     lit' = strE (prefix <> "_" <> nc)
     lam = lamE [p "n"] (lit' `app` v "<>" `app` v "n")
+    safety =
+      case topleveltfunc_safety t of
+        FFIUnsafe -> "FFIUnsafe"
+        FFISafe -> "FFISafe"
+        FFIInterruptible -> "FFIInterruptible"
     rhs =
       app (v "mkTFunc") $
-        let typs = if nparams == 1 then map v tvars else [tupleE (map v tvars)]
-         in tupleE (typs ++ [v "suffix", lam, v "tyf"])
+        app (v safety) $
+          let typs = if nparams == 1 then map v tvars else [tupleE (map v tvars)]
+           in tupleE (typs ++ [v "suffix", lam, v "tyf"])
     sig' =
       let e = error "genTLTemplateImplementation"
           spls = map (tySplice . parenSplice . mkVar) $ topleveltfunc_params t

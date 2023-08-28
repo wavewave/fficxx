@@ -3,7 +3,7 @@
 module FFICXX.Runtime.TH where
 
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName, Namespace)
-import FFICXX.Runtime.Types (Safety (..))
+import FFICXX.Runtime.Types (FFISafety (..))
 import Language.Haskell.TH (forImpD, interruptible, safe, unsafe, varE)
 import Language.Haskell.TH.Syntax
   ( Body (NormalB),
@@ -54,7 +54,7 @@ con = ConT . mkNameS
 mkInstance :: Cxt -> Type -> [Dec] -> Dec
 mkInstance = InstanceD Nothing
 
-mkTFunc :: Safety -> (types, String, String -> String, types -> Q Type) -> Q Exp
+mkTFunc :: FFISafety -> (types, String, String -> String, types -> Q Type) -> Q Exp
 mkTFunc safety (typs, suffix, nf, tyf) =
   do
     let fn = nf suffix
@@ -62,17 +62,17 @@ mkTFunc safety (typs, suffix, nf, tyf) =
     n <- newName fn'
     let safety_modifier =
           case safety of
-            Unsafe -> unsafe
-            Safe -> safe
-            Interruptible -> interruptible
+            FFIUnsafe -> unsafe
+            FFISafe -> safe
+            FFIInterruptible -> interruptible
     d <- forImpD CCall safety_modifier fn n (tyf typs)
     addTopDecls [d]
     [|$(varE n)|]
 
-mkMember :: Safety -> String -> (Safety -> types -> String -> Q Exp) -> types -> String -> Q Dec
-mkMember safety fname f typ suffix = do
+mkMember :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
+mkMember fname f typ suffix = do
   let x = mkNameS "x"
-  e <- f safety typ suffix
+  e <- f typ suffix
   pure $
     FunD (mkNameS fname) [Clause [VarP x] (NormalB (AppE e (VarE x))) []]
 
@@ -85,7 +85,7 @@ mkNew fname f typ suffix = do
       [Clause [] (NormalB e) []]
 
 mkDelete :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
-mkDelete fname f = mkMember Unsafe fname (const f)
+mkDelete = mkMember
 
 mkFunc :: String -> (types -> String -> Q Exp) -> types -> String -> Q Dec
 mkFunc fname f typ suffix = do

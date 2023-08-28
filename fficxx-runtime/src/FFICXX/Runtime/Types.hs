@@ -1,7 +1,7 @@
 module FFICXX.Runtime.Types
-  ( Safety (..),
+  ( FFISafety (..),
   )
 where
 
-data Safety = Unsafe | Safe | Interruptible
+data FFISafety = FFIUnsafe | FFISafe | FFIInterruptible
   deriving (Show)

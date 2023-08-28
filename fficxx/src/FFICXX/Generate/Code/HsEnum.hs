@@ -4,12 +4,10 @@ module FFICXX.Generate.Code.HsEnum
   )
 where
 
-import Control.Monad.Reader (Reader)
 import FFICXX.Generate.Name
   ( enumDataConstructorNames,
     enumDataTypeName,
   )
-import FFICXX.Generate.Type.Annotate (AnnotateMap)
 import FFICXX.Generate.Type.Class (EnumType (..))
 import FFICXX.Generate.Util.GHCExactPrint
   ( DeclGroup,
@@ -31,7 +29,7 @@ import FFICXX.Generate.Util.GHCExactPrint
 import GHC.Hs (GhcPs)
 import GHC.Parser.Annotation (DeltaPos (..))
 import Language.Haskell.Syntax
-  ( HsDecl (DocD, TyClD),
+  ( HsDecl (TyClD),
     HsLocalBindsLR (..),
     noExtField,
   )

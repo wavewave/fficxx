@@ -39,7 +39,7 @@ import FFICXX.Generate.Type.Class
 import qualified FFICXX.Generate.Util.GHCExactPrint as Ex
 import qualified FFICXX.Runtime.CodeGen.Cxx as R
 import FFICXX.Runtime.TH (IsCPrimitive (CPrim, NonCPrim))
-import FFICXX.Runtime.Types (Safety (..))
+import FFICXX.Runtime.Types (FFISafety (..))
 import GHC.Hs (GhcPs)
 import qualified GHC.Types.ForeignCall as GHC (Safety (..))
 import Language.Haskell.Syntax
@@ -47,10 +47,10 @@ import Language.Haskell.Syntax
     HsType,
   )
 
-toGHCSafety :: Safety -> GHC.Safety
-toGHCSafety Unsafe = GHC.PlayRisky
-toGHCSafety Safe = GHC.PlaySafe
-toGHCSafety Interruptible = GHC.PlayInterruptible
+toGHCSafety :: FFISafety -> GHC.Safety
+toGHCSafety FFIUnsafe = GHC.PlayRisky
+toGHCSafety FFISafe = GHC.PlaySafe
+toGHCSafety FFIInterruptible = GHC.PlayInterruptible
 
 data CFunSig = CFunSig
   { cArgTypes :: [Arg],
@@ -944,14 +944,16 @@ tmplAccessorToTFun v@(Variable (Arg {..})) a =
   case a of
     Getter ->
       TFun
-        { tfun_ret = arg_type,
+        { tfun_safety = FFIUnsafe,
+          tfun_ret = arg_type,
           tfun_name = tmplAccessorName v Getter,
           tfun_oname = tmplAccessorName v Getter,
           tfun_args = []
         }
     Setter ->
       TFun
-        { tfun_ret = Void,
+        { tfun_safety = FFIUnsafe,
+          tfun_ret = Void,
           tfun_name = tmplAccessorName v Setter,
           tfun_oname = tmplAccessorName v Setter,
           tfun_args = [Arg arg_type "value"]

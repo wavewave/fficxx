@@ -9,7 +9,7 @@ import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import FFICXX.Generate.Type.Cabal (Cabal)
-import FFICXX.Runtime.Types (Safety (..))
+import FFICXX.Runtime.Types (FFISafety (..))
 
 -- | C types
 data CTypes
@@ -129,21 +129,21 @@ data Function
         func_alias :: Maybe String
       }
   | Virtual
-      { func_safety :: Safety,
+      { func_safety :: FFISafety,
         func_ret :: Types,
         func_name :: String,
         func_args :: [Arg],
         func_alias :: Maybe String
       }
   | NonVirtual
-      { func_safety :: Safety,
+      { func_safety :: FFISafety,
         func_ret :: Types,
         func_name :: String,
         func_args :: [Arg],
         func_alias :: Maybe String
       }
   | Static
-      { func_safety :: Safety,
+      { func_safety :: FFISafety,
         func_ret :: Types,
         func_name :: String,
         func_args :: [Arg],
@@ -160,7 +160,7 @@ newtype Variable = Variable {unVariable :: Arg}
 
 -- | Member functions of a template class.
 data TemplateMemberFunction = TemplateMemberFunction
-  { tmf_safety :: Safety,
+  { tmf_safety :: FFISafety,
     tmf_params :: [String],
     tmf_ret :: Types,
     tmf_name :: String,
@@ -184,7 +184,7 @@ filterTLTemplate = mapMaybe (\case TLTemplate f -> Just f; _ -> Nothing)
 
 data TLOrdinary
   = TopLevelFunction
-      { toplevelfunc_safety :: Safety,
+      { toplevelfunc_safety :: FFISafety,
         toplevelfunc_ret :: Types,
         toplevelfunc_name :: String,
         toplevelfunc_args :: [Arg],
@@ -198,7 +198,7 @@ data TLOrdinary
   deriving (Show)
 
 data TLTemplate = TopLevelTemplateFunction
-  { topleveltfunc_safety :: Safety,
+  { topleveltfunc_safety :: FFISafety,
     topleveltfunc_params :: [String],
     topleveltfunc_ret :: Types,
     topleveltfunc_name :: String,
@@ -207,10 +207,10 @@ data TLTemplate = TopLevelTemplateFunction
   }
   deriving (Show)
 
-getSafety :: Function -> Safety
-getSafety (Constructor {}) = Unsafe
-getSafety (Destructor {}) = Unsafe
-getSafety f = func_safety f
+getFunSafety :: Function -> FFISafety
+getFunSafety (Constructor {}) = FFIUnsafe
+getFunSafety (Destructor {}) = FFIUnsafe
+getFunSafety f = func_safety f
 
 isNewFunc :: Function -> Bool
 isNewFunc (Constructor {}) = True
@@ -302,7 +302,7 @@ data OpExp
 
 data TemplateFunction
   = TFun
-      { tfun_safety :: Safety,
+      { tfun_safety :: FFISafety,
         tfun_ret :: Types,
         tfun_name :: String,
         tfun_oname :: String,
@@ -314,12 +314,17 @@ data TemplateFunction
       }
   | TFunDelete
   | TFunOp
-      { tfun_safety :: Safety,
+      { tfun_safety :: FFISafety,
         tfun_ret :: Types,
         -- | haskell alias for the operator
         tfun_name :: String,
         tfun_opexp :: OpExp
       }
+
+getTFunSafety :: TemplateFunction -> FFISafety
+getTFunSafety TFunNew {} = FFIUnsafe
+getTFunSafety TFunDelete {} = FFIUnsafe
+getTFunSafety f = tfun_safety f
 
 argsFromOpExp :: OpExp -> [Arg]
 argsFromOpExp OpStar = []

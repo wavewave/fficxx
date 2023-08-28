@@ -51,7 +51,7 @@ import FFICXX.Generate.Type.Config
 import FFICXX.Generate.Type.Module (TemplateClassImportHeader (..))
 import FFICXX.Generate.Type.PackageInterface ()
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..), Namespace (..))
-import FFICXX.Runtime.Types (Safety (..))
+import FFICXX.Runtime.Types (FFISafety (..))
 import System.Directory (getCurrentDirectory)
 import System.FilePath ((</>))
 
@@ -98,9 +98,9 @@ string =
     mempty
     (Just (ClassAlias {caHaskellName = "CppString", caFFIName = "string"}))
     [ Constructor [cstring "p"] Nothing,
-      NonVirtual Unsafe cstring_ "c_str" [] Nothing,
-      NonVirtual Unsafe (cppclassref_ string) "append" [cppclassref string "str"] Nothing,
-      NonVirtual Unsafe (cppclassref_ string) "erase" [] Nothing
+      NonVirtual FFIUnsafe cstring_ "c_str" [] Nothing,
+      NonVirtual FFIUnsafe (cppclassref_ string) "append" [cppclassref string "str"] Nothing,
+      NonVirtual FFIUnsafe (cppclassref_ string) "erase" [] Nothing
     ]
     []
     []
@@ -156,7 +156,7 @@ t_map =
     ["tpk", "tpv"]
     [ TFunNew [] Nothing,
       TFun
-        Unsafe
+        FFIUnsafe
         ( TemplateAppRef
             TemplateAppInfo
               { tapp_tclass = t_map_iterator,
@@ -168,7 +168,7 @@ t_map =
         "begin"
         [],
       TFun
-        Unsafe
+        FFIUnsafe
         ( TemplateAppRef
             TemplateAppInfo
               { tapp_tclass = t_map_iterator,
@@ -180,7 +180,7 @@ t_map =
         "end"
         [],
       TFun
-        Unsafe
+        FFIUnsafe
         void_ -- until pair<iterator,bool> is allowed
         "insert"
         "insert"
@@ -194,7 +194,7 @@ t_map =
             )
             "val"
         ],
-      TFun Unsafe int_ "size" "size" [],
+      TFun FFIUnsafe int_ "size" "size" [],
       TFunDelete
     ]
     []
@@ -207,7 +207,7 @@ t_map_iterator =
     (FormNested "std::map" "iterator")
     ["tpk", "tpv"]
     [ TFunOp
-        { tfun_safety = Unsafe,
+        { tfun_safety = FFIUnsafe,
           tfun_ret =
             TemplateApp
               TemplateAppInfo
@@ -219,7 +219,7 @@ t_map_iterator =
           tfun_opexp = OpStar
         },
       TFunOp
-        { tfun_safety = Unsafe,
+        { tfun_safety = FFIUnsafe,
           tfun_ret -- TODO: this should be handled with self
           =
             TemplateApp
@@ -243,7 +243,7 @@ t_vector =
     ["tp1"]
     [ TFunNew [] Nothing,
       TFun
-        Unsafe
+        FFIUnsafe
         ( TemplateAppRef
             TemplateAppInfo
               { tapp_tclass = t_vector_iterator,
@@ -255,7 +255,7 @@ t_vector =
         "begin"
         [],
       TFun
-        Unsafe
+        FFIUnsafe
         ( TemplateAppRef
             TemplateAppInfo
               { tapp_tclass = t_vector_iterator,
@@ -266,10 +266,10 @@ t_vector =
         "end"
         "end"
         [],
-      TFun Unsafe void_ "push_back" "push_back" [Arg (TemplateParam "tp1") "x"],
-      TFun Unsafe void_ "pop_back" "pop_back" [],
-      TFun Unsafe (TemplateParam "tp1") "at" "at" [int "n"],
-      TFun Unsafe int_ "size" "size" [],
+      TFun FFIUnsafe void_ "push_back" "push_back" [Arg (TemplateParam "tp1") "x"],
+      TFun FFIUnsafe void_ "pop_back" "pop_back" [],
+      TFun FFIUnsafe (TemplateParam "tp1") "at" "at" [int "n"],
+      TFun FFIUnsafe int_ "size" "size" [],
       TFunDelete
     ]
     []
@@ -282,13 +282,13 @@ t_vector_iterator =
     (FormNested "std::vector" "iterator")
     ["tp1"]
     [ TFunOp
-        { tfun_safety = Unsafe,
+        { tfun_safety = FFIUnsafe,
           tfun_ret = TemplateParam "tp1",
           tfun_name = "deRef",
           tfun_opexp = OpStar
         },
       TFunOp
-        { tfun_safety = Unsafe,
+        { tfun_safety = FFIUnsafe,
           tfun_ret -- TODO: this should be handled with self
           =
             TemplateApp
@@ -312,9 +312,9 @@ t_unique_ptr =
     ["tp1"]
     [ TFunNew [] (Just "newUniquePtr0"),
       TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing,
-      TFun Unsafe (TemplateParamPointer "tp1") "get" "get" [],
-      TFun Unsafe (TemplateParamPointer "tp1") "release" "release" [],
-      TFun Unsafe void_ "reset" "reset" [],
+      TFun FFIUnsafe (TemplateParamPointer "tp1") "get" "get" [],
+      TFun FFIUnsafe (TemplateParamPointer "tp1") "release" "release" [],
+      TFun FFIUnsafe void_ "reset" "reset" [],
       TFunDelete
     ]
     []
@@ -328,9 +328,9 @@ t_shared_ptr =
     ["tp1"]
     [ TFunNew [] (Just "newSharedPtr0"),
       TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing,
-      TFun Unsafe (TemplateParamPointer "tp1") "get" "get" [],
-      TFun Unsafe void_ "reset" "reset" [],
-      TFun Unsafe int_ "use_count" "use_count" [],
+      TFun FFIUnsafe (TemplateParamPointer "tp1") "get" "get" [],
+      TFun FFIUnsafe void_ "reset" "reset" [],
+      TFun FFIUnsafe int_ "use_count" "use_count" [],
       TFunDelete
     ]
     []

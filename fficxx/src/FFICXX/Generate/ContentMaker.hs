@@ -499,7 +499,8 @@ buildImplementationHs amap m =
         Ex.mkImport "System.IO.Unsafe",
         Ex.mkImport "FFICXX.Runtime.Cast",
         Ex.mkImport "FFICXX.Runtime.CodeGen.Cxx", -- for template member
-        Ex.mkImport "FFICXX.Runtime.TH" -- for template member
+        Ex.mkImport "FFICXX.Runtime.TH", -- for template member
+        Ex.mkImport "FFICXX.Runtime.Types" -- for template member
       ]
         <> genImportInImplementation m
         <> genExtraImport m
@@ -567,7 +568,8 @@ buildTHHs m =
         Ex.mkImport "Language.Haskell.TH",
         Ex.mkImport "Language.Haskell.TH.Syntax",
         Ex.mkImport "FFICXX.Runtime.CodeGen.Cxx",
-        Ex.mkImport "FFICXX.Runtime.TH"
+        Ex.mkImport "FFICXX.Runtime.TH",
+        Ex.mkImport "FFICXX.Runtime.Types"
       ]
         <> imports
     )
@@ -720,7 +722,8 @@ buildTopLevelTHHs modname tih =
         Ex.mkImport "Language.Haskell.TH",
         Ex.mkImport "Language.Haskell.TH.Syntax",
         Ex.mkImport "FFICXX.Runtime.CodeGen.Cxx",
-        Ex.mkImport "FFICXX.Runtime.TH"
+        Ex.mkImport "FFICXX.Runtime.TH",
+        Ex.mkImport "FFICXX.Runtime.Types"
       ]
         ++ concatMap genImportForTLTemplate tfns
     pkgBody =

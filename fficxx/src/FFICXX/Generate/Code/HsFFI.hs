@@ -30,7 +30,7 @@ import FFICXX.Generate.Type.Class
     Selfness (NoSelf, Self),
     TLOrdinary (..),
     Variable (unVariable),
-    getSafety,
+    getFunSafety,
     isAbstractClass,
     isNewFunc,
     isStaticFunc,
@@ -47,7 +47,7 @@ import FFICXX.Generate.Util.GHCExactPrint
     mkImport,
   )
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..))
-import FFICXX.Runtime.Types (Safety (Unsafe))
+import FFICXX.Runtime.Types (FFISafety (FFIUnsafe))
 import GHC.Hs (GhcPs)
 import Language.Haskell.Syntax
   ( ForeignDecl,
@@ -81,7 +81,7 @@ hsFFIClassFunc headerfilename c f =
     then Nothing
     else
       let hfile = unHdrName headerfilename
-          safety = getSafety f
+          safety = getFunSafety f
           -- TODO: Make this a separate function
           cname = ffiClassName c <> "_" <> aliasedFuncName c f
           csig = CFunSig (genericFuncArgs f) (genericFuncRet f)
@@ -99,7 +99,7 @@ hsFFIAccessor c v a =
         hsFFIFunType
           (Just (Self, c))
           (accessorCFunSig (arg_type (unVariable v)) a)
-   in mkForImpCcall (toGHCSafety Unsafe) cname (hscAccessorName c v a) typ
+   in mkForImpCcall (toGHCSafety FFIUnsafe) cname (hscAccessorName c v a) typ
 
 -- import for FFI
 genImportInFFI :: ClassModule -> [ImportDecl GhcPs]
@@ -122,7 +122,7 @@ genTopLevelFFI header tfn =
             toplevelfunc_ret
           )
         TopLevelVariable {..} ->
-          ( Unsafe,
+          ( FFIUnsafe,
             fromMaybe toplevelvar_name toplevelvar_alias,
             [],
             toplevelvar_ret

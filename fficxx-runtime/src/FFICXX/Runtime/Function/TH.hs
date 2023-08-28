@@ -16,7 +16,7 @@ import FFICXX.Runtime.TH
     mkNew,
     mkTFunc,
   )
-import FFICXX.Runtime.Types (Safety (..))
+import FFICXX.Runtime.Types (FFISafety (..))
 import Foreign.Ptr (FunPtr)
 import Language.Haskell.TH (forImpD, safe)
 import Language.Haskell.TH.Syntax
@@ -47,13 +47,13 @@ mkWrapper (typ, suffix) =
 
 t_newFunction :: Type -> String -> Q Exp
 t_newFunction typ suffix =
-  mkTFunc Unsafe (typ, suffix, \n -> "Function_new_" <> n, tyf)
+  mkTFunc FFIUnsafe (typ, suffix, \n -> "Function_new_" <> n, tyf)
   where
     tyf _n =
       let t = pure typ
        in [t|FunPtr $(t) -> IO (Function $(t))|]
 
-t_call :: Safety -> Type -> String -> Q Exp
+t_call :: FFISafety -> Type -> String -> Q Exp
 t_call safety typ suffix =
   mkTFunc safety (typ, suffix, \n -> "Function_call_" <> n, tyf)
   where
@@ -63,7 +63,7 @@ t_call safety typ suffix =
 
 t_deleteFunction :: Type -> String -> Q Exp
 t_deleteFunction typ suffix =
-  mkTFunc Unsafe (typ, suffix, \n -> "Function_delete_" <> n, tyf)
+  mkTFunc FFIUnsafe (typ, suffix, \n -> "Function_delete_" <> n, tyf)
   where
     tyf _n =
       let t = pure typ
@@ -76,7 +76,7 @@ genFunctionInstanceFor qtyp param =
     typ <- qtyp
     f1 <- mkNew "newFunction" t_newFunction typ suffix
     -- TODO: handle safety correctly
-    f2 <- mkMember Unsafe "call" t_call typ suffix
+    f2 <- mkMember "call" (t_call FFIUnsafe) typ suffix
     f3 <- mkDelete "deleteFunction" t_deleteFunction typ suffix
     wrap <- mkWrapper (typ, suffix)
     addModFinalizer
