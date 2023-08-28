@@ -75,8 +75,8 @@ genFunctionInstanceFor qtyp param =
     let suffix = fpinfoSuffix param
     typ <- qtyp
     f1 <- mkNew "newFunction" t_newFunction typ suffix
-    -- TODO: handle safety correctly
-    f2 <- mkMember "call" (t_call FFIUnsafe) typ suffix
+    -- NOTE: The indirected function call should be safe.
+    f2 <- mkMember "call" (t_call FFISafe) typ suffix
     f3 <- mkDelete "deleteFunction" t_deleteFunction typ suffix
     wrap <- mkWrapper (typ, suffix)
     addModFinalizer
