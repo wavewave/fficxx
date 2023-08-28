@@ -58,6 +58,7 @@ import FFICXX.Generate.Type.Config
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..), Namespace (..))
+import FFICXX.Runtime.Types (Safety (..))
 import System.Directory (getCurrentDirectory)
 import System.Environment (getArgs)
 import System.FilePath ((</>))
@@ -111,10 +112,10 @@ t_vector =
     (FormSimple "std::vector")
     ["tp1"]
     [ TFunNew [] Nothing,
-      TFun void_ "push_back" "push_back" [Arg (TemplateParam "tp1") "x"],
-      TFun void_ "pop_back" "pop_back" [],
-      TFun (TemplateParam "tp1") "at" "at" [int "n"],
-      TFun int_ "size" "size" [],
+      TFun Unsafe void_ "push_back" "push_back" [Arg (TemplateParam "tp1") "x"],
+      TFun Unsafe void_ "pop_back" "pop_back" [],
+      TFun Unsafe (TemplateParam "tp1") "at" "at" [int "n"],
+      TFun Unsafe int_ "size" "size" [],
       TFunDelete
     ]
     []
@@ -155,14 +156,16 @@ toplevels :: [TopLevel]
 toplevels =
   [ TLOrdinary
       TopLevelFunction
-        { toplevelfunc_ret = Void,
+        { toplevelfunc_safety = Unsafe,
+          toplevelfunc_ret = Void,
           toplevelfunc_name = "ordinary",
           toplevelfunc_args = [],
           toplevelfunc_alias = Nothing
         },
     TLTemplate
       ( TopLevelTemplateFunction
-          { topleveltfunc_params = ["t1"],
+          { topleveltfunc_safety = Unsafe,
+            topleveltfunc_params = ["t1"],
             topleveltfunc_ret =
               TemplateAppMove (TemplateAppInfo t_vector [TArg_TypeParam "t1"] "std::vector<t1>"),
             topleveltfunc_name = "return_vector",

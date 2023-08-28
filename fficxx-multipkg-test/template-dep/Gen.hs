@@ -58,6 +58,7 @@ import FFICXX.Generate.Type.Config
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..), Namespace (..))
+import FFICXX.Runtime.Types (Safety (..))
 import System.Directory (getCurrentDirectory)
 import System.Environment (getArgs)
 import System.FilePath ((</>))
@@ -104,7 +105,8 @@ tT1 cabal =
               tfun_new_alias = Nothing
             },
           TFun
-            { tfun_ret = Void,
+            { tfun_safety = Unsafe,
+              tfun_ret = Void,
               tfun_name = "method",
               tfun_oname = "method",
               tfun_args = []
@@ -126,7 +128,8 @@ tT2 cabal =
               tfun_new_alias = Nothing
             },
           TFun
-            { tfun_ret = Void,
+            { tfun_safety = Unsafe,
+              tfun_ret = Void,
               tfun_name = "callT1",
               tfun_oname = "callT1",
               tfun_args =

@@ -58,6 +58,7 @@ import FFICXX.Generate.Type.Config
 import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 import FFICXX.Runtime.CodeGen.Cxx (HeaderName (..), Namespace (..))
+import FFICXX.Runtime.Types (Safety (..))
 import System.Directory (getCurrentDirectory)
 import System.Environment (getArgs)
 import System.FilePath ((</>))
@@ -109,9 +110,9 @@ string =
     mempty
     (Just (ClassAlias {caHaskellName = "CppString", caFFIName = "string"}))
     [ Constructor [cstring "p"] Nothing,
-      NonVirtual cstring_ "c_str" [] Nothing,
-      NonVirtual (cppclassref_ string) "append" [cppclassref string "str"] Nothing,
-      NonVirtual (cppclassref_ string) "erase" [] Nothing
+      NonVirtual Unsafe cstring_ "c_str" [] Nothing,
+      NonVirtual Unsafe (cppclassref_ string) "append" [cppclassref string "str"] Nothing,
+      NonVirtual Unsafe (cppclassref_ string) "erase" [] Nothing
     ]
     []
     []
@@ -125,10 +126,10 @@ t_vector =
     (FormSimple "std::vector")
     ["tp1"]
     [ TFunNew [] Nothing,
-      TFun void_ "push_back" "push_back" [Arg (TemplateParam "tp1") "x"],
-      TFun void_ "pop_back" "pop_back" [],
-      TFun (TemplateParam "tp1") "at" "at" [int "n"],
-      TFun int_ "size" "size" [],
+      TFun Unsafe void_ "push_back" "push_back" [Arg (TemplateParam "tp1") "x"],
+      TFun Unsafe void_ "pop_back" "pop_back" [],
+      TFun Unsafe (TemplateParam "tp1") "at" "at" [int "n"],
+      TFun Unsafe int_ "size" "size" [],
       TFunDelete
     ]
     []
@@ -142,9 +143,9 @@ t_unique_ptr =
     ["tp1"]
     [ TFunNew [] (Just "newUniquePtr0"),
       TFunNew [Arg (TemplateParamPointer "tp1") "p"] Nothing,
-      TFun (TemplateParamPointer "tp1") "get" "get" [],
-      TFun (TemplateParamPointer "tp1") "release" "release" [],
-      TFun void_ "reset" "reset" [],
+      TFun Unsafe (TemplateParamPointer "tp1") "get" "get" [],
+      TFun Unsafe (TemplateParamPointer "tp1") "release" "release" [],
+      TFun Unsafe void_ "reset" "reset" [],
       TFunDelete
     ]
     []
@@ -227,7 +228,7 @@ classT1 cabal =
       class_alias = Nothing,
       class_funcs =
         [ Constructor [] Nothing,
-          NonVirtual void_ "print" [] Nothing
+          NonVirtual Unsafe void_ "print" [] Nothing
         ],
       class_vars = [],
       class_tmpl_funcs = [],
@@ -244,7 +245,7 @@ classT2 cabal =
       class_alias = Nothing,
       class_funcs =
         [ Constructor [] Nothing,
-          NonVirtual void_ "print" [] Nothing
+          NonVirtual Unsafe void_ "print" [] Nothing
         ],
       class_vars = [],
       class_tmpl_funcs = [],
