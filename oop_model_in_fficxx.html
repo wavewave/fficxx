@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OOP Model in fficxx &mdash; fficxx 0.7.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=0146b746"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Real World Usage" href="real_world_usage.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            fficxx
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">OOP Model in fficxx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="real_world_usage.html">Real World Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">fficxx</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">OOP Model in fficxx</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/oop_model_in_fficxx.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="oop-model-in-fficxx">
+<h1>OOP Model in fficxx<a class="headerlink" href="#oop-model-in-fficxx" title="Link to this heading"></a></h1>
+<p>fficxx generates haskell codes at raw level (C wrapper and haskell foreign pointer  that are directly matched with C/C++ types) and at high level (newtype wrapper for raw level pointer and haskell typeclasses reflecting OOP class hierarchy). Haskell does not have a concept of subtyping, i.e. we do not provide any easy way to create a new subclass and overload member functions from existing classes on haskell side. However, fortunately, one can describe the OOP subclass relationship using a typeclass interface as a contract for a class <code class="docutils literal notranslate"><span class="pre">b</span></code> to be equal to or a subclass of <code class="docutils literal notranslate"><span class="pre">a</span></code>. In a sense, typeclasses are Interface Definition Language (IDL) for describing OOP classes. Thus, a C++ class is represented by both haskell concrete type (for a C++ class itself) and typeclass (a set of classes that can be equal to or a subclass of the C++ class).</p>
+<p>Assuming that there is a C++ class <code class="docutils literal notranslate"><span class="pre">A</span></code>. fficxx generates a haskell type <code class="docutils literal notranslate"><span class="pre">A</span></code>. This haskell type <code class="docutils literal notranslate"><span class="pre">A</span></code> is nothing but a newtype wrapping <code class="docutils literal notranslate"><span class="pre">ForeignPtr</span></code> tagged by <code class="docutils literal notranslate"><span class="pre">RawA</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="n">RawA</span>
+
+<span class="n">newtype</span> <span class="n">A</span> <span class="o">=</span> <span class="n">A</span> <span class="p">(</span><span class="n">ForeignPtr</span> <span class="n">RawA</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">RawA</span></code> exists only for the purpose of a phantom type to be used as tags for <code class="docutils literal notranslate"><span class="pre">Ptr</span></code> in FFI imports (<code class="docutils literal notranslate"><span class="pre">foreign</span> <span class="pre">import</span></code> statements.) When programming with fficxx-generated code at high level, programmers should seldom encounter <code class="docutils literal notranslate"><span class="pre">Raw</span></code> types. An instance object of C++ class <code class="docutils literal notranslate"><span class="pre">A</span></code> is a value of haskell type <code class="docutils literal notranslate"><span class="pre">A</span></code>. To create an instance, fficxx provides a smart constructor (<code class="docutils literal notranslate"><span class="pre">newA</span></code>) if specified with a corresponding constructor.</p>
+<p>Therefore, one can create an instance from a concrete haskell type, and pass it to any functions which needs them. On Haskell side, member functions of a C++ class are nothing but functions whose first argument is the same as the corresponding haskell type to the class. For example, if the class <code class="docutils literal notranslate"><span class="pre">A</span></code> has a member function <code class="docutils literal notranslate"><span class="pre">foo</span></code> of signature <code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">A::foo(</span> <span class="pre">int</span> <span class="pre">param</span> <span class="pre">)</span></code>, then fficxx generates a high level function</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foo</span> <span class="p">::</span> <span class="n">A</span> <span class="o">-&gt;</span> <span class="n">CInt</span> <span class="o">-&gt;</span> <span class="n">IO</span> <span class="p">()</span>
+</pre></div>
+</div>
+<p>which is a wrapper for a raw level FFI call defined by</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foriegn</span> <span class="kn">import</span> <span class="nn">ccall</span> <span class="s2">&quot;A_foo&quot;</span> <span class="n">c_foo</span> <span class="p">::</span> <span class="n">Ptr</span> <span class="n">RawA</span> <span class="o">-&gt;</span> <span class="n">CInt</span> <span class="o">-&gt;</span> <span class="n">IO</span> <span class="p">()</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">A_foo</span></code> is a generated C shim function for <code class="docutils literal notranslate"><span class="pre">A::foo</span></code>. So one can translate the following C++ code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A</span><span class="o">*</span> <span class="n">a</span> <span class="o">=</span> <span class="n">new</span> <span class="n">A</span><span class="p">();</span>
+<span class="n">a</span><span class="o">-&gt;</span><span class="n">foo</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>to the haskell code (in do-block of IO monad)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">do</span> <span class="n">a</span> <span class="o">&lt;-</span> <span class="n">newA</span>
+   <span class="n">foo</span> <span class="n">a</span> <span class="mi">3</span>
+</pre></div>
+</div>
+<p>Haskell type <code class="docutils literal notranslate"><span class="pre">A</span></code> can be used in the arbitrary argument position. Assume there is another member function <code class="docutils literal notranslate"><span class="pre">bar</span></code> of <code class="docutils literal notranslate"><span class="pre">A</span></code> which takes an object of <code class="docutils literal notranslate"><span class="pre">A</span></code> as an argument like <code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">A::bar(</span> <span class="pre">A*</span> <span class="pre">a</span> <span class="pre">)</span></code>. Then, we have</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bar</span> <span class="p">::</span> <span class="n">A</span> <span class="o">-&gt;</span> <span class="n">A</span> <span class="o">-&gt;</span> <span class="n">IO</span> <span class="p">()</span>
+</pre></div>
+</div>
+<p>for which <code class="docutils literal notranslate"><span class="pre">x-&gt;bar(y)</span></code> (<code class="docutils literal notranslate"><span class="pre">x</span></code>,<code class="docutils literal notranslate"><span class="pre">y</span></code> are of class <code class="docutils literal notranslate"><span class="pre">A</span></code>) corresponds to <code class="docutils literal notranslate"><span class="pre">bar</span> <span class="pre">x</span> <span class="pre">y</span></code>.</p>
+<p>In this example, the C++ class <code class="docutils literal notranslate"><span class="pre">A</span></code> may have the following declaration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">A</span>
+<span class="p">{</span>
+  <span class="n">public</span><span class="p">:</span>
+    <span class="n">A</span><span class="p">();</span>
+    <span class="n">virtual</span> <span class="n">void</span> <span class="n">foo</span><span class="p">(</span> <span class="nb">int</span> <span class="p">);</span>
+    <span class="n">virtual</span> <span class="n">void</span> <span class="n">bar</span><span class="p">(</span> <span class="n">A</span><span class="o">*</span> <span class="p">);</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>To reflect subtype relations, fficxx creates an interface typeclass <code class="docutils literal notranslate"><span class="pre">IA</span></code> for <code class="docutils literal notranslate"><span class="pre">A</span></code>, which is defined as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">IA</span> <span class="n">a</span> <span class="n">where</span>
+  <span class="n">foo</span> <span class="p">::</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">CInt</span> <span class="o">-&gt;</span> <span class="n">IO</span> <span class="p">()</span>
+  <span class="n">bar</span> <span class="p">::</span> <span class="p">(</span><span class="n">IA</span> <span class="n">b</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="n">IO</span> <span class="p">()</span>
+</pre></div>
+</div>
+<p>which declares all C++ virtual functions as members. Then, haskell type <code class="docutils literal notranslate"><span class="pre">A</span></code> is a typeclass instance of <code class="docutils literal notranslate"><span class="pre">IA</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">instance</span> <span class="n">IA</span> <span class="n">A</span> <span class="n">where</span>
+  <span class="o">--</span> <span class="n">foo</span> <span class="p">::</span> <span class="n">A</span> <span class="o">-&gt;</span> <span class="n">CInt</span> <span class="o">-&gt;</span> <span class="n">IO</span> <span class="p">()</span>
+  <span class="n">foo</span> <span class="o">=</span> <span class="o">...</span>
+  <span class="o">--</span> <span class="n">bar</span> <span class="p">::</span> <span class="p">(</span><span class="n">IA</span> <span class="n">b</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">A</span> <span class="o">-&gt;</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="n">IO</span> <span class="p">()</span>
+  <span class="n">bar</span> <span class="o">=</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>so that <code class="docutils literal notranslate"><span class="pre">foo</span></code> and <code class="docutils literal notranslate"><span class="pre">bar</span></code> functions we considered in the above example were actually defined in the <code class="docutils literal notranslate"><span class="pre">IA</span></code> instance definition of A.
+Note that the type signature of <code class="docutils literal notranslate"><span class="pre">bar</span></code> allows generic typeclass instances of <code class="docutils literal notranslate"><span class="pre">IA</span></code> as the argument (paraterized by <code class="docutils literal notranslate"><span class="pre">b</span></code>).</p>
+<p>Now consider another C++ class <code class="docutils literal notranslate"><span class="pre">B</span></code> which is a subclass of <code class="docutils literal notranslate"><span class="pre">A</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">B</span> <span class="p">:</span> <span class="n">public</span> <span class="n">A</span>
+<span class="p">{</span>
+  <span class="n">public</span><span class="p">:</span>
+    <span class="n">B</span><span class="p">();</span>
+    <span class="n">virtual</span> <span class="nb">int</span> <span class="n">baz</span><span class="p">()</span> <span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Again, we will have a concrete haskell type <code class="docutils literal notranslate"><span class="pre">B</span></code> and an object of <code class="docutils literal notranslate"><span class="pre">B</span></code> will be created as a value from the <code class="docutils literal notranslate"><span class="pre">newB</span></code> constructor function.
+A typeclass <code class="docutils literal notranslate"><span class="pre">IB</span></code> is also generated as well, and it reflects the inheritance relationship for C++ class as constraints:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>class (IA b) =&gt; IB b where
+  baz :: b -&gt; IO CInt
+</pre></div>
+</div>
+<p>Thanks to the constraints <code class="docutils literal notranslate"><span class="pre">(IA</span> <span class="pre">b)</span> <span class="pre">=&gt;</span></code> in the declaration, every instance of <code class="docutils literal notranslate"><span class="pre">IB</span></code> must have implementation of <code class="docutils literal notranslate"><span class="pre">IA</span></code>. This is true for <code class="docutils literal notranslate"><span class="pre">B</span></code>, too.
+So fficxx generates</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">instance</span> <span class="n">IA</span> <span class="n">B</span> <span class="n">where</span>
+  <span class="n">foo</span> <span class="o">=</span> <span class="o">...</span>
+  <span class="n">bar</span> <span class="o">=</span> <span class="o">...</span>
+
+<span class="n">instance</span> <span class="n">IB</span> <span class="n">B</span> <span class="n">where</span>
+  <span class="n">baz</span> <span class="o">=</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>This instance generation (<em>implemenation of C++ class</em>) is automaticaly done by fficxx, but it’s not guaranteed for future subclassing. Any type which implements instances of <code class="docutils literal notranslate"><span class="pre">IA</span></code> and <code class="docutils literal notranslate"><span class="pre">IB</span></code> can be regarded as a subclass of <code class="docutils literal notranslate"><span class="pre">B</span></code>, but it’s not automatically done as we have in OOP. The scope of fficxx is to generate such implementations only for existing C++ classes.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting_started.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="real_world_usage.html" class="btn btn-neutral float-right" title="Real World Usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2013 - 2023, Ian-Woo Kim.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
