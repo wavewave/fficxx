@@ -57,7 +57,7 @@ genHsEnumDecl enum =
     mk1to1 (x, y) = ([mkPVar x], mkVar y, EmptyLocalBinds noExtField)
     mkFromIntegralCxx x =
       mkVar "fromIntegral"
-        `app` mkVarWithComment "" ("#{const " <> x <> "}")
+        `app` mkVarWithComment "" ("( #{const " <> x <> "} )")
     -- NOTE: toEnum should not be used.
     -- TODO: make this somewhat safer with error messages.
     mkToEnum = [([wildcard], mkVar "undefined", EmptyLocalBinds noExtField)]
